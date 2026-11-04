@@ -1,3 +1,21 @@
+## 2026-11-04 v1103: no production growth for mixed-stage fault test
+
+The new testkit v1103 disposable 256K PDP-6 guest combines real
+PIPE-owned MM_BUSY retry with two test-only FILE refusals, one HUP
+stage refusal, a VM retry and the actual u-area MM_BUSY retry, all
+for one fatal child. Both PIPE MM attempts preserve the exact last
+reference count until free commits. The held foreign FS gateway
+lease, WAIT/CHLD, one finalization and a runnable bystander remain
+correct. The HUP-stage rejection is injected, not a physical member
+HUP (independently tested by booted v907).
+The original v997 booted baseline and the full native P0-D matrix
+were independently rerun and PASS after the testkit extension.
+
+No production kernel file, storage mode, process field, owner word
+or MRES was changed; baseline `__kcore_low_end` remains `023171`
+octal from v1102. P0-D/E/F and the production-disabled OOM decision
+remain open pending more booted cross-stage coverage.
+
 ## 2026-11-04 v1101-v1102: correct capped fatal reaper backoff
 
 A booted PDP-6 wrong-owner MM fault found that clearing the shared

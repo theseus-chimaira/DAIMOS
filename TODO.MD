@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1102, 2026-11-04)
+### OOM activation gates (current as of v1103, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -76,6 +76,33 @@ software/device deadlocks remain kernel correctness requirements.
   final anonymous PIPE and FIFO CLOSE while retaining the descriptor,
   references and FIFO list; four unsafe native variants are rejected.
   Full cross-stage fault matrix remains OPEN.
+
+### v1103: booted mixed PIPE/FILE/HUP-stage/VM/u-area retry (2026-11-04)
+
+- [x] Added one disposable 256K PDP-6 multi-stage guest variant to the
+  existing v997 owner/provider/WAIT/bystander acceptance harness. The
+  selected child retains a private, real anonymous PIPE until fatal
+  FILE cleanup; its actual final-close `mm_free` returns -5 once and
+  then succeeds, with original PIPE reference counts checked at both
+  attempts. Two initial FILE closure refusals precede PIPE teardown.
+- [x] A separate test-only refusal at `proc_session_teardown` makes the
+  same fatal owner retry the HUP *stage* once after FILE closure.
+  This is not physical TTY member HUP delivery; that is covered by
+  the independent booted v907 real HUP/partial-commit regression.
+- [x] The same owner then encounters the pre-existing v997 single VM
+  refusal followed by an actual u-area MM_BUSY -5 refusal; both recover.
+  The prepublished PREVM marker prevents repeat HUP on slot-0 retries.
+- [x] Booted v1103 counters PASS: FILE 3 attempts/2 rejects; PIPE
+  2 physical MM frees/1 reject, correct retained reference counts;
+  HUP stage 2 calls/1 reject; VM 2 calls, u-area 2 calls/1 reject;
+  one EXIT/CHLD/finalization, live foreign provider lease, independent
+  bystander 36 cycles, zero ownership/provider errors. No production
+  kernel changes, new permanent data, MRES, or enabled OOM policy.
+- [x] Unmodified v997 baseline rerun with the extended opt-in test
+  harness also PASS; full v1096 native release matrix PASS.
+- [ ] P0-D remains OPEN for true simultaneous session-member HUP plus
+  PIPE/DPY and XIP/swap fault combinations, and further PID/WAIT
+  release-order verification; P0-E/F still OPEN, production OOM OFF.
 
 ### v1101-v1102: permanent wrong-owner MM and reaper backoff (2026-11-04)
 

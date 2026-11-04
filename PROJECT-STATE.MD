@@ -1,3 +1,39 @@
+## 2026-11-04 v1103: booted multi-stage fatal owner fault matrix
+
+The new daimos-testkit v1103 optional full-guest regression extends the
+disposable v997 256K PDP-6 image rather than copying its boot harness.
+It exercises sequential failure and retry in the **same real child**:
+FILE close is refused twice by the original v997 test hook; a private
+anonymous PIPE survives its first real final `mm_free` returning
+MM_ERR_BUSY (-5), with the expected exact reference counts preserved,
+and is freed after one subsequent retry. The child then receives a
+test-only refusal at the HUP-stage boundary in `proc_session_teardown`,
+followed by success. This refusal does not represent actual physical
+TTY HUP delivery; the booted v907 regression covers real session
+members and partial HUP commit independently. Next, the existing v997
+test hook rejects the first VM destroy and the production MM allocator
+rejects the first stable u-area free (-5), both with successful retries.
+
+The v1103 booted guest PASSes with FILE calls 3/refusals 2, PIPE MM
+calls 2/refusals 1, HUP-stage calls 2/refusals 1, VM calls 2, u-area
+calls 2/MM refusals 1, CHLD/EXIT/finalization exactly once and no
+ownership error. The held foreign FS-provider lease never changes;
+the independent bystander executes 36 cycles. No repeated HUP is
+triggered after PREVM publication and the original session/WAIT owner
+is finalized only after all release stages accept completion.
+The original v997 full guest was rerun without the v1103 option and
+PASSes; the complete source-linked v1096 native P0-D matrix also
+PASSes against the same production tree.
+
+This is a daimos-testkit-only, isolated-source fault injection. The
+production DAIMOS assembler/C source remains unchanged from v1102,
+including its disabled OOM gate, KCore endpoint `023171` octal, and
+existing resident owner/backoff state. The original v997 regression
+remains available separately and v1103 is included in optional
+`P0D_FULL=1` validation. P0-D/E/F remain OPEN: simultaneous physical
+HUP+PIPE/DPY, XIP/swap and exhaustive WAIT/PID fault cross-products
+still need booted acceptance.
+
 ## 2026-11-04 v1101-v1102: invalid-owner MM quarantine and idle reaper
 
 P0-D's new booted v1101 physical-MM wrong-owner diagnostic exposed a
