@@ -1,3 +1,37 @@
+## 2026-11-04 v1121: physical DPY release across DISK swap restore
+
+The disposable 256K PDP-6 v1121 guest combines a real Type-340
+display-list MM_BUSY (-5) on final FILE close with an earlier actual
+DISK swap-out of the *same* session member. The first mixed guest
+reached a clean HALT, but its inherited swap-only assertion falsely
+required zero second-member HUP retries and two bitmap-verifier
+calls. The trace proved an additional second HUP was necessary while
+the private DPY FILE close remained incomplete, and the DISK bitmap
+verifier was never reached. The test was not accepted as a bitmap
+fault on that evidence.
+
+The corrected guest instruments the actual SWAP MRES `proc_swap_in`
+entry and successful return using disposable KCORE counters. One
+physical swap-out, one successful swap-in, one backing free, and a
+cleared terminal DISK record/block count PASS. The DPY extent records
+two frees with exactly one physical pin-induced MM_BUSY, one unpin,
+one true free, zero ownership errors, 118 actual PI6 refreshes, and
+90 refreshes while the old display list remains held after refusal.
+Session HUP partial-commit, the first member's MM pin/unpin, the
+second member's later HUP, final WAIT and TTY ownership PASS.
+
+This is physical SWAP/DPY release integration, NOT a simultaneous
+DPY MM_BUSY and DISK bitmap-detach refusal. A private FILE-close
+continuation requires the swapped process to become resident before
+VM teardown, consuming the DISK record. The separate v1107 actual
+bitmap-verifier refusal remains its own regression. Live MEMFS XIP,
+concurrent DISK bitmap errors with a distinct active owner and full
+P0-D/E/F acceptance are still OPEN. No production code, persistent
+KCore/MRES RAM, ABI or OOM switch changed.
+The original v1107 swap-only bitmap fault fixture was independently
+rebooted after v1121 and PASSes: two verifier calls, one forced bitmap
+failure, one exact restoration/free and no terminal DISK leak.
+
 ## 2026-11-04 v1120: real numeric PID reuse following physical OOM
 
 Two independent booted 256K PDP-6 guests PASS with genuine BRK

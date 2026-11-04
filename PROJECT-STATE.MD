@@ -1,3 +1,40 @@
+## 2026-11-04 v1121: booted DPY MM_BUSY with real DISK out/in lifecycle
+
+The full disposable 256K PDP-6 v1121 mixed session guest PASSes with
+genuine resident Type-340 DPY final-close MM refusal and a DISK
+swap-out/restore of the same second member. The first version reached
+HALT but failed the old v1107 terminal-DISK assumption: `second=1`
+rather than zero, and no bitmap verification occurred. This was a
+valid difference in process lifecycle, not an observed kernel defect:
+the physical DPY FILE-close refusal kept the private continuation
+live; the process had to be restored from disk before close could
+complete. It was not valid to count the unreached bitmap fault.
+
+The testkit revised its isolated source generator to instrument the
+real SWAP MRES `proc_swap_in` entry and zero-status successful return
+for slot 4. One real swap-out, one real successful swap-in and one
+backing free now PASS; the terminal record and block count are zero,
+and no direct bitmap-verifier injection is claimed. The DPY raw-list
+extent is pinned once, produces exactly one real MM_BUSY (-5), and
+is later unpinned and freed exactly once. Both release attempts are
+accounted, with zero owner errors. The display engine executes 118
+PI6 refreshes, including 90 during the held-list interval. Partial
+HUP, exactly one later second-member HUP, first-member u-area owner,
+complete leader/member WAIT statuses and TTY handoff all PASS.
+
+This is P0-D evidence for physical SWAP restoration plus DPY release,
+not for simultaneous DISK bitmap failure and DPY MM_BUSY. Testing an
+actual bitmap-detach fault while another independently owned resource
+refuses will require a distinct valid owner/lifecycle setup. Booted
+MEMFS XIP admission, concurrent fault/liveness acceptance and final
+P0-E/F policy activation remain OPEN. All instrumentation is confined
+to disposable guest code; DAIMOS production KCore, MRES, resident
+RAM, ABI and default OOM policy are unchanged.
+An independent fresh v1107 swap-only full guest PASSes after the
+testkit generator extension: two real bitmap-verifier calls, one
+physical bitmap refusal/corruption, one restoration, one backing
+free, no duplicate HUP and no final backing record or word leak.
+
 ## 2026-11-04 v1120: booted numeric PID recycling after OOM
 
 The `daimos-oom-pid-reuse-v1120` regression boots complete disposable

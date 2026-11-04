@@ -1,3 +1,25 @@
+### v1121: DPY release versus real DISK swap-out/restore (2026-11-04)
+
+- [x] Compose v1105 physical Type-340 DPY final-close MM_BUSY with
+  v1107 actual production swap-out of the same second HUP recipient.
+  Observe and preserve both resources through one guest process.
+- [x] Correct the initial assumption that the DISK bitmap verifier
+  must execute. An incomplete private DPY FILE close causes a real
+  SWAP MRES swap-in, restoring residency before VM teardown. Count
+  both the original `proc_swap_in` call and successful return, not an
+  inferred restore. A clean boot and simultaneous injected bitmap
+  hook alone do not prove that a bitmap error occurred.
+- [x] Full 256K guest PASS: one physical swap-out, one actual swap-in,
+  exact backing free/cleared terminal DISK record, one physical DPY
+  pin/MM_BUSY/unpin/free, 118 PI6 refreshes (90 while held), partial
+  HUP retry, correct WAIT/TTY and zero ownership errors.
+- [x] Reboot standalone v1107 after the generator extension: original
+  true bitmap verifier failure/restoration and ownership PASS unchanged.
+- [ ] The genuine v1107 bitmap verifier fault must still be combined
+  with an independently owned, concurrently failing resource using
+  a valid DISK lifecycle; booted XIP integration and P0-D/E/F remain
+  open. Production OOM remains OFF.
+
 ### v1120: actual numeric PID reuse after real physical OOM (2026-11-04)
 
 - [x] Boot independent 256K PDP-6 default-OOM-disabled and test-only
