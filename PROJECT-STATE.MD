@@ -1,3 +1,33 @@
+## 2026-11-04 v1116: booted direct RUN descriptor-pressure cause -3
+
+Two independent disposable 256K PDP-6 guests PASS with actual
+MM descriptor-table saturation and a structurally valid child RUN.
+The native allocator result is captured immediately at the actual
+process-VM creation allocation and at the later child u-area MM
+allocation in private source copies. The test accepts exactly one
+genuine MM descriptor exhaustion (-3) at the reached failing stage;
+the other stage must either have succeeded (0) or not have executed
+(-7 test sentinel). The public RUN ABI still returns -1, with no
+child process VM, u-area or process slot retained after the refusal.
+
+The same test INIT frees each tracked one-word MM_TYPE_KERNEL_DYNAMIC
+extent by exact base/type/owner and compares parent process-slot and
+process-word accounting before continuing. The default OOM-disabled
+guest PASSes and returns normally for true physical exhaustion. The
+disposable OOM-enabled guest PASSes and kills only the later genuinely
+exhausted requester, not the descriptor-pressured RUN caller or the
+invalid BRK/RUN negative controls. The independent blocked witness,
+expected WAIT results, and recovered MM accounting PASS in both.
+
+All v1116 instrumentation, 36-bit counters, sentinel calls and
+the optional OOM switch are restricted to isolated test kernels.
+Native v1111 MM cause and v1113 MM-to-VM/BRK classification
+compatibility tests PASS, including their unsafe mutants.
+There is no production kernel/MRES/ABI change and no new resident
+RAM consumption. The remaining P0-D resource-retry cross-products,
+P0-E integrated fault/liveness/WAIT/PID run, and P0-F final
+production-enable decision remain OPEN. Production OOM stays OFF.
+
 ## 2026-11-04 v1115: booted fragmented-core BRK -2 without OOM kill
 
 The 256K PDP-6 v1115 full guest creates real fragmented physical

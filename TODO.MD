@@ -1,3 +1,21 @@
+### v1116: booted exact RUN MM descriptor cause (2026-11-04)
+
+- [x] Saturate the real PDP-6 MM descriptor table through private
+  tracked allocations. Record the actual MM return code immediately
+  after both possible RUN allocation stages (process VM and u-area).
+  Require precisely one -3 at the failing stage and distinguish the
+  nonexecuted stage from an actual successful allocation. A valid
+  RUN must return -1 and leave no child slot/process-word leak.
+- [x] Independently boot default OOM-disabled and disposable
+  OOM-enabled guests. Both PASS with exact MM owner cleanup, invalid
+  RUN/BRK controls, subsequent physical-OOM requester, bystander and
+  WAIT accounting; only the later truly exhausted requester is
+  killed in the enabled image.
+- [ ] Do not enable production requester OOM yet. P0-D still needs
+  remaining XIP/combined release faults and long-run PID/WAIT tests;
+  P0-E needs an integrated fault-and-liveness matrix; P0-F requires
+  final cross-gate acceptance and an explicit enable decision.
+
 ### v1115: booted real physical fragmentation and BRK -2 (2026-11-04)
 
 - [x] Build independent 256K PDP-6 guests under both OOM policies.
@@ -9,10 +27,11 @@
   process MM; all test-owned extents are released. The subsequent
   physical-OOM requester, invalid BRKs, failed RUN and blocked
   witness produce the expected WAIT/cleanup behavior. Both PASS.
-- [ ] Capture the exact MM descriptor-exhaustion cause (-3) from a
-  booted failed child RUN, rather than only verifying that the real
-  descriptor table is full and RUN returns -1. Continue mixed P0-D/E
-  liveness and final P0-F acceptance before enabling production OOM.
+- [x] The exact MM descriptor-exhaustion cause (-3) from a booted
+  failed child RUN is now captured at the real allocator in v1116,
+  rather than inferred from a full table. Both OOM modes PASS.
+- [ ] Mixed P0-D/E liveness and final P0-F acceptance are still needed
+  before enabling production OOM.
 
 ### v1114: full-system MM descriptor-pressure child RUN (2026-11-04)
 
@@ -23,10 +42,11 @@
   base/type/owner. Both default-disabled and test-only OOM-enabled
   guests PASS with existing invalid BRK, OOM requester and bystander
   checks. No production kernel source or resident RAM growth.
-- [ ] Capture the exact MM cause through the failed RUN, and boot a
-  truly fragmented physical-core BRK refusal, with no fatal dispatch
-  when test OOM is enabled. Continue P0-D/E mixed-fault and WAIT/PID
-  acceptance before considering production OOM activation.
+- [x] v1115 booted actual fragmented-core BRK -2; v1116 captured
+  the raw -3 MM descriptor result of a failed RUN. Both have enabled
+  and disabled policy guest checks.
+- [ ] Continue P0-D/E mixed-fault and WAIT/PID acceptance before
+  considering production OOM activation.
 
 ### v1113: native integrated MM/VM/BRK OOM gate (2026-11-04)
 

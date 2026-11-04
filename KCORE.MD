@@ -1,3 +1,19 @@
+## 2026-11-04 v1116: direct booted RUN -3 MM cause verification
+
+v1116 uses private booted PDP-6 kernel copies to observe real
+MM allocator return codes at the process-VM and child u-area RUN
+stages, while actual MM descriptor slots are exhausted. A valid
+child RUN returns -1 with exactly one reached allocator reporting
+-3; an unexecuted allocation has a distinct test-only -7 sentinel.
+Both OOM-disabled and private OOM-enabled guests PASS the child-slot,
+memory-owner, WAIT and independent witness checks. Only the later
+true physical-OOM requester is retired by the enabled private policy.
+Native v1111/v1113 MM classification and error-propagation controls
+PASS independently.
+No production kernel text, BSS, MRES slots or ABI changes. P0-D/E
+mixed faults and P0-F policy activation remain outstanding; the
+production requester OOM switch is still disabled.
+
 ## 2026-11-04 v1115: booted fragmented physical core and BRK -2
 
 The full 256K PDP-6 guest constructs actual fragmented MM extents
