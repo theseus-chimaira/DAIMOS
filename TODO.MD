@@ -1,3 +1,19 @@
+### v1117: integrated stale PID/WAIT and multi-stage fault liveness (2026-11-04)
+
+- [x] Extend the real booted v1103 PIPE/FILE/HUP-stage/VM/u-area
+  fault/retry guest with 48 rejected stale WAITs and 48 rejected
+  PID-directed TERM events after one exact child finalization.
+  Confirm non-growing process MM/slot usage and concurrently runnable
+  bystander with the foreign FS lease still held. The original
+  release/refusal/CHLD/owner counters and the full guest PASS.
+- [x] The first proposed post-fault RUN/WAIT stress was invalid:
+  new executable loads legitimately require the deliberately held
+  FS-provider lease. Replace that probe with provider-independent
+  stale-PID and event checks; no production change or workaround.
+- [ ] Still need actual numeric PID-reuse, mixed physical DPY/HUP/
+  PIPE/XIP/swap fault combinations, long-lived provider/liveness
+  verification and complete P0-E/P0-F activation acceptance.
+
 ### v1116: booted exact RUN MM descriptor cause (2026-11-04)
 
 - [x] Saturate the real PDP-6 MM descriptor table through private

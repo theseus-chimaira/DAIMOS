@@ -1,3 +1,31 @@
+## 2026-11-04 v1117: booted stale WAIT/PID after multi-stage fatal release
+
+The disposable 256K PDP-6 v1117 guest extends the validated v1103
+PIPE MM_BUSY / FILE close / HUP-stage / VM / u-area fatal-release
+sequence. Once the faulted child is fully retired and reaped, the
+parent performs 48 repeated WAIT requests and 48 PID-directed TERM
+requests against that exact reaped child. Each must return -1; every
+iteration must leave process-slot and process-word accounting no
+higher than at the start of the post-reap checks. The unrelated
+spinner and foreign held FS-provider lease remain live throughout.
+
+The full boot PASSes, preserving v1103's exact two PIPE frees/one
+physical MM_BUSY, three FILE close calls/two refusals, two HUP-stage
+calls/one refusal, two VM calls, two u-area calls/one refusal,
+one EXIT/CHLD/finalization, no ownership errors, and 36 counted
+bystander cycles. This is independent evidence against duplicate
+WAIT and stale event delivery following the multi-stage teardown.
+
+The initial test tried creating new child processes after the FS
+provider was deliberately held. RUN legitimately requires that same
+serialized provider to load an executable, so that design made no
+post-fault progress; it was replaced with provider-independent
+stale-WAIT/event checks, not a production workaround. The accepted
+test does not establish numeric PID reuse or all concurrent P0-E
+cross-products. Full P0-D/E and the final P0-F enable decision remain
+OPEN. Production kernel code, resident RAM, MRES and OOM default are
+unchanged.
+
 ## 2026-11-04 v1116: booted direct RUN descriptor-pressure cause -3
 
 Two independent disposable 256K PDP-6 guests PASS with actual

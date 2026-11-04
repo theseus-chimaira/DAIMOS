@@ -1,3 +1,15 @@
+## 2026-11-04 v1117: booted fatal teardown plus stale PID/WAIT checks
+
+The extended v1103 disposable PDP-6 guest executes real PIPE MM_BUSY,
+FILE/HUP-stage/VM/u-area refusal and retry while keeping an FS lease
+and unrelated runnable bystander. After the dying child is reaped,
+48 repeated stale WAIT and PID-directed TERM requests return -1,
+with process-slot and MM-word counts never increasing above the
+post-reap baseline. The original finalization, provider, and
+bystander counters also PASS. No production code, data, MRES or
+default OOM change. Numeric PID reuse and the larger P0-D/E fault
+matrix remain open; v1117 is an integrated liveness subset only.
+
 ## 2026-11-04 v1116: direct booted RUN -3 MM cause verification
 
 v1116 uses private booted PDP-6 kernel copies to observe real
