@@ -1,3 +1,31 @@
+## 2026-11-04 v1126: D13 nested fatal/rollback acceptance remains OPEN
+
+An opt-in testkit `daimos-fatal-exec-apr-run-v1126.sh` now builds an
+isolated 256K guest combining genuine post-commit EXEC VM destruction,
+test-injected VFS FILE-close refusals on the preserved process-private
+kernel continuation, a second child's real APR protection fault,
+and a subsequent invalid-fd-map unpublished RUN rejection with
+unchanged parent process-slot/word accounting. The APR WAIT status
+must be flagged TERM, as established by v889; an initial expectation
+of plain status 1 was corrected in the guest, not in production.
+
+The guest reaches `<EAR` and observes the EXEC provider ultimately
+accept one close after four refusals (5 VFS calls, descriptor/witness
+cleared, one EXIT entry, zero ownership-error counters). However the
+parent's later bounded NOHANG WAIT did not see the EXEC child reaped;
+the guest emitted `<EAR1!t` and stopped. A diagnostic-only follow-up
+with extra finalizer instrumentation instead encountered `<EA` plus
+a simulator UUO and timeout, so it cannot be used to assert either
+a production fault or a successful recovery. Neither run meets D13.
+
+The `daimos-testkit` STATUS records the failed variants precisely.
+Existing v893/v895 full-system physical RUN VM/u-area MM_BUSY tests
+are independent evidence, not a combined D13 result. Diagnose the
+final child/WAIT/clock stage and the test-only tracing before adding
+physical rollback MM_BUSY in the integrated guest. D13, D14-D16,
+P0-E and P0-F remain OPEN. OOM remains disabled in production;
+no production code, RAM, ABI or MRES layout changed by v1126.
+
 ## 2026-11-04 v1125: booted wrong-owner MM while foreign FS lease held
 
 The accepted 256K PDP-6 disposable guest combines two separately

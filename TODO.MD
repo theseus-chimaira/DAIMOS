@@ -1,3 +1,29 @@
+## v1126: D13 integrated APR/EXEC/failed RUN investigation (OPEN)
+
+- [x] Add an opt-in disposable full-PDP-6 test that starts a real
+  post-commit fatal EXEC owner, retains its private FILE-close owner
+  across injected VFS refusals, runs an independent genuine APR fault
+  and verifies flagged TERM WAIT, and forces a child RUN to reject
+  its real fd map before publication without changing the parent's
+  MM process-slot/word accounting.
+- [x] Observe successful recovery of the isolated EXEC owner's
+  VFS FILE-close provider after 4 refusals/5 calls, with original
+  descriptor and witness cleared and one owner EXIT entry. Distinguish
+  this from full process finalization: the combined parent NOHANG
+  WAIT still failed to see the child reaped (`<EAR1!t`).
+- [ ] D13: Determine whether the remaining child is in a valid
+  PREVM/post-VM deferred-finalizer state, has an incorrect WAIT parent
+  or an erroneous test-only finalizer hook. Confirm the real reason
+  for the separately instrumented `<EA`/UUO timeout before altering
+  production; do not replace the kernel's checked release with a
+  forced success or raise the retry duration without a stage proof.
+- [ ] Add and verify a genuine MM pin/refusal/retry for the failed
+  unpublished RUN in the *same* guest; existing v893/v895 full-system
+  tests establish only independent VM/u-area rollback safety.
+- [ ] Rebuild and boot original v890 mode after the extended fixture
+  change, finish the combined final WAIT/slot/VM exact-once check,
+  and only then mark D13 checked. Production OOM remains OFF.
+
 ## v1125: genuine wrong-owner MM plus foreign FS lease (2026-11-04)
 
 - [x] Boot a disposable full PDP-6 guest with the actual slot-2
