@@ -1,5 +1,15 @@
 ## v1126: D13 integrated APR/EXEC/failed RUN investigation (OPEN)
 
+- [ ] **P0 v890 baseline regression (v1126r1):** The exact original
+  v890 full PDP-6 test (source restored from committed testkit, not
+  the v1126-extended generator) prints `<E` and times out under both
+  its original 65-second limit and a separate 180-second host-only
+  timeout extension. Rebuild a diagnostic-only baseline tracing
+  `proc_exit_finish`, owner/non-owner finalization, exact original
+  FILE and VM/u-area disposition, pending PI6 reaper and WAIT state.
+  Distinguish a real production regression from simulator progress
+  before modifying production. A longer timeout alone did not fix it.
+
 - [x] Add an opt-in disposable full-PDP-6 test that starts a real
   post-commit fatal EXEC owner, retains its private FILE-close owner
   across injected VFS refusals, runs an independent genuine APR fault

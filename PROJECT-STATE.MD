@@ -1,5 +1,22 @@
 ## 2026-11-04 v1126: D13 nested fatal/rollback acceptance remains OPEN
 
+**v1126r1 baseline requalification:** The exact, unmodified v890
+test C and shell source from the previously committed daimos-testkit
+revision was restored to an isolated TMPDIR fixture and rebuilt
+against the current DAIMOS production tree. It timed out after
+printing `<E` with its original 65-second simulator limit. A second
+independent disposable guest used the identical original sources,
+changing only the host timeout to 180 seconds; it also printed `<E`
+and timed out (SIMH exit 124, SIGTERM, PC 016424 octal in that run).
+This disproves the hypothesis that the *new v1126 guest extension
+alone* caused the observed EXEC owner noncompletion or that merely
+increasing the 65-second timeout is sufficient. It does NOT prove
+whether the remaining failure is in production finalization, the
+PI6/clock/reaper path, or simulator-specific progress. The baseline
+must be investigated directly before accepting D13 or changing
+the production policy. The original v890 test is not currently a
+passing full-system regression on this configuration.
+
 An opt-in testkit `daimos-fatal-exec-apr-run-v1126.sh` now builds an
 isolated 256K guest combining genuine post-commit EXEC VM destruction,
 test-injected VFS FILE-close refusals on the preserved process-private
