@@ -1,3 +1,20 @@
+### v1120: actual numeric PID reuse after real physical OOM (2026-11-04)
+
+- [x] Boot independent 256K PDP-6 default-OOM-disabled and test-only
+  OOM-enabled guests through real physical BRK exhaustion, requester
+  completion/fatal retirement, surviving blocked witness and WAIT.
+- [x] After exact MM/slot recovery, RUN and reap 24 alternating-status
+  children; require the same numeric PID for all 23 adjacent pairs,
+  the correct status 062/063 for every WAIT, failed stale WAIT/TERM
+  between lifetimes and exact post-OOM MM/slot baseline each cycle.
+  Both full guest modes PASS; C89 and kernel ABI remain unchanged.
+- [x] Native real XIP/VM v1109 and transitive release audit v1087
+  rerun PASS. This closes sequential numeric PID reuse, not the
+  in-flight concurrent multi-provider and pressure cross-products.
+- [ ] Finish physical XIP/VM and DISK-bitmap mixed ownership across
+  distinct processes, long-duration concurrent fault/liveness cases,
+  and full P0-D/E/F acceptance before enabling production OOM.
+
 ### v1119: booted PIPE plus DPY physical session HUP (2026-11-04)
 
 - [x] Combine the separate v1104 PIPE and v1105 Type-340 DPY final-

@@ -1,3 +1,30 @@
+## 2026-11-04 v1120: real numeric PID reuse following physical OOM
+
+Two independent booted 256K PDP-6 guests PASS with genuine BRK
+physical-memory exhaustion, one with ordinary production-default
+OOM disabled and one with requester OOM enabled only in a private
+test image. After the exhausted requester completes (returns -1 when
+disabled, is fatally retired when enabled), the unrelated blocked
+witness runs and both children are reaped. Parent process slots and
+MM words return to the original baseline.
+
+The same parent then RUNs and reaps 24 new children with alternating
+distinct exit statuses 062/063 octal. All 23 consecutive child pairs
+reuse exactly the same numeric PID, demonstrating real slot recycling
+and proper WAIT identity across lifetimes. Between children, stale
+WAIT and PID-directed TERM return -1; process slots and process words
+remain exactly at the post-OOM baseline after every reap. A PID is an
+8-bit process slot, not a persistent generation number: an old PID
+may validly identify a different child after reuse, so no stale event
+is sent while that number is assigned to the new process.
+
+The unmodified v1109 native XIP/VM release/repair tests and v1087
+fatal allocation-free teardown audit also PASS. This closes the
+sequential numeric reuse subgate under both OOM policies, but not
+concurrent multi-provider fault/liveness acceptance. No production
+KCore, MRES, persistent storage, syscall ABI or default policy changed.
+P0-D/E/F remain OPEN; production requester OOM remains disabled.
+
 ## 2026-11-04 v1119: physical PIPE and Type-340 DPY in one session HUP
 
 The full 256K PDP-6 v1119 disposable guest gives the same second

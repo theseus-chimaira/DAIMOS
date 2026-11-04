@@ -1,3 +1,32 @@
+## 2026-11-04 v1120: booted numeric PID recycling after OOM
+
+The `daimos-oom-pid-reuse-v1120` regression boots complete disposable
+256K PDP-6 images under both OOM-disabled and test-only enabled
+policies. The v1075 real physical exhaustion requester behaves
+correctly in both: the disabled guest returns BRK -1, while the
+enabled guest kills only the true exhausted requester. The blocked
+independent witness survives and is reaped; exact parent process
+slot and process-word accounting returns to baseline.
+
+Each guest then sequentially creates and reaps 24 new processes with
+alternating 062/063-octal exit statuses. All 23 adjacent child pairs
+reuse the exact numeric PID after the prior process has finished.
+Every repeated WAIT and directed TERM issued *after reap and before
+the next RUN* returns -1; every iteration returns to the same MM
+process-slot and process-word baseline. The simulator outputs are
+`<DNWQP` (default off) and `<KWQP` (private enabled), both PASS.
+This proves live numeric PID reuse rather than merely repeated
+requests to an already-reaped, never-reallocated slot. It does not
+invent a PID generation contract or claim stale PID handles remain
+invalid after another process legitimately occupies the number.
+
+The v1109 real MEMFS XIP/VM native fixture and v1087 transitive
+teardown scope audit also PASS on current source. Testkit adds C89
+guest logic, two dedicated Make targets and optional P0D_FULL rows;
+the production kernel, linked memory footprint, MRES, process ABI,
+and disabled OOM gate remain unchanged. Complete P0-D/E mixed fault
+liveness and final P0-F policy activation are still OPEN.
+
 ## 2026-11-04 v1119: actual PIPE plus DPY session-HUP release faults
 
 Two independent full 256K PDP-6 boot runs PASS the new testkit
