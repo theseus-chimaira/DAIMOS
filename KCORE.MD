@@ -1,3 +1,14 @@
+## 2026-11-04 v1112: booted negative failed-RUN case
+
+The full 256K v1075 guest has an opt-in v1112 missing-executable RUN
+case: the parent receives -1 without allocating a child slot or
+changing process-MM accounting. It then passes the v1110 invalid
+BRK cases, genuine physical-OOM requester, and blocked bystander.
+Both disabled-policy and disposable enabled-policy PDP-6 boots PASS;
+only genuine physical exhaustion kills the requester when enabled.
+No production KCore/MRES/ABI changes. Booted fragmentation, MM
+descriptor exhaustion and memory-pressure failed RUN remain open.
+
 ## 2026-11-04 v1111: actual MM allocator error classes
 
 Source-linked native PDP-6 `mm_alloc_aligned_noreclaim` distinguishes

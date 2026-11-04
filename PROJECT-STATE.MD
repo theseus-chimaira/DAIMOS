@@ -1,3 +1,24 @@
+## 2026-11-04 v1112: booted failed child RUN with OOM disabled and enabled
+
+The optional v1112 real 256K PDP-6 guest extension tries a complete,
+syntactically valid RUN V2 request to a nonexistent absolute executable.
+The request returns -1 before any child is published. The parent
+checks unchanged process-slot and MM process-word accounting, then
+continues through the v1110 below-floor/address-limit BRK negatives
+and the original v1075 genuine physical OOM requester/witness case.
+
+Two separately booted images PASS. Production default disabled:
+`<RILDNWP`, with the physical-OOM request returning -1. Test-only
+OOM enabled: `<RILKWP`, with only the genuinely exhausted requester
+fatally retired. The invalid RUN and invalid BRKs never cause a fatal
+event, the independent blocked witness survives, all WAIT statuses
+are as expected, and final MM accounting returns to the baseline.
+
+This certifies a missing-executable RUN rejection, not an allocation-
+pressure RUN failure. P0-F still requires booted MM descriptor and
+fragmentation failures through BRK/RUN before enabling production OOM.
+No production code, resident data, MRES, ABI or default policy changed.
+
 ## 2026-11-04 v1111: real MM shortage, fragmentation and descriptor limits
 
 The native PDP-6 v1111 regression links actual production

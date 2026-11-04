@@ -1,3 +1,16 @@
+### v1112: booted P0-F failed RUN validation negative (2026-11-04)
+
+- [x] Boot two 256K PDP-6 test images: ordinary default-disabled OOM
+  and a disposable OOM-enabled image. In both, a valid RUN V2 request
+  naming a nonexistent executable returns -1 with unchanged parent,
+  process slots and process-memory words. Parent, v1110 BRK-negative
+  children, real physical-OOM requester and bystander behave exactly
+  as expected. Both sets of WAIT outcomes and final MM counters PASS.
+- [ ] This does not cover a RUN that fails specifically because MM
+  descriptors or contiguous core are exhausted. Continue physical
+  descriptor/fragmentation fault acceptance through BRK and RUN,
+  P0-D/E cross-product tests, and the production enable decision.
+
 ### v1111: native MM resource-cause classification (2026-11-04)
 
 - [x] Link real PDP-6 `mm_find_fit`, `mm_extent_insert` and
