@@ -512,7 +512,13 @@ vm_space_destroy:
         jumpn   3,vm_space_destroy_fail
 vm_space_destroy_mode_ok:
         move    1,-1(17)              ; restore descriptor for MM teardown
-        hrrz    3,1(1)
+        ; A post-commit fatal EXEC has already destroyed its old VM.
+        ; VM_SPACE_NONE is the *full* -1 word, not an MM base 0777777.
+        ; Skip only the physical free; still detach any backing record.
+        move    3,1(1)
+        camn    3,[-1]
+        jrst    vm_space_destroy_detach
+        hrrz    3,3
         jumpe   3,vm_space_destroy_detach
         ; MEMFS XIP belongs to its MRES, not MM_TYPE_PROCESS. Query the
         ; existing movable-provider gateway; unloaded provider returns -1,
