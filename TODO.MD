@@ -1,3 +1,20 @@
+## v1125: genuine wrong-owner MM plus foreign FS lease (2026-11-04)
+
+- [x] Boot a disposable full PDP-6 guest with the actual slot-2
+  u-area MM descriptor changed to an invalid slot-3 owner at its first
+  real `mm_free` call. All seven retries return physical MM -4; no
+  fabricated return value or forced process release. A separate slot-4
+  process acquires the production serialized filesystem-provider lease,
+  retains its private kernel continuation and sleeps with the lease
+  held. Both the first MM refusal and final HALT observe the real
+  `fs_provider_ready` word `5,,0`. The faulting slot remains unreaped,
+  WAIT(NO-HANG) refuses a premature result, spinner advances, and
+  there is no double release, wrong-owner free or test error.
+- [x] Preserve v1101's original wrong-owner mode separately; include
+  v1125 in the optional full P0-D boot matrix. D13-D16, sustained
+  P0-E and P0-F sizing/activation remain open. Production OOM OFF;
+  every v1125 hook and counter is disposable test-only state.
+
 ## v1124: physical TTY/HUP, VM and u-area release across real EXIT (2026-11-04)
 
 - [x] D11: Full 256K PDP-6 guest proves a real last-session canonical
@@ -125,8 +142,8 @@ not permission to bypass the final combined regression. See
 - [x] D11: Booted physical canonical TTY -5 across user-side HUP,
   process VM and post-VM u-area retry, with the original session
   preserved and all three physical MM refusals repaired (v1124).
-- [ ] D12: Booted unrecoverable wrong-owner -4 combined with a live
-  foreign provider; no forced finalization or slot recycling.
+- [x] D12: Booted unrecoverable wrong-owner -4 combined with a live
+  foreign provider; no forced finalization or slot recycling (v1125).
 - [ ] D13: Booted nested APR/EXEC fatal request and unpublished RUN
   rollback across failed FILE/HUP/VM or swap backing ownership.
 - [ ] D14: Mixed PIPE/DPY/VM/u-area plus provider-lock fault in one

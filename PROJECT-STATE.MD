@@ -1,3 +1,32 @@
+## 2026-11-04 v1125: booted wrong-owner MM while foreign FS lease held
+
+The accepted 256K PDP-6 disposable guest combines two separately
+proven real production behaviors. Slot 2's genuine u-area MM extent
+is changed once to the wrong owner in the actual MM descriptor table;
+the unchanged `mm_free` checks then return -4 on all seven real
+reaper attempts, leaving the correct process/u-area and WAIT state
+unreaped. Independently, slot 4 enters the actual serialized FS
+gateway and holds its original lease and private process stack across
+80 scheduler-yielding sleeps. `fs_provider_ready` contains `5,,0`
+both during the targeted MM free and at HALT. Slot 3's independent
+spinner advances; six reaper visits, one real APR fault, one wrong-
+owner poison, zero synthetic MM returns and zero test errors are
+observed. The initial guest used the historical immediate-F marker
+assertion despite delayed F; its MM/FS counters passed but the
+outdated transcript check failed. The corrected test also samples
+the lease at the MM refusal and PASSes in a separately rebuilt guest.
+
+D12 is checked: **34/65 mandatory OOM gates complete, 31 OPEN**,
+29 are pre-activation blockers and F12/F13 are post-signoff actions.
+The original v1101 wrong-owner guest was independently rebuilt and
+rebooted on the same source: PASS with seven -4 returns and original
+WAIT quarantine. The entire source-linked v1096 P0-D matrix PASSes;
+the larger `P0D_FULL=1` boot matrix has not yet been rerun as a whole.
+v1125 is now included in that optional full matrix. All additions are testkit
+only (kernel-copy probes, user guest and counters); production KCORE,
+MRES, memory footprint, ABI and the disabled OOM switch are untouched.
+The remaining D13-D16 and whole-system P0-E/F gates remain OPEN.
+
 ## 2026-11-04 v1124: booted physical TTY, process VM and u-area MM_BUSY
 
 The DAIMOS OOM enablement checklist now has **33/65 mandatory

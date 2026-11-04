@@ -1,3 +1,15 @@
+## 2026-11-04 v1125: physical MM -4 with foreign provider lease
+
+The full PDP-6 disposable guest combines an actual wrong-owner MM
+descriptor with a foreign process holding the genuine serialized FS
+lease. Seven physical `mm_free` refusals retain the original process
+u-area and pending WAIT; a distinct slot-4 provider process retains
+its private kernel stack/lease `5,,0` during the refusal and through
+HALT, while the scheduler advances the unrelated slot-3 spinner.
+No forced close, forced unlock or premature slot reuse occurs. The
+test-only kernel-copy assembly adds no production KCORE or MRES
+words; default OOM stays OFF. D12 closed, D13-D16 and P0-E/F open.
+
 ## 2026-11-04 v1124: actual physical TTY/VM/u-area teardown chain
 
 The full 256K PDP-6 v1124 guest PASSes three distinct genuine MM
