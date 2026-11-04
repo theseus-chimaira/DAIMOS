@@ -1,3 +1,17 @@
+## 2026-11-04 v1143: D15 excludes unscheduled XIP process launch
+
+The current scope verifier v1123 PASSes production RUN/EXEC writable
+startup and all six unsafe mutations. Fresh source-linked PDP-6
+regressions v1108 (MEMFS MRES XIP/MM ownership/refusal) and v1109
+(VM destroy through XIP provider, retry and VM_NONE) both PASS,
+including rejection of their unsafe mutations. XIP provider release
+support is real, but an XIP process is not admitted by ordinary
+production EXEC/RUN. Accordingly, D15 is accepted for the current
+requester-only BRK OOM scope with scheduled XIP processes excluded;
+the separately required trusted XIP process-launch work X03-X08 is
+NOT implemented or waived for DAIMOS release. The OOM gate remains
+OFF; no kernel code, KCORE/MRES RAM or ABI changed.
+
 ## 2026-11-04 v1142: D13 physical unpublished RUN u-area rollback
 
 The disposable 256K PDP-6 nested APR/EXEC/failed-RUN test now

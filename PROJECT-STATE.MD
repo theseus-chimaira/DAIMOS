@@ -1,3 +1,16 @@
+## 2026-11-04 v1143: D15 scope closure, XIP process admission excluded
+
+Fresh native testkit v1108/v1109 MEMFS XIP release tests PASS, with
+their unsafe mutants rejected. The v1123 scope/mutation audit also
+PASSes: ordinary production EXEC/RUN cannot admit an XIP process,
+and requester-only BRK OOM remains disabled. The current OOM
+acceptance explicitly EXCLUDES scheduled XIP processes. D15 is
+therefore checked, making 36/65 mandatory checks complete; 29
+remain open (27 pre-enable plus F12/F13). This does not close the
+separate DAIMOS 0.9 trusted-XIP-launch requirements X03-X08.
+D14/D16, C04, E/F and RAM/signoff work remain open. No resident
+kernel, MRES, permanent data or ABI change.
+
 ## 2026-11-04 v1142: D13 integrated physical MM_BUSY rollback passes
 
 With v1141's corrected cross-object fold/link validation installed,

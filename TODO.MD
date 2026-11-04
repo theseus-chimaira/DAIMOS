@@ -1,3 +1,16 @@
+## v1143: D15 XIP scope verified and excluded (2026-11-04)
+
+- [x] Verify production RUN and EXEC still use writable VM startup:
+  v1123 scope audit PASS including all six unsafe mutations.
+- [x] Rerun current source-linked MEMFS MRES XIP fault/retry tests
+  v1108 and v1109; both PASS with unsafe mutations rejected.
+- [x] Keep scheduled XIP processes explicitly EXCLUDED from the
+  requester-only BRK OOM activation scope. D15 is complete for this
+  scope; production trusted XIP launch X03-X08 remains a separate
+  release prerequisite and cannot be counted as implemented.
+- [ ] Continue D14/D16, C04, E/F and full RAM measurements before
+  changing the production-disabled OOM policy.
+
 ## v1142: real-MM_BUSY nested RUN rollback (2026-11-04)
 
 - [x] Boot complete APR/EXEC/late unpublished-RUN guest with a pin on
@@ -332,7 +345,7 @@ not permission to bypass the final combined regression. See
   rollback across failed FILE/HUP/VM or swap backing ownership.
 - [ ] D14: Mixed PIPE/DPY/VM/u-area plus provider-lock fault in one
   boot, with exact release order and zero premature parent WAIT.
-- [ ] D15: Decide XIP scope: if production EXEC/RUN cannot admit an
+- [x] D15: Decide XIP scope: if production EXEC/RUN cannot admit an
   XIP process, keep it explicitly out of this release and rerun
   v1108/v1109; if enabled, complete separate X01-X08 below first.
 - [ ] D16: Verify final exact-once FILE/PIPE/DPY, TTY, VM, SWAP,
