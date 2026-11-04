@@ -1,3 +1,42 @@
+## 2026-11-04 v1122: actual cross-owner PIPE MM and DISK bitmap refusal
+
+The new testkit `daimos-session-hup-pipe-swap-v1122` full 256K
+PDP-6 guest PASSes with two separate actual resource-release faults
+within one leader's session teardown. The first session member
+retains a private PIPE. Its first HUP attempts real typed MM free;
+an injected physical MM pin makes it return -5. The initial HUP
+fails without committing FILE/PIPE ownership or TTY/session release.
+The next HUP revisits that member once, unpins/frees the exact PIPE
+and continues to a distinct second member. The second member has
+a genuine DISK backing record created by normal SWAP MRES swap-out.
+Its real bitmap verifier rejects a test-corrupted physical allocation
+bit, retains the original record and block accounting, and slot 0's
+clock-backed PREVM retry later restores the bit and releases once.
+
+Counters in the boot: PIPE calls=2, physical pin=1, MM_BUSY=1,
+unpin=1, free=1, owner errors=0; first member HUP repeats=1,
+pending commit=1; swap-outs=1, bitmap verifier calls=2,
+corrupt=1, restore=1, backing free=1 and swap errors=0. At final
+HUP, the original slot 4 DISK record is zero and backing-block
+usage is restored to baseline. First-member pinned u-area has one
+pin and one unpin. All intermediate nonwaitable leader, final
+leader/member WAIT and foreground TTY tests PASS. Three leader
+HUP attempts intentionally reach the two distinct physical faults.
+
+Unlike v1121, this scenario really reaches the checked DISK bitmap
+failure while a different member has also failed its physical PIPE
+close. The two original v1104 and v1107 tests remain available in
+unchanged single-provider modes. All hooks/observability are scoped
+to disposable test images; the production kernel, MRES size, RAM,
+ABI and disabled OOM flag remain unchanged. Booted MEMFS XIP,
+long-running mixed-provider liveness and complete P0-D/E/F
+acceptance remain OPEN.
+After the v1122 combined guest PASS, the original 256K v1104 PIPE-only
+and v1107 bitmap-only guests were rebuilt and independently booted.
+Both PASS their previous exact pin/busy/release and bitmap-verifier
+corrupt/restore/checked-detach counters respectively. No baseline
+regression, production change or new resident RAM was introduced.
+
 ## 2026-11-04 v1121: booted DPY MM_BUSY with real DISK out/in lifecycle
 
 The full disposable 256K PDP-6 v1121 mixed session guest PASSes with

@@ -1,3 +1,38 @@
+## 2026-11-04 v1122: physical PIPE refusal plus real DISK bitmap failure
+
+A disposable 256K PDP-6 full guest now exercises *both* actual
+release errors in the same session-HUP teardown, with distinct
+process owners. First-member slot 3 owns an ordinary private PIPE;
+the first HUP reaches its genuine final FILE/PIPE MM release and
+gets physical MM_BUSY (-5) from a test-only MM pin. The first HUP
+returns -1 without discarding ownership. On the next HUP, the
+original first member is revisited once, unpins/frees that exact
+PIPE and commits. The independently owned second member (slot 4)
+then performs a real SWAP-MRES-backed DISK swap-out. Its actual
+checked bitmap verifier refuses because the test has temporarily
+cleared one allocated backing bit. The next slot-0 PREVM retry
+repairs the bit and releases the original DISK extent/record once.
+
+Full-system counters PASS: PIPE calls=2, one pin, one MM_BUSY, one
+unpin and one true free, zero owner errors; first member HUP
+repeats=1; one real swap-out; verifier calls=2, one actual bitmap
+fault and one exact repair; one backing free, zero swap errors,
+zero final DISK record/blocks. The pinned first-member u-area,
+intermediate nonwaitable leader, three leader HUP attempts, final
+leader/member WAIT statuses and TTY handoff all PASS. This is the
+genuine DISK-bitmap overlap absent in the v1121 same-member DPY
+swap-out/restore path. No fake MM/bitmap return code is used.
+
+The test-only source generator composes the existing v1104 and
+v1107 kernel hooks and keeps the single-provider modes unchanged.
+No production KCore/MRES code, RAM, process ABI or OOM activation
+changed. P0-D now has physical PIPE+DISK bitmap cross-owner
+evidence, but booted MEMFS XIP, prolonged provider contention,
+full P0-E liveness and P0-F activation remain OPEN.
+The original v1104 PIPE-only and v1107 physical bitmap-only full
+guest regressions were independently rebuilt after the combined
+test-generator update and PASS their original exact assertions.
+
 ## 2026-11-04 v1121: physical DPY release across DISK swap restore
 
 The disposable 256K PDP-6 v1121 guest combines a real Type-340

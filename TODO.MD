@@ -1,3 +1,23 @@
+### v1122: real PIPE MM_BUSY and distinct DISK bitmap failure (2026-11-04)
+
+- [x] Combine a resident first member's physical PIPE final-close
+  MM_BUSY with a separate second member's actual DISK swap bitmap
+  verifier refusal in one session-HUP sequence. Require a retry of
+  the first exact PIPE owner before reaching the second DISK owner.
+- [x] Full 256K PDP-6 guest PASS: PIPE pin/busy/unpin/free each once,
+  two calls/zero wrong-owner errors, one first-member HUP revisit;
+  real SWAP-MRES swap-out and two original bitmap-verifier calls,
+  one deliberate on-disk backing-bit refusal and exact repair,
+  one final backing free and zero leaked record/blocks. WAIT, TTY,
+  original u-area pin and delayed completion all PASS.
+- [x] Independently rebuild and boot both original v1104 PIPE-only
+  and v1107 DISK bitmap-only full-system regressions against the
+  extended generator. Both PASS with unchanged owner, fault/repair,
+  pinned-u-area, WAIT and foreground-TTY assertions.
+- [ ] Continue with booted actual MEMFS XIP, sustained multiple
+  in-flight provider/liveness checks and full P0-D/E/F gates before
+  production requester OOM activation.
+
 ### v1121: DPY release versus real DISK swap-out/restore (2026-11-04)
 
 - [x] Compose v1105 physical Type-340 DPY final-close MM_BUSY with
