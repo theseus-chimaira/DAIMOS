@@ -1,3 +1,40 @@
+## 2026-11-04 v1106: booted physical process-VM MM_BUSY and owner retry
+
+P0-D gains a booted real-MM process-VM release refusal in the existing
+v997 held-provider/WAIT/bystander guest, with fault injection restricted
+to a disposable 256K PDP-6 kernel image in daimos-testkit. This mode
+replaces v997's synthetic initial `vm_space_destroy` rejection: the
+first slot-5 VM teardown physically pins the actual MM_TYPE_PROCESS
+extent recorded in the process VM descriptor (base `0752000` octal).
+The unchanged `vm_space_destroy` queries XIP ownership through its
+provider gateway and then calls production `mm_free` on that extent,
+which returns MM_ERR_BUSY (-5) because the extent is physically pinned.
+The PREVM/FINALIZE owner survives for slot-0 retry, without releasing
+the original process VM or prematurely publishing VM_SPACE_NONE.
+
+On the second VM destroy, the test unpins the *same* extent. Production
+`mm_free` validates the exact owner/type and deletes it once, then the
+real `proc_swap_detach` stage executes once and VM_SPACE_NONE commits.
+This is a resident process with no allocated disk-swap backing: it does
+not establish the disk-swap bitmap failure path. The existing v997
+test simultaneously refuses FILE close twice, retains a genuine live
+foreign FS-provider lease, and rejects the first actual u-area MM free
+(-5) before successful slot-0 completion. The independent bystander
+executes 36 scheduling cycles; one CHLD/EXIT/finalizer commits.
+
+Booted v1106 PASS: VM calls 2; process VM `mm_free` attempts 2,
+physically pin/unpin 1/1, MM_BUSY 1, exact MM delete 1, swap-detach
+stage executions 1, instrumentation errors 0; u-area calls 2 with
+one real MM_BUSY; FILE calls 3/refusals 2; bystander 36, one CHLD and
+one EXIT, no provider ownership errors. The unmodified v997 booted
+guest and the optional v1103 multistage booted guest both rerun PASS;
+the native v1096 release-stage matrix PASS. All hooks and counters are
+test-only; production source,
+KCore low endpoint (`023171` octal), resident data and OOM policy are
+unchanged. P0-D/E/F remain OPEN for physically held MEMFS-XIP and
+allocated disk-swap backing, broad PID/WAIT/leak cross-products and
+combined OOM activation gates.
+
 ## 2026-11-04 v1105: booted physical session HUP and Type-340 DPY MM refusal
 
 P0-D now has a booted physical Type-340 cross-resource refusal test in

@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1105, 2026-11-04)
+### OOM activation gates (current as of v1106, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -76,6 +76,26 @@ software/device deadlocks remain kernel correctness requirements.
   final anonymous PIPE and FIFO CLOSE while retaining the descriptor,
   references and FIFO list; four unsafe native variants are rejected.
   Full cross-stage fault matrix remains OPEN.
+
+### v1106: booted physical VM extent -5 and committed swap-detach (2026-11-04)
+
+- [x] Extend the original v997 full guest with a v1106 optional mode
+  that pins the actual dying slot-5 process-VM MM extent, rather than
+  returning a synthetic VM failure. The original allocator returns
+  MM_BUSY (-5) and preserves PREVM/FINALIZE and VM ownership.
+- [x] Slot-0 retry physically unpins the exact original extent, then
+  validates and frees it once through real `mm_free`, invokes the actual
+  `proc_swap_detach` once and publishes VM_SPACE_NONE. Counts: two VM
+  calls, two process MM frees, one pin/unpin, one -5 refusal, one
+  successful deletion, one swap-detach execution, zero owner errors.
+- [x] Same booted guest retains two FILE close refusals, a live FS
+  provider lease, one real final u-area MM_BUSY and independent runnable
+  bystander (36 cycles); EXIT/CHLD/finalization once. Native v1096
+  fault-stage matrix, original booted v997 and optional booted v1103
+  multi-stage guest all PASS. No production KCORE, MRES or OOM change.
+- [ ] Swap-detach here handles an *empty* resident backing record;
+  booted failure of allocated DISK backing, physical MEMFS-XIP release
+  and larger WAIT/PID/leak cross-products remain OPEN. P0-D/E/F OPEN.
 
 ### v1105: booted physical member HUP + pinned Type-340 DPY (2026-11-04)
 

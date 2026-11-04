@@ -1,3 +1,24 @@
+## 2026-11-04 v1106: actual process-VM MM refusal and finalizer retry
+
+The v1106 booted 256K guest preserves v997's held FS-provider lease,
+fatal FILE close retries, u-area MM_BUSY and continuously runnable
+bystander, but replaces the first synthetic VM error with a physical
+pin on the exact dying process's resident VM extent. Production VM
+destroy takes its real XIP-provider classification path and calls
+`mm_free` with MM_TYPE_PROCESS / owner 5, yielding MM_BUSY (-5).
+The original VM descriptor and PREVM retry owner survive unchanged.
+On the next slot-0 retry, unpin enables the same MM extent's one actual
+deletion, followed by one production swap-detach stage and VM_NONE
+commit. That swap record is empty; disk-swap failure is not covered.
+
+Booted PASS: 2 VM and process-MM calls, one physical pin/unpin,
+one -5 and one successful MM delete, one swap detach, 2 u-area calls
+with one real MM_BUSY, 3 FILE calls/2 refusals, 36 bystander cycles,
+zero provider errors. Original booted v997, combined booted v1103,
+and native release matrix all PASS. Hooks are test-only;
+KCore remains `023171` octal, no resident allocations or MRES growth,
+production OOM disabled. P0-D/E/F remain open.
+
 ## 2026-11-04 v1105: physical Type-340 HUP/DPY-MM fault stage
 
 The v1105 disposable booted PDP-6 guest extends the real two-member
