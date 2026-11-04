@@ -1,3 +1,25 @@
+## 2026-11-04 v1111: real MM shortage, fragmentation and descriptor limits
+
+The native PDP-6 v1111 regression links actual production
+`mm_find_fit`, `mm_extent_insert` and `mm_alloc_aligned_noreclaim`.
+Two extents in one 010000-word arena leave two separate 02000-word
+gaps. A 05000-word request fails as insufficient total RAM (-1);
+03000 words fails as fragmented (-2) despite 04000 total free; a
+01000-word request finds a gap but fails because both descriptor slots
+are occupied (-3). In all three cases both original extents and the
+extent count remain unchanged. Raising only descriptor capacity from
+two to three permits the same 01000-word request to insert a new
+sorted middle extent. Mutants that collapse -2 or -3 to -1 are rejected.
+
+The separate production BRK-dispatch v1000 native test also PASSes:
+only AC1=-1 together with the physical-shortage cause AC2=-1 triggers
+the opt-in fatal path, not -2 fragmentation or validation failures.
+This v1111 test covers the real allocator failure distinction; it
+does not yet integrate all three errors with a booted BRK requester.
+Production OOM is still disabled and no kernel code, resident RAM,
+MRES or process layout changed. P0-F remains OPEN for booted MM
+fragmentation/descriptor checks, failed-child RUN and P0-A..E gates.
+
 ## 2026-11-04 v1110: booted invalid BRK versus physical OOM classification
 
 The optional v1110 extension of the existing v1075 full 256K PDP-6

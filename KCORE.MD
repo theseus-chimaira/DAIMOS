@@ -1,3 +1,15 @@
+## 2026-11-04 v1111: actual MM allocator error classes
+
+Source-linked native PDP-6 `mm_alloc_aligned_noreclaim` distinguishes
+physical shortage (-1), fragmented free words (-2), and no free extent
+descriptor (-3), with unchanged live extent ownership on failures.
+Expanding only descriptor capacity permits the formerly refused small
+allocation and preserves sorted extent order. Two unsafe error-code
+collapses are rejected. The separate native v1000 BRK-dispatch gate
+also PASSes. There is no change to production kernel memory or OOM
+policy. Booted BRK propagation, fragmented/descriptor negative tests,
+and P0-F completion remain outstanding.
+
 ## 2026-11-04 v1110: booted BRK classification with OOM disabled/enabled
 
 The opt-in v1110 guest mode adds invalid-floor BRK `1` and address-

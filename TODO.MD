@@ -1,3 +1,18 @@
+### v1111: native MM resource-cause classification (2026-11-04)
+
+- [x] Link real PDP-6 `mm_find_fit`, `mm_extent_insert` and
+  `mm_alloc_aligned_noreclaim` to test -1 insufficient total RAM,
+  -2 fragmentation with enough aggregate free words, and -3
+  descriptor-capacity exhaustion with an available fitting gap.
+  Verify failed allocations do not consume the original extents,
+  and allocation succeeds after increasing only descriptor capacity.
+  Two unsafe -2/-3-to--1 mutations rejected. Native v1000 OOM
+  dispatch classification also PASS.
+- [ ] Boot both OOM-disabled and disposable enabled BRK requests
+  with actual fragmented MM and exhausted descriptors; verify no
+  incorrect requester termination, WAIT/PID leak or owner loss.
+  P0-F failed-RUN, P0-D/E and production OOM enablement remain OPEN.
+
 ### v1110: booted P0-F invalid BRK classification (2026-11-04)
 
 - [x] Extend the 256K PDP-6 v1075 requester-only guest in an opt-in
