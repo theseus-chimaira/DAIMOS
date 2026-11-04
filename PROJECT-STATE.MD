@@ -1,3 +1,36 @@
+## 2026-11-04 v1141: unsafe local relocation fold repaired
+
+The original uninstrumented 256K PDP-6 D13 combined APR fatal,
+postcommit EXEC FILE refusal and unpublished failed RUN regression
+now PASSes with corrected installed P10FOLD/DLINK: one late RUN,
+one terminal EXEC ZOMB, no integrity error and normal parent WAIT.
+The historical v890 uninstrumented EXEC/FILE/WAIT regression and
+native v1129 VM_NONE regression also PASS with corrected tools.
+The independently rebuilt v197 RUN rejection control PASSes 16 real
+post-VM failures with stable process ownership, and the second fresh
+uninstrumented combined v1126 guest independently PASSes as well.
+
+P10FOLD had considered local relocations in different DOBJ1 objects
+equal whenever their section/addend numbers matched, even when the
+branch target was outside the fold. The actual broken plan folded
+proc_pdp6's `proc_discard_ok` onto syscall_dispatch's unrelated
+`SETZ/JRST` block. DLINK repeated the same erroneous equivalence.
+Both implementations in pdp10-tools and daimos-tools now require
+identical original object identity for external local references,
+while preserving safe relative in-span targets. Testkit v1141
+reproduces the old invalid fold and forged-link-plan acceptance,
+and passes with each corrected tool tree. A v1141 local.tar.gz
+installed the verified pair under PDP10_PREFIX.
+The corrected post-fold full-guest KCORE low endpoint is `023413`
+octal versus `023411` with the unsafe toolchain, a two-word cost
+for correctness; this is not a dynamic RAM high-water measurement.
+
+No DAIMOS production source, KCORE/MRES data, ABI or OOM setting
+changed. The full D13 MM_BUSY admission-rollback variant, D14-D16,
+P0-E/F stress/signoff and resident RAM audit remain OPEN. Production
+`PROC_OOM_BRK_ENABLED_V1000` remains zero. Earlier debugger-sensitive
+v1138-v1140 observations describe the old broken toolchain only.
+
 ## 2026-11-04 v1140: debugger breakpoints alter D13 outcome
 
 In the latest fresh 256K guest with simulator-only MM-return and

@@ -1,3 +1,20 @@
+## v1141: cross-object fold fix and D13 uninstrumented recovery (2026-11-04)
+
+- [x] Prove the old P10FOLD/DLINK cross-object LOCAL TEXT alias with
+  a two-word distinct-target fixture; corrected analyzer and independent
+  linker verifier both pass testkit v1141 (old tools fail controls).
+- [x] Install corrected binaries under PDP10_PREFIX via versioned
+  `local.tar.gz`; no DAIMOS production source modification.
+- [x] Rebuild original uninstrumented nested 256K APR/EXEC/failed-RUN
+  guest. Its late rollback, parent return, WAIT and EXEC ZOMB now PASS.
+- [x] Rebuild historical v890 EXEC FILE/WAIT and native v1129 VM_NONE:
+  both PASS with corrected tools.
+- [x] Rebuild independent v197 RUN rollback (16 failed post-VM fd
+  maps under three live children) and repeat fresh uninstrumented
+  combined D13 guest: all PASS with corrected tools.
+- [ ] Run remaining independent RUN, physical MM_BUSY rollback and
+  final mixed OOM acceptance; do not enable requester OOM yet.
+
 ## v1140: debugger-sensitive rollback (2026-11-04)
 
 - [x] Fresh stage-level trace with MM-return and rollback-return

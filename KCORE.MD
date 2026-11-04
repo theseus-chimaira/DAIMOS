@@ -1,3 +1,37 @@
+## 2026-11-04 v1141: compiler/linker fold correction repairs nested RUN
+
+The real defect behind the nonreturning D13 nested RUN was an unsafe
+cross-object local TEXT relocation comparison in the installed host
+`p10fold` and `dlink`. The old plan incorrectly merged the two-word
+`proc_discard_ok` (`SETZ 1; JRST proc_discard_return`) with an unrelated
+two-word block from `syscall_dispatch_pdp6` because both local JRST
+addends had the same numeric offset in different objects. The target
+addresses after linking were not equivalent. This is a toolchain bug,
+not an OOM teardown or `mm_free` bug.
+
+Both source tool trees now require same-object identity for local
+section references outside the matched TEXT span, and DLINK independently
+rejects forged invalid plans. Testkit v1141 passes against both new
+tool trees; the old P10FOLD and DLINK each fail the negative control.
+Corrected binaries were installed in PDP10_PREFIX from `local.tar.gz`.
+The fresh uninstrumented 256K nested APR/EXEC/failed-RUN guest now
+PASSes (`late_run=1`, `finish_zombie=1`, `error=0`, parent return and
+WAIT); the historical v890 EXEC/FILE/WAIT guest and native v1129
+sentinel regression also PASS. The offending fold is absent from
+the new link plan (28 instead of 29 folds in this guest profile).
+The independently rebuilt v197 RUN rollback control also PASSes
+16 post-VM fd-map failures with three live children, and a second
+fresh, uninstrumented nested D13 boot reproduces the corrected PASS.
+For this same full-guest profile, `__kcore_low_end` moved from
+`023411` to `023413` octal, an explicit two-word resident TEXT
+increase required to remove the incorrect two-word fold. No data
+words were introduced; total runtime RAM high-water was not measured.
+
+No production kernel source, resident table, ABI or OOM switch was
+modified. The combined physical MM_BUSY unpublished RUN acceptance,
+broader D/E/F checklist and RAM measurement remain outstanding;
+production OOM stays OFF.
+
 ## 2026-11-04 v1140: breakpoint-sensitive D13 completion
 
 An additional fresh 256K full-system trace placed a breakpoint at the
