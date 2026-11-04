@@ -1,3 +1,69 @@
+## v1140: debugger-sensitive rollback (2026-11-04)
+
+- [x] Fresh stage-level trace with MM-return and rollback-return
+  breakpoints reaches late RUN epilogue and EXEC ZOMB=1.
+- [ ] Reproduce original invalid UUO without breakpoints and locate
+  timer/PI6/stack/ownership dependence causing divergent outcomes.
+- [ ] Verify proposed actual production repair against uninstrumented
+  failures, physical MM_BUSY, and earlier RUN/EXEC controls.
+
+## v1139: MM free reached; return remains unproved (2026-11-04)
+
+- [x] Rebuild fresh unmodified-production guest; breakpoint confirms
+  entry to `mm_free` from failed RUN u-area cleanup.
+- [ ] Break at MM-free return and descriptor-clear continuation;
+  distinguish pretrap execution from subsequent trap cleanup.
+- [ ] Validate saved parent stack/syscall return and independent
+  physical MM_BUSY rollback before D13 signoff.
+
+## v1138: stage breakpoints narrow D13 (2026-11-04)
+
+- [x] Run fresh simulator-only breakpoints through real failed RUN
+  rollback; record VM-done and child u-area-release entry.
+- [ ] Identify exact last pre-UUO instruction and check `mm_free`
+  return, descriptor validity and parent kernel-stack integrity.
+- [ ] Reproduce and repair D13 with uninstrumented and independent
+  RUN/EXEC/physical-MM_BUSY controls before any production OOM change.
+
+## v1139: post-slot-trim return investigation (2026-11-04)
+
+- [x] Extend simulator-only D13 trace: late child reaches `mm_free`,
+  `proc_runq_remove`, and `proc_trim_high` before invalid UUO.
+- [ ] Capture late child's stack and return word across slot trimming;
+  determine whether an interrupt, return-address corruption or
+  post-fold branch error prevents `proc_discard_return`.
+- [ ] Validate a source-level fix with fresh uninstrumented D13 and
+  independent RUN/EXEC/physical-MM_BUSY controls. OOM remains OFF.
+
+## v1138: isolate late RUN u-area release (2026-11-04)
+
+- [x] Boot unchanged-production nested D13 guest with SIMH-only stage
+  breakpoints; establish TTY/VM completion and entry into u-area release.
+- [ ] Trace the late child through `mm_free`, u-area completion and
+  return-state handling, distinguishing other child cleanups from the
+  late rejection; fix proven source defect, not code-layout symptoms.
+- [ ] Reboot uninstrumented D13 and independent RUN/EXEC/physical
+  MM_BUSY controls before considering OOM activation.
+
+## v1134-v1137: D13 failure isolated before late RUN epilogue (2026-11-04)
+
+- [x] v1134 unreachable-text placement-only fresh guest reproduces
+  `<EA`/unexpected UUO/zero EXEC ZOMB. This placement change does not
+  produce the v1131 traced success; never ship padding as a fix.
+- [x] v1135 fresh guest samples the existing PDP-6 invalid-UUO and
+  monitor return words; v1136 live SIMH breakpoints show valid saved
+  parent return 350000000104 at the failing claimed-child entry.
+  A 340/350 status prefix is not itself an illegal saved JSR word.
+- [x] v1137 sequential breakpoints enter the late claimed-child
+  rollback in slot 1 with stable user/kernel SP, but its corresponding
+  RUN epilogue breakpoint is never reached before invalid UUO/HALT.
+  Prior v1133 return counts belong to earlier successful RUNs.
+- [ ] Pinpoint which nested `proc_slot_discard` stage loses progress
+  (TTY, VM, u-area, or final cleanup). Retain source bytes, compare
+  before/after scheduler/PI6 states and preserve a fresh uninstrumented
+  failing guest while testing the actual repair. D13 still OPEN;
+  physical MM_BUSY unpublished RUN rollback remains outstanding.
+
 ## v1130-v1133: diagnose nested D13 RUN syscall return (2026-11-04)
 
 - [x] Independently boot v197 and v1130 256K PDP-6 RUN rollback

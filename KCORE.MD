@@ -1,3 +1,85 @@
+## 2026-11-04 v1140: breakpoint-sensitive D13 completion
+
+An additional fresh 256K full-system trace placed a breakpoint at the
+instruction immediately following `proc_uarea_release`'s `mm_free`
+call and at the discard return labels. Unlike the earlier v1138
+stage trace, the new debugger-interrupted guest reached MM return,
+`proc_discard_ok`, discard return and `proc_run_return`, and later
+published EXEC ZOMB=1. The tested production instructions were not
+changed. This is evidence of timing/debugger sensitivity, **not**
+proof that the failing uninstrumented D13 case is fixed. The test
+still reports diagnostic-only; do not count a passing instrumented
+run as release or OOM-activation acceptance. Investigate the
+timing-dependent parent/child scheduling or MM ownership boundary
+using stable before/after records and an uninstrumented control.
+
+## 2026-11-04 v1139: child u-area rollback enters real MM free
+
+A fresh v1138-derived 256K diagnostic with an additional simulator
+breakpoint at linked `mm_free` (002045 octal) PASSed. The late RUN
+failure reached child `proc_discard_retry_uarea_v892`, entered
+`proc_uarea_release`, and entered `mm_free`. MM calls also occur during
+other process lifecycles in this combined guest, so counts without a
+before-UUO slot/stack correlation must not be treated as retries of
+the failed child. An attempted direct reuse of an earlier writable
+guest image instead stopped at `?RT`, and is explicitly discarded as
+evidence. D13 remains open pending release-return/stack verification.
+
+## 2026-11-04 v1138: unchanged-kernel RUN discard stage trace
+
+The testkit's new v1138 SIMH breakpoint-only diagnostic ran against a
+fresh disposable 256K PDP-6 guest. It reached the late
+`proc_run_claimed_bad`, `proc_slot_discard`, new/live descriptor branch,
+TTY/VM rollback, `proc_discard_vm_done`, `proc_discard_retry_uarea_v892`,
+and `proc_uarea_release`. No `proc_discard_ok`, discard return or late
+RUN epilogue was observed before the invalid-UUO trap. Some later
+u-area-release breakpoints are post-trap cleanup for other slots, not
+proof of a retry loop in the failed child. The test is diagnostic-only;
+it does not accept D13 or enable requester OOM termination.
+
+The next source-level check is the MM-free return and the descriptor/
+parent-stack state immediately before and after child u-area release.
+Retain separate PC samples before the UUO and post-trap cleanup, and
+check the actual release return before changing production code.
+
+## 2026-11-04 v1139: u-area MM and slot-trim boundary
+
+The extended disposable 256K D13 guest again reproduced the invalid
+UUO without modifying linked production instructions. Simulator-only
+breakpoints show the late RUN's `proc_uarea_release` reaches `mm_free`,
+then `proc_runq_remove` and `proc_trim_high`. The trace does not hit
+`proc_discard_return` or the late `proc_run_return` before termination.
+Other MM/u-area releases occur elsewhere in the test, so neither a
+double-free nor an MM refusal is established. The remaining investigation
+is the return/interrupt boundary after slot trimming. OOM OFF; D13 OPEN.
+
+## 2026-11-04 v1138: unchanged-kernel nested RUN discard trace
+
+The disposable 256K PDP-6 diagnostic ran one-shot SIMH execution
+breakpoints at post-fold addresses derived from the current build's
+assembler labels and fold map. Production kernel instructions were
+unchanged. The late RUN entered `proc_run_claimed_bad`,
+`proc_slot_discard`, the new-discard and live-slot branches,
+TTY/VM release, `proc_discard_vm_done`, and
+`proc_discard_retry_uarea_v892`. It reached `proc_uarea_release`
+but did not hit discard completion or the corresponding RUN return
+before the original invalid UUO. Earlier RUN returns and unrelated
+u-area releases were also sampled. Do not infer an MM error code or
+allocation failure from the incomplete trace. D13 remains OPEN;
+requester OOM stays disabled and resident code/data remain unchanged.
+
+## 2026-11-04 v1134-v1137: diagnostic-only nested RUN return isolation
+
+Fresh disposable full-system PDP-6 tests verify unreachable-text
+placement does not fix the D13 combined APR/EXEC/RUN invalid-UUO.
+Simulator-only snapshots show the parent enters the late claimed-child
+rollback with an intact saved monitor return, stack pointers and
+slot 1; it never reaches that same RUN's epilogue before the fault.
+Existing earlier successful RUN returns account for the two v1133
+epilogue counters. The failure investigation now targets the nested
+unpublished-child discard. No production code/data, ABI, MRES or
+OOM-policy changes; full D13 acceptance and related D/E/F gates open.
+
 ## 2026-11-04 v1130-v1133: D13 fault isolation without resident changes
 
 The exact v890 full guest and v1129 native double-VM_NONE-destroy

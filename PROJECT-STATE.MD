@@ -1,3 +1,91 @@
+## 2026-11-04 v1140: debugger breakpoints alter D13 outcome
+
+In the latest fresh 256K guest with simulator-only MM-return and
+discard-return breakpoints, the late failed RUN resumes through
+`proc_discard_ok` and the RUN epilogue, and the EXEC ZOMB counter
+becomes one. The immediately preceding v1138 stage-breakpoint guest
+did not reach that return and produced invalid UUO/ZOMB=0. No
+production bytes were deliberately modified in either run. Treat
+v1140 as a timing-sensitive diagnostic and preserve D13 as OPEN;
+neither a breakpoint-induced pass nor source padding is a valid fix.
+
+## 2026-11-04 v1139: fresh MM-free breakpoint in D13
+
+The separately rebuilt 256K diagnostic adds a linked `mm_free`
+execution breakpoint without modifying production code. It confirms
+the failing unpublished child's post-VM u-area-release path invokes
+the real MM-free routine. It does not yet prove successful return or
+descriptor clear, and it does not resolve the invalid UUO. Replaying
+an already booted writable image was invalid (`?RT`); fresh media are
+required for each acceptance run. D13, MM_BUSY and E/F gates remain
+open, with requester OOM disabled.
+
+## 2026-11-04 v1138: nested RUN reaches u-area release
+
+The fresh unchanged-production 256K PDP-6 v1138 SIMH stage-breakpoint
+fixture completes and reports a late failed RUN through claimed-child
+rollback, VM-done and u-area-release entry. It does not reach the late
+RUN return before invalid UUO. Later release calls for slots 1 and 2
+occur after the trap and cannot be interpreted as a failed-child retry.
+No production source, KCORE/MRES/ABI or OOM policy was changed; D13
+and physical MM_BUSY rollback remain open. Next isolate `mm_free` and
+`proc_uarea_release` return state under the same uninstrumented guest.
+
+## 2026-11-04 v1139: late RUN rollback advances through slot trimming
+
+Further unchanged-kernel SIMH breakpoints confirm the late claimed
+child's u-area MM free is followed by runnable-queue removal and
+high-slot trimming. The invalid UUO remains, and the late discard
+return/parent RUN epilogue is not observed. Repeated MM events in the
+full capture are not proven to belong to the same slot. A separate
+versioned testkit v1139 wrapper records the extended release stage
+trace, retaining the narrower v1138 mode. This is diagnostic evidence,
+not a repair or production acceptance. D13 OPEN; OOM remains disabled.
+
+## 2026-11-04 v1138: RUN rollback reached u-area release
+
+Fresh unchanged-production 256K PDP-6 D13 guest with simulator-only,
+post-fold stage breakpoints reproduced late RUN rejection and invalid
+UUO. Its rollback passed TTY/VM release and entered u-area release,
+without visiting discard completion or late RUN return. Three
+`proc_uarea_release` entries in the full capture include other
+processes; this does not establish repeated failure of the late
+child's MM free. The cause remains unproven. D13 remains OPEN,
+production OOM remains OFF, and KCORE/MRES code/data were untouched.
+
+## 2026-11-04 v1134-v1137: late RUN rollback is not returning
+
+The still-OPEN D13 nested APR/EXEC/unpublished-RUN guest was rebuilt
+four more times against unchanged production code. v1134 inserts 043
+octal unreachable text words after the test-only fdmap branch; it
+still prints `<EA`, records one late RUN rejection and zero terminal
+EXEC ZOMB, then hits the same unexpected UUO. This particular code
+placement change does not reproduce v1131's instrumented success.
+
+v1135 builds the uninstrumented guest and samples existing SIMH words
+after HALT. `mach_invalid_uuo_word` is 000000000014 and the saved
+trap return word is 340000774047; post-halt process slot is zero.
+The word's high bits are PDP-6 status flags, not an ordinary 250 JRST
+opcode: a v1136 live breakpoint records a valid return word
+350000000104 in parent slot 1. Do not diagnose corruption from the
+340/350 prefix alone. No source execution is added for these probes.
+
+v1136's first arrangement captured two earlier successful RUN
+epilogues before the late failure. v1137 instead stops at the late
+`proc_run_claimed_bad` with parent slot 1, saved return
+350000000104, user SP 000053002057 and kernel SP 000000046565.
+A second breakpoint at the same RUN's return epilogue is never hit;
+the simulator reaches the invalid UUO and HALT first. Thus the late
+failed RUN does **not** return from its `proc_slot_discard` path;
+the two v1133 RUN-return counts came from earlier successful RUNs.
+
+The next step is to isolate TTY, VM, u-area and discard-return stages
+without source-code instrumentation, then validate any actual source
+fix against fresh uninstrumented and isolated control guests. D13
+remains OPEN; no speculative padding, OOM enablement or new KCORE/
+MRES/ABI data was committed. Mandatory checklist still 34/65 done,
+29 pre-enable blockers.
+
 ## 2026-11-04 v1130-v1133: D13 mapped-RUN return boundary unresolved
 
 The full v890 postcommit-EXEC failure baseline now independently
