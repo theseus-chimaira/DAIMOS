@@ -2,7 +2,7 @@
 
 The optional v1112 real 256K PDP-6 guest extension tries a complete,
 syntactically valid RUN V2 request to a nonexistent absolute executable.
-The request returns -1 before any child is published. The parent
+The request returns -1 with no child slot remaining allocated. The parent
 checks unchanged process-slot and MM process-word accounting, then
 continues through the v1110 below-floor/address-limit BRK negatives
 and the original v1075 genuine physical OOM requester/witness case.
