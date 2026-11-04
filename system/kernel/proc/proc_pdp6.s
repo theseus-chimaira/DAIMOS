@@ -870,12 +870,27 @@ proc_finish_service_discard_v892:
         move    1,10
         pushj   17,proc_slot_discard
 proc_finish_service_result_v892:
-        jumpn   1,proc_finish_service_next_v881
-        movei   11,1
+        jumpn   1,proc_finish_service_failed_v1102
+        movei   4,1
+        ior     11,4                  ; bit 0: a release committed
         setom   proc_sched_kick       ; notify an awakened WAIT parent
+        jrst    proc_finish_service_next_v881
+proc_finish_service_failed_v1102:
+        movei   4,2
+        ior     11,4                  ; bit 1: at least one retry owner
 proc_finish_service_next_v881:
         aoja    10,proc_finish_service_scan_v881
 proc_finish_service_done_v881:
+        ; Keep the shared pending bit set THROUGH the retry scan.
+        ; mark_pending must see the current backoff, rather than mistake
+        ; the temporarily cleared bit for an unarmed EXIT prepublication.
+        ; Clear it only if no owner rejected this entire scan.
+        trne    11,2
+        jrst    proc_finish_service_pending_v1102
+        movsi   4,0400000
+        andcam  4,proc_finish_last_tick_v881
+proc_finish_service_pending_v1102:
+        andi    11,1                  ; retain historical completion ABI
         move    1,11
         jumpe   1,proc_finish_service_return_v881
         pushj   17,proc_has_live_user
@@ -4061,8 +4076,9 @@ proc_idle_loop:
         move    2,(17)
         trne    2,000200
         cono    0004,000200           ; allow disk PI3/PI5
-        movsi   4,0400000
-        andcam  4,proc_finish_last_tick_v881 ; retried failures re-arm
+        ; The reaper itself decides after scanning whether a retry is
+        ; still pending. Clearing this bit here reset every persistent
+        ; -4/-5 refusal to the initial 020-tick delay (v1102).
         pushj   17,proc_finish_service_v881
         move    3,1                   ; last deferred user now gone?
         pop     17,1

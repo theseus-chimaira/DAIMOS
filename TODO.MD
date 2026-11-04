@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1100, 2026-11-04)
+### OOM activation gates (current as of v1102, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -76,6 +76,41 @@ software/device deadlocks remain kernel correctness requirements.
   final anonymous PIPE and FIFO CLOSE while retaining the descriptor,
   references and FIFO list; four unsafe native variants are rejected.
   Full cross-stage fault matrix remains OPEN.
+
+### v1101-v1102: permanent wrong-owner MM and reaper backoff (2026-11-04)
+
+- [x] Booted v1101 wrong-owner test uses the real MM extent table and
+  production `mm_free`: poison only the dying slot-2 u-area extent's
+  owner once (01002 -> 01003). `GETTEARDOWN` reports MM stage and
+  WRONG_OWNER (0402); WAIT/slot reclamation must not commit while the
+  extent is misowned. An independent process keeps running.
+- [x] v1101 initially exposed a real v1098 backoff regression: the
+  idle loop cleared the global pending bit BEFORE running deferred
+  teardown. On repeated -4/-5 refusal, `proc_finish_mark_pending`
+  mistook the cleared bit for a first, unarmed prepublished EXIT and
+  reset the interval to 020 octal on every attempt. The first guest
+  observed 41 invalid frees and 40 idle-reaper calls, exceeding the
+  previously accepted permanent-failure retry bound.
+- [x] v1102 keeps the pending bit asserted during the entire idle
+  retry scan. AC11's unused bit 1 tracks any rejected release; after
+  scanning, clear pending only if no retry failed, and restore AC11's
+  previous completion-result ABI. The existing capped delay therefore
+  doubles 020/040/0100/.../01000 octal on persistent refusal. No new
+  reaper table, permanent words or process state.
+- [x] Native source-linked PDP-6 v1102 validates two failures,
+  exponential backoff and exact successful retirement. Four unsafe
+  variants (including the original early-clear bug) rejected.
+  v881/v1098 finalizer tests and full v1096 native release matrix PASS.
+- [x] Booted 256K v1101 wrong-owner: one actual extent corruption,
+  seven invalid MM frees, six idle-reaper calls, retained owner,
+  no WAIT completion, runnable bystander and zero unrelated errors PASS.
+  Booted v909 physical-pin -5 baseline also PASS: one real pin,
+  seven busy MM frees, six reaper calls, owner retained and bystander.
+- [x] Full production KCC image PASS: `__kcore_low_end` changes from
+  `023162` to `023171` octal (+7 resident words). No BSS or MRES growth.
+- [ ] P0-D still requires a simultaneous multi-provider HUP/PIPE/DPY/
+  VM/swap/u-area stage matrix and further booted owner/WAIT/PID checks.
+  P0-E/F remain OPEN. Production OOM kill remains DISABLED.
 
 ### v1100: retain original DPY old-list MM failure (2026-11-04)
 

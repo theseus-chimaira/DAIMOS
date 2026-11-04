@@ -1,3 +1,51 @@
+## 2026-11-04 v1101-v1102: invalid-owner MM quarantine and idle reaper
+
+P0-D's new booted v1101 physical-MM wrong-owner diagnostic exposed a
+reaper backoff regression despite retaining the correct process/u-area
+owner. In a disposable 256K PDP-6 guest, the MM hook poisons the exact
+dying slot-2 u-area descriptor once (owner 01002 becomes 01003); all
+subsequent original `mm_free` calls therefore return MM_ERR_INVAL -4.
+The process remains quarantined, the MM extent remains allocated and
+the read-only `GETTEARDOWN` detail reports WRONG_OWNER (0402). The
+initial guest nevertheless recorded 41 invalid free attempts and 40
+idle-reaper invocations during the test interval, not the capped
+exponential retry frequency expected from v885.
+
+Root cause: v1098 correctly distinguished a prepublished EXIT
+FINALIZE+PREVM marker without a retry clock from an already armed
+pending owner. But the idle loop still cleared the *shared pending bit*
+before entering `proc_finish_service_v881`, as it had done before the
+v1098 distinction. Every failed retry then observed the cleared bit
+and reinitialized a 020-octal-tick first retry; backoff advancement
+never exceeded the first step. This affected both permanent MM_BUSY
+(-5) and MM_ERR_INVAL (-4), not just the new wrong-owner test.
+
+v1102 fixes the shared retry ownership protocol at the source. Slot-0
+keeps the pending bit set while scanning. The existing saved AC11
+records both completion (bit 0) and any failed retry (bit 1). After
+the full scan, the pending bit is cleared only if no retry owner
+remains refused. Bit 1 is removed before returning, preserving the
+old completion/last-user ABI. `proc_finish_backoff_advance_v885` now
+sees a stable pending decision and doubles 020,040,0100...01000 octal
+on persistent failures. This changes only instructions, no new BSS,
+per-slot retry flags, MM state or MRES module.
+
+Native source-linked PDP-6 v1102 validates two consecutive failures,
+16/32/64-tick backoff and successful retirement. Its four unsafe
+source mutants include the old early-clear path and are rejected.
+Existing v881 and v1098 native finalizer tests and v1096 full native
+release-stage matrix PASS. The repaired booted v1101 wrong-owner guest
+PASSes with one poisoned extent, seven -4 refusals, six reaper scans,
+read-only wrong-owner MM status, no premature WAIT, runnable bystander
+and zero unrelated MM errors. The unchanged v909 pinned-uarea guest
+also PASSes: one physical pin, seven -5 refusals, six scans and live
+owner/bystander. Full 256K production KCC image builds; KCore low
+endpoint moves `023162` -> `023171` octal (+7 code words), with no
+persistent data increase. OOM production kill remains OFF.
+
+P0-D/E/F are not closed: simultaneous multi-resource/provider fault
+and exhaustion negatives still require independent guest acceptance.
+
 ## 2026-11-04 v1100: preserve typed old-DPY-list MM refusal
 
 P0-D found another typed release boundary. `dpy_write_words` keeps

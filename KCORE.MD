@@ -1,3 +1,26 @@
+## 2026-11-04 v1101-v1102: correct capped fatal reaper backoff
+
+A booted PDP-6 wrong-owner MM fault found that clearing the shared
+`proc_finish_last_tick_v881` pending bit *before* slot-0 cleanup made
+the v1098 prepublished-EXIT test classify every failed MM release as
+the first. Permanent -4 or -5 MM errors thus retried at 020 octal
+ticks forever instead of doubling to the 01000-octal cap.
+
+v1102 leaves pending set through `proc_finish_service_v881`, recording
+any failed owner in an unused bit of saved AC11. After scanning all
+eligible slots, the pending bit is cleared only if none refused.
+The old completion/last-user return value is restored before return.
+The existing 36-bit retry-clock word continues to store pending,
+delay and epoch. No new RAM, process, MRES or owner fields.
+
+Source-linked PDP-6 v1102 proves the 020/040/0100 progression and
+retirement, rejecting four unsafe variants; v881/v1098/native P0-D
+matrix PASS. Booted 256K v1101 misowned-uarea and v909 pinned-uarea
+quarantine, WAIT refusal and runnable bystander both PASS (seven
+failed frees, six reaper invocations each). Full KCC image PASS:
+`__kcore_low_end` `023162` -> `023171` octal, seven added code words
+and zero permanent data words. OOM stays OFF; P0-D/E/F remain OPEN.
+
 ## 2026-11-04 v1100: typed DPY rollback without persistent state
 
 The Type-340 `dpy_write_words` old-list replacement failure now
