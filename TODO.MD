@@ -1,3 +1,57 @@
+## v1130-v1133: diagnose nested D13 RUN syscall return (2026-11-04)
+
+- [x] Independently boot v197 and v1130 256K PDP-6 RUN rollback
+  controls: 16 invalid post-VM fd maps with three live children,
+  inherited versus NEW process groups, identical process slot/word
+  accounting, parent recovery and successful subsequent RUN/WAIT.
+- [x] Reboot the uninstrumented nested v1126 guest after the v1129
+  production VM fix: the real late fd-map rejection executes, but
+  `<EA` is followed by simulator UUO `340000774047` before R and
+  no EXEC-child zombie is published. Do NOT close D13.
+- [x] Run disposable v1131 full rollback trace: exactly one child
+  discard/new/VM/u-area/return, no rollback refusal/defer/fail, and
+  correct `<EARH` with one ZOMB. The probes change the observed
+  outcome and are not a safe workaround or production acceptance.
+- [x] Run v1132 BSS-only and v1133 two-counter diagnostics: BSS-only
+  still fails at `<EA`/UUO, and the minimal counters observe one
+  claimed-child rollback plus two RUN return entries (one was the
+  successful APR-child RUN), still without parent R or final ZOMB.
+- [ ] Isolate actual parent APR/user continuation and mapped-user
+  `native_sys_run` return/`vm_user_mapping_release`; distinguish a
+  corrupted saved syscall state, user stack, trap return, or text
+  placement/scheduler interaction. Preserve exact pre/post snapshots
+  and test on an independent fresh boot. No speculative padding.
+- [ ] Finish D13 by combining APR, postcommit EXEC FILE retry,
+  physical MM_BUSY refusal/rollback for an unpublished child RUN,
+  final exact-once owner VM/u-area/ZOMB/WAIT and bystander liveness.
+  Current OOM gate status remains 34/65 mandatory checked and 29
+  pre-enable blockers. Production OOM remains OFF.
+
+## v1129: VM_SPACE_NONE exact sentinel in fatal EXEC release (2026-11-04)
+
+- [x] Repair a real source defect in `vm_space_destroy`: an already
+  destroyed post-commit EXEC VM uses full-word `VM_SPACE_NONE` (-1),
+  whose nonzero RH previously flowed into MEMFS XIP probing and
+  invalid MM free, permanently retaining PREVM/FINALIZE. After the
+  storage-mode safety check, detect the exact *full* sentinel and
+  skip only the physical free, continuing through checked swap
+  backing detach and normal `VM_SPACE_NONE` publication.
+- [x] Source-linked real PDP-6 `daimos-vm-none-idempotent-v1129`
+  verifies two repeated destroy calls, no MM or XIP release, two
+  backing-detach calls, unchanged VM_NONE, and invalid storage-mode
+  rejection; both unsafe sentinel and skipped-detach mutations fail.
+- [x] Independently build/boot the **unmodified historical v890**
+  post-commit EXEC fatal FILE-close guest against the corrected
+  production kernel: PASS, two VFS refusals followed by success,
+  exact FILE owner/VM destruction, eventual EXIT and parent WAIT.
+- [ ] D13 is still OPEN: the more complex v1126 concurrent APR child
+  plus failed unpublished RUN guest reaches `<EA` but then encounters
+  an unrelated simulator UUO before terminal WAIT. Diagnose this
+  separately, add genuine physical VM rollback refusal to the same
+  boot, and pass independent/repeated regressions before checking D13.
+- [ ] Rerun the complete optional `P0D_FULL=1` guest matrix and
+  final OOM-enabled/disabled qualification before production enable.
+
 ## v1126: D13 integrated APR/EXEC/failed RUN investigation (OPEN)
 
 - [ ] **P0 v890 baseline regression (v1126r1):** The exact original

@@ -1,3 +1,73 @@
+## 2026-11-04 v1130-v1133: D13 mapped-RUN return boundary unresolved
+
+The full v890 postcommit-EXEC failure baseline now independently
+PASSes on the corrected v1129 `VM_SPACE_NONE` production destructor:
+one destroyed old VM, a failed replacement, two real VFS close
+refusals, successful third close, final EXIT and correct parent WAIT.
+The v1129 native source-linked sentinel/detach test also PASSes.
+
+The distinct nested D13 guest with APR fault and unpublished late RUN
+still does not complete. Without additional tracing, its actual
+fdmap failure is seen once, but the guest reaches only `<EA` followed
+by simulator UUO word `340000774047`, with zero terminal EXEC ZOMB;
+the parent never writes R. Independently booted v197 inherited-group
+and v1130 NEW-group controls both PASS sixteen invalid fdmap RUN
+rollbacks under three blocked children with exact MM accounting and
+later successful RUN/WAIT. NEW-group selection alone is not the cause.
+
+Three independent disposable guest diagnostics narrow the difference:
+v1131 full rollback-stage tracing produces `<EARH`, with each real
+rollback entry/VM destroy/u-area free/return visited once, no error
+deferral, and terminal EXEC ZOMB=1. v1132 adds 13 *unused BSS words*
+only and reproduces the `<EA`/UUO/ZOMB=0 failure. v1133 adds only
+two RUN-label counters, sees the late claimed-child rollback once
+and `proc_run_return` twice (including the previous successful APR
+child), but still fails with `<EA`/UUO/ZOMB=0. The added tracing
+changes observed behavior; do not infer a safe production fix from
+the instrumented PASS. Further investigation must inspect the
+mapped-user syscall return, parent saved continuation and APR/stack,
+and whether code placement or scheduling contributes.
+
+D13 remains OPEN; the v1131-v1133 tests are diagnostics, not D13
+acceptance, and the combined physical MM_BUSY failed-RUN rollback is
+still outstanding. The rest of the 29 pre-enable OOM blockers remain.
+No v1130-v1133 production KCORE/MRES/ABI or resident RAM change;
+`PROC_OOM_BRK_ENABLED_V1000` remains zero. No padding workaround.
+
+## 2026-11-04 v1129: original v890 EXEC teardown fixed; D13 still OPEN
+
+The exact original, unmodified full 256K PDP-6 v890 guest previously
+timed out at both historical 65-second and extended 180-second host
+limits. A new disposable stage probe verified that after VFS close
+success, slot 2 experienced one real `vm_space_destroy` -1 failure,
+zero failed TTY release, no VM success, no deferred u-area stage
+and no final ZOMB. Source inspection established the root cause:
+post-commit EXEC had already published `VM_SPACE_NONE` (-1), but
+`vm_space_destroy` used `hrrz` and treated its low 18 bits as a live
+physical base, then attempted invalid MM teardown (-4).
+
+Production `system/kernel/proc/vm_pdp6.s` now recognizes the exact
+full-word sentinel after storage validation and continues through
+the usual checked backing detach. No process ABI, MRES, persistent
+storage or data words changed; the fix costs two VM text instructions.
+The new testkit v1129 native PDP-6 regression PASSes two consecutive
+VM_NONE destroys with zero attempted MM/XIP free, two backing detach
+calls, unchanged sentinel, invalid-mode refusal and two unsafe
+mutants rejected. Existing v1109 XIP/VM and v880 swap-detach native
+tests PASS. The independently rebuilt **unmodified v890 full guest
+now PASSes**, including real VFS FILE refusal/retry, cleanup and
+parent WAIT. This closes the specific baseline regression.
+
+The concurrent v1126 APR+EXEC+unpublished RUN guest remains a distinct
+OPEN gate: after VM fix it reaches `<EA` but subsequently causes an
+unresolved simulator UUO before the late RUN marker. Its test-only
+finalizer trace reports owner entry but no terminal ZOMB and cannot
+be considered an accepted result. The original v1126 failure
+diagnostics are retained for audit. D13 is NOT checked; the source
+readiness audit remains 34/65 mandatory complete, 29 pre-enable
+blockers plus F12/F13 post-signoff actions. Production requester OOM
+stays default OFF.
+
 ## 2026-11-04 v1126: D13 nested fatal/rollback acceptance remains OPEN
 
 **v1126r1 baseline requalification:** The exact, unmodified v890

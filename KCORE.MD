@@ -1,3 +1,44 @@
+## 2026-11-04 v1130-v1133: D13 fault isolation without resident changes
+
+The exact v890 full guest and v1129 native double-VM_NONE-destroy
+regression PASS against the production VM fix. Sixteen physical
+late-RUN fdmap rollback cases under both inherited (v197) and NEW
+(v1130) process groups PASS, with stable MM and recovered RUN/WAIT.
+The combined D13 guest still fails before the late R user marker;
+v1131 full rollback tracing changes its result to a clean `<EARH`
+and exact terminal ZOMB, while v1132 BSS-only and v1133 two-counter
+RUN-entry/return diagnostics still reproduce `<EA` plus the same
+simulator UUO. All added counters are disposable kernel-copy test
+instructions. Do not solve this with resident NOPs or padding;
+trace the real syscall mapped-return/parent continuation first.
+No production code/data/MRES change from v1130-v1133, OOM OFF.
+
+## 2026-11-04 v1129: fatal EXEC VM_NONE double-destroy rejection fixed
+
+The v890 post-commit EXEC fault revealed a genuine VM teardown bug.
+`vm_space_destroy` was decoding the full-word `VM_SPACE_NONE` (-1)
+as a nonzero RH physical base `0777777`, entering MEMFS-XIP probing
+and an invalid MM free instead of allowing finalization. Owner-side
+FILE closure actually completed, but PREVM retried forever and WAIT
+could never observe the original child. A disposable stage probe
+verified one `vm_space_destroy` failure with returned -1, zero TTY
+failures, and no VM/u-area/zombie commit on the failing child.
+
+The corrected production leaf recognizes exactly the full VM_NONE
+sentinel *after* validating the process's storage mode. It bypasses
+only the already-completed physical extent free, still calls normal
+backing detach, and retains the standard publication/error checks.
+This adds two executable instructions to the leaf and no new
+persistent data or owner tables. The v1129 source-linked native
+PDP-6 test PASSes two idempotent calls and rejects both unsafe
+mutations. v1109 real MEMFS-XIP/VM and v880 swap retry also PASS.
+The **original, unmodified** v890 256K guest, which previously
+timed out at both 65 and 180 seconds, now PASSes with real VFS
+FILE retry, final EXIT and parent WAIT. Normal production OOM
+remains disabled. The expanded v1126 nested APR/EXEC/RUN acceptance
+still fails independently before the late RUN marker (`<EA` plus
+simulator UUO); D13, D14-D16 and P0-E/F remain OPEN.
+
 ## 2026-11-04 v1125: physical MM -4 with foreign provider lease
 
 The full PDP-6 disposable guest combines an actual wrong-owner MM
