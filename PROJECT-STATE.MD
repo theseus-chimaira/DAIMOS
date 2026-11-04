@@ -1,3 +1,39 @@
+## 2026-11-04 v1104: real session-member HUP plus physical PIPE MM_BUSY
+
+P0-D gained a booted physical cross-resource refusal case using the
+existing v907 two-member session/TTY guest. Unlike v1103's synthetic
+HUP-stage rejection, this exercises real HUP delivery and actual FILE,
+PIPE and MM allocator release transactions on the same session.
+
+Each session member creates a private anonymous PIPE. On the leader's
+first HUP, the first member commits its EXIT/VM teardown but retains
+the original physically pinned u-area, owned by the slot-0 finalizer.
+The second member's final PIPE descriptor reaches production `mm_free`;
+the isolated test hook pins that exact MM_TYPE_KERNEL_DYNAMIC extent
+(owner PIPE=5), causing one real MM_ERR_BUSY (-5). Its last writer
+reference and FILE descriptor remain live and the leader's HUP reports
+incomplete. The parent checks that the leader is not yet waitable.
+
+On the second HUP, the session code skips the committed first member,
+retries the second member's exact PIPE, unpins the physical extent and
+frees it exactly once through the unmodified MM validation. The TTY
+session commit then unpins the first member's u-area; WAIT reports the
+leader and both HUPed members once, with no repeated committed HUP.
+
+The v1104 booted 256K guest verifies PIPE calls 2, pins 1, unpins 1,
+MM_BUSY 1, successful free 1 and zero ownership errors; first member
+deferred u-area pin/unpin 1/1, HUP rejection/retry 1/1, repeated HUP
+0, committed first member 1 and normal TTY handoff. Native v1096
+release-stage matrix PASS; original v907 booted physical-HUP baseline
+rerun without the new option PASS. All v1104 hooks and counters exist only in
+daimos-testkit's disposable kernel copy. The production source and
+KCore endpoint (`023171` octal) remain unchanged from v1102.
+
+This closes the physical session HUP + PIPE final MM refusal leaf but
+not P0-D overall: combined DPY, MEMFS-XIP/VM and swap failures, and
+additional long-duration PID/WAIT and no-leak combinations remain.
+P0-E/F remain OPEN; production requester OOM termination is OFF.
+
 ## 2026-11-04 v1103: booted multi-stage fatal owner fault matrix
 
 The new daimos-testkit v1103 optional full-guest regression extends the

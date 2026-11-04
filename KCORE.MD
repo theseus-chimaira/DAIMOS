@@ -1,3 +1,22 @@
+## 2026-11-04 v1104: booted physical member HUP and PIPE final-close fault
+
+The v1104 daimos-testkit guest augments the real v907 two-member
+session/TTY HUP scenario with anonymous PIPEs held by the members.
+It pins the second member's exact PIPE MM extent on its HUP-triggered
+last descriptor close, so production `mm_free` returns MM_BUSY (-5).
+The FILE reference, PIPE writer count and owner are retained for the
+second HUP. The first member independently owns a pinned u-area and
+a committed VM_NONE+FINALIZE state: the second HUP must skip it.
+The second PIPE is unpinned and freed once, then the TTY session
+commits and the first member's u-area is unpinned and reaped.
+
+Guest assertions: PIPE free attempts 2, pins 1/unpins 1, busy 1,
+success 1, no duplicate HUP, no premature parent WAIT, intact HUP
+status/TTY handoff and zero owner errors. Original v907 guest and
+native P0-D matrix both PASS. The production kernel is
+untouched; `__kcore_low_end` remains `023171` octal with no new BSS,
+MRES or process fields. P0-D/E/F remain OPEN; OOM is still disabled.
+
 ## 2026-11-04 v1103: no production growth for mixed-stage fault test
 
 The new testkit v1103 disposable 256K PDP-6 guest combines real

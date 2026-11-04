@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1103, 2026-11-04)
+### OOM activation gates (current as of v1104, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -76,6 +76,28 @@ software/device deadlocks remain kernel correctness requirements.
   final anonymous PIPE and FIFO CLOSE while retaining the descriptor,
   references and FIFO list; four unsafe native variants are rejected.
   Full cross-stage fault matrix remains OPEN.
+
+### v1104: booted real member HUP and pinned PIPE final close (2026-11-04)
+
+- [x] Extend the existing v907 disposable physical-HUP guest: real
+  session leader and two members, each with a private anonymous PIPE.
+  The first member has its original pinned u-area while the second
+  member's HUP-triggered final PIPE close hits real `mm_free` -5.
+- [x] Preserve the last PIPE writer reference and FILE descriptor on
+  refusal; reattempt the exact extent and release it only after unpin.
+  Counters verify 2 free attempts, 1 pin, 1 unpin, 1 MM_BUSY, exactly
+  1 successful physical free and zero other errors.
+- [x] The leader remains non-waitable after partial session HUP. On
+  retry, skip the first member's committed VM_NONE+FINALIZE owner,
+  finish the second member and retire TTY input/session only once.
+  The original first-member u-area pin/unpin and HUP/WAIT validations
+  remain in force; no repeated HUP to an already finalized member.
+- [x] Test-only isolated source/guest; P0-D native source-linked matrix
+  and original booted v907 baseline PASS; no production KCORE changes,
+  resident state, MRES or OOM switch.
+- [ ] P0-D still needs combined DPY + HUP, VM/XIP and swap physical
+  failure cases and additional WAIT/PID/reclamation acceptance; P0-E
+  and P0-F remain OPEN. Production OOM termination remains OFF.
 
 ### v1103: booted mixed PIPE/FILE/HUP-stage/VM/u-area retry (2026-11-04)
 
