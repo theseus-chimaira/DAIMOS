@@ -1,3 +1,17 @@
+### v1108: native real MEMFS XIP pin-state fault (2026-11-04)
+
+- [x] Extend the source-linked MEMFS release fixture to test a real
+  unpinned MM extent with an owned XIP reference. The original MM
+  unpin returns -4, ownership is retained, and a real MM pin followed
+  by the original XIP release succeeds once; second release is inert.
+  Foreign FS provider lease stays held and no slot-0 clock wait occurs.
+  v1086 and v1094 compatibility and negative mutation tests PASS;
+  expanded v1096 native P0-D matrix PASS.
+- [ ] Boot a real process with an actual MEMFS-owned executable mapping
+  and inject a physical XIP release refusal during VM teardown. Check
+  PREVM/FINALIZE, WAIT/PID and MM/XIP owner preservation through the
+  slot-0 retry before closing this P0-D branch.
+
 ### v1107: finalizer/run-queue collision (2026-11-04)
 
 - [x] Decode SIDL state before interpreting scheduler RH bit 02 as an

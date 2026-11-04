@@ -1,3 +1,24 @@
+## 2026-11-04 v1108: real MEMFS XIP pin-state refusal and retry
+
+The source-linked PDP-6 v1108 test extends the v1086 direct MEMFS
+provider/XIP/MM leaf fixture with an actual MM extent whose pin count
+has been cleared while its MEMFS XIP reference still exists. The
+production `memfs_xip_unpin_base` calls real `mm_unpin`, which rejects
+the unpinned extent with -4. The MEMFS release gateway preserves that
+-4 as an owned-XIP refusal, retains the original XIP reference and MM
+extent, and does not acquire the unrelated serialized provider lease
+or wait for an APR clock tick.
+
+The fixture repairs the exact MM extent with production `mm_pin` and
+retries through the same XIP provider gateway. Release then succeeds,
+the original reference is cleared and the physical pin is removed.
+A repeated release correctly returns not-owned without double-unpin.
+The v1086 baseline and v1094 owned-XIP/MM release and four unsafe
+mutation controls PASS independently. The expanded native v1096 P0-D
+release-stage matrix also PASSes with v1108 included. No production source or memory
+layout changed. A booted real process/VM MEMFS-XIP lifecycle fault
+remains OPEN under P0-D, as do P0-E/F; OOM activation stays disabled.
+
 ## 2026-11-04 v1107: isolate SIDL discard flag from live run-queue link
 
 The slot-0 finalizer first checks the process state before interpreting

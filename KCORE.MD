@@ -1,3 +1,16 @@
+## 2026-11-04 v1108: checked XIP MM pin-state retry
+
+Source-linked v1108 executes the real MEMFS XIP release gateway and
+MM pin adjustment. A live MEMFS XIP reference with a physically
+unpinned MM extent causes `mm_unpin` to fail -4; the release returns
+-4 and retains the ref. `mm_pin` repairs the exact extent, after which
+XIP release succeeds and an additional release is harmless. Foreign
+provider lease and slot-0 no-wait constraints remain intact. The
+original v1086 and v1094 XIP tests and the expanded v1096 native
+P0-D matrix PASS. There is no KCore/MRES growth.
+This is a native leaf test, not yet the booted MEMFS-XIP lifecycle
+cross-product required by P0-D.
+
 ## 2026-11-04 v1107: finalizer scheduler-RH state discrimination
 
 `proc_finish_service_v881` must decode `PROC_SIDL` before testing the
