@@ -1,3 +1,39 @@
+## 2026-11-04 v1124: booted physical TTY, process VM and u-area MM_BUSY
+
+The DAIMOS OOM enablement checklist now has **33/65 mandatory
+tasks checked, 32 OPEN**; 30 are pre-activation blockers and F12/F13
+are deliberately post-signoff actions. D11 closes with two
+independently built disposable full 256K PDP-6 guest PASS results.
+
+The v1124 guest first attaches the INIT session's real canonical TTY
+input MM extent; the owner-side HUP preflight on the first real EXIT
+pins it and receives genuine MM_BUSY (-5). User EXIT returns -1,
+preserving session/TTY ownership and the process's still-running
+private kernel stack. A second real user EXIT releases exactly that
+TTY extent and enters normal fatal finalization. The process's real
+VM base is physically pinned before its first checked destruction,
+producing a second MM_BUSY and preserved PREVM/VM owner. The actual
+qualified-clock slot-0 service later unpins the VM and pins the
+still-owned u-area, whose checked release produces a third MM_BUSY.
+The later reaper cycle observes VM_NONE, retains the exact u-area
+owner, unpins it and commits final process-slot release once.
+
+The full image PASS counters are canonical TTY/VM/u-area physical
+busy=1 each; three real pin/unpin pairs=1 each; TTY retained/retry=1,
+VM retained/destroyed=1, u-area retained=1, terminal release=1,
+test ownership errors=0. The historical v969 TTY-only regression
+was also reworked for the current owner-side HUP preflight and
+independently rebooted: PASS with 1 pin, 1 retained owner and 1
+exact unpin/retry. Initial v1124 experiments using a late v969 arm
+or synchronous EXIT-failure cleanup were invalid; the accepted test
+uses the real owner-side EXIT plus clock-driven reaper stages.
+
+Production KCORE, MRES, process ABI and the OOM flag remain
+unchanged (`PROC_OOM_BRK_ENABLED_V1000,0`); all instrumentation is
+confined to testkit disposable copies. D12-D16, sustained P0-E
+pressure and P0-F final sizing/activation are OPEN. The optional
+full P0-D boot matrix includes v1124, not yet fully rerun as a whole.
+
 ## 2026-11-04 v1123: fine-grained OOM release checklist and XIP boundary
 
 The production requester-only OOM branch remains OFF. A new active

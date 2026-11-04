@@ -1,3 +1,25 @@
+## v1124: physical TTY/HUP, VM and u-area release across real EXIT (2026-11-04)
+
+- [x] D11: Full 256K PDP-6 guest proves a real last-session canonical
+  TTY input extent remains pinned after the first user EXIT attempts
+  owner-side HUP; EXIT returns -1 and the original session stays
+  attached. A second genuine user EXIT unpins and releases the same
+  canonical buffer. Its PREVM finalizer then hits a real process-VM
+  MM_BUSY (-5), retains the live VM and stable owner, and the actual
+  clock-driven slot-0 reaper unpins/finishes that VM. The same reaper
+  reaches a separate physical u-area MM_BUSY, preserves exact
+  VM_NONE/FINALIZE ownership, then unpins/frees the original u-area.
+  PASS counters: TTY/VM/u-area busy each 1, all three pin/unpin
+  pairs each 1, VM retained/destroyed each 1, u-area retained 1,
+  final commit 1, no errors or leaked terminal TTY/slot. No fabricated
+  allocator errors or manual finalizer shortcuts. Test-only hooks.
+- [x] Refresh the historical v969 standalone TTY-only guest to arm
+  at the current v991 owner-side HUP preflight, not after it.
+  Independently rebuild/reboot v969 and v1124: both PASS, with
+  preserved original session, one refusal, exact subsequent release.
+- [ ] D12-D16 and the remaining pre-enable fault, liveness and
+  full-memory-budget requirements remain open; production OOM OFF.
+
 ## v1123: fine-grained production OOM enablement checklist (2026-11-04)
 
 This is the active prerequisite list for changing
@@ -100,8 +122,9 @@ not permission to bypass the final combined regression. See
   resource; quarantined owner and bystander survive (v1101).
 - [x] D10: Source-linked real MEMFS XIP MRES-owned unpin/retry and
   VM destroy without process-MM fallback (v1108/v1109).
-- [ ] D11: Booted physical TTY canonical-buffer -5 combined with
-  HUP, VM and post-VM u-area retry, with original session preserved.
+- [x] D11: Booted physical canonical TTY -5 across user-side HUP,
+  process VM and post-VM u-area retry, with the original session
+  preserved and all three physical MM refusals repaired (v1124).
 - [ ] D12: Booted unrecoverable wrong-owner -4 combined with a live
   foreign provider; no forced finalization or slot recycling.
 - [ ] D13: Booted nested APR/EXEC fatal request and unpublished RUN

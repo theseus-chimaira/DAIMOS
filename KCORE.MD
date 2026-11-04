@@ -1,3 +1,30 @@
+## 2026-11-04 v1124: actual physical TTY/VM/u-area teardown chain
+
+The full 256K PDP-6 v1124 guest PASSes three distinct genuine MM
+pin-induced `MM_BUSY` (-5) releases during one normal last-session
+EXIT. The first user EXIT rejects its owner-side HUP because the
+real TTY canonical input extent is pinned, preserving the original
+TTY/session and private process continuation. A second real EXIT
+unpins that exact extent and completes HUP. The genuine process VM
+then fails MM release while pinned, retains PREVM/VM ownership, and
+is later unpinned by the actual clock-driven slot-0 reaper. The next
+release finds a physically pinned u-area, retains VM_NONE/FINALIZE,
+and the following reaper retry unpins/releases it exactly once.
+
+The guest witnesses exactly 1 physical TTY/MM busy, 1 process VM
+MM busy and 1 u-area MM busy; each has exactly 1 pin and unpin.
+VM retained/destroyed=1, u-area retained=1, final process release=1
+and zero test errors. No invented allocator refusal, replacement
+owner or hand-invoked finalizer. The old standalone v969 TTY-only
+fixture was updated to arm at owner-side HUP and independently
+rebooted: PASS with 1 pin, 1 retained session and 1 unpin/retry.
+
+D11 is now checked: **33 of 65 mandatory OOM items complete**, 32
+unfinished, including 30 pre-enable blockers and two post-signoff
+actions. D12-D16, sustained P0-E and P0-F remain OPEN. The OOM
+production flag, KCORE/MRES code, resident memory and ABI are
+unchanged. The `P0D_FULL` optional matrix now includes v1124.
+
 ## 2026-11-04 v1123: OOM activation gates made individually testable
 
 The new top-of-DAIMOS-TODO v1123 checklist specifies 65 mandatory
