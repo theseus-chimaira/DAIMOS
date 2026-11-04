@@ -1,3 +1,22 @@
+## 2026-11-04 v1144: D14 mixed physical resources PASS
+
+Full-system PDP-6 `test-daimos-oom-pipe-dpy-vm-provider-v1144`
+now PASSes one real-physical pin/BUSY/unpin/free sequence each for
+PIPE, Type-340 DPY list, process VM and executive u-area. The
+test's 256K guest retains a real foreign FS gateway lease and its
+blocked waiter while performing actual FILE/HUP retries. Its
+terminal checks reject premature parent WAIT, verify chronological
+FILE/PIPE/DPY -> VM -> u-area -> ZOMB publication, one swap detach,
+correct WAIT/CHLD, 48 stale-PID/event refusals and bystander progress.
+All four MM owners are distinct and zero hook errors are recorded.
+The original independent v1118 full guest also PASSes after this
+testkit extension, as does the v1087 transitive-release/native suite.
+
+D14 is now checked. Mandatory OOM checklist: **37/65 complete**;
+28 open (26 pre-enable blockers plus later F12/F13). D16, C04,
+E/F and actual RAM budgets remain open; production requester-OOM
+switch remains OFF. Test injections add no production RAM or ABI.
+
 ## 2026-11-04 v1143: D15 scope closure, XIP process admission excluded
 
 Fresh native testkit v1108/v1109 MEMFS XIP release tests PASS, with

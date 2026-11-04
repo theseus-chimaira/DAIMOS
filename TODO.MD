@@ -1,3 +1,18 @@
+## v1144: D14 integrated physical teardown acceptance (2026-11-04)
+
+- [x] Boot one 256K PDP-6 guest with real PIPE, Type-340 DPY,
+  process-VM and u-area MM pin/BUSY/unpin/free on four distinct
+  allocated owners, plus the original held foreign FS provider.
+- [x] Assert FILE/PIPE/DPY release before VM destroy, VM/u-area
+  release before ZOMB, an initial nonreportable WAIT(NO-HANG),
+  final exact WAIT, CHLD, provider lease, and independent spinner.
+- [x] Verify one pin, BUSY, unpin and physical free for each owner;
+  48 stale WAIT/PID/event checks, one swap detach and zero hook errors.
+- [x] Independently rebuild original v1118 mixed guest after extending
+  the testkit; no regression. v1087 transitive-release suite PASSes.
+- [ ] Continue D16 exact-once comprehensive accounting, C04 and
+  sustained E/F OOM signoff. Keep normal requester OOM disabled.
+
 ## v1143: D15 XIP scope verified and excluded (2026-11-04)
 
 - [x] Verify production RUN and EXEC still use writable VM startup:
@@ -343,7 +358,7 @@ not permission to bypass the final combined regression. See
   foreign provider; no forced finalization or slot recycling (v1125).
 - [x] D13: Booted nested APR/EXEC fatal request and unpublished RUN
   rollback across failed FILE/HUP/VM or swap backing ownership.
-- [ ] D14: Mixed PIPE/DPY/VM/u-area plus provider-lock fault in one
+- [x] D14: Mixed PIPE/DPY/VM/u-area plus provider-lock fault in one
   boot, with exact release order and zero premature parent WAIT.
 - [x] D15: Decide XIP scope: if production EXEC/RUN cannot admit an
   XIP process, keep it explicitly out of this release and rerun

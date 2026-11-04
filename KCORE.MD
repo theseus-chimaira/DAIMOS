@@ -1,3 +1,32 @@
+## 2026-11-04 v1144: D14 physical PIPE/DPY/VM/u-area combination
+
+The new testkit v1144 full 256K PDP-6 guest combines the original
+v1118 held foreign FS provider, sleeping waiter, FILE retry, HUP
+refusal, process VM and u-area failures with a live Type-340 DPY
+raw list. The final variant replaces the older test-only synthetic
+PIPE/u-area -5 returns with actual MM pins. PIPE, DPY, VM and u-area
+each independently show one real pin, one MM_BUSY, one unpin and
+one physical free, with four distinct allocated bases. VM detach
+occurs once. The test verifies FILE/PIPE/DPY resources were released
+before VM teardown, and VM/u-area release was complete before the
+slot-5 ZOMB could become parent-WAIT-visible. Pending WAIT(NO-HANG)
+returns zero, final WAIT/CHLD is exact, 48 stale WAIT/PID/event
+requests are rejected, the provider lease stays held and an unrelated
+spinner advances 37 times. All fault-hook errors are zero. **D14
+PASS** in this isolated guest; D16/C04/E/F remain open.
+
+The independent original v1118 mixed-fault full guest was also
+rebuilt after the v1144 testkit changes and PASSed its legacy
+PIPE/VM/FILE/HUP/foreign-provider, WAIT/CHLD, 48 stale-request and
+bystander assertions. The aggregate v1087 transitive-release suite
+PASSes after native test fixture ABI maintenance; its in-flight
+provider caveat remains unchanged.
+
+All new allocations and witnesses are disposable-test-only. No
+production KCORE code or resident data, MRES, ABI or OOM switch has
+changed. Do not use this isolated 256K result as strict 32K or
+sustained runtime-RAM acceptance.
+
 ## 2026-11-04 v1143: D15 excludes unscheduled XIP process launch
 
 The current scope verifier v1123 PASSes production RUN/EXEC writable
