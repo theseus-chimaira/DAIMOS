@@ -1,3 +1,15 @@
+### v1107: finalizer/run-queue collision (2026-11-04)
+
+- [x] Decode SIDL state before interpreting scheduler RH bit 02 as an
+  unpublished RUN discard-VM marker. Preserve live PREVM+FINALIZE retry
+  when the same field contains run-queue successor slot 2. Source-linked
+  v1107 test PASS and old unsafe order rejected.
+- [ ] Reconfirm booted fatal finalizer/WAIT acceptance and post-fold
+  permanent KCORE endpoint for the changed branch sequence. Do not
+  enable production OOM on this source-linked test alone.
+- [ ] Complete the separately in-progress booted allocated DISK
+  swap-backing/HUP refusal fixture before closing P0-D.
+
 ### OOM activation gates (current as of v1106, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware

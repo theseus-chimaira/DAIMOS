@@ -829,15 +829,17 @@ proc_finish_service_scan_v881:
         trnn    3,PROC_TRANSITION_RH
         jrst    proc_finish_service_next_v881
         ; An unpublished RUN may fail VM destruction before it acquires
-        ; a stable u-area. Its SIDL scheduler RH bit 1 owns the retry;
-        ; never mistake an unrelated swapping TRANSITION for cleanup.
+        ; a stable u-area. Only SIDL may interpret scheduler RH bit 1
+        ; as its discard retry marker. For a live slot the same bits
+        ; contain the run-queue successor (e.g. slot 2); examining the
+        ; marker first would skip a genuine FINALIZE+PREVM retry.
         move    4,2(2)
-        trnn    4,02                   ; PROC_SIDL_DISCARD_VM_RH
-        jrst    proc_finish_service_post_vm_v894
         hlrz    5,4
         andi    5,PROC_STATE_LH_MASK
         caie    5,0100000             ; PROC_SIDL
-        jrst    proc_finish_service_next_v881
+        jrst    proc_finish_service_post_vm_v894
+        trnn    4,02                   ; SIDL-only DISCARD_VM marker
+        jrst    proc_finish_service_post_vm_v894
         move    1,10
         pushj   17,proc_slot_discard
         jrst    proc_finish_service_result_v892

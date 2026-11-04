@@ -1,3 +1,14 @@
+## 2026-11-04 v1107: finalizer scheduler-RH state discrimination
+
+`proc_finish_service_v881` must decode `PROC_SIDL` before testing the
+SIDL-only `02` discard-VM marker in the scheduler RH. A non-SIDL
+process uses the same RH as an intrusive run-queue successor, so
+successor slot 2 is not evidence of pending SIDL discard. The prior
+ordering could skip a live PREVM+FINALIZE owner entirely. The corrected
+order retains ordinary FINALIZE retry and SIDL discard separately.
+Source-linked v1107 positive/unsafe-mutant test PASS. Booted acceptance
+and post-fold size are still pending; no new persistent data is required.
+
 ## 2026-11-04 v1106: actual process-VM MM refusal and finalizer retry
 
 The v1106 booted 256K guest preserves v997's held FS-provider lease,

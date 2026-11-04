@@ -1,3 +1,19 @@
+## 2026-11-04 v1107: isolate SIDL discard flag from live run-queue link
+
+The slot-0 finalizer first checks the process state before interpreting
+scheduler RH bit `02` as an unpublished RUN's SIDL discard-VM marker.
+For non-SIDL slots, the same RH field is a run-queue successor; a live
+PREVM+FINALIZE process with successor slot 2 must still reach its VM
+release retry rather than being skipped. The existing SIDL retry and
+post-VM paths retain their original ownership and dispatch behavior.
+
+The daimos-testkit v1107 source-linked PDP-6 test passes for both a
+live PREVM owner with runq successor 2 and a real SIDL discard owner;
+its old-order unsafe mutation is rejected. No process descriptor or
+persistent kernel data was added. Full booted image and KCORE endpoint
+measurements remain to be reconfirmed; OOM activation remains disabled.
+The separate booted DISK swap/HUP v1107 experiment is not yet accepted.
+
 ## 2026-11-04 v1106: booted physical process-VM MM_BUSY and owner retry
 
 P0-D gains a booted real-MM process-VM release refusal in the existing
