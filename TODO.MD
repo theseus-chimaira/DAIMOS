@@ -1,3 +1,18 @@
+## v1145-v1146: D16 frozen-matrix preparation (2026-11-05)
+
+- [x] Rerun all v1087 release-graph and native checks after restoring
+  v912 precise DPY MM_BUSY and v995 current event/wait fixture ABI.
+- [x] Fresh v1122 256K physical PIPE plus DISK bitmap-refusal guest:
+  one real pin/busy/unpin/free, one backing restore, exact final WAIT,
+  no MM/TTY accounting errors.
+- [x] Stage testkit v1146r1 sequential D16 exact-once matrix with
+  fixed Git revisions, host tool checksum guard and retained logs.
+  Rejecting a dirty testkit checkout works as a negative control.
+- [ ] Run every full matrix guest on one frozen candidate, then
+  inspect all exact-once/owner counters before marking D16 complete.
+- [ ] C04, E05-E13, F02-F13 and resident/peak RAM proof remain open.
+  Keep production requester-OOM OFF.
+
 ## v1144: D14 integrated physical teardown acceptance (2026-11-04)
 
 - [x] Boot one 256K PDP-6 guest with real PIPE, Type-340 DPY,

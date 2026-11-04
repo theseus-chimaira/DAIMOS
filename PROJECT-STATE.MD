@@ -1,3 +1,28 @@
+## 2026-11-05 v1145-v1146: D16 exact-once acceptance in progress
+
+The corrected installed host tools and unchanged DAIMOS production
+kernel PASS the full testkit v1087 transitive-release suite, including
+its unsafe mutations and native FILE/HUP, PIPE, DPY, TTY, VM, SWAP
+and provider-lease checks. Two outdated native test expectations were
+repaired in the testkit: v912 must return the real MM_BUSY (-5) on
+owned DPY rollback, and v995 must provide current wait-state/event
+symbols with an unexpected-runqueue guard.
+
+A newly rebuilt 256K PDP-6 v1122 session guest independently PASSes
+one physical PIPE MM pin/busy/unpin/free and the other member's real
+disk-backing bitmap refusal/restoration, with one swap detach,
+correct terminal WAIT/TTY and zero test errors. This is fresh D16
+component evidence, not complete D16 acceptance.
+
+Testkit v1146r1 now stages the sequential exact-once release matrix.
+It captures the tested DAIMOS/testkit revisions and installed host
+tool checksums, rejects dirty production/fixture trees and detects
+version changes between guests. Its dirty-source negative control
+PASSes; the full multi-guest matrix is NOT yet executed. Mandatory
+OOM checklist stays 37/65 complete, 28 open (26 pre-enable plus
+F12/F13). Production requester BRK OOM is still disabled; there is
+no kernel/MRES code or persistent RAM/ABI change.
+
 ## 2026-11-04 v1144: D14 mixed physical resources PASS
 
 Full-system PDP-6 `test-daimos-oom-pipe-dpy-vm-provider-v1144`

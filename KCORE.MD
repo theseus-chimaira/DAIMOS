@@ -1,3 +1,15 @@
+## 2026-11-05 v1145-v1146: verified D16 components, not yet D16 signoff
+
+Testkit's repaired v1087 full release graph/native suite PASSes on
+current production assembly, including the real -5 DPY return and
+fatal-owner HUP/FILE retry. A fresh 256K v1122 guest PASSes a
+separate physical PIPE busy/release plus second-member disk backing
+bitmap refusal/restore with normal terminal WAIT/TTY, one swap detach
+and zero integrity errors. A revision-locked v1146r1 sequential
+full D16 matrix is staged but not executed end-to-end. D16/C04/E/F
+and dynamic physical RAM measurement remain open, requester OOM OFF.
+No kernel/MRES instructions, data, ABI or permanent RAM changed.
+
 ## 2026-11-04 v1144: D14 physical PIPE/DPY/VM/u-area combination
 
 The new testkit v1144 full 256K PDP-6 guest combines the original
