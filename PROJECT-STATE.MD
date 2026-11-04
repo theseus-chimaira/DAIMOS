@@ -1,3 +1,30 @@
+## 2026-11-04 v1110: booted invalid BRK versus physical OOM classification
+
+The optional v1110 extension of the existing v1075 full 256K PDP-6
+guest runs two additional short-lived children before the physical
+exhaustion requester. One attempts BRK below its original image floor
+(`1`), and the other attempts the 18-bit address limit (`0777777`
+octal), whose required APR rounding overflows that limit. Each must
+receive `-1`, retain its original break, exit with a normal expected
+WAIT status and return process-slot/word accounting to the baseline.
+
+Both disposable configurations boot and PASS. With the production
+default-off switch left at zero, the invalid children finish normally
+and real physical exhaustion also returns `-1` to its requester; the
+independent blocked witness survives and all process-MM accounting
+returns to baseline. With the OOM branch enabled ONLY in a disposable
+kernel copy, the two invalid children still finish normally, while
+only the genuinely exhausted requester is fatally retired. The witness
+and final MM accounting checks again PASS. Test-only console sequence
+is `ILDNWP` when disabled and `ILKWP` when enabled, following the
+initial `<` sentinel; the legacy v1075 behavior remains the default
+without the v1110 option.
+
+No production code, KCore data, MRES, process ABI or OOM policy changed.
+This closes only the invalid-floor, address-limit and physical OOM
+classification subset of P0-F; MM descriptor exhaustion, fragmentation,
+failed child RUN and integrated P0-E/D acceptance remain OPEN.
+
 ## 2026-11-04 v1109: integrate VM destroy with physical MEMFS XIP refusal
 
 The source-linked native PDP-6 v1109 regression executes production

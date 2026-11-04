@@ -1,3 +1,17 @@
+### v1110: booted P0-F invalid BRK classification (2026-11-04)
+
+- [x] Extend the 256K PDP-6 v1075 requester-only guest in an opt-in
+  test mode: BRK below image floor and a rounded 18-bit address-limit
+  overflow both return -1 with unchanged break, expected child WAIT
+  and recovered process-MM accounting. Confirm alongside the original
+  genuine physical exhaustion requester and independent witness.
+- [x] Both booted configurations PASS: default-disabled OOM returns
+  -1 for physical exhaustion without killing the requester; isolated
+  test-enabled OOM retires only the exhausted requester, never either
+  invalid-BRK child. No production OOM enablement or permanent RAM.
+- [ ] P0-F still needs MM descriptor exhaustion, fragmentation,
+  failed-child RUN negative cases and final P0-A..E activation gates.
+
 ### v1109: VM + physical MEMFS XIP release integration (2026-11-04)
 
 - [x] Combine the actual resident VM-destroy assembly, MEMFS XIP

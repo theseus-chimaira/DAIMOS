@@ -1,3 +1,16 @@
+## 2026-11-04 v1110: booted BRK classification with OOM disabled/enabled
+
+The opt-in v1110 guest mode adds invalid-floor BRK `1` and address-
+limit BRK `0777777` checks to the physical exhaustion v1075 guest.
+Both fail with `-1` while preserving the original break and normal
+child WAIT/slot/MM accounting. Booted PDP-6 disabled-policy and
+disposable enabled-policy configurations PASS, including the separate
+physical exhaustion requester and runnable witness. Only true physical
+OOM terminates the requester in the enabled test. Production OOM stays
+disabled, and production KCore/MRES occupancy is unchanged. P0-F is
+still OPEN for fragmentation, descriptor exhaustion, failed RUN and
+the final full-matrix activation decision.
+
 ## 2026-11-04 v1109: full native VM/MEMFS-XIP/MM teardown leaf
 
 v1109 runs real `vm_space_destroy`, MEMFS direct-provider XIP
