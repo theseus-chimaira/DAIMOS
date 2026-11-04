@@ -5,7 +5,8 @@
   unpin returns -4, ownership is retained, and a real MM pin followed
   by the original XIP release succeeds once; second release is inert.
   Foreign FS provider lease stays held and no slot-0 clock wait occurs.
-  v1086 and v1094 compatibility and negative mutation tests PASS;
+  Two new unsafe XIP reference-drop/retain mutations rejected; v1086
+  and v1094 compatibility and negative mutation tests PASS;
   expanded v1096 native P0-D matrix PASS.
 - [ ] Boot a real process with an actual MEMFS-owned executable mapping
   and inject a physical XIP release refusal during VM teardown. Check

@@ -13,8 +13,11 @@ The fixture repairs the exact MM extent with production `mm_pin` and
 retries through the same XIP provider gateway. Release then succeeds,
 the original reference is cleared and the physical pin is removed.
 A repeated release correctly returns not-owned without double-unpin.
-The v1086 baseline and v1094 owned-XIP/MM release and four unsafe
-mutation controls PASS independently. The expanded native v1096 P0-D
+The v1108 physical XIP fixture additionally rejects two unsafe
+mutations: dropping the reference after a failed MM unpin and retaining
+the reference after a successful unpin. The v1086 baseline and v1094
+owned-XIP/MM release and its four unsafe mutation controls PASS
+independently. The expanded native v1096 P0-D
 release-stage matrix also PASSes with v1108 included. No production source or memory
 layout changed. A booted real process/VM MEMFS-XIP lifecycle fault
 remains OPEN under P0-D, as do P0-E/F; OOM activation stays disabled.
