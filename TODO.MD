@@ -1,3 +1,19 @@
+### v1118: physical PIPE and process-VM MM fault combination (2026-11-04)
+
+- [x] Compose previously independent real PIPE/MM and process-VM/MM
+  fault hooks at the same production `mm_free` entry in a disposable
+  kernel. Both typed owner paths reach real MM; the initial conflicting
+  test-only insertion anchor is corrected in daimos-testkit.
+- [x] Full 256K PDP-6 boot PASS: one PIPE MM_BUSY, one process-VM
+  MM_BUSY, exact later releases, VM pin/unpin and swap detach, FILE
+  close and HUP-stage retries, one u-area refusal and recovery,
+  one finalization/CHLD, intact foreign FS lease, 37 spinner cycles
+  and 48 stale WAIT/PID rejections with no process accounting growth.
+- [ ] Continue with physical DPY/HUP and XIP plus SWAP cross-stage
+  combinations, real numeric PID reuse, long-run liveness and final
+  P0-D/E/F enablement acceptance. The v1118 HUP fault is synthetic,
+  and production requester OOM is still OFF.
+
 ### v1117: integrated stale PID/WAIT and multi-stage fault liveness (2026-11-04)
 
 - [x] Extend the real booted v1103 PIPE/FILE/HUP-stage/VM/u-area

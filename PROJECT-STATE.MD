@@ -1,3 +1,34 @@
+## 2026-11-04 v1118: booted combined physical PIPE and VM teardown
+
+The full 256K PDP-6 `daimos-oom-physical-mixed-v1118` regression
+PASSes in a disposable test kernel. Previously separate v1103 and
+v1106 `mm_free` fault hooks now compose, with each typed MM owner
+check preserved. The initial fixture failed while preparing private
+kernel source because the two test injections shared an incompatible
+entry anchor. The corrected test generator permits both callbacks
+to reach the real MM allocator in the same dying process.
+
+The boot observes exactly two PIPE final frees, one refused -5 and
+one success, and two process-VM frees, one physical pin-induced -5
+and one actual MM deletion after unpin. The real VM destroy reaches
+swap detach once. It also reports three FILE close attempts/two
+refusals, two HUP stage entries/one injected refusal, two u-area
+release calls/one MM refusal, and one EXIT, CHLD and finalization.
+The independent runnable spinner advances 37 times, while a different
+process retains its original serialized FS-provider lease. After
+reap, 48 stale WAIT and PID-directed TERM requests return -1 without
+increased process-slot/process-MM-word accounting. No ownership
+error is reported. This is full booted evidence for one genuinely
+simultaneous physical PIPE/VM release-failure sequence.
+
+The HUP failure itself is synthetic; this does not cover physical
+DPY/HUP, live MEMFS-XIP pin/VM, concurrent DISK swap bitmap faults,
+numeric PID reuse, or indefinite provider recovery. Do not conflate
+this positive P0-D/E subset with the complete required matrix.
+P0-D/E/F remain OPEN, production OOM remains OFF, and no production
+KCore/MRES/ABI or persistent data was changed. Testkit commit is
+`7df48f0`.
+
 ## 2026-11-04 v1117: booted stale WAIT/PID after multi-stage fatal release
 
 The disposable 256K PDP-6 v1117 guest extends the validated v1103

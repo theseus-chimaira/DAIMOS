@@ -1,3 +1,23 @@
+## 2026-11-04 v1118: simultaneous physical PIPE and VM release refusal
+
+A disposable full 256K PDP-6 guest now composes the actual PIPE
+MM_TYPE_KERNEL_DYNAMIC and process-VM MM_TYPE_PROCESS free hooks in
+one `mm_free` entry, preserving both production owner/type checks.
+One PIPE and one VM MM_BUSY (-5) occur during the same fatal process
+teardown. VM pin/unpin and one true MM delete, swap detach, PIPE
+owner retention and exact second close, two HUP-stage calls/one
+injected refusal, FILE close retries and the final u-area retry PASS.
+One EXIT/CHLD/finalization, intact foreign FS lease, 37 bystander
+cycles and 48 rejected stale WAIT/PID events after reap all PASS.
+
+The first composition attempt exposed an incompatible test-only
+injection anchor, repaired in daimos-testkit v1118 before building.
+No production kernel/MM code, KCore/MRES allocation, or ABI changed.
+This is a completed *physical PIPE plus physical VM* P0-D subset;
+HUP refusal is synthetic, and concurrent DPY/XIP/swap bitmap faults,
+actual numeric PID reuse and full P0-E/F acceptance remain OPEN.
+Production requester OOM remains disabled.
+
 ## 2026-11-04 v1117: booted fatal teardown plus stale PID/WAIT checks
 
 The extended v1103 disposable PDP-6 guest executes real PIPE MM_BUSY,
