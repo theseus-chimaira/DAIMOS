@@ -1,3 +1,27 @@
+## 2026-11-04 v1113: real MM -> VM BRK -> syscall error propagation
+
+The native PDP-6 v1113 fixture links actual `mm_find_fit`,
+`mm_extent_insert`, `mm_alloc_aligned_noreclaim`, `mm_alloc_aligned`,
+`mm_compact`, `vm_space_brk_current` and the OOM-enabled
+`native_sys_brk` entry. A live process VM at base 02000 cannot grow
+in place because another extent immediately follows it. Fragmented
+MM gaps total 06000 words but no individual gap fits the requested
+04000-word replacement image. The real allocator returns -2 all the
+way through VM and BRK, with no fatal dispatch and unchanged original
+VM, process break and extent count. The fixture then uses two live
+extents and descriptor capacity two: a large fitting gap exists but
+the real insertion rejects it with -3, likewise without killing the
+requester or changing the original VM/BRK/MM ownership.
+
+Three deliberately unsafe mutations (VM cause lost, -2 collapsed to
+-1, -3 collapsed to -1) are rejected by the same native test. FS and
+swap reclaim callbacks, refused process relocation, and fatal selection
+are fixture witnesses; the MM allocator, VM BRK and syscall decision
+branches are genuine production assembly. This does not replace the
+remaining booted fragmented/descriptor-pressure BRK and RUN coverage,
+or the open P0-D/E gates. Production OOM remains disabled. No
+production kernel text, resident data, MRES or ABI is changed.
+
 ## 2026-11-04 v1112: booted failed child RUN with OOM disabled and enabled
 
 The optional v1112 real 256K PDP-6 guest extension tries a complete,

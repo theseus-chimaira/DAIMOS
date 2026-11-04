@@ -1,3 +1,15 @@
+## 2026-11-04 v1113: VM and BRK preserve actual -2/-3 MM causes
+
+The native PDP-6 regression now tests the entire production failure
+chain from `mm_find_fit` and `mm_alloc_aligned` through
+`vm_space_brk_current` to the opt-in fatal BRK dispatcher. Real
+fragmented free gaps produce -2; a full MM descriptor table with a
+fitting gap produces -3. Both return ordinary BRK failure while
+preserving VM, logical break and descriptor ownership. Three unsafe
+cause-losing source mutations fail. FS/swap/relocation and fatal
+observers are stubs; full guest pressure and WAIT/PID checks remain
+open. There is zero production text/data change and OOM remains off.
+
 ## 2026-11-04 v1112: booted negative failed-RUN case
 
 The full 256K v1075 guest has an opt-in v1112 missing-executable RUN

@@ -1,3 +1,18 @@
+### v1113: native integrated MM/VM/BRK OOM gate (2026-11-04)
+
+- [x] Combine unchanged production PDP-6 allocator fit/insert,
+  bounded retry/compaction, VM BRK and opt-in OOM-enabled syscall
+  dispatch in a source-linked native test. Actual disjoint MM gaps
+  yield -2 and actual full descriptor capacity with a fitting gap
+  yields -3. Neither condition fatally retires the requester;
+  original process VM, logical BRK and MM count are unchanged.
+  Three unsafe error-collapsing mutations rejected.
+- [ ] Boot real resource-pressure BRK and RUN conditions with
+  fragmented physical core and exhausted MM descriptors. Native
+  witnesses use no-progress FS/swap reclaim and relocation refusal,
+  not the entire runnable process/WAIT/PID graph. P0-D/E/F remain
+  open; do not enable production OOM before full acceptance.
+
 ### v1112: booted P0-F failed RUN validation negative (2026-11-04)
 
 - [x] Boot two 256K PDP-6 test images: ordinary default-disabled OOM
