@@ -1,3 +1,32 @@
+## 2026-11-04 v1119: actual PIPE plus DPY session-HUP release faults
+
+Two independent full 256K PDP-6 boot runs PASS the new testkit
+`daimos-session-hup-pipe-dpy-v1119` fixture (testkit `42736cd`). The
+second member of a live session owns both a private PIPE final-close
+extent and a published Type-340 raw display list when the first
+session HUP arrives. Both real MM free error paths are armed in the
+same delivered HUP; the test-only generator composes v1104 and v1105
+entry/busy/delete instrumentation without changing production MM.
+
+The two MM extents have separate physical addresses and expected
+types/owners. Each records two free attempts, one real pin-induced
+MM_BUSY (-5), one unpin and one successful free; both ownership-error
+counters stay zero. The Type-340 PI6 refresh has 14 counted entries,
+including 8 while the display list remains pinned after the initial
+busy error. The first session member retains its pinned u-area and
+already committed HUP; the leader receives a partial HUP failure,
+then finalizes correctly. No duplicate first-member HUP or improper
+early WAIT is observed. Leader and both child WAIT statuses, TTY
+reattachment and foreground ownership PASS after release.
+
+The final rerun used the corrected C89 test source and versioned
+Make target. The initial physical fault composition required test-
+only generator anchor changes; production KCore, MRES, persistent
+RAM, process ABI and OOM selector were not modified. This closes
+one additional physical P0-D cross-product, but concurrent
+XIP/VM/swap bitmap faults, numeric PID reuse, and full integrated
+P0-E/F remain outstanding. Production OOM stays OFF.
+
 ## 2026-11-04 v1118: booted combined physical PIPE and VM teardown
 
 The full 256K PDP-6 `daimos-oom-physical-mixed-v1118` regression

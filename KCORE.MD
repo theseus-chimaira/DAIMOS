@@ -1,3 +1,23 @@
+## 2026-11-04 v1119: physical PIPE and Type-340 DPY in one session HUP
+
+The full 256K PDP-6 v1119 disposable guest gives the same second
+session member both a real PIPE and a published raw Type-340 display
+list. Physical MM free faults for the distinct PIPE owner 5 and DPY
+owner 014 are independently armed at the same HUP delivery and
+composed at MM entry/busy/delete. Each exact extent records one pin,
+one MM_BUSY (-5), one unpin and one true deletion on retry, with no
+ownership errors. DPY PI6 refresh runs 14 times, eight during the
+held-list interval after the first physical refusal.
+
+The first member stays pinned while the session HUP is incomplete;
+the leader/member WAIT and TTY handoff PASS after retry without
+duplicate HUP. Two fresh guest boots PASS, including the final C89
+test-source rerun. Combined-mode injection required a test-only
+anchor-composition fix; no production kernel/MRES/ABI was touched.
+This closes a physical PIPE+DPY session-release cross-product, not
+the outstanding simultaneous XIP/VM/swap bitmap and PID-reuse cases.
+P0-D/E/F remain OPEN and requester OOM stays disabled.
+
 ## 2026-11-04 v1118: simultaneous physical PIPE and VM release refusal
 
 A disposable full 256K PDP-6 guest now composes the actual PIPE

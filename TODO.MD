@@ -1,3 +1,19 @@
+### v1119: booted PIPE plus DPY physical session HUP (2026-11-04)
+
+- [x] Combine the separate v1104 PIPE and v1105 Type-340 DPY final-
+  release MM hooks in the same session member and actual HUP delivery.
+  Compose original MM entry/busy/delete injection points while
+  preserving each typed owner and independent test-only counters.
+- [x] Two complete 256K guest boots PASS; each resource has two free
+  attempts, one real physical pin/MM_BUSY, one unpin, and one actual
+  release. DPY refresh remains active after the busy refusal; first-
+  member committed HUP, leader/member WAIT and TTY handoff PASS.
+  Correct combined fixture's C89 declaration order and add a versioned
+  independent Make target and optional full P0-D matrix row.
+- [ ] Complete physical VM/MEMFS-XIP and DISK swap bitmap fault overlap,
+  numeric PID reuse, extended mixed-provider liveness and final P0-D/E/F
+  acceptance. OOM production activation remains disabled.
+
 ### v1118: physical PIPE and process-VM MM fault combination (2026-11-04)
 
 - [x] Compose previously independent real PIPE/MM and process-VM/MM
