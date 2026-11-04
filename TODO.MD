@@ -34,8 +34,9 @@
   at the current v991 owner-side HUP preflight, not after it.
   Independently rebuild/reboot v969 and v1124: both PASS, with
   preserved original session, one refusal, exact subsequent release.
-- [ ] D12-D16 and the remaining pre-enable fault, liveness and
-  full-memory-budget requirements remain open; production OOM OFF.
+- [ ] D13-D16 and the remaining pre-enable fault, liveness and
+  full-memory-budget requirements remain open after v1125;
+  production OOM OFF.
 
 ## v1123: fine-grained production OOM enablement checklist (2026-11-04)
 
@@ -44,8 +45,8 @@ This is the active prerequisite list for changing
 **requester-only** fatal BRK on proven `MM_ERR_NOMEM` (-1), after
 ordinary reclaim/compaction. A failed child RUN must not kill its
 parent. P0-A, P0-B (ownership safety), and P0-C are CLOSED;
-P0-D/E/F are OPEN. Of 33 unfinished mandatory items, 31 are
-prerequisites for signoff; F12 and F13 are the two post-signoff
+P0-D/E/F are OPEN. At v1125, 31 mandatory items remain unfinished;
+29 are prerequisites for signoff. F12 and F13 are the two post-signoff
 implementation/verification actions and must not block the act of
 signing off. Existing checked items are prior verified evidence,
 not permission to bypass the final combined regression. See
