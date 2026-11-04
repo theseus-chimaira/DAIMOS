@@ -1,3 +1,34 @@
+## 2026-11-04 v1109: integrate VM destroy with physical MEMFS XIP refusal
+
+The source-linked native PDP-6 v1109 regression executes production
+`vm_space_destroy` together with the real `fs_provider_reg_call`
+MEMFS direct XIP dispatch, `memfs_xip_owns_base`,
+`memfs_xip_unpin_base`, and `mm_pin`/`mm_unpin` leaves. The fixture
+starts with a MEMFS-owned XIP reference to an actual MM extent whose
+pin count has been cleared. The first VM destroy obtains the provider's
+owned-XIP -4 refusal, returns -1, retains the same VM descriptor and
+MEMFS reference, and does not attempt an ordinary process-type MM
+free or call the backing-detach witness.
+
+Repairing the original extent using production `mm_pin` permits the
+second VM destroy to release its exact MEMFS reference and MM pin,
+invoke backing detach once, and publish VM_SPACE_NONE. The unrelated
+serialized FS-provider lease remains held; no APR clock wait occurs.
+Two unsafe variants (falling through to process MM free on an owned-XIP
+error, and reversing the swap-detach success gate) are rejected.
+The expanded native v1096 P0-D release-stage matrix PASSes with v1109;
+its optional full booted guest set was not rerun.
+
+The resident storage-mode check, swap-detach return and forbidden
+process-MM fallback are counted test witnesses, not production-backed
+allocations. The fixture prepublishes an owned XIP reference: it does
+not exercise a trusted MEMFS XIP admission/certified executable image
+or a booted process/WAIT/PID lifecycle. A real booted XIP admission
+requires the no-write certification explicitly demanded by the existing
+private `memfs_xip_admit` API; ordinary DXR EXEC does not confer it.
+This remains a P0-D OPEN gate, alongside broader fault cross-products
+and P0-E/F. No production text, BSS, MRES or OOM activation changes.
+
 ## 2026-11-04 v1108: real MEMFS XIP pin-state refusal and retry
 
 The source-linked PDP-6 v1108 test extends the v1086 direct MEMFS

@@ -1,3 +1,19 @@
+## 2026-11-04 v1109: full native VM/MEMFS-XIP/MM teardown leaf
+
+v1109 runs real `vm_space_destroy`, MEMFS direct-provider XIP
+release and physical MM pin adjustment together on the native PDP-6.
+An owned XIP whose pin state is invalid refuses unpin with -4; VM
+keeps its original mapping and does not call process-type MM free or
+the backing detach witness. After repinning the same MM extent, the
+unchanged VM destroy releases XIP once, calls detach once, and commits
+VM_SPACE_NONE. The foreign provider lease is untouched, with no wait.
+Two unsafe branch mutations are rejected. Storage-mode, swap-detach
+and forbidden process-type MM calls are fixture oracles, not full
+production swap or real executable admission. The native P0-D matrix
+PASSes; the optional full guest matrix was not rerun. This adds no resident
+production code or memory. The booted MEMFS-XIP lifecycle and WAIT/PID
+ownership combinations remain unverified; P0-D/E/F remain open.
+
 ## 2026-11-04 v1108: checked XIP MM pin-state retry
 
 Source-linked v1108 executes the real MEMFS XIP release gateway and

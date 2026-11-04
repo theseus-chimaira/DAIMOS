@@ -1,3 +1,22 @@
+### v1109: VM + physical MEMFS XIP release integration (2026-11-04)
+
+- [x] Combine the actual resident VM-destroy assembly, MEMFS XIP
+  provider dispatch/ownership/unpin and physical MM pin/unpin in one
+  executable native PDP-6 fault test. First -4 retains VM and XIP,
+  skips process MM free and backing detach; the original MM extent is
+  repinned, then one successful VM retry unpins/releases and commits
+  VM_NONE with one backing-detach call. No serialized provider lock
+  acquisition or clock wait.
+- [x] Reject unsafe VM fallback-on-owned-XIP-error and inverted detach
+  success mutations. Tests use a stub resident-mode/backing witness,
+  not fabricated on-disk allocations. Expanded native P0-D matrix PASS,
+  optional full booted guest matrix not rerun in v1109.
+- [ ] Boot a genuine MEMFS-XIP executable only after trusted no-write
+  certification exists for its dedicated file extent. Validate real
+  EXEC admission, VM/FINALIZE/WAIT/PID ownership and physical refusal;
+  do not silently expose an ordinary writable DXR file as shared XIP.
+  P0-D/E/F remain OPEN, requester OOM stays disabled.
+
 ### v1108: native real MEMFS XIP pin-state fault (2026-11-04)
 
 - [x] Extend the source-linked MEMFS release fixture to test a real
