@@ -1,3 +1,19 @@
+## 2026-11-05 v1159: E12 protected-process OOM regression PASS
+
+Two full PDP-6 256K physical BRK-OOM guests PASS enabled and
+disabled requester-only policies. The v1159 testkit reads actual
+process scheduler states at the OOM decision and verifies live
+INIT, blocked witness, gateway waiter, unrelated spinner and
+in-flight filesystem owner. The original provider holds `7,,0`
+through the fault and later releases on its private continuation.
+Only the faulting requester slot 3 reaches the fatal branch when
+enabled (one selection); disabled records zero selections and BRK
+-1. Both runs record 160 spinner advances and zero integrity errors,
+with exact existing FILE/WAIT/MM cleanup PASS. This covers protection
+of nonrequesters, not INIT as a faulting requester. E12 closed,
+49/65 checks complete. No resident production code/data/ABI growth;
+requester-OOM remains OFF until all activation gates pass.
+
 ## 2026-11-05 v1158: E11 separate RUN parent and real BRK OOM PASS
 
 Both enabled and disabled full 256K PDP-6 guests PASS. A live

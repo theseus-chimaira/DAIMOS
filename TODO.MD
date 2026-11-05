@@ -1,3 +1,21 @@
+## v1159: E12 protected critical and unrelated nonrequesters (2026-11-05)
+
+- [x] Boot full 256K PDP-6 physical BRK OOM under a real foreign
+  filesystem gateway lease, in default-off and disposable-enabled
+  policies, retaining original v1150 owner/retry/WAIT checks.
+- [x] Snapshot production scheduler table at the actual OOM decision:
+  INIT, blocked witness, foreign gateway waiter, independent spinner
+  and in-flight original gateway owner remain active, with one exact
+  real requester slot and unchanged original lease.
+- [x] Verify exactly one fatal-selection attempt on the requesting
+  slot when enabled; zero selections and ordinary BRK -1 return when
+  disabled. Both guests PASS original exact cleanup, 160 spinner
+  advances and zero integrity errors.
+- [x] E12 accepted for nonrequester protection. The test does not
+  establish an exemption for INIT if INIT itself is the requester.
+  49/65 checks complete, 16 open (14 pre-enable plus F12/F13).
+  No production kernel, ABI, resident RAM or OOM-default change.
+
 ## v1158: E11 independent child RUN failure and requester OOM (2026-11-05)
 
 - [x] Boot two fresh 256K PDP-6 full-system v1158 guests with
@@ -554,7 +572,7 @@ not permission to bypass the final combined regression. See
   continuation and final WAIT status is exact.
 - [x] E11: Repeat child RUN admission failure/rollback alongside a
   genuinely OOM-killed BRK requester: never kill the RUN parent.
-- [ ] E12: Confirm no unauthorized INIT/kernel critical process,
+- [x] E12: Confirm no unauthorized INIT/kernel critical process,
   in-flight gateway owner or unrelated bystander is terminated.
 - [ ] E13: Repeat on the required PDP-6 simulator targets and actual
   release boot/media configuration; archive complete counter logs.

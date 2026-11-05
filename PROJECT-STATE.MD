@@ -1,3 +1,26 @@
+## 2026-11-05 v1159: E12 protected live owners under requester OOM
+
+Two independently built full 256K PDP-6 testkit v1159 guests PASS
+with opt-in requester-only BRK OOM enabled and production-disabled.
+The actual physical -1 BRK decision snapshots the real process table:
+INIT slot 1, blocked witness slot 2, gateway waiter slot 4,
+independent spinner slot 5 and original held gateway owner slot 6
+all remain active while requester slot 3 fails. The enabled guest
+records exactly one fatal selection, of slot 3 only; the disabled
+guest records zero fatal selections and a normal -1 BRK return.
+The original in-flight provider retains its lease (`7,,0`) until
+its own continuation unlocks it, with 160 spinner advances in each
+guest and zero integrity errors. Existing physical MM, FILE close,
+provider retry, WAIT and process accounting checks also PASS.
+The test does not assert an exemption for INIT when INIT *itself*
+requests a failing physical BRK; the proven invariant is protection
+of all nonrequester critical/ordinary processes.
+
+E12 CLOSED for the supported writable-process requester-only scope:
+**49/65 mandatory checks complete, 16 open** (14 pre-enable plus
+F12/F13). E13, S07/S08, A04 and F02-F11 remain. Production requester
+OOM OFF; no production KCORE/MRES, ABI or permanent RAM changes.
+
 ## 2026-11-05 v1158: E11 independent RUN parent survives BRK OOM
 
 Fresh independent 256K PDP-6 full-system guests PASS testkit
