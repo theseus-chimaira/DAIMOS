@@ -1,3 +1,21 @@
+## 2026-11-05 v1146r3: exact-once D16 matrix completed
+
+Nine frozen-candidate PDP-6/native regressions PASS across all chosen
+physical release retries: FILE, PIPE, DPY, TTY, process VM, u-area,
+swap bitmap and backing record, failed unpublished RUN and APR/EXEC,
+and provider-lock ownership. Explicit owner counts and publication
+order are correct, with no unexpected MM owner/base alias or premature
+WAIT. The default-OFF versus isolated requester-OOM-ON variants both
+PASS 24 successive process lifetimes, PID reuse, stale WAIT and TERM
+rejection, and exact MM/slot recovery. D16 is accepted for the
+present writable-process scope; scheduled XIP remains excluded.
+
+Checklist: 38/65 mandatory complete, 25 pre-enable blockers still
+open, and F12/F13 cannot run yet. C04, genuine sustained E/F faults
+and RAM/signoff are separate. All source and image revisions are fixed
+in testkit v1146 logs. The production OOM flag remains OFF; no
+resident KCORE/MRES RAM or ABI change occurred in this stage.
+
 ## 2026-11-05 v1145-v1146: verified D16 components, not yet D16 signoff
 
 Testkit's repaired v1087 full release graph/native suite PASSes on

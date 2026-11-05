@@ -1,3 +1,19 @@
+## v1146r3: D16 exact-once release matrix accepted (2026-11-05)
+
+- [x] Complete all nine clean/frozen `test-daimos-oom-exact-once-matrix-v1146`
+  stages with source revision and installed host-tool checksum guards.
+- [x] Verify FILE/PIPE/DPY, canonical TTY, VM, u-area, swap bitmap,
+  unpublished RUN discard, provider lock and exact-once owner release
+  across the full physical fault/rollback cases.
+- [x] Verify 24 successive PID/slot reuse cycles with alternating WAIT
+  status and stale-event rejection under both production-disabled and
+  isolated test-only enabled requester OOM. No unintended victim.
+- [x] D16 complete; mandatory OOM checklist 38/65 checked, 27 open
+  (25 pre-enable blockers plus F12/F13 post-signoff actions).
+- [ ] Continue C04 PI6 owner/bystander full guest, B06/B07, sustained
+  E05-E13, F02-F11 and actual 256K/32K RAM budget signoff.
+  Production requester OOM remains disabled.
+
 ## v1145-v1146: D16 frozen-matrix preparation (2026-11-05)
 
 - [x] Rerun all v1087 release-graph and native checks after restoring
@@ -8,7 +24,7 @@
 - [x] Stage testkit v1146r1 sequential D16 exact-once matrix with
   fixed Git revisions, host tool checksum guard and retained logs.
   Rejecting a dirty testkit checkout works as a negative control.
-- [ ] Run every full matrix guest on one frozen candidate, then
+- [x] Run every full matrix guest on one frozen candidate, then
   inspect all exact-once/owner counters before marking D16 complete.
 - [ ] C04, E05-E13, F02-F13 and resident/peak RAM proof remain open.
   Keep production requester-OOM OFF.
@@ -378,7 +394,7 @@ not permission to bypass the final combined regression. See
 - [x] D15: Decide XIP scope: if production EXEC/RUN cannot admit an
   XIP process, keep it explicitly out of this release and rerun
   v1108/v1109; if enabled, complete separate X01-X08 below first.
-- [ ] D16: Verify final exact-once FILE/PIPE/DPY, TTY, VM, SWAP,
+- [x] D16: Verify final exact-once FILE/PIPE/DPY, TTY, VM, SWAP,
   process-slot and MM-owner accounting across all supported retries.
 
 ### E: whole-system OOM stress and liveness (OPEN)

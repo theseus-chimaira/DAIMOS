@@ -1,3 +1,29 @@
+## 2026-11-05 v1146r3: full D16 exact-once matrix PASS
+
+The sequential nine-stage `test-daimos-oom-exact-once-matrix-v1146`
+PASSes on clean frozen DAIMOS `2e12c1da` and daimos-testkit
+`253a813`, using fixed installed P10FOLD/DLINK/DAS/PDP-6 simulator
+checksums. Full logs and `revisions.txt` are retained in the
+versioned `$TMPDIR/daimos-oom-exact-once-v1146.mV2FJf` directory.
+The matrix verifies the transitive fatal-release graph and negative
+mutations, real PIPE/DPY/VM/u-area pin/busy/unpin/free, physical TTY
+HUP, swap-out/in and bitmap-refusal recovery, retained foreign FS
+provider lease, exact FILE->VM->u-area->ZOMB publication and parent
+WAIT, nested APR/EXEC/post-VM failed-RUN deferred discard, bystander
+progress, and process/owner bookkeeping. Disabled and isolated-enabled
+OOM guests each complete 24 PID lifetimes with stale event refusal,
+alternating WAIT status and stable MM/slot counts. Only the requester
+is terminated in the enabled physical-OOM case.
+
+D16 is now complete: **38/65 mandatory OOM checks**, 27 open (25
+pre-enable blockers plus F12/F13 post-signoff). C04, B06/B07, E/F
+stress/signoff and actual resident/peak 256K and deferred 32K budgets
+remain open. Existing KCC notes during full image builds include a
+truncated TSFS helper identifier and unused utility functions; F10
+still requires a final diagnostics review. No production KCORE/MRES
+instructions, persistent data, ABI or requester-OOM policy changed;
+`PROC_OOM_BRK_ENABLED_V1000` remains 0.
+
 ## 2026-11-05 v1145-v1146: D16 exact-once acceptance in progress
 
 The corrected installed host tools and unchanged DAIMOS production
