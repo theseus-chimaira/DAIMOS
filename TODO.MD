@@ -1,3 +1,18 @@
+## v1202: close A04/F02 complete exact-revision matrix
+
+- [x] Execute the full `P0D_FULL=1` matrix uninterrupted on frozen
+  DAIMOS `5db15ecf`, testkit `122c61f`: 18 component stages,
+  allocation-free v1083/v1087 graph, 17 booted invocations PASS.
+- [x] A04 complete: full final-candidate source-linked release graph
+  and native/error release matrix revalidated with no new edges.
+- [x] F02 complete: all physical P0-D release guests PASS against
+  the identical frozen DAIMOS candidate.
+- [ ] E13: finish remaining independent simulator/media coverage.
+- [ ] F07: measure combined peak physical MM/descriptor/APR/provider
+  buffer allocation budget, not just individual pressure cases.
+- [ ] F11: final exact release-candidate integration/signoff;
+  only then consider F12/F13 production OOM activation.
+
 ## v1201: A04 full-guest individual row coverage complete
 
 - [x] v1120 OOM default OFF and isolated test ON: real physical
@@ -611,7 +626,7 @@ not permission to bypass the final combined regression. See
   provider buffer or removable helper required during fatal release.
 - [x] A03: Run the v1087 source/negative-mutation contract; owner
   and error paths remain bounded in *allocation*, not necessarily time.
-- [ ] A04: Rerun v1087 and the full source-linked P0-D matrix at the
+- [x] A04: Rerun v1087 and the full source-linked P0-D matrix at the
   final production candidate revision; fail on any new call edge.
 
 ### B: provider ownership and fail-closed behavior (safety closed)
@@ -720,7 +735,7 @@ not permission to bypass the final combined regression. See
 
 - [x] F01: Keep production `PROC_OOM_BRK_ENABLED_V1000,0` during
   all experiments; enable it only in disposable positive guests.
-- [ ] F02: Run all P0-D component and optional `P0D_FULL=1` booted
+- [x] F02: Run all P0-D component and optional `P0D_FULL=1` booted
   matrix cases on the *exact* candidate revision, not stale results.
 - [x] F03: Rebuild and run disabled/enabled OOM positive and negative
   guest variants v1075/v1110/v1112/v1114/v1115/v1116/v1120.

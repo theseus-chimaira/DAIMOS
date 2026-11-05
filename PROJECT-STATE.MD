@@ -1,3 +1,21 @@
+## 2026-11-05 v1202: A04/F02 full frozen P0-D matrix PASS
+
+DAIMOS `5db15ecf` with testkit `122c61f` completed one uninterrupted
+`P0D_FULL=1` run, exit 0: all 18 component checks, v1083/v1087
+allocation-free release graph, and all 17 booted PDP-6 256K KCC
+DSK/D6FS resource-owner tests PASS. Unique full-script stage/guest
+markers and both physical-OOM PID-reuse policy variants were checked.
+Log, revisions and SHA256 manifest are preserved at
+`$TMPDIR/daimos-a04-final-v1202.tar.gz`; detailed evidence in
+`design/A04-F02-FULL-MATRIX-ACCEPTANCE-V1202.md`.
+
+**A04 and F02 CLOSED** for the frozen 256K writable-process profile;
+mandatory checklist **59/64 complete, 5 open** (E13/F07/F11 before
+activation, deferred F12/F13). This is not full release signoff:
+independent simulator/media coverage, combined dynamic peak budget,
+and F11 remain outstanding. Production OOM remains OFF. No production
+kernel, permanent memory, or ABI changes.
+
 ## 2026-11-05 v1201: all individual A04 P0-D booted rows now PASS
 
 On DAIMOS `d9aedf20` and testkit `122c61f`, v1120 OOM disabled
