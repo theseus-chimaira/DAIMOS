@@ -1,3 +1,21 @@
+## 2026-11-05 v1158: E11 independent RUN parent survives BRK OOM
+
+Fresh independent 256K PDP-6 full-system guests PASS testkit
+`test-daimos-oom-run-parent-v1158` in both isolated requester-OOM
+enabled and default-disabled modes. In one guest, a separate live
+process uses real MM descriptor pressure to fail a child RUN with
+the production allocator's -3 result, confirms no published process
+slot or process-word growth, restores descriptors and signals INIT
+through a pipe. It remains blocked while another process triggers
+genuine BRK physical OOM. Enabled policy retires only that requester;
+disabled policy returns -1. The original RUN parent then completes
+normal exit and exact WAIT. No production kernel or permanent RAM/ABI
+changes; production OOM remains OFF.
+
+E11 CLOSED for writable-process scope: **48/65 mandatory checks
+complete, 17 open** (15 pre-enable plus F12/F13). E12/E13,
+S07/S08, A04 and F02-F11 remain open.
+
 ## 2026-11-05 v1157: E10 APR/EXEC/RUN under foreign FS lease accepted
 
 Fresh full 256K PDP-6 `test-daimos-fatal-exec-provider-v1157`

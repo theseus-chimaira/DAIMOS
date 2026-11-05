@@ -1,3 +1,15 @@
+## 2026-11-05 v1158: E11 separate RUN parent and real BRK OOM PASS
+
+Both enabled and disabled full 256K PDP-6 guests PASS. A live
+independent RUN parent forces genuine MM descriptor exhaustion,
+observes real -3 child admission failure and exact rollback, and
+waits while another child encounters actual physical BRK OOM.
+The enabled requester alone is terminated; the disabled requester
+gets -1. The RUN parent survives, exits and is reaped with exact
+process MM/slot accounting. Testkit v1158 uses only a disposable
+kernel copy. E11 closed, 48/65 mandatory checks complete; E12/E13,
+release acceptance and RAM budgets remain open. Production OOM OFF.
+
 ## 2026-11-05 v1157: E10 APR/EXEC/RUN provider-contention PASS
 
 Independent PDP-6 full guest rebuild PASSes the testkit v1157r11

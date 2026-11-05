@@ -1,3 +1,16 @@
+## v1158: E11 independent child RUN failure and requester OOM (2026-11-05)
+
+- [x] Boot two fresh 256K PDP-6 full-system v1158 guests with
+  default-disabled and disposable-enabled requester-only OOM.
+- [x] Have a distinct live RUN parent produce real MM -3 child
+  admission refusal under descriptor exhaustion, verify exact
+  rollback, and acknowledge readiness before the BRK requester.
+- [x] Keep that RUN parent alive across real physical OOM, verify
+  exclusive requester termination only when enabled, then exact
+  WAIT and process MM/slot recovery in both policies.
+- [x] E11 closed: 48/65 complete, 17 open (15 pre-enable plus
+  F12/F13). No production kernel, ABI or persistent RAM changes.
+
 ## v1157: E10 APR/EXEC/RUN with held foreign provider (2026-11-05)
 
 - [x] Fresh full-system 256K PDP-6 v1157 guest PASS against DAIMOS
@@ -539,7 +552,7 @@ not permission to bypass the final combined regression. See
 - [x] E10: Execute APR fault and EXEC post-commit failure while a
   separate provider is busy; ensure the faulting owner retains its
   continuation and final WAIT status is exact.
-- [ ] E11: Repeat child RUN admission failure/rollback alongside a
+- [x] E11: Repeat child RUN admission failure/rollback alongside a
   genuinely OOM-killed BRK requester: never kill the RUN parent.
 - [ ] E12: Confirm no unauthorized INIT/kernel critical process,
   in-flight gateway owner or unrelated bystander is terminated.
