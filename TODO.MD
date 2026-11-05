@@ -1,3 +1,19 @@
+## v1201: A04 full-guest individual row coverage complete
+
+- [x] v1120 OOM default OFF and isolated test ON: real physical
+  shortage, requester/witness distinction, 24 PID reuse cycles each.
+- [x] v1106 real process-VM MM_BUSY and swap backing cleanup PASS.
+- [x] v1107 physical DISK bitmap release refusal and repair PASS.
+- [x] v1077 D6FS SYNC and MM_BUSY under real requester OOM PASS.
+- [x] v1101 permanent wrong-owner MM -4 quarantine PASS.
+- [x] Every individual v1096 P0D_FULL booted test has passed across
+  the v1197-v1201 staggered evidence batches.
+- [ ] Run the complete frozen `P0D_FULL=1` script uninterrupted on
+  the final exact candidate and review release counters, build
+  diagnostics, resource peaks and revision provenance.
+- [ ] Keep A04/F02 OPEN, 57/64 acceptance, production OOM OFF
+  until the complete exact-candidate signoff is satisfied.
+
 ## v1200: A04 PIPE/DPY/disk full-guest acceptance progress
 
 - [x] v1119 physical PIPE plus Type-340 DPY/HUP retry PASS.

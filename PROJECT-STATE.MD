@@ -1,3 +1,21 @@
+## 2026-11-05 v1201: all individual A04 P0-D booted rows now PASS
+
+On DAIMOS `d9aedf20` and testkit `122c61f`, v1120 OOM disabled
+and isolated enabled (24 numeric PID reuse cycles in each), v1106
+physical VM MM_BUSY, v1107 disk bitmap refusal, v1077 D6FS SYNC
+and physical OOM, and v1101 permanent wrong-owner -4 all PASS.
+Complete v1201 logs/revision/sha256 manifest are archived at
+`$TMPDIR/daimos-a04-evidence-v1201.tar.gz`; SHA256 and failure
+counters in `design/A04-P0D-BOOTED-PROGRESS-V1201.md`.
+
+With the earlier v1197-v1200 tests, all 17 individual `P0D_FULL=1`
+booted invocations have now passed in staggered batches; the 18
+component/source-linked P0-D checks also PASS. **This is not an
+uninterrupted exact-revision full acceptance matrix**. A04/F02 and
+final diagnostics/size signoff remain OPEN; 57/64 mandatory OOM
+checks complete, production requester OOM disabled. No production
+kernel/MRES code, RAM or ABI changed.
+
 ## 2026-11-05 v1200: A04 PIPE/DPY/swap full guests PASS
 
 On source `08bf7427` and testkit `122c61f`, v1119 combined
