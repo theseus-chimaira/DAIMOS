@@ -1,3 +1,21 @@
+## 2026-11-05 v1194: AUXSTORE conversion accepts explicit DBOOT marker
+
+The v1192 DBOOT explicit-layout word `020` exposed a strict-legacy
+assumption in `mkauxstore --convert-dboot`: it refused the now-valid
+flag `1` when converting the deliberately empty auxiliary-drum D6FS
+precursor to AUXST1. Its exact-match safety check now allows only
+flag `0` (historical) or `1` (explicit reserved ranges) while
+retaining the requirement that all other descriptor metadata
+outside the expected DBOOT header be zero. Unknown and 36-bit high
+flag values remain destructive-conversion refusals.
+
+Testkit v638 conversion and v636 safety PASS with both flag modes,
+read-only dry-run preservation, image-byte preservation on refusal
+and original filesystem payload preservation on successful conversion.
+The corrected host utility is installed under `$PDP10_PREFIX/bin`.
+This is a prerequisite regression fix for new v1192 media and does
+not change OOM policy, allocator or KCORE/MRES residency.
+
 ## 2026-11-05 v1192: D6FSR2 explicit zero-reservation layout fixed
 
 DBOOT's historical D6FSR2 extension had no way to distinguish an

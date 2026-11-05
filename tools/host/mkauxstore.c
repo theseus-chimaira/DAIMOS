@@ -33,6 +33,8 @@
 #define DBOOT_CLEAN_HEADER      0444243000000ULL
 #define DBOOT_SINGLE_MEMBER     04010000ULL
 #define DBOOT_D6FS_MAGIC       0442654636222ULL
+#define DBOOT_LAYOUT_FLAGS_WORD 020U
+#define DBOOT_LAYOUT_F_EXPLICIT 1U
 
 static void
 die(const char *msg)
@@ -207,8 +209,18 @@ require_dboot_conversion(FILE *fp, unsigned d6fs_base,
             w[8] != super_a || w[9] != super_b ||
             w[10] != tail_blocks)
                 die("DBOOT conversion metadata does not match requested layout");
+        /* A new mkdsk descriptor states explicitly that the otherwise
+         * zero bootstream/LOGSTORE/BADMAP ranges are intentional.
+         * The disposable AUXSTORE precursor has no reserved blocks,
+         * so only flag 0 (historical) or 1 is allowed. Never discard
+         * unknown extensions under the destructive conversion. */
+        if (w[DBOOT_LAYOUT_FLAGS_WORD] != 0U &&
+            w[DBOOT_LAYOUT_FLAGS_WORD] != DBOOT_LAYOUT_F_EXPLICIT)
+                die("DBOOT conversion has unsupported reserved-layout flags");
         for (i = 1U; i < BLOCK_WORDS; ++i) {
                 if (i >= 5U && i <= 10U)
+                        continue;
+                if (i == DBOOT_LAYOUT_FLAGS_WORD)
                         continue;
                 if (w[i] != 0U)
                         die("DBOOT descriptor contains unexpected metadata");

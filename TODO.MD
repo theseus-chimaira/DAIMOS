@@ -1,3 +1,12 @@
+## v1194: fix AUXSTORE conversion of v1192 DBOOT descriptors
+
+- [x] Accept only exact expected DBOOT zero/explicit-1 reserved-layout
+  flags in the destructive `mkauxstore --convert-dboot` entry.
+- [x] Preserve existing nonempty/unknown high-bit rejection, dry-run
+  immutability and filesystem payload, verified by testkit v638/v636.
+- [ ] Re-run the complete F07 idle-stack guest on newly generated
+  auxiliary-drum images before considering dynamic peak acceptance.
+
 ## v1192: DBOOT D6FSR2 explicit-zero reserved-layout ambiguity fixed
 
 - [x] Distinguish modern explicitly zero bootstream/LOGSTORE/BADMAP
