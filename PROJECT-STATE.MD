@@ -1,3 +1,16 @@
+## 2026-11-05 v1198: three additional current-source A04 physical guests PASS
+
+On frozen DAIMOS `22df1a0c` and testkit `122c61f`, isolated full
+256K PDP-6 physical guests v1124 (TTY/VM/u-area MM_BUSY), v997
+(pre-VM and post-VM release retries with a held foreign provider),
+and v1103 (combined PIPE/HUP/VM/u-area teardown) all PASS with
+correct original ownership, final EXIT/WAIT and zero guest errors.
+The three raw logs, SHA256 manifest and full revisions are archived
+at `$TMPDIR/daimos-a04-evidence-v1198.tar.gz`; see
+`design/A04-P0D-BOOTED-PROGRESS-V1198.md`. This does not complete
+`P0D_FULL=1`: the remaining guests and exact final-candidate
+review are required. A04/F02 OPEN, 57/64 checklist, production OOM OFF.
+
 ## 2026-11-05 v1197: partial current-source A04 full-guest matrix
 
 DAIMOS `d3e02fdc` and testkit `122c61f` completed all 18 P0-D

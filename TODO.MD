@@ -1,3 +1,16 @@
+## v1198: A04 full-guest integration progress (still OPEN)
+
+- [x] Boot isolated current-source v1124 physical TTY, VM and
+  u-area MM_BUSY; exact three-stage owner release PASS.
+- [x] Boot v997 physical pre-VM/post-VM retry with held foreign
+  provider; final EXIT/WAIT and bystander PASS.
+- [x] Boot v1103 combined PIPE/HUP/VM/u-area teardown with held
+  provider and independent bystander; zero guest errors PASS.
+- [ ] Continue the remainder of `P0D_FULL=1` starting at v1117,
+  re-run final frozen full matrix and review all candidate counters.
+- [ ] Keep A04/F02 OPEN and production requester OOM OFF until the
+  complete exact-revision acceptance evidence is signed off.
+
 ## v1197: A04 full guest matrix partial progress (still OPEN)
 
 - [x] Rerun all 18 P0-D component leaves and v1083/v1087 audits on
