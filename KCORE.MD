@@ -1,3 +1,12 @@
+## 2026-11-05 v1161: fatal release graph and P0-D native preflight
+
+Frozen v1160 candidate DAIMOS `fe0f3c0e` PASSes the 18-stage native
+P0-D release matrix and v1083/v1087 direct/transitive allocation-free
+fatal-close analysis. PIPE/DPY/TTY/VM/u-area/swap/XIP/VM_NONE tests
+and their negative ownership mutants PASS; no kernel change needed.
+The full booted `P0D_FULL=1` matrix was NOT run, so A04/F02 stay open
+alongside E13 and remaining F gates. Checklist 51/65; OOM OFF.
+
 ## 2026-11-05 v1160: S07/S08 frozen 256K DSK/D6FS candidate
 
 Two fresh full 256K KCC PDP-6 E13 guests PASS physical requester BRK

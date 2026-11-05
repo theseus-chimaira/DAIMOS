@@ -1,3 +1,15 @@
+## v1161: provisional final-release graph and native P0-D retest
+
+- [x] Re-run testkit `test-daimos-p0d-release-matrix-v1096` on
+  current frozen 256K KCC candidate source revision `fe0f3c0e`.
+  All 18 source-linked/native release stages, v1083 direct scope,
+  v1087 allocation-free transitive teardown and unsafe mutants PASS.
+- [ ] A04/F02 remain open: this matrix did not use `P0D_FULL=1`,
+  and final production-candidate exact-revision booted regression,
+  review and size acceptance are still required.
+- [x] No production OOM enable, kernel code/data or ABI change;
+  51/65 mandatory checks remain complete.
+
 ## v1160: first requester-OOM release candidate profile and E13 evidence
 
 - [x] S07: Freeze first acceptance profile at 256K, KCC, DSK Stage 1,

@@ -1,3 +1,20 @@
+## 2026-11-05 v1161: A04/P0-D component preflight PASS, final gate open
+
+On frozen first-profile DAIMOS `fe0f3c0e`, testkit
+`test-daimos-p0d-release-matrix-v1096` PASSes 18 real native and
+source-linked PIPE, DPY, SWAP, HUP, VM, TTY, u-area, PREVM, SIDL,
+XIP and VM_NONE error/release tests. The suite also reruns v1083
+direct fatal-release scope and v1087 allocation-free transitive
+BRK/APR/EXEC -> FS/FILE/HUP -> MM/SWAP/WAIT graph, both PASS.
+Negative mutation checks reject unsafe ownership/release shortcuts.
+The test explicitly skipped its `P0D_FULL=1` 256K booted matrix.
+
+This verifies useful A04 preflight evidence on the frozen candidate
+but does NOT close A04 or F02. Their final full booted release
+regressions and exact revision signoff remain open. The completed
+checklist remains 51/65 (12 pre-enable plus F12/F13 open), and
+production requester-OOM remains OFF. No kernel changes made.
+
 ## 2026-11-05 v1160: S07/S08 scope frozen; E13 DSK/D6FS platform PASS
 
 The first bounded requester-only BRK OOM release-candidate profile is
