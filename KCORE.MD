@@ -1,3 +1,15 @@
+## 2026-11-05 v1155: E08 process ownership under concurrent sessions
+
+The disposable v1155 full PDP-6 guest now checks two independent
+sessions plus two concurrently live two-member groups across
+STOP, CONT, fatal group events and real parent CHLD/WAIT, followed
+by 64 numeric PID reuse lifetimes with stale WAIT/TERM rejection.
+The foreign sessions remain active until individually terminated
+and reaped. Final process and FILE accounting matches the baseline.
+Two full-system v1155 guests and the original v979 control PASS.
+E08 is closed without any production KCORE/MRES, persistent RAM,
+ABI or OOM policy change. E09-E13 and final F gates remain open.
+
 ## 2026-11-05 v1154: E07 PI6 progress across physical release retries
 
 The v1153 isolated full PDP-6 guest proves 55 actual PI6 clock ticks

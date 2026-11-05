@@ -1,3 +1,20 @@
+## v1155: E08 concurrent sessions/group/PID lifetime accepted (2026-11-05)
+
+- [x] Two actual separate-session leaders remain alive while two
+  concurrent, distinct two-member process groups stop and continue.
+- [x] Real group STOP/CONT and TERM/INT notifications yield exact
+  per-member WAIT statuses and CHLD, no duplicate event or wrong
+  session owner exit; reaped PIDs reject stale WAIT/TERM.
+- [x] While foreign sessions remain live, reuse one numeric PID
+  across 64 additional child RUN/event/WAIT lifetimes; reject stale
+  events after each reap, then reap both sessions independently.
+- [x] Check final process-slot, process-word and FILE accounting.
+  Two complete full-system v1155 PASS runs and fresh original v979
+  control PASS; testkit commit `0ac6c83`.
+- [x] E08 closed: 45/65 complete, 20 open (18 pre-enable plus
+  F12/F13). E09-E13, S07/S08, A04 and F02-F11 remain mandatory.
+  No production code or OOM default change.
+
 ## v1153-v1154: independent scheduler progress E07 (2026-11-05)
 
 - [x] Boot v1153 with a real held FS provider and physically distinct
@@ -486,7 +503,7 @@ not permission to bypass the final combined regression. See
 - [x] E07: Run at least one competing runnable user process during
   held-provider, PIPE/DPY, TTY, VM, and DISK retry intervals; prove
   qualified PI6 clock and observable forward progress.
-- [ ] E08: Exercise multiple concurrent process groups/sessions,
+- [x] E08: Exercise multiple concurrent process groups/sessions,
   stopped processes, parent WAIT/CHLD and numeric PID recycling
   without duplicate event delivery or wrong-owner termination.
 - [ ] E09: Combine physical RAM exhaustion, disk backing full/failed

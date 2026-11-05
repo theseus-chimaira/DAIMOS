@@ -1,3 +1,28 @@
+## 2026-11-05 v1155: E08 concurrent sessions/group lifecycle accepted
+
+Two independently booted 256K PDP-6 full-system v1155 guests PASS
+simultaneously live foreign sessions, two separate two-member process
+groups, actual group STOP/CONT/terminal events and parent CHLD/WAIT
+notifications. The original unrelated sessions remain alive while
+both groups stop, continue and exit. Exact per-PID WAIT status is
+checked after each transition, with no second status or stale
+event accepted. After those groups are reaped the guest repeats
+64 numeric PID lifetimes, rejecting stale WAIT/TERM at each boundary
+while the foreign sessions remain live, then reaps each session.
+Final process slots, process words and FILE slots equal the baseline.
+
+Testkit `test-daimos-oom-groups-sessions-v1155` PASSes on the
+independent run plus the previously retained passing guest; the
+unmodified v979 group/fatal-event regression also PASSes freshly.
+An earlier in-development v1155 run timed out before the foreign
+session phase; the finished test's two full PASS runs complete.
+No production kernel, MRES, RAM or ABI change was required.
+
+E08 is CLOSED for the writable-process scope: **45/65 complete**,
+20 open (18 pre-enable plus deferred F12/F13). E09-E13,
+S07/S08, A04 and F02-F11 still block activation.
+`PROC_OOM_BRK_ENABLED_V1000` remains disabled.
+
 ## 2026-11-05 v1153-v1154: E07 qualified PI6 and bystander CLOSED
 
 Full 256K PDP-6 v1153 exercises the held foreign FS provider with
