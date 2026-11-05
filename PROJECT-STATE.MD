@@ -1,3 +1,20 @@
+## 2026-11-05 v1195: current-source P0-D and stack baseline PASS
+
+On DAIMOS `bcdafeea` with v1194 corrected AUXSTORE converter,
+the testkit v1096 component-only P0-D release matrix PASSes all
+18 source-linked/native leaves plus v1083 direct release and v1087
+transitive allocation-free BRK/APR/EXEC release graph. The run
+explicitly did **not** set `P0D_FULL=1`; A04/F02 remain OPEN.
+
+The current-source process-private kernel stack test PASSes with
+`0300` octal highwater below the `0310` warning limit (`0316`
+capacity). The corrected-media idle-stack guest PASSes with `025`
+octal highwater below `060` limit. The first idle attempt failed
+at DBOOT -> AUXSTORE conversion, fixed and reverified by v1194.
+F07 remains OPEN for complete MM extent/descriptor, APR-alignment
+and shared-provider-buffer peak coverage; these stack passes are
+only bounded baseline evidence. OOM remains OFF; checklist 57/64.
+
 ## 2026-11-05 v1194: AUXSTORE conversion accepts explicit DBOOT marker
 
 The v1192 DBOOT explicit-layout word `020` exposed a strict-legacy

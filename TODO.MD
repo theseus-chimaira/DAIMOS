@@ -4,8 +4,9 @@
   flags in the destructive `mkauxstore --convert-dboot` entry.
 - [x] Preserve existing nonempty/unknown high-bit rejection, dry-run
   immutability and filesystem payload, verified by testkit v638/v636.
-- [ ] Re-run the complete F07 idle-stack guest on newly generated
-  auxiliary-drum images before considering dynamic peak acceptance.
+- [x] Re-run the complete F07 idle-stack guest on newly generated
+  auxiliary-drum images: v1194 PASS, idle highwater `025` octal
+  below `060` limit. This does not close the F07 peak-MM gate.
 
 ## v1192: DBOOT D6FSR2 explicit-zero reserved-layout ambiguity fixed
 
