@@ -1,3 +1,26 @@
+## 2026-11-05 v1188: F06 permanent MRES inventory audit CLOSED
+
+The v1174/v1176 identical-source Linux/Android 256K DSK/D6FS
+cross-platform evidence verifies the live SYS_MEMINFO resident count
+against KINIT's patched instruction, 136 allocated MM descriptor
+slots (272 permanent words), and the sum of precisely 22 boot-
+installed MRES packages. Android MRES is 8837 words; Linux is 8839.
+In the disabled *instrumented* Android guest, 9944 KCORE + 272
+MM table + 8837 installed MRES = 19053 words, with exclusive last
+address 045235; the octal 040000 permanent-address budget is
+exceeded by 2717 words. Test-enabled physical OOM adds 14 KCORE
+words, increasing the shortfall to 2731. Package inventory and
+KINIT's actual installed set are **not** interchangeable; none
+of these MRES objects is dynamically unloadable or OOM reclaimable.
+
+**F06 CLOSED as a measured occupancy/reconciliation task only.**
+F05 is explicitly **OPEN and failing the 16K memory requirement**
+until an optimized, uninstrumented full target meets the budget;
+the present booted 256K test image is functional but cannot
+constitute a 16K-fit acceptance. This does not enable production
+OOM. Total mandatory checklist **56/65 complete, 9 open**
+(7 pre-enable plus F12/F13).
+
 ## 2026-11-05 v1187: F08 deferred 32K separation CLOSED
 
 F08 formally records that passing 256K/full KCC DSK/D6FS OOM

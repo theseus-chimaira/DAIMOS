@@ -665,9 +665,19 @@ not permission to bypass the final combined regression. See
 - [ ] F05: Measure production KCC KCORE text/data/low endpoint and
   real MRES residency with OOM off/on; retain the 16K executive
   mapping budget and avoid permanent RAM growth.
-- [ ] F06: Re-evaluate current full/auto packaged permanent-image
+- [x] F06: Re-evaluate current full/auto packaged permanent-image
   overflow versus `040000` octal; measure the *actually resident*
   module set rather than treating all packages as simultaneously live.
+  Independent v1174 SYS_MEMINFO + patched-MOVEI + v1176 MINIT
+  inventory reconcile 22 boot-installed MRES modules: 8837 words
+  Android and 8839 Linux. The disabled Android disposable full
+  DSK/D6FS guest has 9944 KCORE + 272 fixed MM-descriptor words
+  + 8837 MRES = 19053 permanent words, **2717 words above**
+  the `040000` low-core exclusive limit including origin `060`.
+  Enabled test OOM adds 14 KCORE words and remains over budget.
+  F06 closes the measurement/inventory audit only; it does **not**
+  clear F05's mandatory production 16K fit, and MRES remains
+  boot-only/permanent with no runtime unload or OOM reclaim.
 - [ ] F07: Check peak physical MM extent/descriptor use, APR aligned
   slack, startup stacks and provider buffers under maximum load.
 - [x] F08: Retain deferred strict 32K KCORE/DSH optimization as a
