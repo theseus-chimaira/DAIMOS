@@ -1,3 +1,18 @@
+## v1156: E09 physical versus backing exhaustion accepted (2026-11-05)
+
+- [x] Run frozen v1156 matrix: nine real-MM/owner/backing tests,
+  plus unchanged-source classification; all PASS, logs retained at
+  `$TMPDIR/daimos-oom-error-matrix-v1156.gzw27g`.
+- [x] Verify authentic physical MM -1, fragmentation -2, MM
+  descriptor shortage -3, invalid/wrong-owner -4, physical busy -5.
+- [x] Saturate the real backing-store allocation bitmap (not a
+  fabricated -1), reject an additional allocation atomically,
+  recover and preserve ordinary BRK/live requester with default OOM
+  disabled and in a disposable kernel with requester OOM enabled.
+- [x] E09 closed: 46/65 complete; 19 open (17 pre-enable plus
+  F12/F13). E10-E13, S07/S08, A04 and F02-F11 remain prerequisites.
+  Production requester OOM remains OFF.
+
 ## v1155: E08 concurrent sessions/group/PID lifetime accepted (2026-11-05)
 
 - [x] Two actual separate-session leaders remain alive while two
@@ -506,7 +521,7 @@ not permission to bypass the final combined regression. See
 - [x] E08: Exercise multiple concurrent process groups/sessions,
   stopped processes, parent WAIT/CHLD and numeric PID recycling
   without duplicate event delivery or wrong-owner termination.
-- [ ] E09: Combine physical RAM exhaustion, disk backing full/failed
+- [x] E09: Combine physical RAM exhaustion, disk backing full/failed
   allocation and fragmentation in separate guest scenarios; preserve
   -1/-2/-3/-4/-5 distinctions and no kill on nonphysical shortage.
 - [ ] E10: Execute APR fault and EXEC post-commit failure while a

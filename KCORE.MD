@@ -1,3 +1,14 @@
+## 2026-11-05 v1156: OOM shortage classification E09
+
+The frozen full-system v1156 error-class matrix PASSes real physical
+BRK OOM (-1), fragmentation (-2), descriptor exhaustion (-3),
+invalid/wrong-owner (-4) and MM_BUSY (-5), plus authentic full
+backing-store bitmap refusal and recovery. Both production-disabled
+and disposable requester-OOM-enabled guests preserve the requester
+across backing exhaustion and accept subsequent ordinary BRK.
+The production allocator and error codes are unchanged; no permanent
+RAM/ABI change. E09 is closed, E10-E13 and final F gates remain open.
+
 ## 2026-11-05 v1155: E08 process ownership under concurrent sessions
 
 The disposable v1155 full PDP-6 guest now checks two independent

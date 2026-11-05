@@ -1,3 +1,24 @@
+## 2026-11-05 v1156: E09 physical MM and backing error classes accepted
+
+Testkit `test-daimos-oom-error-matrix-v1156` PASSes all nine
+independent real PDP-6/native error-class cases against frozen
+DAIMOS `9f51326e` and testkit `81f40eb` with fixed host-tool
+checksums, retained under `$TMPDIR/daimos-oom-error-matrix-v1156.gzw27g`.
+The matrix distinguishes genuine BRK physical-MM exhaustion (-1),
+MM fragmentation (-2), descriptor shortage (-3), invalid/wrong
+ownership (-4) and pinned owner (-5). The additional v1156
+test actually exhausts the production backing-store bitmap,
+observes genuine allocation refusal with unchanged accounting,
+then verifies continued ordinary RAM BRK growth/shrink and clean
+backing recovery. Both disabled and disposable-enabled requester
+OOM modes PASS; disk exhaustion never triggers requester killing.
+The native backing-capacity test rejects unsafe ownership mutants.
+
+E09 CLOSED for the currently supported writable-process scope:
+**46/65 mandatory checks complete, 19 open** (17 pre-enable plus
+F12/F13). E10-E13, S07/S08, A04 and F02-F11 remain open. No
+production kernel, RAM, ABI or OOM switch change; requester OOM OFF.
+
 ## 2026-11-05 v1155: E08 concurrent sessions/group lifecycle accepted
 
 Two independently booted 256K PDP-6 full-system v1155 guests PASS
