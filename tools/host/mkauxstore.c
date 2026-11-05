@@ -1,3 +1,6 @@
+/* Expose fileno(), fdopen() and lstat() under strict host C99 builds. */
+#define _POSIX_C_SOURCE 200809L
+
 /* mkauxstore.c - format/inspect DAIMOS AUXSTORE media descriptors. */
 
 #include <errno.h>
