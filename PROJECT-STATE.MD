@@ -1,3 +1,21 @@
+## 2026-11-05 v1149: fail-closed B07 retry lifetime verified
+
+The v1149 testkit source-linked contract PASSes current PDP-6 fatal
+owner FILE/HUP retry, foreign FS lease contention and slot-0
+finalization, rejecting eight unsafe mutations. The 01000-tick
+backoff is only a maximum *interval*: a failed FILE/SYNC or foreign
+provider never authorizes reclaiming the in-flight owner, private
+executive stack, VM, FILE table or occupied provider lease. Native
+v885 executes 14 actual FILE refusals with repeated capped delay
+and eventually a single successful owner EXIT; native v1102 tests
+the slot-0 backoff and rejects four additional unsafe mutants.
+
+B07 is checked, without claiming eventual liveness for a provider
+which never returns. Checklist: 40/65 complete, 25 open (23
+pre-enable blockers plus F12/F13). B06 physical-OOM concurrency,
+E05-E13 endurance/liveness and F02-F11 memory/release acceptance
+remain open. No production code/RAM/ABI change, OOM still OFF.
+
 ## 2026-11-05 v1147-v1148: C04 actual PI6 and deferred HUP completed
 
 Two independent v1148 full-system 256K PDP-6 builds PASS one combined

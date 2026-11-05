@@ -1,3 +1,19 @@
+## v1149: B07 bounded delay is not bounded owner lifetime (2026-11-05)
+
+- [x] Audit current fatal FILE/HUP owner, foreign FS lease, remote
+  fatal deferral and slot-0 finalizer paths. No path may translate
+  the 01000-tick retry cap into a forced owner/FILE/MM reclamation.
+- [x] Testkit v1149 source contract rejects eight unsafe mutations
+  including an owner stop, provider lock steal/unlock, early slot-0
+  finalization, and illegal direct MM free.
+- [x] Native v885 PASSes 14 FILE close refusals (multiple retries at
+  the capped delay) and one later success; native v1102 PASSes four
+  reaper-backoff negative mutations. The unrecovered provider remains
+  fail-closed and may require operator intervention indefinitely.
+- [x] B07 closed: 40/65 mandatory checks complete, 25 open
+  (23 pre-enable plus F12/F13). B06 physical-OOM/provider concurrence,
+  sustained E05-E13 and F02-F11 remain open; production OOM stays OFF.
+
 ## v1147-v1148: C04 integrated owner/PI6 acceptance (2026-11-05)
 
 - [x] Rebuild v1147 with the real physical TTY/VM/u-area MM_BUSY
@@ -360,7 +376,7 @@ not permission to bypass the final combined regression. See
 - [ ] B06: Test genuine physical-OOM pressure *while* another process
   holds the gateway, including pre-dispatch and already-in-flight
   owners, error retry, correct failure stage and independent spinner.
-- [ ] B07: Confirm no new code treats a capped retry interval as
+- [x] B07: Confirm no new code treats a capped retry interval as
   bounded total lifetime or forces reclaim of a blocked owner.
 
 ### C: non-sleeping slot-0 and owner-phase transitions (closed; recheck)

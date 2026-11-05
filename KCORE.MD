@@ -1,3 +1,16 @@
+## 2026-11-05 v1149: B07 unbounded owner retry safety
+
+Current code retains a private fatal FILE/HUP owner across all
+failed close intervals. Delay doubling stops at 01000 ticks but
+the retry jumps back without a forced termination threshold. A
+foreign filesystem-provider lock belongs to its original in-flight
+caller and returns BUSY to an unrelated fatal close; the slot-0
+finalizer retains failed owner state. Testkit v1149 rejects eight
+mutations that violate these constraints, and native v885/v1102
+owner/reaper retry tests PASS. B07 is closed as a safety contract,
+not as a promise of eventual completion. B06/E/F remain open,
+production requester OOM stays disabled; KCORE size is unchanged.
+
 ## 2026-11-05 v1148: live PI6 across deferred HUP and owner cleanup
 
 The v1148 integrated disposable 256K PDP-6 guest PASSes twice with
