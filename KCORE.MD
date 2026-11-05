@@ -1,3 +1,24 @@
+## 2026-11-05 v1150: actual physical OOM under FS-provider contention
+
+The new testkit `test-daimos-oom-provider-held-v1150` and its
+disabled-control target each PASS a fresh, disposable 256K PDP-6
+full-system guest. Real BRK exhaustion reports cause -1 while a
+foreign filesystem provider remains leased to slot 6 (`7,,0`) and
+slot 4 sleeps on the pre-dispatch wait event. The requester has a
+live ordinary FILE requiring close. The opt-in OOM guest retires
+only the requester, retaining the FILE and private owner across
+seven foreign-provider busy attempts; the disabled guest instead
+returns BRK -1 and waits during normal EXIT. The original holder
+alone later resumes the provider's unlock path. Each guest records
+160 independent spinner advances, surviving witness, exact WAIT
+and stable MM/slot accounting, with zero integrity errors.
+
+B06 is closed; 41/65 mandatory checks are complete and 22
+pre-enable blockers remain before F12/F13. No changes to production
+KCORE instructions, MRES code, permanent data, ABI or default-OFF
+requester-OOM policy were made. E/F endurance and RAM acceptance
+remain open.
+
 ## 2026-11-05 v1149: B07 unbounded owner retry safety
 
 Current code retains a private fatal FILE/HUP owner across all

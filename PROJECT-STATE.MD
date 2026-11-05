@@ -1,3 +1,33 @@
+## 2026-11-05 v1150: B06 real OOM with held provider accepted
+
+Two independently rebuilt disposable 256K PDP-6 full guests PASS a
+combined genuine BRK physical-MM exhaustion, held foreign provider
+lease, pre-dispatch gateway wait and owner-side FILE cleanup test.
+The OOM requester opens a real `/SYSTEM/INIT` FILE before another
+process (slot 6) acquires the serialized provider lease `7,,0`.
+That original provider owner sleeps on its own private executive
+continuation, while slot 4 waits before provider dispatch on the
+real gateway event; a separate user continues running. At the
+requester's real BRK -1/physical-MM-cause -1, the test witnesses the
+original unchanged `7,,0` lease and sleeping waiter.
+
+With requester OOM opt-in enabled in the disposable kernel only,
+one fatal requester is killed, seven genuine foreign-provider
+FILE-close contention attempts leave the original lease intact,
+and slot 6 eventually resumes and unlocks it normally. With OOM
+disabled, BRK returns -1 and the requester then waits on the
+foreign-provider event during ordinary EXIT. Both cases show one
+holder entry/return, one real physical OOM, one pre-dispatch waiter,
+160 independent spinner advances, zero integrity errors, exact
+terminal WAIT, surviving unrelated witness and stable MM/slot
+accounting. The test changes no production source or switch.
+
+B06 is CLOSED for the current writable-process scope. The 65-item
+OOM checklist is now **41 complete, 24 open** (22 pre-enable plus
+F12/F13). S07/S08, A04, E05-E13 and F02-F11 remain open, including
+sustained reclaim, actual RAM/size and final release-candidate tests.
+Production `PROC_OOM_BRK_ENABLED_V1000` is still zero.
+
 ## 2026-11-05 v1149: fail-closed B07 retry lifetime verified
 
 The v1149 testkit source-linked contract PASSes current PDP-6 fatal

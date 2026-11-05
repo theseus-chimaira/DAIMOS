@@ -373,7 +373,7 @@ not permission to bypass the final combined regression. See
 - [x] B05: Define the explicit limit: a provider that never returns
   may hold its owner indefinitely; repair or controlled restart is
   required without a provider-specific quiescence proof (v1092).
-- [ ] B06: Test genuine physical-OOM pressure *while* another process
+- [x] B06: Test genuine physical-OOM pressure *while* another process
   holds the gateway, including pre-dispatch and already-in-flight
   owners, error retry, correct failure stage and independent spinner.
 - [x] B07: Confirm no new code treats a capped retry interval as
