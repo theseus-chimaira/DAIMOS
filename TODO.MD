@@ -1,3 +1,13 @@
+## v1200: A04 PIPE/DPY/disk full-guest acceptance progress
+
+- [x] v1119 physical PIPE plus Type-340 DPY/HUP retry PASS.
+- [x] v1121 DPY MM_BUSY across real disk swap-out/in PASS.
+- [x] v1122 PIPE MM_BUSY followed by disk bitmap refusal PASS.
+- [ ] Continue v1120 disabled/enabled, v1106, v1107, v1077,
+  v1101; then rerun the complete exact-candidate `P0D_FULL=1`
+  matrix and inspect final resource/diagnostic evidence.
+- [ ] A04 and F02 remain OPEN; requester OOM production OFF.
+
 ## v1199: A04 full-system regression progress
 
 - [x] v1117: mixed teardown, 48 stale WAIT/PID/event checks and

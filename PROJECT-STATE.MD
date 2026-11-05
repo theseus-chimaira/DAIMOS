@@ -1,3 +1,14 @@
+## 2026-11-05 v1200: A04 PIPE/DPY/swap full guests PASS
+
+On source `08bf7427` and testkit `122c61f`, v1119 combined
+PIPE/DPY HUP, v1121 DPY MM_BUSY with genuine disk swap-out/in,
+and v1122 PIPE MM_BUSY followed by physical disk-bitmap refusal
+all PASS. Exact owner/WAIT/TTY release and zero guest errors.
+Full logs and manifest in `$TMPDIR/daimos-a04-evidence-v1200.tar.gz`;
+`design/A04-P0D-BOOTED-PROGRESS-V1200.md` records provenance and
+checksum. A04/F02 OPEN pending remaining guests and full frozen
+matrix; 57/64, production OOM OFF, no production code changes.
+
 ## 2026-11-05 v1199: four more A04 full-system P0-D guests PASS
 
 On DAIMOS `3eb2d0b3` and testkit `122c61f`, four individually
