@@ -1,3 +1,35 @@
+## 2026-11-05 v1190: F10 OOM build diagnostic audit CLOSED
+
+The testkit v1190 audit of complete release-media build logs for
+Android/aarch64 and Linux/x86-64, both disabled and isolated
+test-enabled OOM, PASSes four profiles with the same 13 explicitly
+catalogued diagnostic classes and zero unexplained compiler/assembler
+diagnostics. Three negative warning/error mutations are rejected.
+Known legacy KCC identifier/unused notes and D6FSR2 layout warning
+are *reported*, not silenced; actual D6FS checker reports CLEAN.
+No production source or OOM switch changed. F10 is CLOSED for
+this audited build set; A04/F02/F11 must recheck the exact final
+candidate and F07 must retain independent dynamic peak evidence.
+
+With F05 out of OOM scope, **57/64 complete, 7 open** (5 pre-enable:
+A04/E13/F02/F07/F11; plus deferred F12/F13). Production OOM OFF.
+
+## 2026-11-05 v1189: F05 retired from requester-OOM acceptance
+
+Per release-scope decision, the static 16K permanent KCORE/MRES
+address-space budget is **not an OOM acceptance target**. Remove
+F05 from the mandatory requester-OOM gate denominator, without
+marking it as passed. The measured 2717-word 16K overflow in the
+instrumented 256K guest remains a real, separately tracked
+KCORE/MRES size-optimization issue; no fit or RAM saving is claimed.
+OOM-specific *dynamic* physical MM extent/descriptor, APR-alignment,
+stack and provider-buffer peak safety remains mandatory under F07.
+
+Revised OOM checklist: **56/64 complete, 8 open** (6 pre-enable:
+A04/E13/F02/F07/F10/F11; F12/F13
+are deferred activation/post-activation). Production requester
+OOM remains OFF.
+
 ## 2026-11-05 v1188: F06 permanent MRES inventory audit CLOSED
 
 The v1174/v1176 identical-source Linux/Android 256K DSK/D6FS

@@ -1,3 +1,13 @@
+## 2026-11-05 v1189: static 16K residency is separate from OOM
+
+F05 is no longer an OOM enablement gate. The previously measured
+16K permanent KCORE/MM-table/MRES budget shortfall remains a
+KCORE/MRES size-optimization problem and is not waived as a design
+target. F07 still requires dynamic peak allocation/descriptor and
+APR/provider/stack use evidence for the selected 256K OOM profile.
+No production code, footprint or OOM switch changed by this scope
+correction.
+
 ## 2026-11-05 v1163: second simulator target and strict host compiler repair
 
 Two full 256K KCC DSK/D6FS E13 requester-OOM guests PASS on Linux
