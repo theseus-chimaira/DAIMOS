@@ -1,3 +1,41 @@
+## 2026-11-05 v1163: E13 Linux x86_64 cross-platform evidence PASS
+
+The second independent PDP-6 simulator target, Linux x86_64 Open SIMH
+V4.1-0 build `a6b511e5`, now PASSes two fresh v1160 256K KCC DSK270/
+D6FS release-media guests on DAIMOS `90dfc8d0`: default-off returns
+BRK -1 without fatal selection; isolated enabled selects only the
+genuinely exhausted requester slot 3. Both preserve INIT, independent
+spinner, blocked witness, foreign gateway waiter and original in-flight
+provider owner through the shortage; original-owner lease release,
+WAIT/FILE/MM accounting, 160 spinner advances and zero errors PASS.
+Linux archived complete SIMH, boot, build, maps and counter evidence
+in `$HOME/tmp/daimos-e13-release-media-v1160.wPB6WE.tar.gz` (SHA256
+`b80eb98991845b89fb56344cb621c22eb3e8fd79aff185912163c5406f3e86fd`).
+A verified copy is at Android `$TMPDIR/daimos-e13-linux-x86_64-v1163.tar.gz`.
+
+New testkit v1163 cross-platform audit PASSes both Linux guests against
+the previous Android aarch64 Open SIMH `edd19b17` v1160 archive. Both
+hosts match instrumented KCORE low endpoints: OOM off `023410`, test-on
+`023426` octal. These are NOT uninstrumented permanent KCORE/MRES size
+measurements. The Android earlier archive used DAIMOS `27acb950`, so
+the revision pair is *not* an exact final-candidate E13 signoff.
+
+The Linux release-media build first uncovered a stale installed host
+formatter and a genuine strict-C99 portability defect: `fileno`,
+`fdopen` and `lstat` were implicitly declared without a POSIX feature
+test. DAIMOS `90dfc8d0` adds `_POSIX_C_SOURCE 200809L` before headers
+in `tools/host/mkauxstore.c`. Clean C99 builds and v636 destructive
+format safety plus v638 DBOOT conversion PASS on Android and Linux;
+the current formatter is installed at Linux `/usr/local/bin` with
+the earlier binary backed up. No production KCORE/MRES or ABI change.
+
+**E13 still OPEN** pending exact revision retest on all required
+simulator/media targets (OpenBSD SSH currently unavailable). Linux
+KCC notes about long identifiers/unused symbols and a legacy D6FS
+layout warning remain F10 review items. The current full booted
+P0-D matrix is also ongoing, not accepted. Mandatory checks stay
+**51/65 complete, 14 open** (12 pre-enable plus F12/F13), OOM OFF.
+
 ## 2026-11-05 v1161: A04/P0-D component preflight PASS, final gate open
 
 On frozen first-profile DAIMOS `fe0f3c0e`, testkit

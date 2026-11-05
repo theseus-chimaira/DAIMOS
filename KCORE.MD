@@ -1,3 +1,21 @@
+## 2026-11-05 v1163: second simulator target and strict host compiler repair
+
+Two full 256K KCC DSK/D6FS E13 requester-OOM guests PASS on Linux
+x86_64 Open SIMH `a6b511e5`, independently of the earlier Android
+aarch64 Open SIMH `edd19b17` tests. All four guest archives pass the
+testkit v1163 cross-platform process/FS-owner, real BRK physical OOM,
+WAIT/MM recovery and exact KCORE low-end comparison (off `023410`,
+test-on `023426` octal). They are disposable instrumented images,
+not a measured production KCORE+resident-MRES budget. The two hosts
+used DAIMOS revisions `27acb950` and `90dfc8d0`; final exact-revision
+E13 is therefore still open, as are other required simulator targets.
+
+Linux had stale installed AUXSTORE tooling. Canonical host formatter
+now declares POSIX 2008 APIs for strict C99 builds (DAIMOS `90dfc8d0`),
+and host v636/v638 safety/DBOOT regressions PASS on both platforms.
+Production kernel code/data, ABI and OOM default OFF are unchanged;
+KCC diagnostics and F05/F06/F10 signoff remain outstanding. 51/65.
+
 ## 2026-11-05 v1161: fatal release graph and P0-D native preflight
 
 Frozen v1160 candidate DAIMOS `fe0f3c0e` PASSes the 18-stage native

@@ -1,3 +1,27 @@
+## v1163: second E13 simulator target and host-tool compiler fix
+
+- [x] Boot independent 256K full KCC DSK/D6FS physical-OOM enabled
+  and disabled guests on Linux x86_64 Open SIMH `a6b511e5`. Real
+  foreign provider ownership, requester-only selection, protected
+  bystanders, 160 spinner advances and final accounting PASS.
+- [x] Cross-check Linux archive against Android aarch64 Open SIMH
+  `edd19b17` v1160 evidence with testkit v1163; compare raw counters,
+  simulator SHA256, boot profile and identical disposable KCORE low
+  endpoints. Full Linux evidence SHA256 is recorded in PROJECT-STATE.
+- [x] Fix Linux strict-C99 host formatter missing POSIX declarations
+  at canonical `tools/host/mkauxstore.c` (DAIMOS `90dfc8d0`);
+  independently rebuild and PASS v636/v638 safety tests on both hosts.
+  Install corrected Linux utility with previous binary backed up.
+- [ ] E13 remains OPEN: first Android archive predates the host-tool
+  fix, OpenBSD host was unreachable, and full required target/media
+  coverage is not signed off. Do not infer production 16K memory
+  budget from instrumented 256K test-kernel low endpoints.
+- [ ] F10: review Linux KCC identifier-truncation/unused-symbol notes
+  and legacy D6FS reserved-layout warning; zero *unexplained* tool
+  diagnostics must precede final release approval.
+- [x] No production OOM enable, KCORE/MRES, RAM or ABI change. 51/65
+  checks complete, 14 remain (12 pre-enable plus F12/F13).
+
 ## v1161: provisional final-release graph and native P0-D retest
 
 - [x] Re-run testkit `test-daimos-p0d-release-matrix-v1096` on
