@@ -1,3 +1,25 @@
+## v1160: first requester-OOM release candidate profile and E13 evidence
+
+- [x] S07: Freeze first acceptance profile at 256K, KCC, DSK Stage 1,
+  real D6FS disk root, 60 Hz PCLK, CTY headless, available DSK/drum
+  backing and SWAP=AUTO policy; document actual tested versus merely
+  configured swap and MRES. Strict 32K GCC/DSH remains separately gated.
+- [x] S08: Explicitly exclude optional raw-XIP process admission,
+  alternative boot/root media, strict 32K and interactive GUI/multiTTY
+  *from first OOM activation scope*, without removing those facilities
+  from DAIMOS. v1123 guard again PASSes six unsafe source mutations.
+- [x] Two fresh 256K KCC PDP-6 E13 v1160 DSK/D6FS full guests PASS
+  enabled/disabled genuine physical BRK OOM, held foreign FS owner,
+  exact requester-only victim and subsequent original-owner release,
+  160 independent spinner advances each and zero integrity errors.
+  Full logs/maps/boot.ini/tool and media checksums are retained under
+  `$TMPDIR/daimos-e13-release-media-v1160.qel3Zm.tar.gz`.
+- [ ] E13 stays open: other required independent simulator targets
+  and media configurations are not certified by one local `pdp6`.
+  A04 and F02-F11 still require exact release candidate signoff.
+- [x] S07/S08 closed for this bounded profile: 51/65 complete,
+  14 open (12 pre-enable plus F12/F13). Production requester OOM OFF.
+
 ## v1159: E12 protected critical and unrelated nonrequesters (2026-11-05)
 
 - [x] Boot full 256K PDP-6 physical BRK OOM under a real foreign
@@ -458,10 +480,10 @@ not permission to bypass the final combined regression. See
   and all current normal RUN/EXEC paths call the *writing* VM startup;
   no raw MEMFS XIP admission in those loaders. Source guard v1123
   rejects six unsafe mutations.
-- [ ] S07: Freeze the precise release configuration, intended memory
+- [x] S07: Freeze the precise release configuration, intended memory
   profiles, boot media, providers/MRES, foreground TTY and available
   swap; distinguish a 256K acceptance profile from deferred 32K DSH.
-- [ ] S08: Freeze which optional facilities are excluded; do not
+- [x] S08: Freeze which optional facilities are excluded; do not
   enable root-only raw-XIP RUN/EXEC as part of OOM activation.
 
 ### A: allocation-free transitive release graph (closed; revalidate)

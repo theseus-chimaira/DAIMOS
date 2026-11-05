@@ -1,3 +1,36 @@
+## 2026-11-05 v1160: S07/S08 scope frozen; E13 DSK/D6FS platform PASS
+
+The first bounded requester-only BRK OOM release-candidate profile is
+frozen in `pdp10-doc/KERNEL/OOM-RELEASE-PROFILE-V1160.MD`: full 256K
+PDP-6 with KCC, 60 Hz PCLK, DSK270 Stage 1, `ROOT=disk`/`ROOTSET=1`,
+actual four-member D6FS media and DRM236 AUXSTORE backing, CTY in
+headless mode. Normal writable RUN/EXEC only; MEMFS raw-XIP admission,
+strict 32K GCC/DSH, alternate/tape/drum roots or Stage 1 sources and
+GUI/multiTTY are not in this first *OOM acceptance* profile. Existing
+DAIMOS support for excluded features is not removed. The hardware
+image can still contain additional packages; permanently resident
+MRES and actual swap usage remain separate F05-F07 proofs.
+
+Two fresh disposable 256K PDP-6 KCC E13 v1160 guests, on the local
+Android aarch64 Open SIMH V4.1-0 `pdp6` (`edd19b17`), PASS actual
+DSK/D6FS boot and physical BRK OOM with a held foreign filesystem
+gateway in production-disabled and test-only enabled modes. The
+original holder resumes and unlocks, INIT and other unrelated users
+survive, the enabled policy selects only requester slot 3, disabled
+selects nobody, and both record 160 spinner advances, zero integrity
+errors and exact WAIT/FILE/MM cleanup. The versioned archive
+`$TMPDIR/daimos-e13-release-media-v1160.qel3Zm.tar.gz` has full
+simulator/counter and build logs, actual boot.ini, maps and SHA256
+provenance. v1123 raw-XIP/OOM scope guard PASSes anew.
+
+**S07/S08 CLOSED for the frozen first scope: 51/65 mandatory checks
+complete, 14 open** (12 pre-enable plus F12/F13). **E13 remains
+OPEN** until other required simulator/media combinations are
+independently reproduced; A04 and F02-F11 remain open. The guest
+has a test-only INIT, so actual default INIT/swap policy operation
+is not being signed off. Production OOM remains OFF and no permanent
+KCORE/MRES, RAM or ABI changes were made.
+
 ## 2026-11-05 v1159: E12 protected live owners under requester OOM
 
 Two independently built full 256K PDP-6 testkit v1159 guests PASS

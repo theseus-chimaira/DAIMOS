@@ -1,3 +1,22 @@
+## 2026-11-05 v1160: S07/S08 frozen 256K DSK/D6FS candidate
+
+Two fresh full 256K KCC PDP-6 E13 guests PASS physical requester BRK
+OOM under a real DSK270/D6FS root and foreign provider lease, both
+production-OOM-disabled and disposable-enabled. Original in-flight
+owner resumes on its private stack and releases the lease. Both
+guests show 160 independent spinner advances, zero errors and exact
+WAIT/FILE/MM cleanup; only enabled policy selects requester slot 3.
+Complete SIMH/counter/build/boot/map/provenance evidence archived at
+`$TMPDIR/daimos-e13-release-media-v1160.qel3Zm.tar.gz`.
+
+S07/S08 define this exact 256K disk-root, CTY headless, 60 Hz PCLK,
+writable-RUN/EXEC OOM acceptance profile. Strict 32K DSH, alternate
+boot/root media, raw-XIP process admission and GUI/multiTTY acceptance
+are explicitly deferred, not removed from DAIMOS. v1123 source guard
+PASS. 51/65 checks complete; E13 other simulator/media coverage and
+final A04/F02-F11 acceptance remain. No permanent code/data/ABI
+growth and production requester-OOM is still OFF.
+
 ## 2026-11-05 v1159: E12 protected-process OOM regression PASS
 
 Two full PDP-6 256K physical BRK-OOM guests PASS enabled and
