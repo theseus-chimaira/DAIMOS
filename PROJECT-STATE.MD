@@ -1,3 +1,25 @@
+## 2026-11-05 v1192: D6FSR2 explicit zero-reservation layout fixed
+
+DBOOT's historical D6FSR2 extension had no way to distinguish an
+intentionally empty modern set of bootstream/LOGSTORE/BADMAP
+reservations from old all-zero legacy metadata. `mkdsk --d6fs-layout`
+now writes DBOOT word `020` = 1 to assert explicit reserved ranges
+even when all lengths are zero. The host `mkd6fs` and `d6fsck`
+readers and the KINIT BLOCKSET decoder accept flag 1, retain the
+flag-0 legacy inference, reject all other 36-bit flags and reject
+mixed flags across members. This fixes the spurious warning while
+creating an auxiliary-drum D6FS precursor prior to AUXSTORE conversion
+without disabling the warning for genuine old images.
+
+Testkit `test-daimos-d6fs-explicit-zero-layout-v1192` PASSes modern
+zero ranges, historic legacy warning, unknown/high flags and mixed
+member negative cases with strict-warning host-tool builds. KINIT
+BLOCKSET decoder strict compile check PASS. The independent v1190
+OOM diagnostics auditor now tolerates the warning on archived legacy
+images and its absence on modern images; four archived release-media
+profiles and diagnostic-negative mutants still PASS. No OOM policy,
+KCORE residency or MRES lifetime changes; requester OOM remains OFF.
+
 ## 2026-11-05 v1190: F10 OOM build diagnostic audit CLOSED
 
 The testkit v1190 audit of complete release-media build logs for

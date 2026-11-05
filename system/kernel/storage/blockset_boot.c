@@ -130,6 +130,10 @@ blockset_boot_layout_decode(const kword_t block[BLOCKSET_BLOCK_WORDS],
         layout->logstore_blocks = block[BLOCKSET_LAYOUT_LOGSTORE_BLOCKS];
         layout->badmap_start = block[BLOCKSET_LAYOUT_BADMAP_START];
         layout->badmap_blocks = block[BLOCKSET_LAYOUT_BADMAP_BLOCKS];
+        if (block[BLOCKSET_LAYOUT_FLAGS_WORD] != 0UL &&
+            block[BLOCKSET_LAYOUT_FLAGS_WORD] !=
+            BLOCKSET_LAYOUT_F_EXPLICIT)
+                return -1;
         if (layout->usable_blocks == 0UL ||
             layout->swap_tail_blocks >= unit_blocks ||
             layout->base >= unit_blocks ||
@@ -140,7 +144,9 @@ blockset_boot_layout_decode(const kword_t block[BLOCKSET_BLOCK_WORDS],
             layout->super_a > BLOCKSET_BOOT_HALF_MASK ||
             layout->super_b > BLOCKSET_BOOT_HALF_MASK)
                 return -1;
-        if (layout->bootstream_blocks != 0UL || layout->logstore_start != 0UL ||
+        if (block[BLOCKSET_LAYOUT_FLAGS_WORD] ==
+            BLOCKSET_LAYOUT_F_EXPLICIT ||
+            layout->bootstream_blocks != 0UL || layout->logstore_start != 0UL ||
             layout->logstore_blocks != 0UL || layout->badmap_start != 0UL ||
             layout->badmap_blocks != 0UL) {
                 if (layout->logstore_start != layout->bootstream_blocks ||
@@ -257,6 +263,7 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
         kword_t first_logstore_blocks;
         kword_t first_badmap_start;
         kword_t first_badmap_blocks;
+        kword_t first_layout_flags;
         kword_t half;
         kword_t locator;
         int rc;
@@ -278,6 +285,7 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
         first_logstore_blocks = 0UL;
         first_badmap_start = 0UL;
         first_badmap_blocks = 0UL;
+        first_layout_flags = 0UL;
         for (index = 0U; index < BLOCKSET_BOOT_MEMBERS; ++index) {
                 half = blockset_boot_half(index);
                 if (half == BLOCKSET_BOOT_UNUSED_HALF)
@@ -293,6 +301,7 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
                 if (blockset_boot_layout_decode(descriptor, &layout) != 0)
                         return -1;
                 if (members == 0U) {
+                        first_layout_flags = descriptor[BLOCKSET_LAYOUT_FLAGS_WORD];
                         first_super_a = layout.super_a;
                         first_super_b = layout.super_b;
                         first_swap_tail = layout.swap_tail_blocks;
@@ -301,7 +310,8 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
                         first_logstore_blocks = layout.logstore_blocks;
                         first_badmap_start = layout.badmap_start;
                         first_badmap_blocks = layout.badmap_blocks;
-                } else if (layout.super_a != first_super_a ||
+                } else if (descriptor[BLOCKSET_LAYOUT_FLAGS_WORD] !=
+                    first_layout_flags || layout.super_a != first_super_a ||
                     layout.super_b != first_super_b ||
                     layout.swap_tail_blocks != first_swap_tail ||
                     layout.bootstream_blocks != first_bootstream ||

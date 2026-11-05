@@ -17,6 +17,8 @@
 #define BLOCKSET_LAYOUT_LOGSTORE_BLOCKS    015U
 #define BLOCKSET_LAYOUT_BADMAP_START       016U
 #define BLOCKSET_LAYOUT_BADMAP_BLOCKS      017U
+#define BLOCKSET_LAYOUT_FLAGS_WORD         020U
+#define BLOCKSET_LAYOUT_F_EXPLICIT         1U
 
 struct blockset_layout {
         kword_t base;

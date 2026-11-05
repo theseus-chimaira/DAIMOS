@@ -31,6 +31,8 @@
 #define D6FS_LAYOUT_LOGSTORE_BLOCKS 015U
 #define D6FS_LAYOUT_BADMAP_START 016U
 #define D6FS_LAYOUT_BADMAP_BLOCKS 017U
+#define D6FS_LAYOUT_FLAGS_WORD  020U
+#define D6FS_LAYOUT_F_EXPLICIT  1U
 #define D6FS_BADMAP_MAGIC       0442642414422ULL
 #define D6FS_TYPE_FREE          0U
 #define D6FS_TYPE_REG           1U
@@ -338,6 +340,7 @@ static void open_members(const char *dir, unsigned n, unsigned *sap,
 {
         uint64_t block[BLOCK_WORDS];
         unsigned i, sa, sb;
+        uint64_t flags = 0U;
 
         member_count = n;
         sa = sb = 0;
@@ -355,6 +358,7 @@ static void open_members(const char *dir, unsigned n, unsigned *sap,
                 if (read_phys(&members[i], members[i].descriptor, block) != 0)
                         die("cannot reread DBOOT descriptor");
                 if (i == 0) {
+                        flags = block[D6FS_LAYOUT_FLAGS_WORD];
                         sa = (unsigned)block[D6FS_LAYOUT_SUPER_A];
                         sb = (unsigned)block[D6FS_LAYOUT_SUPER_B];
                         disk_layout.swap_tail_blocks =
@@ -369,7 +373,8 @@ static void open_members(const char *dir, unsigned n, unsigned *sap,
                             (unsigned)block[D6FS_LAYOUT_BADMAP_START];
                         disk_layout.badmap_blocks =
                             (unsigned)block[D6FS_LAYOUT_BADMAP_BLOCKS];
-                } else if (sa != (unsigned)block[D6FS_LAYOUT_SUPER_A] ||
+                } else if (flags != block[D6FS_LAYOUT_FLAGS_WORD] ||
+                    sa != (unsigned)block[D6FS_LAYOUT_SUPER_A] ||
                     sb != (unsigned)block[D6FS_LAYOUT_SUPER_B] ||
                     disk_layout.swap_tail_blocks !=
                     (unsigned)block[D6FS_LAYOUT_SWAP_TAIL] ||
@@ -387,7 +392,9 @@ static void open_members(const char *dir, unsigned n, unsigned *sap,
         }
         if (sa == sb || sa >= total_blocks() || sb >= total_blocks())
                 die("invalid superblock locations");
-        if (disk_layout.bootstream_blocks != 0U ||
+        if (flags != 0U && flags != D6FS_LAYOUT_F_EXPLICIT)
+                die("unknown reserved-layout flags");
+        if (flags == D6FS_LAYOUT_F_EXPLICIT ||
             disk_layout.logstore_start != 0U || disk_layout.logstore_blocks != 0U ||
             disk_layout.badmap_start != 0U || disk_layout.badmap_blocks != 0U) {
                 if (disk_layout.logstore_start != disk_layout.bootstream_blocks ||

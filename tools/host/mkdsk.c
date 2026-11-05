@@ -52,6 +52,8 @@
 #define D6FS_LAYOUT_LOGSTORE_BLOCKS 015U
 #define D6FS_LAYOUT_BADMAP_START 016U
 #define D6FS_LAYOUT_BADMAP_BLOCKS 017U
+#define D6FS_LAYOUT_FLAGS_WORD 020U
+#define D6FS_LAYOUT_F_EXPLICIT 1U
 
 struct bad_run {
         unsigned start;
@@ -279,6 +281,9 @@ static void make_dbx(unsigned long long *words, unsigned mask,
                 words[D6FS_LAYOUT_LOGSTORE_BLOCKS] = logstore_blocks;
                 words[D6FS_LAYOUT_BADMAP_START] = badmap_start;
                 words[D6FS_LAYOUT_BADMAP_BLOCKS] = badmap_blocks;
+                /* The reserved ranges are explicit even if every length
+                 * is zero (e.g. the transient auxiliary-drum image). */
+                words[D6FS_LAYOUT_FLAGS_WORD] = D6FS_LAYOUT_F_EXPLICIT;
         }
 }
 

@@ -1,3 +1,13 @@
+## v1192: DBOOT D6FSR2 explicit-zero reserved-layout ambiguity fixed
+
+- [x] Distinguish modern explicitly zero bootstream/LOGSTORE/BADMAP
+  ranges using DBOOT descriptor word `020` flag 1, without inventing
+  reservations or suppressing the legacy warning.
+- [x] Preserve old flag-0 D6FSR2 media and verify rejection of
+  unknown 36-bit flag values and mixed-member descriptors.
+- [x] Recheck KINIT BLOCKSET decoder and update testkit v1192,
+  DBOOT/D6FS documentation and F10 historical-log diagnostic audit.
+
 ## v1163: second E13 simulator target and host-tool compiler fix
 
 - [x] Boot independent 256K full KCC DSK/D6FS physical-OOM enabled
