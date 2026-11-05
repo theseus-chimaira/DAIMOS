@@ -1,3 +1,23 @@
+## v1153-v1154: independent scheduler progress E07 (2026-11-05)
+
+- [x] Boot v1153 with a real held FS provider and physically distinct
+  PIPE, Type-340 DPY, process VM and u-area pin/BUSY/unpin/free owners;
+  measure the qualified PI6 clock and unrelated-user sleep count
+  between first PIPE refusal and exact final ZOMB publication.
+- [x] v1153 PASS: PI6 1297->1352 (55 ticks), three independent
+  user sleeps inside that interval, all original physical owner,
+  release order and held-provider counters PASS with zero errors.
+- [x] Boot v1154 with first-member physical PIPE MM_BUSY followed by
+  second-member genuine DISK bitmap verifier fault/retry, plus a
+  separate-session user running between the two actual verifications.
+- [x] v1154 PASS: PI6 1015->1032 (17 ticks), eight independent user
+  sleeps, two real verifier calls, one bitmap corruption/restore,
+  exact final backing/WAIT/TTY status and zero errors. v1148 covers
+  pinned TTY/HUP/VM/u-area (32 PI6 ticks, 48 bystander sleeps).
+- [x] E07 closed: 44/65 mandatory checks complete; 21 open (19
+  pre-enable plus F12/F13). E08-E13, S07/S08, A04 and F02-F11
+  remain. Production requester OOM remains OFF.
+
 ## v1151r1: sustained physical-OOM endurance E05/E06 (2026-11-05)
 
 - [x] Define E05 endurance threshold: an initial real physical OOM,
@@ -463,7 +483,7 @@ not permission to bypass the final combined regression. See
   exceeding the short existing 24-PID/37-spinner/48-stale checks.
 - [x] E06: Repeatedly force true physical OOM, reclaim and subsequent
   RUN/BRK success without monotonic MM slots, words or backing leaks.
-- [ ] E07: Run at least one competing runnable user process during
+- [x] E07: Run at least one competing runnable user process during
   held-provider, PIPE/DPY, TTY, VM, and DISK retry intervals; prove
   qualified PI6 clock and observable forward progress.
 - [ ] E08: Exercise multiple concurrent process groups/sessions,

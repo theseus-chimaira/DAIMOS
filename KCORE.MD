@@ -1,3 +1,17 @@
+## 2026-11-05 v1154: E07 PI6 progress across physical release retries
+
+The v1153 isolated full PDP-6 guest proves 55 actual PI6 clock ticks
+and three independent user sleeps after a physical PIPE MM_BUSY and
+before final FILE/PIPE/DPY/VM/u-area publication with a held foreign
+provider. The v1154 guest independently proves 17 actual PI6 ticks
+and eight independent user sleeps between the first refused and the
+second successful genuine DISK bitmap verifier calls; all original
+v1122 PIPE/DISK ownership and WAIT/TTY checks PASS. v1148 covers
+canonical TTY and VM/u-area under an actual HUP continuation (32
+real PI6 ticks and 48 bystander sleeps). E07 is accepted; the
+remaining E08-E13/F and resident RAM proof are mandatory. No
+production KCORE/MRES code, state, or ABI changed; OOM stays OFF.
+
 ## 2026-11-05 v1151r1: 32 repeated true physical-OOM cycles PASS
 
 The opt-in enabled and production-disabled 256K full PDP-6 testkit

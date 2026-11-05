@@ -1,3 +1,30 @@
+## 2026-11-05 v1153-v1154: E07 qualified PI6 and bystander CLOSED
+
+Full 256K PDP-6 v1153 exercises the held foreign FS provider with
+four distinct physical MM_BUSY owners (PIPE, Type-340 DPY, process
+VM, u-area). Qualified PI6 advances from 1297 to 1352 (55 ticks)
+between the first real PIPE MM_BUSY and slot-5 exact finalization;
+the independent runnable user makes three sleep/wakeup advances
+inside that interval. All MM release and publication witnesses PASS
+with zero errors, while the provider retains its original lease.
+
+The separate full 256K v1154 guest extends the original v1122 test
+to start an independent separate-session user while the second HUP
+member encounters a genuine DISK bitmap verifier refusal. Actual
+first and second verifier calls record PI6 1015 -> 1032 (17 ticks)
+and eight unrelated user sleep/wakeup operations. The bitmap repair,
+one physical PIPE pin/busy/unpin/free, exact DISK backing release,
+and parent WAIT/TTY accounting all PASS with zero integrity errors.
+The v1148 full-system TTY/HUP case already PASSes 32 actual PI6 ticks
+and 48 bystander sleeps across real pinned TTY/VM/u-area retries.
+
+E07 is CLOSED for the currently supported writable-process scope.
+The mandatory checklist is now **44/65 complete, 21 open** (19
+pre-enable blockers plus deferred F12/F13). E08-E13, S07/S08, A04
+and F02-F11 including actual RAM/size and final release-candidate
+checks remain open. No production KCORE/MRES/data/ABI change was
+made; `PROC_OOM_BRK_ENABLED_V1000` remains zero.
+
 ## 2026-11-05 v1151r1: E05/E06 sustained physical-OOM recovery accepted
 
 Independently rebuilt 256K PDP-6 full disk-root guests PASS both
