@@ -1,3 +1,17 @@
+## 2026-11-05 v1157: E10 APR/EXEC/RUN provider-contention PASS
+
+Independent PDP-6 full guest rebuild PASSes the testkit v1157r11
+scenario with a genuine held foreign filesystem-provider lease,
+asynchronous APR fatal during post-commit EXEC FILE failure,
+unpublished child RUN rollback and a physical u-area MM_BUSY.
+FD3 survives staging until real foreign-lock refusal; the original
+provider owner resumes and unlocks, and final WAIT/FILE/VM ownership
+is exact. Recorded 6 VFS calls, 5 refusals, 7 FILE passes, 6 sleeps,
+one physical pin/busy/unpin and zero errors. E10 closed: 47/65
+mandatory checks complete, 18 open (16 pre-enable plus F12/F13).
+E11-E13 and final RAM/size gates remain. Production OOM OFF and
+no resident production code, data or ABI changes.
+
 ## 2026-11-05 v1156: OOM shortage classification E09
 
 The frozen full-system v1156 error-class matrix PASSes real physical

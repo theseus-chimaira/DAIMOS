@@ -1,3 +1,15 @@
+## v1157: E10 APR/EXEC/RUN with held foreign provider (2026-11-05)
+
+- [x] Fresh full-system 256K PDP-6 v1157 guest PASS against DAIMOS
+  `a7b721b4` and testkit `436552f`, with asynchronous APR fault,
+  postcommit EXEC FILE failure, real foreign gateway lock refusal,
+  deferred unpublished RUN and physical u-area MM_BUSY rollback.
+- [x] Original holder returns via provider unlock; exact final
+  FILE/VM/WAIT ownership, six VFS calls/five refusals, seven FILE
+  passes/six sleeps, one physical pin/busy/unpin, zero test errors.
+- [x] E10 closed: 47/65 complete, 18 open (16 pre-enable plus
+  F12/F13). No production change; requester OOM remains disabled.
+
 ## v1156: E09 physical versus backing exhaustion accepted (2026-11-05)
 
 - [x] Run frozen v1156 matrix: nine real-MM/owner/backing tests,
@@ -524,7 +536,7 @@ not permission to bypass the final combined regression. See
 - [x] E09: Combine physical RAM exhaustion, disk backing full/failed
   allocation and fragmentation in separate guest scenarios; preserve
   -1/-2/-3/-4/-5 distinctions and no kill on nonphysical shortage.
-- [ ] E10: Execute APR fault and EXEC post-commit failure while a
+- [x] E10: Execute APR fault and EXEC post-commit failure while a
   separate provider is busy; ensure the faulting owner retains its
   continuation and final WAIT status is exact.
 - [ ] E11: Repeat child RUN admission failure/rollback alongside a

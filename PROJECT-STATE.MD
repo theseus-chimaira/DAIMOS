@@ -1,3 +1,24 @@
+## 2026-11-05 v1157: E10 APR/EXEC/RUN under foreign FS lease accepted
+
+Fresh full 256K PDP-6 `test-daimos-fatal-exec-provider-v1157`
+PASSes against DAIMOS `a7b721b4` and testkit `436552f`.
+The disposable guest holds a real foreign filesystem-provider lease,
+then exercises asynchronous APR fatal handling during a post-commit
+EXEC FILE failure and an unpublished RUN u-area MM_BUSY rollback.
+The real provider-backed FD3 survives staging, encounters foreign
+lock contention, and is released only after the original holder
+returns through its normal unlock path. Final private-owner WAIT,
+FILE and u-area accounting PASS with zero test errors. Recorded
+VFS calls/rejections are 6/5, FILE passes/sleeps 7/6, and physical
+u-area pin/busy/unpin 1/1/1. The earlier retained v1157r11 log
+and this independent rebuild agree.
+
+E10 CLOSED for writable-process scope: **47/65 mandatory checks
+complete, 18 open** (16 pre-enable plus F12/F13). E11-E13,
+S07/S08, A04 and F02-F11 remain open. Test-only probes modify only
+the copied guest; production KCORE/MRES/RAM/ABI and requester OOM
+default OFF are unchanged.
+
 ## 2026-11-05 v1156: E09 physical MM and backing error classes accepted
 
 Testkit `test-daimos-oom-error-matrix-v1156` PASSes all nine
