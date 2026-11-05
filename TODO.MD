@@ -641,8 +641,15 @@ not permission to bypass the final combined regression. See
   all experiments; enable it only in disposable positive guests.
 - [ ] F02: Run all P0-D component and optional `P0D_FULL=1` booted
   matrix cases on the *exact* candidate revision, not stale results.
-- [ ] F03: Rebuild and run disabled/enabled OOM positive and negative
+- [x] F03: Rebuild and run disabled/enabled OOM positive and negative
   guest variants v1075/v1110/v1112/v1114/v1115/v1116/v1120.
+  All 14 Linux 256K full-guest combinations PASS on DAIMOS
+  `96e6c695`, corrected KCC `b9cd764`, with both simulated
+  OOM policies. The v1114 test-only descriptor list was corrected
+  to cover 136 MM slots (testkit `03e8325`). Exact logs, tool
+  fingerprints and SHA256 are archived in
+  `$HOME/tmp/daimos-f03-verified-evidence-v1181.tar.gz` on Linux.
+  This is F03 acceptance only, not F11/F12 enablement approval.
 - [ ] F04: Check precise executable/VM/heap/BRK and MM error causes
   under both policies, including no interrupted APR/VM publication.
 - [ ] F05: Measure production KCC KCORE text/data/low endpoint and

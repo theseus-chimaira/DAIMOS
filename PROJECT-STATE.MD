@@ -1,3 +1,33 @@
+## 2026-11-05 v1181: F03 complete; production requester OOM still OFF
+
+The Linux 256K/full PDP-6 OOM acceptance matrix now PASSes all 14
+positive/negative full-system combinations for v1075, v1110, v1112,
+v1114, v1115, v1116 and v1120, each with production-disabled and
+isolated test-enabled requester OOM. Provenance: DAIMOS `96e6c695`,
+KCC `b9cd764` (live preserved-register peephole repair), Open SIMH
+`edd19b17`. The test-only v1114 descriptor cap was corrected from
+32 to 136 entries after the compiler fix exposed the obsolete limit;
+its disabled and enabled reruns PASS, and actual MM cause -3 and
+fragmentation cause -2 are separately verified. All 14 individual
+logs, SHA256 manifest and toolchain/source hashes are archived at
+Linux `$HOME/tmp/daimos-f03-verified-evidence-v1181.tar.gz`
+(SHA256 `dab45fce94cd6350bfb32e7b1683010f85bb7d93e4a6fd60b4996d17d49bb6bc`).
+
+**F03 CLOSED: 52/65 checklist checks complete, 13 open (11 pre-enable
+plus F12/F13).** New testkit v1174-v1176 independently verifies the
+runtime SYS_MEMINFO resident immediate, actual MM descriptor capacity
+and boot-installed MRES package sum. Android and Linux test archives
+from the same DAIMOS `96e6c695` source PASS the v1163 cross-platform
+E13 source/counter checker. E13 remains OPEN for remaining required
+platform/media coverage. The full booted P0-D matrix PASSed on Linux;
+F02 final acceptance remains OPEN until exact-candidate signoff.
+The production KCORE/MRES 16K memory budget remains an F05/F06 blocker
+and may NOT be relaxed by redefining boot-installed MRES as dynamically
+reclaimable. MRES is always installed during KINIT, permanent and
+unloadable. KCC/testkit commits are present locally; upstream GitHub
+push currently fails due the available SSH identity lacking write
+permission. Production `PROC_OOM_BRK_ENABLED_V1000,0` unchanged.
+
 ## 2026-11-05 v1163: E13 Linux x86_64 cross-platform evidence PASS
 
 The second independent PDP-6 simulator target, Linux x86_64 Open SIMH
