@@ -1,3 +1,15 @@
+## v1199: A04 full-system regression progress
+
+- [x] v1117: mixed teardown, 48 stale WAIT/PID/event checks and
+  stable process-MM/slot accounting PASS on PDP-6 guest.
+- [x] v1118: combined real PIPE and process VM MM_BUSY PASS, with
+  exact VM/swap and WAIT ownership accounting.
+- [x] v1104: member HUP plus pinned PIPE final-close retry PASS.
+- [x] v1105: member HUP plus pinned DPY and PI6 replay PASS.
+- [ ] Continue v1119 then v1121/v1122/v1120 off+on/v1106/v1107/
+  v1077/v1101; perform one final frozen `P0D_FULL=1` acceptance.
+- [ ] Keep A04/F02 OPEN pending final signoff. OOM default OFF.
+
 ## v1198: A04 full-guest integration progress (still OPEN)
 
 - [x] Boot isolated current-source v1124 physical TTY, VM and

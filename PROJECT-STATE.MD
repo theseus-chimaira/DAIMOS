@@ -1,3 +1,17 @@
+## 2026-11-05 v1199: four more A04 full-system P0-D guests PASS
+
+On DAIMOS `3eb2d0b3` and testkit `122c61f`, four individually
+rebuilt 256K PDP-6 DSK/D6FS full guests PASS: v1117 mixed fatal
+teardown and 48 stale WAIT/PID/event refusals; v1118 real PIPE+VM
+MM_BUSY with exact physical MM/swap recovery; v1104 pinned PIPE
+with HUP/TTY handoff; and v1105 pinned Type-340 DPY MM_BUSY with
+PI6 refresh and deferred u-area/WAIT. All preserve owners and
+finish with zero test errors. Full outputs/manifest archived at
+`$TMPDIR/daimos-a04-evidence-v1199.tar.gz`; SHA256 and details in
+`design/A04-P0D-BOOTED-PROGRESS-V1199.md`. Further P0D_FULL
+rows and final exact-revision full signoff remain mandatory.
+A04/F02 OPEN, OOM disabled, checklist 57/64 unchanged.
+
 ## 2026-11-05 v1198: three additional current-source A04 physical guests PASS
 
 On frozen DAIMOS `22df1a0c` and testkit `122c61f`, isolated full
