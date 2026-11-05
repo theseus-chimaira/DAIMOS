@@ -1,3 +1,23 @@
+## v1151r1: sustained physical-OOM endurance E05/E06 (2026-11-05)
+
+- [x] Define E05 endurance threshold: an initial real physical OOM,
+  32 more true physical OOM/reclaim waves, 32 successful RUN/BRK
+  growth/shrink recovery children, 256 numerical PID-reuse lifetimes,
+  512 rejected stale WAIT/event operations and at least 1024 real
+  qualified PI6 clock ticks per fresh 256K PDP-6 guest.
+- [x] Run the whole threshold twice with production-disabled and
+  disposable test-enabled requester OOM; both full-system guests PASS.
+  Enabled mode kills only its requesting process; disabled mode returns
+  -1 for all 33 physical OOM requests and correctly prints exactly
+  32 additional ordinary `D` return markers.
+- [x] After each OOM and recovery RUN, verify exact MM process slots,
+  process words, FILE slots, non-cache extents and swap-backed words;
+  clean BCACHE's unique 0201-word owner-6 slab is explicitly observed
+  and must be reclaimed by subsequent real physical pressure.
+- [x] E05/E06 accepted: **43/65 checks complete; 22 open** (20
+  pre-enable plus final F12/F13). E07-E13, S07/S08, A04, F02-F11
+  and the actual RAM budget still remain. Production OOM stays OFF.
+
 ## v1149: B07 bounded delay is not bounded owner lifetime (2026-11-05)
 
 - [x] Audit current fatal FILE/HUP owner, foreign FS lease, remote
@@ -439,9 +459,9 @@ not permission to bypass the final combined regression. See
   activity and repeated stale WAIT/PID checks (v1117/v1118).
 - [x] E04: Boot two different actual resource refusals in one session
   teardown while maintaining original WAIT/TTY ownership (v1122).
-- [ ] E05: Define a sustained repeatable duration/cycle threshold
+- [x] E05: Define a sustained repeatable duration/cycle threshold
   exceeding the short existing 24-PID/37-spinner/48-stale checks.
-- [ ] E06: Repeatedly force true physical OOM, reclaim and subsequent
+- [x] E06: Repeatedly force true physical OOM, reclaim and subsequent
   RUN/BRK success without monotonic MM slots, words or backing leaks.
 - [ ] E07: Run at least one competing runnable user process during
   held-provider, PIPE/DPY, TTY, VM, and DISK retry intervals; prove

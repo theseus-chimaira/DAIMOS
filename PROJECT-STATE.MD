@@ -1,3 +1,34 @@
+## 2026-11-05 v1151r1: E05/E06 sustained physical-OOM recovery accepted
+
+Independently rebuilt 256K PDP-6 full disk-root guests PASS both
+testkit v1151 endurance targets with the production OOM switch OFF
+and with requester-only OOM enabled exclusively in a disposable copy.
+Each guest passes 33 genuine BRK physical-MM exhaustion attempts
+(the original v1075 one plus 32 additional waves), 32 successful
+fresh RUN and BRK grow/shrink recovery checks, 256 numeric PID-reuse
+lifetimes and 512 stale WAIT/event refusals. Process slot/word, FILE,
+disk swap allocation, and non-cache physical MM descriptor accounting
+is exact at every boundary; at least 1024 real PI6 ticks advance.
+
+The first run exposed a false assumption in the new *test*: the raw
+MM extent count grows 7 -> 8 after successful filesystem access.
+The preserved guest's physical descriptor table identifies a single
+clean `0201`-word BCACHE slab, type kernel-dynamic, owner 6, base
+`0777577` octal. This is intentional bounded read-cache residency,
+not an orphaned process extent. The final test uses a test-only
+read-only probe of the real BCACHE base and demands both exact
+non-cache MM accounting and its subsequent genuine OOM reclamation.
+The disabled guest originally passed all internal assertions but
+the host wrapper mistakenly omitted the 32 normal `D` BRK-return
+markers; v1151r1 checks their exact number and order. Both final
+rebuilt guests PASS, with logs preserved in the testkit STATUS.MD.
+
+E05/E06 are now CLOSED for this scope: **43/65 checks complete, 22
+open** (20 pre-enable blockers plus F12/F13). E07-E13, final
+release configuration, full warning and actual resident/peak RAM
+measurement remain open. This phase changes no production KCORE,
+MRES, per-process state, ABI or default-disabled requester OOM policy.
+
 ## 2026-11-05 v1150: B06 real OOM with held provider accepted
 
 Two independently rebuilt disposable 256K PDP-6 full guests PASS a

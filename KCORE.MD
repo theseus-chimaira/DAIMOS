@@ -1,3 +1,18 @@
+## 2026-11-05 v1151r1: 32 repeated true physical-OOM cycles PASS
+
+The opt-in enabled and production-disabled 256K full PDP-6 testkit
+v1151 guests each complete 33 actual physical BRK shortage events,
+32 subsequent successful RUN/BRK recoveries, 256 PID lifetimes,
+512 stale wait/event rejections and at least 1024 qualified PI6
+ticks. Exact process, FILE, swap and non-cache MM descriptor counts
+remain stable. The sole intentional 0201-word, owner-6 clean BCACHE
+MM slab may become resident after a FILE read, but a subsequent real
+physical-OOM reclaim must free it; this is verified through a
+test-only read-only probe of the actual BCACHE base. Raw descriptor
+count alone cannot distinguish that bounded cache from a resource
+leak. E05/E06 accepted, E07-E13 and F acceptance remain open.
+No resident production KCORE/MRES/ABI growth or OOM-policy change.
+
 ## 2026-11-05 v1150: actual physical OOM under FS-provider contention
 
 The new testkit `test-daimos-oom-provider-held-v1150` and its
