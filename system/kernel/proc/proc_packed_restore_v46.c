@@ -93,9 +93,9 @@ proc_packed_restore_reg_v46(unsigned int slot, kword_t backing,
                                 break;
                         }
         }
-        index = slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28;
+        index = slot / PROC_STMAP_SLOTS_WORD_V28;
         proc_storage_runtime_v29.words[index] &= ~((kword_t)3UL <<
-            ((slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U));
+            ((slot % PROC_STMAP_SLOTS_WORD_V28) * 2U));
         VM_PDP6_SET_BASE(p, base);
         rc = mm_unpin(base);
         if (rc != MM_OK)

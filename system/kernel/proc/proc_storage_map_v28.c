@@ -23,8 +23,8 @@ proc_storage_get_v28(const struct proc_storage_map_v28 *map,
 
         if (!map || !map->words || slot >= map->slots)
                 return -1;
-        index = slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28;
-        offset = (slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U;
+        index = slot / PROC_STMAP_SLOTS_WORD_V28;
+        offset = (slot % PROC_STMAP_SLOTS_WORD_V28) * 2U;
         return (int)((map->words[index] >> offset) & 3UL);
 }
 
@@ -41,8 +41,8 @@ proc_storage_change_v28(struct proc_storage_map_v28 *map,
             new_state > PROC_STORAGE_PACKED ||
             proc_storage_get_v28(map, slot) != (int)old_state)
                 return -1;
-        index = slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28;
-        offset = (slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U;
+        index = slot / PROC_STMAP_SLOTS_WORD_V28;
+        offset = (slot % PROC_STMAP_SLOTS_WORD_V28) * 2U;
         mask = (kword_t)3UL << offset;
         map->words[index] = (map->words[index] & ~mask) |
             ((kword_t)new_state << offset);

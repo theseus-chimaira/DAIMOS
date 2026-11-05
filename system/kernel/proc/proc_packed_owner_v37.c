@@ -106,9 +106,9 @@ proc_packed_owner_discard_v37(struct proc_packed_layout_v36 *layout,
         /* No fallible operations remain. The state is serialized by the
          * caller and the verified layout entry cannot disappear meanwhile. */
         (void)proc_packed_layout_clear_v36(layout, slot);
-        shift = (slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U;
+        shift = (slot % PROC_STMAP_SLOTS_WORD_V28) * 2U;
         map_word = &proc_storage_runtime_v29.words[
-            slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28];
+            slot / PROC_STMAP_SLOTS_WORD_V28];
         mask = (kword_t)3UL << shift;
         *map_word &= ~mask;
         return MM_OK;

@@ -68,8 +68,8 @@ proc_packed_release_v43(unsigned int slot)
                                 r->words[2U * i] = 0UL;
                                 break;
                         }
-        i = slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28;
+        i = slot / PROC_STMAP_SLOTS_WORD_V28;
         proc_storage_runtime_v29.words[i] &= ~((kword_t)3UL <<
-            ((slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U));
+            ((slot % PROC_STMAP_SLOTS_WORD_V28) * 2U));
         return MM_OK;
 }

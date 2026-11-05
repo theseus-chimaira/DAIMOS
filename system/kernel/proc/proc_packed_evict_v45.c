@@ -113,9 +113,9 @@ proc_packed_evict_reg_v45(unsigned int slot,
         prepared.span = PROC_PACKED_SPAN(packed_base, encoded_capacity);
         prepared.layout = (retained_offset << 18U) | retained;
         VM_PDP6_SET_BASE(p, 0UL);
-        shift = (slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U;
+        shift = (slot % PROC_STMAP_SLOTS_WORD_V28) * 2U;
         mode_word = &proc_storage_runtime_v29.words[
-            slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28];
+            slot / PROC_STMAP_SLOTS_WORD_V28];
         mask = (kword_t)3UL << shift;
         *mode_word = (*mode_word & ~mask) |
             ((kword_t)PROC_STORAGE_PACKED << shift);

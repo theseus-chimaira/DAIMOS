@@ -127,9 +127,9 @@ proc_packed_mm_discard_v35(struct proc_packed_mm_registry_v35 *registry,
         rc = mm_free(PROC_PACKED_BASE(&d), MM_TYPE_PACKED_PROCESS, slot);
         if (rc != MM_OK)
                 return rc;
-        shift = (slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U;
+        shift = (slot % PROC_STMAP_SLOTS_WORD_V28) * 2U;
         word = &proc_storage_runtime_v29.words[
-            slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28];
+            slot / PROC_STMAP_SLOTS_WORD_V28];
         mask = (kword_t)3UL << shift;
         *word &= ~mask;
         entry->layout = 0UL;
