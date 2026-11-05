@@ -1,3 +1,24 @@
+## 2026-11-06 v1203: simultaneous F07 physical MM/provider sample PASS (partial)
+
+On DAIMOS `cf4e85d4` and committed testkit `aae6d2d`, independent
+256K KCC DSK/D6FS disabled and disposable-enabled physical-OOM
+guests PASS live read-only MM-table capture while a foreign FS owner
+holds the provider. Both show 19/136 descriptors (six APR process
+extents, 13 kernel-dynamic), 112692 managed allocated words, three
+free gaps and the existing 128-word shared workspace. Enabled
+guest free/managed is 130022/242714 words (disabled 130036/242728);
+LOW APR gap-prefix slack 990/1012 words. v1150/v1159 protected
+owner/scheduler invariants, 10 host negative mutants, full media/
+build/tool checksum checks and exact-source provenance PASS.
+
+Evidence: `$TMPDIR/daimos-f07-oom-lease-v1203r2.tar.gz`, SHA256
+`e4fdbd54d04a1052ffec87a621d2abc53840f1f76712e71bf76cca6c71bac0ff`.
+Full definitions and limits: `design/F07-LIVE-OOM-MM-PEAK-AUDIT-V1203.md`.
+This is one genuine simultaneous fault snapshot, **not** peak-load
+qualification: approximately 130K words and 117 MM descriptors
+remained free. F07 OPEN, A04/F02 remain closed, checklist 59/64,
+production OOM OFF; no production code/RAM/ABI changes.
+
 ## 2026-11-05 v1202: A04/F02 full frozen P0-D matrix PASS
 
 DAIMOS `5db15ecf` with testkit `122c61f` completed one uninterrupted

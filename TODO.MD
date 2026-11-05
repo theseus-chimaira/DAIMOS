@@ -1,3 +1,19 @@
+## v1203: F07 genuine OOM/provider MM snapshot, partial completion
+
+- [x] Sample genuine live physical-MM state at BRK -1 with the
+  foreign D6FS provider held; both disabled and disposable-enabled
+  256K disk-root guests PASS on exact DAIMOS/testkit commits.
+- [x] Reconcile all allocated and free physical MM arena words,
+  19 live extents, 136 configured descriptors, APR alignment and
+  the resident 128-word VFS workspace; reject 10 unsafe mutants.
+- [x] Archive original simulator/build/map/media/tool/counter proof:
+  `design/F07-LIVE-OOM-MM-PEAK-AUDIT-V1203.md`.
+- [ ] F07 remains OPEN: measure maximum *simultaneous* process/MM
+  extent and descriptor use, APR slack and actual logical BRK
+  rounding, while a foreign provider and shared buffer remain live.
+- [ ] Do not infer a production size fit or peak budget from a
+  disposable test kernel with 130K words still free at physical OOM.
+
 ## v1202: close A04/F02 complete exact-revision matrix
 
 - [x] Execute the full `P0D_FULL=1` matrix uninterrupted on frozen
@@ -790,6 +806,12 @@ not permission to bypass the final combined regression. See
   peak/alignment-slack and simultaneous provider-buffer audit before
   checking this box. Frozen test outputs:
   `$TMPDIR/daimos-f07-mm-evidence-v1196.tar.gz`.
+  v1203 adds an exact-source physical-OOM snapshot with the foreign
+  provider held: 19/136 live descriptors, six aligned process extents,
+  112692 managed allocated words, three gap-prefix APR slack totals,
+  and a 128-word shared buffer. Both OOM modes PASS, but 130K words
+  remained free; maximum-load and per-process break-rounding proofs
+  still remain. See `design/F07-LIVE-OOM-MM-PEAK-AUDIT-V1203.md`.
 - [x] F08: Retain deferred strict 32K KCORE/DSH optimization as a
   **separate** gate; do not misreport a passing 256K guest as 32K.
   The frozen first requester-OOM acceptance profile is strictly
