@@ -1,3 +1,25 @@
+## 2026-11-05 v1196: real F07 descriptor/fragmentation stress PASS
+
+Fresh disposable 256K/full DSK/D6FS PDP-6 OOM-enabled guests PASS
+testkit v1114 (fill the real live 136-descriptor MM table, refuse
+new RUN as descriptor shortage without killing its parent, release
+every temporary MM extent) and v1115 (aligned 16K-word extent
+pressure, aggregate-free-versus-largest-gap 64K check, BRK return
+failure with preserved physical MM cause `-2`, never trigger fatal
+requester-only OOM, exact cleanup). Baseline v1075 physical OOM,
+v1110 invalid BRK and v1112 failed child RUN also PASS in each
+guest. Both process and idle stack watermarks PASS on current
+rebuild; current P0-D component source/negative matrix also PASS.
+
+Frozen run outputs and host-tool checksums in
+`$TMPDIR/daimos-f07-mm-evidence-v1196.tar.gz` SHA256
+`77f7f35141dc1aef84ed0a294b80d6521be8f42de77376f14993891bf54297a8`.
+This is **partial** F07 coverage: a 136-slot pressure boundary and
+APR-aligned fragmentation are exercised, but a complete peak
+allocation/alignment-slack/provider-buffer budget under combined
+maximum load is not yet measured. F07/A04/E13/F02/F11 remain OPEN,
+production requester OOM OFF; overall count **57/64** unchanged.
+
 ## 2026-11-05 v1195: current-source P0-D and stack baseline PASS
 
 On DAIMOS `bcdafeea` with v1194 corrected AUXSTORE converter,

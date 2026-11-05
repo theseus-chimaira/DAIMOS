@@ -706,6 +706,14 @@ not permission to bypass the final combined regression. See
   boot-only/permanent with no runtime unload or OOM reclaim.
 - [ ] F07: Check peak physical MM extent/descriptor use, APR aligned
   slack, startup stacks and provider buffers under maximum load.
+  v1195-v1196 partial evidence PASS: real 136-slot descriptor
+  saturation/recovery (v1114), physically fragmented APR-aligned
+  extents and nonfatal cause -2 (v1115), private/idle stack peaks
+  `0300`/`025` octal, and existing single 128-word serialized
+  D6FS/DTFS block workspace. Still require bounded quantitative
+  peak/alignment-slack and simultaneous provider-buffer audit before
+  checking this box. Frozen test outputs:
+  `$TMPDIR/daimos-f07-mm-evidence-v1196.tar.gz`.
 - [x] F08: Retain deferred strict 32K KCORE/DSH optimization as a
   **separate** gate; do not misreport a passing 256K guest as 32K.
   The frozen first requester-OOM acceptance profile is strictly
