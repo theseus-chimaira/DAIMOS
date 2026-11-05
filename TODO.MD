@@ -650,8 +650,18 @@ not permission to bypass the final combined regression. See
   fingerprints and SHA256 are archived in
   `$HOME/tmp/daimos-f03-verified-evidence-v1181.tar.gz` on Linux.
   This is F03 acceptance only, not F11/F12 enablement approval.
-- [ ] F04: Check precise executable/VM/heap/BRK and MM error causes
+- [x] F04: Check precise executable/VM/heap/BRK and MM error causes
   under both policies, including no interrupted APR/VM publication.
+  On candidate `96e6c695` and corrected KCC `b9cd764`,
+  F03 v1110/v1115/v1116 plus the eight v1184 Linux cases PASS:
+  v1113 genuine MM -2/-3, v1156 real backing-full in both policies,
+  v1158 failed RUN parent plus independent OOM in both policies,
+  v1157 APR/postcommit EXEC under a held provider, v1106 pinned
+  VM/u-area and v1077 physical held-provider retry. The eight
+  additional logs are archived at
+  `$HOME/tmp/daimos-f04-cause-evidence-v1184.tar.gz`
+  (SHA256 `5c12dce02fe1877a47c19afa9e9339e1a466a39f79526d1960617a048ee69096`).
+  Acceptance is for ordinary writable RUN/EXEC/BRK only.
 - [ ] F05: Measure production KCC KCORE text/data/low endpoint and
   real MRES residency with OOM off/on; retain the 16K executive
   mapping budget and avoid permanent RAM growth.
@@ -660,10 +670,22 @@ not permission to bypass the final combined regression. See
   module set rather than treating all packages as simultaneously live.
 - [ ] F07: Check peak physical MM extent/descriptor use, APR aligned
   slack, startup stacks and provider buffers under maximum load.
-- [ ] F08: Retain deferred strict 32K KCORE/DSH optimization as a
+- [x] F08: Retain deferred strict 32K KCORE/DSH optimization as a
   **separate** gate; do not misreport a passing 256K guest as 32K.
-- [ ] F09: Record all outstanding fail-closed noncompletion cases and
+  The frozen first requester-OOM acceptance profile is strictly
+  256K KCC/full DSK/D6FS; no 32K GCC/DSH size or boot acceptance is
+  claimed here. Strict 32K optimization remains deferred until the
+  first OOM release is accepted and is not silently substituted for
+  the separate mandatory 16K permanent-residency budget.
+- [x] F09: Record all outstanding fail-closed noncompletion cases and
   operator recovery/restart policy explicitly before release signoff.
+  See `pdp10-doc/KERNEL/OOM-FAIL-CLOSED-RECOVERY-V1185.MD` for
+  in-flight provider/private-stack retention, TTY/FILE HUP,
+  VM/u-area BUSY, permanent wrong-owner -4 quarantine,
+  backing bitmap errors, boot-only MRES failure, read-only
+  GETTEARDOWN/PS diagnostics, and controlled restart versus
+  unsafe force-unlock/force-free. This is a liveness limitation,
+  not a runtime MRES OOM/reclaim mechanism.
 - [ ] F10: Require zero unexplained compiler/assembler diagnostics,
   no unsafe tests in production and clean post-stress bookkeeping.
 - [ ] F11: Explicitly review and sign off S/A/B/C, all applicable

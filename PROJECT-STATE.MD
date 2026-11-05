@@ -1,3 +1,50 @@
+## 2026-11-05 v1187: F08 deferred 32K separation CLOSED
+
+F08 formally records that passing 256K/full KCC DSK/D6FS OOM
+guests is **not** evidence for a strict 32K KCORE/DSH boot.
+That optimization is separate, deferred until after requester-OOM
+release acceptance; its size/boot results remain unclaimed. The
+independent permanent 16K executive/MRES limit remains mandatory
+for the selected OOM profile and F05/F06 are still OPEN.
+**55/65 checks complete, 10 open (8 pre-enable plus F12/F13).**
+No code or production OOM policy change.
+
+## 2026-11-05 v1185: F04 exact errors and F09 operator policy CLOSED
+
+F04 PASS: on the same DAIMOS `96e6c695` and corrected KCC
+`b9cd764` release source, the full F03 -2/-3/invalid and requester
+OOM pair is supplemented by eight fresh Linux tests. Actual
+backing exhaustion leaves the BRK requester alive (v1156 on/off),
+RUN's independent parent survives descriptor -3 and separately
+triggered physical requester OOM (v1158 on/off), v1113 validates
+real -2/-3 and rejects three unsafe mutants, v1106 checks actual
+VM/u-area MM_BUSY retry, v1077 exercises physical OOM under D6FS
+SYNC/MM_BUSY contention, and v1157 validates APR postcommit EXEC
+and unfinished child RUN cleanup under a foreign FS lease. All eight
+additional tests PASS; Linux log archive
+`$HOME/tmp/daimos-f04-cause-evidence-v1184.tar.gz` SHA256
+`5c12dce02fe1877a47c19afa9e9339e1a466a39f79526d1960617a048ee69096`.
+Only normal writable process VM is covered, not optional raw XIP.
+
+F09 CLOSED: `pdp10-doc/KERNEL/OOM-FAIL-CLOSED-RECOVERY-V1185.MD`
+documents owner-private provider failure, HUP/TTY/PIPE/DPY refusal,
+VM/u-area MM_BUSY, permanent wrong-owner -4 quarantine, backing
+bitmap/media refusal, boot-time MRES installation failure and
+impossible-owner HALT, together with read-only TD/RETRY/DETAIL
+diagnostics and permissible owner-side recovery or controlled
+restart. No force unlock, fabricated WAIT, speculative free,
+or runtime MRES loading/unloading is permitted. This documents
+known noncompletion without promising bounded cleanup.
+
+**54/65 mandatory checks now complete, 11 open (9 pre-enable plus
+F12/F13).** Full Linux P0-D matrix with corrected KCC is running
+for F02; the earlier Android full candidate matrix exceeded its
+execution timeout after many PASS stages and is not counted as a
+completed run. F05/F06 16K residency remains unresolved. The
+production requester OOM switch is still OFF; the test/compiler/
+documentation commits are retained locally because remote GitHub
+SSH currently lacks permission to push to theseus-chimaira.
+
 ## 2026-11-05 v1181: F03 complete; production requester OOM still OFF
 
 The Linux 256K/full PDP-6 OOM acceptance matrix now PASSes all 14
