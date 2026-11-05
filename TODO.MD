@@ -1,3 +1,18 @@
+## v1147-v1148: C04 integrated owner/PI6 acceptance (2026-11-05)
+
+- [x] Rebuild v1147 with the real physical TTY/VM/u-area MM_BUSY
+  chain and independently advancing PI6 clock and user bystander.
+- [x] Boot v1148 twice with a live original-session member: a real
+  HUP is deferred to its own private return, handled exactly once,
+  and reaped by WAIT after the leader's first pinned-TTY EXIT fails.
+  The second owner EXIT then completes VM and u-area retries on the
+  real slot-0 clock, with one final commit and zero integrity errors.
+- [x] Both v1148 guests show 32 additional real PI6 ticks after the
+  busy phase, 48 independent bystander sleeps and one exact HUP.
+  v1098 retry-clock contract and three negative mutations also PASS.
+- [x] C04 complete: 39/65 checks, 26 open (24 pre-enable plus F12/F13).
+- [ ] Continue B06/B07, E05-E13 and F02-F11; requester BRK OOM OFF.
+
 ## v1146r3: D16 exact-once release matrix accepted (2026-11-05)
 
 - [x] Complete all nine clean/frozen `test-daimos-oom-exact-once-matrix-v1146`
@@ -356,7 +371,7 @@ not permission to bypass the final combined regression. See
   owner's retained private stack before permanent handoff (v991/v995).
 - [x] C03: Preserve VM_NONE/FINALIZE/PREVM identity and exit status
   across checked release refusal, then commit exactly once (v997).
-- [ ] C04: Boot real PI6-clock/owner-continuation adversarial
+- [x] C04: Boot real PI6-clock/owner-continuation adversarial
   combinations with pending HUP, pinned TTY and VM failures; verify
   independent timer and bystander progress without PI6 deadlock.
 

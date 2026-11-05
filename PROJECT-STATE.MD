@@ -1,3 +1,25 @@
+## 2026-11-05 v1147-v1148: C04 actual PI6 and deferred HUP completed
+
+Two independent v1148 full-system 256K PDP-6 builds PASS one combined
+owner-continuation adversarial test. A live same-session member retains
+its private syscall stack when INIT's first real EXIT broadcasts HUP
+and a physically pinned canonical TTY causes MM_BUSY (-5). The HUP
+defer and the member's owner-return HUP are counted exactly once;
+INIT waits for the actual HUP terminal status before retrying EXIT.
+The original TTY session survives refusal. The second owner EXIT
+then reaches real VM and u-area MM_BUSY, with one pin/unpin each,
+preserved owner state, slot-0 deferred retry and one final commit.
+Separate-session user sleep progress is 48 in each guest, while the
+real PI6 clock progresses 810->842 and 805->837, respectively. All
+recorded hook errors are zero. v1147 standalone recheck and v1098
+PREVM clock contract/three unsafe mutants also PASS.
+
+C04 is now checked. The mandatory OOM tally is 39/65 complete,
+26 open (24 pre-enable plus F12/F13). B06/B07, sustained E/F,
+RAM sizing and diagnostics review remain mandatory. All v1148
+instrumentation is in disposable testkit copies; no production
+kernel, MRES, persistent RAM, ABI or OOM switch changed.
+
 ## 2026-11-05 v1146r3: full D16 exact-once matrix PASS
 
 The sequential nine-stage `test-daimos-oom-exact-once-matrix-v1146`

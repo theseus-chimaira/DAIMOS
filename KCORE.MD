@@ -1,3 +1,18 @@
+## 2026-11-05 v1148: live PI6 across deferred HUP and owner cleanup
+
+The v1148 integrated disposable 256K PDP-6 guest PASSes twice with
+one original-session child, a separate-session runnable bystander,
+and a physically pinned controlling TTY. The leader's failed first
+EXIT leaves the session attached while a remote HUP is deferred to
+the child's private continuation; its one owner-return HUP and
+terminal WAIT are checked. The leader's second EXIT then encounters
+the actual VM/u-area MM_BUSY refusals and preserves exact ownership
+through slot-0 retries and final one-time completion. PI6 advances
+32 real ticks after the physical busy phase and the independent user
+sleeps 48 times in each rebuild. The v1098 retry-clock mutation
+checks PASS. This closes C04, but NOT B06/B07 or E/F stress/size.
+No production KCORE/MRES/RAM/ABI modifications; OOM remains OFF.
+
 ## 2026-11-05 v1146r3: exact-once D16 matrix completed
 
 Nine frozen-candidate PDP-6/native regressions PASS across all chosen
