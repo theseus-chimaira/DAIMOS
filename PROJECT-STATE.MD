@@ -1,3 +1,14 @@
+## 2026-11-05 v1197: partial current-source A04 full-guest matrix
+
+DAIMOS `d3e02fdc` and testkit `122c61f` completed all 18 P0-D
+component tests plus v1083/v1087 source-linked release audits under
+`P0D_FULL=1`. The first full guest (v1125 real permanent wrong-owner
+MM -4 with held foreign FS lease) PASSed. The second guest (v1124)
+was interrupted during isolated build before guest evaluation. The
+full matrix is **not** certified and A04/F02 remain OPEN. Details,
+run command and SHA256 of partial log: `design/A04-P0D-FULL-PARTIAL-V1197.md`.
+No production code or OOM policy change; checklist remains 57/64.
+
 ## 2026-11-05 v1196: real F07 descriptor/fragmentation stress PASS
 
 Fresh disposable 256K/full DSK/D6FS PDP-6 OOM-enabled guests PASS

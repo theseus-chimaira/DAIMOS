@@ -1,3 +1,13 @@
+## v1197: A04 full guest matrix partial progress (still OPEN)
+
+- [x] Rerun all 18 P0-D component leaves and v1083/v1087 audits on
+  current-source DAIMOS; first booted v1125 foreign-provider/MM -4
+  guest PASSed. See `design/A04-P0D-FULL-PARTIAL-V1197.md`.
+- [ ] Complete the interrupted `P0D_FULL=1` matrix, including v1124
+  and every remaining full guest, on one exact frozen candidate.
+- [ ] Close A04/F02 only after final build/boot/ownership counter
+  evidence is reviewed. Production requester OOM remains OFF.
+
 ## v1194: fix AUXSTORE conversion of v1192 DBOOT descriptors
 
 - [x] Accept only exact expected DBOOT zero/explicit-1 reserved-layout
