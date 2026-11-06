@@ -1,3 +1,31 @@
+## 2026-11-06 v1250/v1251: F07 swap throughput and deferred timer diagnosis
+
+The full 256K KCC DSK/D6FS production-OOM-disabled F07 guest again
+admitted all 18 additional RUN children and reached `^@%`, but did
+not reach the subsequent `*` sleep milestone before operator stop.
+The disposable v1250 slot-0 wait probe sampled the exact active DRM
+descriptor `000454047277` and its completion event `047301` (offset
+two), which was still zero. The pending DRM descriptor was zero, and
+the ordinary storage error state was zero. At the observation,
+the last captured wait entry was only two clock ticks old; the active
+request still carried the full `0454`-tick watchdog countdown. The
+slot-0 wait entry had been reached 7269 times in the same run, with
+32 successful swap-outs, 21 swap-ins, nine exchanges, and no recorded
+swap-in fail branch. This is evidence for many successive I/O requests,
+not proof that a single DRM completion was permanently lost.
+
+The clock had reached `0100245`, while a timer frontier marked due
+at `074753` remained pending (1722 ticks, or about 28.7 seconds).
+This indicates prolonged deferral of timer processing during slot-0
+swap work; it does not yet establish an incorrect I/O completion or
+an unbounded scheduler deadlock. Native swap v774/v775/v819/v854/v855/
+v856, v1243 canary, and v1247 PI-preservation tests still PASS. The
+versioned v1249/v1250 testkit diagnostics and v1251 caller-attribution
+correction are committed. The stop was diagnostic only: F07/E13/F11
+remain OPEN, 59/64 OOM gates, production requester OOM OFF. Do not
+change scheduling priority/timer policy until a complete timed
+stress acceptance or stronger state evidence establishes the defect.
+
 ## 2026-11-06 v1243: protect u-area swap backing from stack canaries
 
 The stable process u-area has 0410 octal words, with the private PDP-6
