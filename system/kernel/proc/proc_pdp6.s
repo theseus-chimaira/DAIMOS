@@ -432,10 +432,17 @@ proc_select_rank_locality_v1256:
         trne    3,0777777
         jrst    proc_select_compare
         move    3,(16)
+        ; v1257: only a real stable u-area can own the fatal-close
+        ; control word. A malformed disk candidate must not read the
+        ; unrelated low-memory word at PROC_FDCTL_OFFSET.
+        trnn    3,0400000
+        jrst    proc_select_rank_disk_v1257
         hlrz    3,3
+        jumpe   3,proc_select_rank_disk_v1257
         move    3,PROC_FDCTL_OFFSET(3)
         trne    3,PROC_FATAL_CLOSE_BIT
         jrst    proc_select_compare
+proc_select_rank_disk_v1257:
         addi    2,0400
 proc_select_compare:
         jumpe   11,proc_select_better
