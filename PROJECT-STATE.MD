@@ -1,3 +1,41 @@
+## 2026-11-06 v1260: reject impossible physical APR before swap/reclaim
+
+The full 256K F07 request is `BRK 0776000` octal (261120 words).
+A read-only v1254 SIMH saved-machine inspection showed exactly one
+managed MM arena: base `047445`, length `0730333` words, with at most
+`0730000` words available from an aligned 02000-word start. A user APR
+of `0776000` words can NEVER fit this arena, even after every other
+process is swapped out. The extended v1259 2000s diagnostic guest
+printed `&` before entering the real requester BRK but no `=` exit
+marker, proving the prolonged delay is within the allocation call,
+not loss of the parent release PIPE notification.
+
+v1260 fixes the actual allocator contract: `mm_arena_fits_v1260`
+checks each physical arena's *aligned* capacity without allocating or
+swapping. `mm_alloc_aligned` invokes it only after the underlying
+no-reclaim allocator returns a typed pressure failure, before any
+compaction or victim exchange. The PDP-6 BRK growth path additionally
+uses it before its earlier adjacent-gap reclamation. An impossible
+request returns real MM NOMEM (-1), not invalid (-4), preserving
+requester-only OOM cause/ABI with no process/APR/descriptor mutation.
+The check adds instructions but no permanent data words.
+
+Native PDP-6 v1260 arena/allocator tests PASS actual alignment boundaries,
+multiple arenas, typed validation, ordinary feasible reclaim, no victim
+work for impossible requests and two failing historical mutants. A
+separate extracted full-`vm_space_brk_current` native test passes -1/-1
+return, unchanged VM and saved BRK, zero reclaim/allocation calls,
+unchanged-extent update and below-floor -4; two regression mutants
+are rejected. Both changed assembler files assemble cleanly. DAIMOS
+`e7fdbb0e`, testkit `c06f217` and `4bacea0` are pushed.
+
+The fresh 256K/18-child KCC DSK/D6FS production-OOM-OFF v1260 release
+media guest is running with diagnostic `&` / `=` requester markers and
+the deterministic holder test fixture; do NOT claim F07 acceptance
+without its full RUN/swap/WAIT/MM cleanup evidence. 59/64 checks,
+F07/E13/F11 OPEN, production requester OOM OFF. Preserve experimental
+v1208/v1211 swap work separately.
+
 ## 2026-11-06 v1258/v1259: real provider holder, requester still delayed
 
 Fresh 256K KCC DSK/D6FS production-OOM-disabled F07 v1258 admitted all
