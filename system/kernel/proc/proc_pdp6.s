@@ -1865,23 +1865,26 @@ evt_def_bits_v970:
         lsh     2,023                 ; event bits begin at bit 19
 evt_def_record_v970:
         iorm    2,PROC_FDCTL_OFFSET(1)
-        ; A target asleep *before entering* the serialized filesystem
-        ; provider holds only its private gateway request frame. Unlike an
-        ; in-flight device/provider call, that frame may safely return BUSY
-        ; when a fatal event becomes pending. Wake exactly that process,
-        ; not another provider's live stack or unrelated event waiters.
+        ; v1261: an interruptible user PIPE/FIFO waiter must unwind its
+        ; *own* saved executive stack after fatal delivery. The pending
+        ; event bit alone cannot wake it while the pipe writer remains
+        ; open. An internal noninterruptible EVENT/CHILD waiter retains
+        ; its continuation. The separate serialized FS gateway case
+        ; remains cancelable before the provider call starts.
         move    5,2(012)
-        ; WAIT_CHILD and WAIT_INTR both include the other wait-class bit.
-        ; An overlapping event address alone must never cancel either.
-        tlne    5,PROC_WAIT_CHILD_LH
-        jrst    evt_def_done_v1090
-        tlne    5,PROC_WAIT_EVENT_LH
-        jrst    evt_def_fs_check_v1090
+        hlrz    6,5
+        andi    6,PROC_WAIT_LH_MASK
+        caie    6,PROC_WAIT_INTR_LH
+        jrst    evt_def_fs_class_v1261
+        jrst    evt_def_wake_v1261
+evt_def_fs_class_v1261:
+        caie    6,PROC_WAIT_EVENT_LH
         jrst    evt_def_done_v1090
 evt_def_fs_check_v1090:
         hrrz    6,5                   ; exact gateway wait-event address
         caie    6,fs_provider_wait_event_v917
         jrst    evt_def_done_v1090
+evt_def_wake_v1261:
         hlrz    6,5
         andi    6,PROC_STATE_LH_MASK
         caie    6,PROC_STATE_SLEEP
@@ -3382,8 +3385,9 @@ proc_sleep_resched:
  * @param AC1 Event-word address.
  *
  * proc_wait_event() is noninterruptible. proc_wait_event_intr() rejects an
- * already-pending ALRM and returns -1 when ALRM interrupts the user-visible
- * wait. Both paths remove the current process from the run queue before PI6.
+ * already-pending ALRM or fatal event, and returns -1 when one arrives
+ * during the user-visible wait. Both paths remove the current process
+ * from the run queue before PI6.
  */
 proc_wait_event_intr:
         skipe   (1)
@@ -3392,7 +3396,9 @@ proc_wait_event_intr:
         jrst    proc_wait_event
         move    2,file_table
         move    2,-2(2)                 ; packed process control word
-        tlne    2,0100                  ; pending ALRM (event 5)
+        tlne    2,0116                  ; ALRM or fatal INT/TERM/HUP
+        jrst    kret_neg1
+        trne    2,1                     ; fatal PIPE event
         jrst    kret_neg1
         movsi   4,PROC_WAIT_INTR_LH
         jrst    proc_wait_event_common
@@ -3441,7 +3447,9 @@ proc_wait_raced:
 proc_wait_intr_return:
         move    2,file_table
         move    2,-2(2)
-        tlne    2,0100                  ; ALRM remained pending across sleep
+        tlne    2,0116                  ; ALRM or fatal INT/TERM/HUP
+        jrst    kret_neg1
+        trne    2,1                     ; fatal PIPE event
         jrst    kret_neg1
         jrst    kret_zero
 
