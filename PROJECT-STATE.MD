@@ -1,3 +1,42 @@
+## 2026-11-07 v1276: E13 exact-source dual-platform release evidence PASS
+
+The same full 256K KCC/DSK/D6FS/PCLK60/headless release-media
+candidate built from DAIMOS `226e7a5f` and testkit `ee9d92b`
+completed both requester-OOM-disabled and disposable-enabled cases
+on independent Android aarch64 and Linux x86_64 Open SIMH PDP-6
+V4.1-0 binaries. Android simulator SHA256
+`601b6e9ec9979a7b457ab1d866072f4e167bd14929b6de26877c6620fcc36ea0`,
+Linux `fdf2efcad69bc4fa7c14fa97fa0031923123af184832af6ca986302432b3d72c`.
+Both policies have identical KCORE low endpoints on both hosts:
+OOM OFF `023503`, test-enabled `023521` (octal). Only PID 3 is
+selected for fatal OOM when enabled; the disabled requester returns
+the correct error. Original held FS provider, blocked witness,
+gateway waiter, independent spinner and final WAIT/FILE/MM accounting
+all PASS. Source revisions, boot media, tool hashes, profiles and
+raw counter logs are retained with SHA256-verified archives:
+
+* Android `$TMPDIR/daimos-e13-release-media-v1160.dYyc6O.tar.gz`:
+  `c87799ba1ecda40f07bbbf718d5ca20e0d5be896549df3be80d075ed0c8990ef`.
+* Linux copied to `$TMPDIR/daimos-e13-linux-x86_64-v1272-r1.tar.gz`:
+  `a59d9b90338a0c23fd084fb7153160bd4068fd4233eabfcf7cd0205fb8b6a720`.
+
+The F10 v1190 diagnostics audit PASSes four complete builds with
+zero unexplained notes. The one optional, already-approved legacy
+D6FSR2 media-layout warning appears only on the Linux-produced
+media; v1275 excludes ONLY this expected host/media difference from
+cross-host *tool* diagnostic-class equality, retaining strict tool
+notes and fatal unexpected messages. The first frozen S07/S08
+profile deliberately excludes alternate boot/media and emulator
+targets; E13 is CLOSED for its exact release scope. OpenBSD host
+coverage remains optional follow-up rather than certified by E13.
+
+F07 and E13 are now CLOSED. F11 is NOT approved: a current Linux
+v1112 failed-RUN negative guest halts unexpectedly, although an
+older frozen DAIMOS source and the current Android source PASS.
+An isolated source revision bisect is in progress. Production
+requester OOM remains OFF until F11 review, F12 tests and F13
+post-enable acceptance. Active mandatory readiness becomes 61/64.
+
 ## 2026-11-07 v1274: F07 64-slot/maximum-MM acceptance PASS (CLOSED)
 
 The frozen 256K KCC DSK/D6FS PDP-6 guest built from clean DAIMOS

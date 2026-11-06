@@ -1,3 +1,26 @@
+## v1276: E13 exact-revision dual-host release media acceptance PASS
+
+- [x] Run current DAIMOS `226e7a5f` / testkit `ee9d92b` on
+  independent Android aarch64 and Linux x86_64 Open SIMH PDP-6
+  V4.1-0 simulator builds, both normal OOM-OFF and disposable OOM-ON,
+  on the frozen 256K KCC DSK Stage 1 / D6FS root S07/S08 profile.
+- [x] Verify independent simulator binary hashes, exact identical
+  linked KCORE low endpoints (`023503` disabled and `023521` test-on),
+  original foreign FS lease ownership, slot-3-only fatal selection,
+  protected bystanders, WAIT/FILE/MM cleanup and complete logs.
+- [x] Verify host evidence archives and SHA256:
+  Android `c87799ba1ecda40f07bbbf718d5ca20e0d5be896549df3be80d075ed0c8990ef`,
+  Linux `a59d9b90338a0c23fd084fb7153160bd4068fd4233eabfcf7cd0205fb8b6a720`.
+  The F10 audit finds zero unexplained compiler/assembler diagnostics;
+  the one already-approved legacy D6FSR2 layout note differs between
+  otherwise identical diagnostic sets on the two hosts.
+- [x] E13 CLOSED for the specifically frozen S07/S08 first OOM
+  release profile. Other emulator, boot/media and OpenBSD-host
+  combinations remain separate, explicitly out-of-scope work.
+- [ ] F11 final candidate readiness remains blocked by a current
+  Linux-specific v1112 failed-RUN guest regression; source bisect
+  is in progress. Do not enable production requester OOM.
+
 ## v1274: full 64-slot F07 maximum-load acceptance PASS
 
 - [x] In the frozen 256K KCC DSK/D6FS guest, admit 57 additional
@@ -811,8 +834,12 @@ not permission to bypass the final combined regression. See
   genuinely OOM-killed BRK requester: never kill the RUN parent.
 - [x] E12: Confirm no unauthorized INIT/kernel critical process,
   in-flight gateway owner or unrelated bystander is terminated.
-- [ ] E13: Repeat on the required PDP-6 simulator targets and actual
+- [x] E13: Repeat on the required PDP-6 simulator targets and actual
   release boot/media configuration; archive complete counter logs.
+  Exact DAIMOS `226e7a5f`/testkit `ee9d92b` Android aarch64 plus
+  independent Linux x86_64, each with OOM off and test-only on,
+  SHA256 verified archives and F10 diagnostics all PASS for S07/S08.
+  Other platform/media variants are outside the frozen first profile.
 
 ### F: OOM safety, acceptance, default enable and rollback (OPEN)
 
