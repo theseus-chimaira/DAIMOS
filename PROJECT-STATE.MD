@@ -1,3 +1,31 @@
+## 2026-11-06 v1254/v1256: equal-score resident dispatch before disk swap
+
+A frozen 256K KCC DSK/D6FS 18-child F07 guest at the requester-release
+stage `^@%` proves a scheduling throughput defect: PID 3 (requester)
+and PID 4 (filesystem lease owner) are RUN and resident, while the
+scheduler requests a disk restore for PID 5 (spinner, VM base zero).
+All four runnable slots (1, 3, 4, 5) have identical nice 024, recent
+CPU zero, combined score 024; cyclic rank alone preferred swapped PID
+5 despite immediately runnable resident work. PIDs 7..24 are actually
+SLEEP on the same PIPE event, not a repeated runnable burst. The
+provider lease belongs to PID 4, and PID 6 is asleep on its lock event.
+This is snapshot evidence, not a successful OOM or WAIT/reap test.
+
+v1256 gives normal nonresident candidates a 0400-octal cyclic-rank
+penalty ONLY within the same primary nice+CPU score; strictly better
+swapped priorities still win, and a VM=0 fatal-cleanup continuation
+is not penalized. It adds no persistent words. Native PDP-6 tests PASS
+for resident ties, stronger swapped priority, all-resident/all-disk
+round-robin ties, fatal cleanup and a historically failing old mutant.
+DAIMOS 51824c41 and testkit 8e480ba are pushed. A fresh uninstrumented
+18-child 256K release-media guest is under evaluation; F07/E13/F11
+remain OPEN, 59/64 gates, production requester OOM OFF. Existing
+uncommitted v1208/v1211 swap experiments remain separate.
+
+The frozen full-machine evidence is at
+`$TMPDIR/daimos-f07-v1254-process-snapshot-r2.tar.gz`, SHA256
+`dfe1a414cb2fc7ca5a360ae42df003d7cc0ab217f2d184536bb7247d2391ac8d`.
+
 ## 2026-11-06 v1253: real PID dispatch versus swap-selection counts
 
 The 256K PDP-6 KCC DSK/D6FS F07 v1253 guest reached all 18 extra
