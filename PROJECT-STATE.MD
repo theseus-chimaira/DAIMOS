@@ -1,3 +1,39 @@
+## 2026-11-06 v1258/v1259: real provider holder, requester still delayed
+
+Fresh 256K KCC DSK/D6FS production-OOM-disabled F07 v1258 admitted all
+18 additional RUN children and reached `^@%*`. At the controlled stop
+after approximately 14m42s, no requester WAIT or extra-child reaping
+had occurred. The intended foreign FS holder PID 6 had acquired the
+real lease (`holder_enter=1`, `holder_lease=000007000000`); PID 4 had
+contended (`predispatch=1`), but requester `real_oom=0` and
+`ordinary_wait=0`. Thus nondeterministic lease ordering is not by
+itself the remaining F07 blocker. Native swap transactions continued:
+32 successful swap-outs, 20 swap-ins and 33 exchanges, with zero
+recorded swap-in or swap-out failure branches. However, spinner PID 5
+was dispatched 2967 times against requester PID 3 only 27 times and
+gateway PID 4 three times. The actual cause of the remaining requester
+delay requires further user-stage/scheduler evidence; do not invent a
+disk timeout or enable OOM based on this partial observation.
+
+Evidence: `$TMPDIR/daimos-f07-v1258-snapshot-r1.tar.gz`, SHA256
+`8229ff20d0bd4271f783582554c4c32759c252ec981acb3283ea8eca912bfec1`.
+The v1238 process descriptor snapshot is from the last swap-service
+copy, not necessarily the live process state at SIGINT. Full native
+transfers, scheduler locality, and provider-order injection tests PASS.
+
+Testkit v1258 (`fbffb63`) and v1259 (`50b73e0`) use a disposable
+gateway/holder event handshake rather than trusting the two historical
+sleep delays to establish ownership. v1259 triggers the gate from PID 4's
+own post-start sleep, eliminating a remaining INIT-arming race. No
+production filesystem lock or scheduler code is modified by this test
+fixture. The v1259 injected full guest assembled, and native source
+checks/negative controls PASS. A separate disposable requester tracer
+records `&` immediately before physical BRK and `=` on its return;
+the full guest acceptance remains open. The earlier v1256 comparison
+also reached the held provider but not requester OOM. F07/E13/F11 OPEN,
+59/64 OOM gates, production requester OOM OFF; v1208/v1211 swap
+experiments remain uncommitted and unaccepted.
+
 ## 2026-11-06 v1256-r1/v1259: full guest still slow after resident tie
 
 The uninstrumented 256K PDP-6 KCC DSK/D6FS release-media v1256
