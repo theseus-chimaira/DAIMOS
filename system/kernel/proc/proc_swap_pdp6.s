@@ -81,8 +81,6 @@
         .globl  vfs_read_words
         .globl  d6lz36_decode_vfs
         .globl  fs_zero_words
-        .globl  fs_block_workspace
-        .globl  bcache_workspace_invalidate
         .globl  proc_storage_expect_v30
         .globl  proc_storage_publish_v30
 
@@ -521,9 +519,12 @@ proc_swap_execute_done_v832:
 ; multi-sector dependency order. This leaf MUST NOT be used directly
 ; by the scheduler: it does not commit either process state.
 ;
-; The backing gateway uses a caller buffer. Invalidate the shared VFS
-; cache tag before using its 0200-word scratch workspace. The scratch
-; is not shared across two concurrent calls; swap service is serialized.
+; The backing gateway uses a caller buffer. A filesystem read may sleep
+; with DMA targeting fs_block_workspace while slot 0 runs this synchronous
+; swap operation. Even after that DMA completes, the filesystem process
+; might not yet have resumed to consume its block. Reusing the filesystem
+; workspace here would destroy valid, unconsumed data. Keep an independent
+; swap-owned sector buffer: slot-0 exchange transactions are serialized.
 proc_swap_exchange_sector_v771:
         push    17,010
         push    17,011
@@ -531,10 +532,9 @@ proc_swap_exchange_sector_v771:
         move    010,1                  ; disk block
         move    011,2                  ; source A RAM sector
         move    012,3                  ; destination B RAM sector
-        pushj   17,bcache_workspace_invalidate
         move    1,010
         movei   2,1
-        movei   3,fs_block_workspace
+        movei   3,proc_swap_sector_buffer_v1237
         pushj   17,backstore_read
         jumpn   1,proc_swap_exchange_sector_fail_v771
         move    1,010
@@ -542,8 +542,8 @@ proc_swap_exchange_sector_v771:
         move    3,011
         pushj   17,backstore_write
         jumpn   1,proc_swap_exchange_sector_fail_v771
-        movei   1,fs_block_workspace
-        hrli    1,fs_block_workspace
+        movei   1,proc_swap_sector_buffer_v1237
+        hrli    1,proc_swap_sector_buffer_v1237
         move    2,012
         hrr     1,2
         blt     1,0177(2)             ; copy exactly 0200 words
@@ -556,6 +556,14 @@ proc_swap_exchange_sector_done_v771:
         pop     17,011
         pop     17,010
         popj    17,
+
+        .bss
+; Slot-0 swap I/O cannot borrow the filesystem DMA workspace: a provider
+; may have finished its disk read but not yet resumed to consume its data.
+; This allocation-free scratch belongs to the removable swap MRES.
+proc_swap_sector_buffer_v1237:
+        .block  0200
+        .text
 
 ; int proc_swap_exchange_overlap_v772(const kword_t *request)
 ; A six-word request: disk first, A writable first, B writable first,
@@ -1503,17 +1511,16 @@ proc_swap_verify_pure:
 proc_swap_verify_block:
         caml    16,15
         jrst    proc_swap_verify_restore_ok
-        pushj   17,bcache_workspace_invalidate
         move    1,(17)
         add     1,16
         movei   2,1
-        movei   3,fs_block_workspace
+        movei   3,proc_swap_sector_buffer_v1237
         pushj   17,backstore_read
         jumpn   1,proc_swap_verify_restore_fail
         move    5,16
         lsh     5,7
         add     5,11
-        movei   6,fs_block_workspace
+        movei   6,proc_swap_sector_buffer_v1237
         movei   7,DSK_WORDS_PER_SECTOR
         jumpn   16,proc_swap_verify_words
         addi    5,EXEC_USER_ORIGIN      ; low 0..017 are PDP-6 fast ACs,

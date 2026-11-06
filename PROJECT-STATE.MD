@@ -1,3 +1,26 @@
+## 2026-11-06 v1237: isolate slot-0 swap I/O from suspended D6FS reads
+
+The full 256K KCC DSK/D6FS v1236 diagnostic reproduced a zero FCB
+metadata word for FCB 037/block 0741 immediately after a successful
+filesystem backing read, before BCACHE publication. A direct backing
+reread returned the intact REG metadata 100005550020. Slot-0 swap I/O
+could reuse fs_block_workspace while the filesystem provider's sleeping
+caller still owned its completed DMA data. The v1237 candidate assigns
+swap exchange/optional PURE verification an independent 0200-word buffer
+inside the removable swap MRES; it does not change the cache policy.
+
+The patched disposable guest admitted all 18 additional RUN children
+(the original failure occurred after 9). The same FCB now reads
+100005550020 both immediately after I/O and after cache publication;
+no zero post-read observation or invalid-FCB rejection was recorded.
+Native v774/v775/v854 transfer tests and the v1237 source/negative
+control PASS. This is a partial correction only: the 18-child run
+subsequently stalled after the provider-start marker, before the next
+sleep/reap milestone. The guest was interrupted to preserve diagnostics.
+The slot-0 stack is still the original 0100 words in production; the
+guest used the diagnostic-only 0400-word stack. F07/E13/F11 remain
+OPEN, 59/64 OOM gates; production requester OOM remains OFF.
+
 ## 2026-11-06 v1205: 12 genuine concurrent user BRK/APR/MM extents PASS (partial F07)
 
 Frozen DAIMOS `684d4504`, testkit `f2222e2`; two independent
