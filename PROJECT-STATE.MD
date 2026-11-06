@@ -1,3 +1,31 @@
+## 2026-11-06 v1240/v1241: swap-exchange saved-backing ownership defect
+
+Full v1240 disposable 256K DSK/D6FS 18-child F07 guest again stopped
+after all 18 RUN admissions and the provider-start marker. The v1238
+scheduler trace showed millions of genuine swap requests, with PID 1
+and PID 5 runnable/nonresident. The v1240 instrumentation proved that
+all four swap-service admission rejects were ZERO, both process disk
+records were valid/nonzero, but the saved executable-backing words in
+their stable u-areas were both ZERO. Thus the repeated swap-in failure
+is not a missing scheduler request, invalid process state or BCACHE.
+
+The actual defect is in proc_swap_exchange_records_v786: unlike regular
+proc_swap_out, exchange publication previously overwrote A's resident
+executable-backing record with its disk span without saving the old
+backing in A's stable u-area. It also retained B's consumed saved
+backing. v1241 now validates A's old record, both u-area owners and B's
+saved backing before publication, transfers A's old backing to its
+stable u-area and clears B's. The pre-destructive v797 backing validator
+also refuses a nonzero A saved slot or missing resident backing.
+
+The real native PDP-6 v786, v801-v803, v819, v854-v856 transaction tests
+PASS with fully owned fixture u-areas. v854 additionally rejects
+corrupted A backing before the first destructive disk I/O; the v1241
+negative control against v1237 confirms the old path fails the new
+backing postcondition. The separate v1241 full 18-child guest is still
+under evaluation; do NOT close F07/E13/F11 or enable OOM from native
+tests alone. Production requester OOM remains OFF (59/64 acceptance).
+
 ## 2026-11-06 v1239: fix verified slot-0 stack overwrite and scan bound
 
 The original 0100-octal (64-word) permanent slot-0 pushdown stack had

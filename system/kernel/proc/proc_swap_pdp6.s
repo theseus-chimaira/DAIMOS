@@ -930,7 +930,37 @@ proc_swap_exchange_records_v786:
         jumpe   1,proc_swap_records_bad_v786
         hrrz    1,1(3)                ; B must be on disk
         jumpn   1,proc_swap_records_bad_v786
+        ; The outgoing executable backing must survive in A's stable u-area
+        ; while A is nonresident. The earlier exchange path only changed the
+        ; two swap records; the next ordinary swap-in then saw a zero saved
+        ; backing and could never restore this runnable process.
+        move    1,(2)
+        trnn    1,PROC_UAREA_RH
+        jrst    proc_swap_records_bad_v786
+        hlrz    1,1
+        jumpe   1,proc_swap_records_bad_v786
+        skipe   PROC_SWAP_BACKING_OFFSET(1)
+        jrst    proc_swap_records_bad_v786
+        skipn   (4)                    ; original A executable backing
+        jrst    proc_swap_records_bad_v786
+        move    1,(3)
+        trnn    1,PROC_UAREA_RH
+        jrst    proc_swap_records_bad_v786
+        hlrz    1,1
+        jumpe   1,proc_swap_records_bad_v786
+        move    1,PROC_SWAP_BACKING_OFFSET(1)
+        jumpe   1,proc_swap_records_bad_v786
+        came    1,7(010)              ; B's validated original backing
+        jrst    proc_swap_records_bad_v786
+        ; All state has passed validation. Write both stable saved backing
+        ; slots as part of the same TRANSITION-held record publication.
+        move    7,(4)                  ; A old executable backing
+        hlrz    1,(2)
+        movem   7,PROC_SWAP_BACKING_OFFSET(1)
+        hlrz    1,(3)
+        setzm   PROC_SWAP_BACKING_OFFSET(1)
         hllzs   1(2)                  ; A: clear resident base
+        hrrz    7,4(010)              ; restore shared RAM base
         hrrm    7,1(3)                ; B: set resident base
         movem   6,(4)                 ; A: now backed by disk
         move    1,7(010)
@@ -1200,6 +1230,22 @@ proc_swap_exchange_backing_v797:
         jrst    proc_swap_backing_bad_v797
         lsh     2,-7
         came    2,6(010)            ; saved B blocks
+        jrst    proc_swap_backing_bad_v797
+        ; Before destructive sector transfer, require an intact resident
+        ; A backing and an empty saved-backing slot. v786 will move this
+        ; backing to A's u-area when the exchange makes A disk-resident.
+        skipn   5,(012)              ; A process entry
+        jrst    proc_swap_backing_bad_v797
+        move    6,(5)
+        trnn    6,PROC_UAREA_RH
+        jrst    proc_swap_backing_bad_v797
+        hlrz    6,6
+        jumpe   6,proc_swap_backing_bad_v797
+        skipe   PROC_SWAP_BACKING_OFFSET(6)
+        jrst    proc_swap_backing_bad_v797
+        skipn   5,2(012)             ; A resident swap record address
+        jrst    proc_swap_backing_bad_v797
+        skipn   (5)                  ; original A executable backing
         jrst    proc_swap_backing_bad_v797
         setz    1,
         jrst    proc_swap_backing_done_v797
