@@ -1,3 +1,18 @@
+## v1205: actual concurrent process and logical BRK/APR pressure
+
+- [x] Populate twelve real user process slots with real executable
+  VM/u-area/BRK while another FS process holds its in-flight lease.
+- [x] At genuine physical BRK OOM, snapshot all twelve live process
+  table rows, real MM owners and APR extents; independently reconcile
+  **5499 exact logical BRK/APR padding words**, 231012 allocated MM
+  words and 31/136 descriptors (both disposable policy variants).
+- [x] Preserve full 256K release-media evidence with exact frozen
+  DAIMOS/testkit revisions; see v1205 design acceptance report.
+- [ ] F07: combine actual resident processes with high MM descriptor
+  occupancy in one physical-OOM snapshot, then exercise wider
+  64-slot swap/stack concurrency and assess the combined budget.
+- [ ] Keep production requester OOM OFF until E13/F07/F11 signoff.
+
 ## v1204: F07 high physical/descriptor pressure under held provider
 
 - [x] Trigger physical BRK OOM in the full release-media guest with

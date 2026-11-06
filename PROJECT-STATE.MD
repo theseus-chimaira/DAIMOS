@@ -1,3 +1,25 @@
+## 2026-11-06 v1205: 12 genuine concurrent user BRK/APR/MM extents PASS (partial F07)
+
+Frozen DAIMOS `684d4504`, testkit `f2222e2`; two independent
+256K KCC DSK/D6FS OOM policy guests PASS physical BRK fault under
+held foreign provider, with **12 actual resident process images**
+(six extra RUN children), individual u-area/BRK snapshots, and
+one-to-one exact MM owner/APR physical extent reconciliation.
+Both have 231012 managed allocated words (95.3% physical occupancy),
+31/136 MM descriptors and **5499 actual logical BRK padding words**.
+Enabled: 242427 managed, 11415 free; disabled: 242441 managed,
+11429 free. All child TERM/WAIT, FS-provider lease and protected
+owner/reaper checks PASS; source production OOM remains OFF.
+Testkit rejects five malformed process/BRK/MM fixtures.
+
+See `design/F07-REAL-PROCESS-BRK-ACCEPTANCE-V1205.md` and archived
+full SIMH/build/maps/checksum evidence at
+`$TMPDIR/daimos-f07-real-mm-v1205r4.tar.gz` (SHA256
+`db2a1e1069fe6b008aa9ef85d4dc79cd953ce47a17a2b30eac9aad0547b44694`).
+Next combine real concurrent-process pressure with near-full MM
+descriptor occupancy, then qualify 64-slot/swap and stack budget.
+**F07 OPEN, E13/F11 OPEN, 59/64 gates, production OOM OFF.**
+
 ## 2026-11-06 v1204: high-load F07 physical MM/provider test PASS (partial)
 
 Frozen DAIMOS `75ccef85`, committed testkit `aa7cb86`: both
