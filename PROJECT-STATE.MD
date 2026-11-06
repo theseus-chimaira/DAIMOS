@@ -1,3 +1,61 @@
+## 2026-11-06 v1265: F07 24-process swap/OOM cleanup verified (partial gate)
+
+Fresh 256K PDP-6 KCC DSK/D6FS full guest v1264 completed within the
+original 900-second limit: `<++++++++++++++++++^@%&*?{}|~~~~~~~~~~~~~~~~~~KWP`
+and expected HALT. The 18 extra processes were admitted, received
+real batch TERM events and were each reaped by WAIT with exact status.
+Native v1150 owner check records `error=0`, `real_oom=1`,
+`holder_return=1`, `fatal_busy=7` (octal). Independent v1159,
+v1203, v1205 and v1207 protection, MM, process, swap and stack
+verifiers PASS. Evidence archive:
+`$TMPDIR/daimos-f07-v1264-acceptance-r1.tar.gz`, SHA256
+`0fc008be42997a81138f4513d603bb828a0a978903ef60d1c761dd08e2068fea`.
+Testkit v1265 `5881961` commits the 18-child batch TERM and swap
+verifier fixtures. pdp10-doc `f6a7f46` documents methods and limits.
+
+**Acceptance boundary:** guest source was derived from DAIMOS
+`b6db5372` with *uncommitted experimental v1208/v1211 swap changes*,
+not from the clean production tree. The 64-slot and combined
+high-descriptor F07 matrix is still untested. F07/E13/F11 OPEN,
+59/64 OOM gates; production requester OOM OFF. Do not merge the
+experimental swap paths or claim final F07 enablement from this run.
+
+## 2026-11-06 v1262-v1264: 24-process F07 swap/OOM cleanup full guest PASS
+
+The fresh 256K PDP-6 KCC DSK/D6FS 24-process release-media guest
+completed its full physical-OOM stress sequence within the original
+900-second limit: all 18 additional RUN acknowledgments, requester
+BRK/WAIT, real foreign FS lease ownership and release, spinner and
+gateway cleanup, 18 individual TERM/WAIT/reaps, witness survival and
+final process/FILE/MM accounting. The final markers were
+`<++++++++++++++++++^@%&*?{}|~~~~~~~~~~~~~~~~~~KWP` followed by the
+expected HALT at PC `021377` octal. Simulator and harness exited 0.
+
+The v1203/v1205/v1207 independent verifiers passed physical MM/APR
+extent and logical BRK accounting, 24 live slots, 12 resident process
+extents, 12 nonresident/swap processes, 1,792 swap blocks at physical
+OOM, and private/idle stack watermarks. v1150 provider-owner and
+v1159 protected-process checks passed with both probe error fields 0;
+only requester PID 3 was selected for fatal retirement.
+
+The last two test-only failures were stale instantaneous-state
+assumptions: during slow F07 swapping INIT and gateway waiter PID 4
+can legitimately be RUN at physical OOM, even though the latter had
+already entered the genuine serialized FS gateway wait. Testkit v1263
+and v1264 distinguish this from a wrong SLEEP event, preserve strict
+standalone v1159/v1150 behavior, assemble under native PDP-6 DAS and
+pass six negative mutations each. Testkit commits `4eaa329` and
+`bb2d35d` are pushed; batch TERM is the opt-in v1262 fixture.
+
+Evidence `$TMPDIR/daimos-f07-v1264-acceptance-r1.tar.gz`, SHA256
+`0fc008be42997a81138f4513d603bb828a0a978903ef60d1c761dd08e2068fea`.
+The testkit v1207/v1262 full-runner changes remain uncommitted and
+separate from the accepted diagnostic commits. pdp10-doc `f6a7f46`
+documents the verified boundary. The complete F07 gate remains OPEN
+pending 64-slot/combined high-descriptor-pressure acceptance and
+test-runner integration; E13/F11 also OPEN, 59/64 gates; production
+requester OOM remains OFF. Unaccepted swap experiments remain separate.
+
 ## 2026-11-06 v1260: reject impossible physical APR before swap/reclaim
 
 The full 256K F07 request is `BRK 0776000` octal (261120 words).
@@ -323,6 +381,97 @@ sleep/reap milestone. The guest was interrupted to preserve diagnostics.
 The slot-0 stack is still the original 0100 words in production; the
 guest used the diagnostic-only 0400-word stack. F07/E13/F11 remain
 OPEN, 59/64 OOM gates; production requester OOM remains OFF.
+
+## 2026-11-06 v1232-v1234: F07 D6FS in-memory FCB divergence (OPEN)
+
+Full disposable 256K PDP-6 guest v1232 proves the tenth RUN's
+D6FS payload failure comes *after* a successful FCB block fetch
+and FCB decode, at the provider's REG/SYMLINK type gate. v1233
+shows a raw FREE FCB (META 0, type 0, size 0) for executable FCB
+`037` in block `0741` octal. In contrast, read-only inspection of
+the very same DSK set (validated CLEAN by d6fsck) shows on-disk
+FCB META `100005550020` octal, type REG (1), at physical member 1
+sector `0171`, FCB offset `0160`. Thus guest memory/cached content
+diverges from intact backing media. A disposable v1234 BCACHE and
+shared-workspace probe is being qualified; do not assume media
+corruption, alter the production filesystem or accept F07 without
+identifying the bad data path and rerunning independent 256K guests.
+Production requester OOM remains OFF; F07/E13/F11 OPEN, 59/64.
+
+## 2026-11-06 v1232-v1234: D6FS cached FCB differs from backing (F07 OPEN)
+
+Fresh disposable 256K PDP-6 KCC DSK/D6FS guest v1232 showed that
+the tenth extra RUN fails its payload read because a validly indexed
+(`037` octal, limit `0550`) and decoded D6FS FCB has type FREE (0).
+There was no FCB block-fetch, decode, or physical-block failure.
+The v1233 guest independently captured cached FCB metadata
+`000000000000` while a **direct successful backing read of the same
+FCB** returned `100005550020` (FCB block `0741` octal). This proves
+the D6FS cached/workspace view is wrong, not that its on-disk FCB
+was freed or overwritten. v1234 test-only BCACHE hit-source tracing
+is being evaluated to isolate slot 0 workspace versus slot 1 slab.
+Do not add a disk reread fallback to production: fix the actual
+cache ownership/invalidation defect, retaining two-block low-RAM
+cache policy. Original production idle stack remains 64 words and
+production requester OOM remains OFF; F07/E13/F11 OPEN, 59/64.
+
+## 2026-11-06 v1228-v1231: F07 loader/D6FS failure isolated (OPEN)
+
+With the disposable 0400-octal (256-word) idle-stack upper-bound,
+the 256K guest acknowledges 9/18 additional RUN children before a
+different failure. v1228 identifies `exec_load_process=-1`, slot 020;
+v1229 identifies loader phase 6 (payload read after VM creation).
+v1230 records D6FS `vfs_read_words=-1`, with vnode `060101000037`,
+offset 3, destination `0734020`, `01572` (= 890) words requested.
+v1231 reaches the D6FS provider FCB/type gate and returns `-1`
+there; its reader loop and actual block-I/O-failure counters are
+both zero. Do not diagnose a physical media error from this trace.
+Next distinguish FCB block fetch from FCB decode/type validation
+under load and correct the responsible violation. See testkit STATUS.MD
+for raw diagnostic values and logs. The production idle stack remains
+64 words; the 256-word setting is disposable, not an accepted budget.
+F07/E13/F11 OPEN, 59/64, requester OOM OFF.
+
+## 2026-11-06 v1224-v1227: F07 real idle-stack overrun (OPEN)
+
+A fresh v1224 PDP-6 guest, with a SIMH hardware data-write breakpoint
+armed after `vm_enter_initial_user`, stopped at runtime PC `033637`:
+the second `PUSH 17,011` in the swap MRES's
+`proc_swap_exchange_pair_v826` (relative offset `000011`) wrote value
+`3` over PID 1's descriptor meta at physical `047062`. The previous
+four modifications to the same word only toggled TRANSITION correctly.
+This proves a slot-0 stack overwrite, rather than the conjectured
+release/teardown or MM descriptor deletion. KINIT reserves only `0100`
+octal = 64 words for its permanent pinned idle stack, allocated before
+the process table. A disposable v1225 trial with `0140` octal (96)
+stack words instead reached the swap transaction's fail-stop invariant:
+v1226 CPU history showed the incoming swap partner's VM field
+unexpectedly held `340000033445` at the commit check. A 52-word
+transaction graph in the service call increases the worst-case stack
+depth. The larger `0400` octal (256-word) trial v1227 is diagnostic
+only; select the smallest safe permanent capacity after a complete
+resident/nonresident/WAIT peak and watermark evidence, not by guess.
+Uncommitted source still retains the original production 64-word stack;
+requester OOM remains OFF. F07/E13/F11 OPEN, 59/64 gates.
+
+## 2026-11-06 v1219-v1220: F07 swap-pressure root-cause investigation (OPEN)
+
+Full 256K PDP-6 guest diagnostics (not accepted F07 regression) show
+genuine PID 1 swap-in `MM_ERR_FRAGMENTED` (-2): 18432 APR words
+requested, 28221 free but no LOW/HIGH aligned fit, 35 MM descriptors
+(v1219). Independently rebuilt v1220 reproduced -2 with 28204 free.
+Afterward the original fatal owner branch observes PID 1 still RUN,
+but descriptor `meta=3`, `vm=1`, and invalid `file_table=026`.
+The disposable-only probe counted **zero `proc_uarea_release` calls**;
+this u-area disappearance is not a normal release. v1218 had seen
+the owner descriptor intact before/after disk swap calls. The exact
+writer of the corrupt descriptor or table pointer remains unknown.
+Experimental v1208 slot-0 reclaim and v1211 nonrecursive swap-in are
+uncommitted and NOT accepted; source-linked checks alone cannot prove
+safe kernel behavior. Refer to daimos-testkit STATUS.MD for raw log
+names. Do not activate production requester OOM. F07/E13/F11 OPEN,
+59/64 gates; next isolate descriptor/table writes and retest fresh
+release-media guests with enabled and disabled OOM.
 
 ## 2026-11-06 v1205: 12 genuine concurrent user BRK/APR/MM extents PASS (partial F07)
 
