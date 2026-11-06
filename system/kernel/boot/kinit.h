@@ -29,8 +29,14 @@ typedef unsigned long kword_t;
 #ifndef KINIT_STACK_RESERVE_WORDS
 #define KINIT_STACK_RESERVE_WORDS 0400UL
 #endif
-/* Permanent idle-process kernel stack: 0100 octal = 64 words. */
-#define KERNEL_IDLE_STACK_WORDS   00100UL
+/*
+ * Permanent slot-0 kernel stack: 0400 octal = 256 words.
+ * The swap exchange transaction nests a 064-word graph and multiple MM and
+ * storage call frames. The former 0100-word allocation was observed writing
+ * into PID 1's descriptor. This reserve is pinned before the process table
+ * is installed and must equal the native watermark scan bound.
+ */
+#define KERNEL_IDLE_STACK_WORDS   00400UL
 /**
  * @brief Fixed Stage1-to-KINIT handoff addresses.
  *

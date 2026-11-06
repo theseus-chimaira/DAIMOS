@@ -1,3 +1,20 @@
+## 2026-11-06 v1239: fix verified slot-0 stack overwrite and scan bound
+
+The original 0100-octal (64-word) permanent slot-0 pushdown stack had
+overwritten PID 1's process descriptor during the nested swap exchange
+call graph (SIMH write watchpoint, v1224). KINIT and native process
+assembly now reserve/scan a matching 0400-octal (256-word) idle stack.
+The instrumented process-private and idle-stack watermark scans also
+stop at their allocation bounds instead of reading capacity+1 when
+every canary has been overwritten. Testkit v1239 executes both actual
+PDP-6 scanner leaves with a fully touched stack and a partially used
+stack; two valid-assembly negative mutants restore the old comparisons
+and are rejected. The v1225 diagnostic override and v1207 capacity
+verifier accept the new production default. This removes the known
+64-word descriptor overwrite, but F07 acceptance still requires an
+entire 18-child swap/WAIT cycle and observed highwater below capacity.
+E13/F07/F11 remain OPEN, 59/64 OOM gates, production requester OOM OFF.
+
 ## 2026-11-06 v1237: isolate slot-0 swap I/O from suspended D6FS reads
 
 The full 256K KCC DSK/D6FS v1236 diagnostic reproduced a zero FCB

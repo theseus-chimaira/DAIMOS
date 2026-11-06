@@ -46,7 +46,7 @@
         .equ    PROC_CRED_OFFSET,066
         .equ    PROC_USTACK_BASE,070
         .equ    PROC_KSTACK_WORDS,0316
-        .equ    KERNEL_IDLE_STACK_WORDS,0100
+        .equ    KERNEL_IDLE_STACK_WORDS,0400
 
         .equ    CTX_PC,020
         .equ    CTX_KSP,021
@@ -3533,7 +3533,7 @@ proc_stack_watermark_loop:
         jrst    proc_stack_watermark_done
         addi    2,1
         addi    3,1
-        caig   3,PROC_KSTACK_WORDS
+        caige  3,PROC_KSTACK_WORDS
         jrst    proc_stack_watermark_loop
 proc_stack_watermark_done:
         camle   3,proc_stack_highwater
@@ -3552,7 +3552,7 @@ kernel_idle_stack_watermark_loop:
         jrst    kernel_idle_stack_watermark_done
         addi    2,1
         addi    3,1
-        caig   3,KERNEL_IDLE_STACK_WORDS
+        caige  3,KERNEL_IDLE_STACK_WORDS
         jrst    kernel_idle_stack_watermark_loop
 kernel_idle_stack_watermark_done:
         camle   3,kernel_idle_stack_highwater
