@@ -1,3 +1,29 @@
+## 2026-11-06 v1204: high-load F07 physical MM/provider test PASS (partial)
+
+Frozen DAIMOS `75ccef85`, committed testkit `aa7cb86`: both
+independently rebuilt 256K KCC DSK/D6FS full guest variants PASS
+real physical BRK OOM with the foreign provider held after adding
+12 APR-aligned 8K-word and 96 single-word MM allocations in the
+disposable kernel. At the fault: **211092/242518** managed physical
+words allocated (enabled; disabled 242532 managed), **127/136**
+MM descriptors, six real process extents, 3 free gaps and the original
+128-word shared transfer workspace. All 108 test-owned extents were
+released exactly once after the original protected-owner and WAIT
+tests completed. No non-requester retirement, wrong-owner release,
+unexpected MM error or provider-lease theft. Host audit rejects 17 negative
+mutants (v1203+v1204). Low APR placement slack measured 706/720 words.
+
+F07 verifier bug fixed: alignment is `02000` octal = 1024 words,
+so the per-gap and per-process conservative waste bound is 1023,
+**not 511** (corrected v1203 historical report; raw old logs unchanged).
+Evidence `$TMPDIR/daimos-f07-high-mm-v1204r2.tar.gz`, SHA256
+`00bb9942c78455d616160649b77756823b3715b74ba14fbe5e1dc73aeb91513d`.
+See `design/F07-HIGH-PRESSURE-MM-ACCEPTANCE-V1204.md` for exact
+metrics, full provenance and limitations. High MM occupancy is now
+proven, but maximum real process-slot concurrency and per-process
+logical BRK rounding are not yet measured; **F07 remains OPEN**.
+E13/F11 remain OPEN; acceptance 59/64, production requester OOM OFF.
+
 ## 2026-11-06 v1203: simultaneous F07 physical MM/provider sample PASS (partial)
 
 On DAIMOS `cf4e85d4` and committed testkit `aae6d2d`, independent

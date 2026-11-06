@@ -1,3 +1,20 @@
+## v1204: F07 high physical/descriptor pressure under held provider
+
+- [x] Trigger physical BRK OOM in the full release-media guest with
+  a foreign FS owner live, 12 real 8192-word APR-aligned extents and
+  96 one-word extents held concurrently; 127/136 descriptors and
+  211092 allocated words observed.
+- [x] Reproduce the high-load MM state under both OOM test policies;
+  all 108 test-owned extents released by exact typed MM free and
+  original WAIT/provider/TTY process cleanup PASS.
+- [x] Correct F07 verifier's APR quantum bound to `02000-1` octal
+  (1023 decimal), with host negative mutations and physical rerun.
+- [x] Archive frozen source/testkit/boot-media and raw simulator
+  evidence: `design/F07-HIGH-PRESSURE-MM-ACCEPTANCE-V1204.md`.
+- [ ] F07 still OPEN: test actual high concurrent process-slot load
+  and snapshot per-process logical BRK waste, not merely synthetic
+  MM_TYPE_KERNEL_DYNAMIC pressure. Do not enable production OOM.
+
 ## v1203: F07 genuine OOM/provider MM snapshot, partial completion
 
 - [x] Sample genuine live physical-MM state at BRK -1 with the
@@ -812,6 +829,11 @@ not permission to bypass the final combined regression. See
   and a 128-word shared buffer. Both OOM modes PASS, but 130K words
   remained free; maximum-load and per-process break-rounding proofs
   still remain. See `design/F07-LIVE-OOM-MM-PEAK-AUDIT-V1203.md`.
+  v1204 high-pressure full guests supersede the low-occupancy limit:
+  127/136 descriptors and 211092 allocated words with 108 extra real
+  MM allocations while the foreign FS owner is held, all freed
+  exactly; both OOM modes PASS. This is still six real process
+  extents, not maximum concurrent process-slot/BRK usage.
 - [x] F08: Retain deferred strict 32K KCORE/DSH optimization as a
   **separate** gate; do not misreport a passing 256K guest as 32K.
   The frozen first requester-OOM acceptance profile is strictly

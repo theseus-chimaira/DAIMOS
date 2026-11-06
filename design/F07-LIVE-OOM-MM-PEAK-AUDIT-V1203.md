@@ -40,8 +40,8 @@ snapshot BSS exists **only in the disposable instrumented guests**.
 | Managed free gaps | 3 | 3 |
 | Largest free gap | 128984 | 128998 |
 | LOW APR placement prefix slack | 990 | 1012 |
-| Upper bound per gap (511 * 3) | 1533 | 1533 |
-| Logical break rounding upper bound (511 * 6) | 3066 | 3066 |
+| Upper bound per gap (1023 * 3) | 3069 | 3069 |
+| Logical break rounding upper bound (1023 * 6) | 6138 | 6138 |
 | Shared resident VFS block workspace | 128 | 128 |
 | Original foreign provider lease | 7,,0 | 7,,0 |
 
@@ -57,6 +57,14 @@ more resident test-policy words and therefore 14 fewer managed words.
 words before the next APR-aligned base in each sampled free gap; it
 is not all possible fragmentation loss. Logical BRK rounding is
 **bounded**, not read directly from each process's u-area.
+
+**v1204 correction:** The original archived v1203 verifier used 511
+instead of 1023 as its maximum 02000-octal-word APR quantum loss.
+The testkit now uses `02000 - 1 = 1023`; the two bounds in this
+table are corrected above. The original logs/hashes are immutable
+historical evidence and still contain their earlier incorrect
+*derived bounds*. The measured occupied/free words, actual prefix
+slack, owner and per-extent alignment checks remain valid.
 
 ## Evidence
 
