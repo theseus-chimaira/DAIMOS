@@ -1,3 +1,30 @@
+## 2026-11-07 v1269: clean production-source F07 24-process regression PASS
+
+The 256K KCC PDP-6 DSK/D6FS test runs successfully without the
+experimental v1208/v1211 swap changes: 18 additional RUN children,
+real disk swapping, protected physical BRK OOM, held foreign FILE
+provider, full TERM/WAIT/reap and final resource accounting all PASS
+on committed DAIMOS `9a841363`. The complete simulated workload
+reaches `<++++++++++++++++++^@%&*?{}|~~~~~~~~~~~~~~~~~~KWP` and HALTs
+before the original 900-second cutoff. v1150/v1159/v1203/v1205/v1207
+verifiers and all evidence checks PASS. Clean swap counts: 41 normal
+out/in transfers, no allocation-pressure service or exchange calls.
+
+The v1208/v1211 experiment was also tested successfully, with ten
+real fallback invocations, eight exchanges and 33 normal out/in
+transfers, but increases the identically instrumented SWAP MRES by
+16 linked words and does not reduce KCORE itself. An independent
+no-equal-partner pressure case remains necessary before deciding
+whether to accept its added permanent residency; the clean F07 PASS
+proves only that this specific workload does not need it.
+
+Evidence: `$TMPDIR/daimos-f07-clean-v1269-acceptance-r1.tar.gz`,
+SHA256 `b0883d79d0a7baacb007690f62be6234a458c927afabf08ad1aac2d57510dde2`.
+The 64-slot/combined-high-descriptor F07 gate is still OPEN, as are
+E13/F11; production requester OOM remains disabled. See pdp10-doc
+`KERNEL/OOM-F07-24PROCESS-SWAP-CLEANUP-V1264.MD` for the earlier
+experiment and the completed clean comparison.
+
 ## 2026-11-05 v1189: static 16K residency is separate from OOM
 
 F05 is no longer an OOM enablement gate. The previously measured

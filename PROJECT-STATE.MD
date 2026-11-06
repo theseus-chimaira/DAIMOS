@@ -1,3 +1,45 @@
+## 2026-11-07 v1269: clean-source F07 24-process guest PASS; swap experiments remain separate
+
+The full 256K KCC DSK/D6FS F07 guest has now PASSED against the
+unmodified, committed DAIMOS source `9a841363`, with the same
+18-child/batch-TERM test and the unchanged 900-second guest limit.
+The clean kernel had NO v1208 no-equal-partner fallback and NO v1211
+nonrecursive swap-in allocator change. Test-only requester OOM was
+enabled only in the disposable guest; production requester OOM is OFF.
+All 18 RUN acknowledgments, real swapping, physical requester OOM,
+foreign FS owner/gateway cleanup, all 18 TERM/WAIT/reaps, final
+process/FILE/MM accounting, and HALT PASSED:
+`<++++++++++++++++++^@%&*?{}|~~~~~~~~~~~~~~~~~~KWP`.
+
+The independent v1159/v1203/v1205/v1207 protected-process, physical
+MM, actual-process, swap/stack verifiers PASS; v1150 provider error
+is zero. Evidence manifest hashes all PASS. The clean swap counters
+are 41 successful swap-outs, 41 swap-ins, zero service-level MM
+pressure, zero exchanges, zero fallback, zero swap failures/cooldowns.
+Full archive: `$TMPDIR/daimos-f07-clean-v1269-acceptance-r1.tar.gz`,
+SHA256 `b0883d79d0a7baacb007690f62be6234a458c927afabf08ad1aac2d57510dde2`.
+
+The separately successful v1264 experimental guest used uncommitted
+v1208/v1211 edits: 33 successful out/in transfers, eight exchanges,
+18 explicit swap-in pressure returns, ten successful fallback entries
+and zero failures/cooldowns. The identical instrumented links differ
+by 020 octal = 16 decimal SWAP MRES words, with equal KCORE low-end
+addresses. Testkit `218bd7e` enables a guarded clean comparison;
+`e8c9667` retains the nonrecursive source/mutant guard; `11e6cc9`
+checks exercised fallback counters and five negative mutants.
+Both implementations assemble natively. This DOES NOT establish
+that the extra 16 words are necessary or beneficial in production.
+Do not merge the experimental code until a distinct failure case
+(no viable equal-size exchange) and its rollback/performance acceptance
+justify it. Preserve the uncommitted changes without overwriting them.
+
+The 24-process F07 stress milestone is now reproducible on committed
+production source, but **F07 remains OPEN**: 64 process slots and
+combined high MM descriptor/APR/provider pressure are still untested.
+E13/F11 also remain OPEN; 59/64 active OOM gates and the production
+OOM flag remains OFF. Static 16K residency is a separate KCORE/MRES
+size objective, not an OOM preenable gate.
+
 ## 2026-11-06 v1265: F07 24-process swap/OOM cleanup verified (partial gate)
 
 Fresh 256K PDP-6 KCC DSK/D6FS full guest v1264 completed within the

@@ -1,3 +1,19 @@
+## v1269: clean 24-process F07 milestone PASS; full F07 gate still open
+
+- [x] Rebuild clean committed DAIMOS `9a841363` without experimental
+  v1208/v1211 swap code; run the unchanged 900-second 256K KCC/D6FS
+  18-child F07 batch-TERM guest to expected `KWP` HALT and validate
+  v1150/v1159/v1203/v1205/v1207 plus evidence checksums. PASS.
+- [x] Qualify the experimental branch separately: native assembler,
+  nonrecursive source/mutant tests and actual fallback counts PASS.
+  Identically instrumented SWAP MRES grows 16 words; KCORE unchanged.
+- [ ] Demonstrate a distinct no-equal-size-partner pressure failure
+  before accepting v1208/v1211. Test rollback and residency overhead;
+  preserve the uncommitted experiment without promoting it by default.
+- [ ] F07 maximum 64 process slots and concurrent high descriptor/
+  APR/provider/stack pressure remain unaccepted. E13/F11 OPEN;
+  59/64 OOM gates, production requester OOM OFF.
+
 ## v1205: actual concurrent process and logical BRK/APR pressure
 
 - [x] Populate twelve real user process slots with real executable
