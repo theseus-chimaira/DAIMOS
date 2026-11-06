@@ -66,8 +66,10 @@ proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
 #if PROC_STACK_WATERMARK
         {
                 unsigned int i;
+                /* Only the stack may carry watermark sentinels. The
+                 * backing and BRK tail words must remain semantic data. */
                 for (i = (unsigned int)PROC_USTACK_BASE + 1U;
-                    i < (unsigned int)PROC_UAREA_WORDS; ++i)
+                    i < (unsigned int)PROC_SWAP_BACKING_OFFSET; ++i)
                         ctx[i] = base + (kword_t)i;
         }
 #endif

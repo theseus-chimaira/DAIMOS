@@ -189,8 +189,13 @@
 #define PROC_SWAP_BACKING_OFFSET \
         0406UL
 #define PROC_BRK_OFFSET          0407UL
+/*
+ * The PDP-6 PUSH instruction increments the kernel SP before storing.
+ * With the SP based at PROC_USTACK_BASE, the last legal pushed word is
+ * PROC_SWAP_BACKING_OFFSET - 1; the backing word itself is not stack.
+ */
 #define PROC_KSTACK_WORDS \
-        (PROC_SWAP_BACKING_OFFSET - PROC_USTACK_BASE)
+        (PROC_SWAP_BACKING_OFFSET - PROC_USTACK_BASE - 1UL)
 
 /** Three-word resident process descriptor. */
 struct proc {

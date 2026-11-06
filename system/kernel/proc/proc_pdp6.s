@@ -45,7 +45,7 @@
         .equ    PROC_FILE_TABLE_OFFSET,026
         .equ    PROC_CRED_OFFSET,066
         .equ    PROC_USTACK_BASE,070
-        .equ    PROC_KSTACK_WORDS,0316
+        .equ    PROC_KSTACK_WORDS,0315
         .equ    KERNEL_IDLE_STACK_WORDS,0400
 
         .equ    CTX_PC,020

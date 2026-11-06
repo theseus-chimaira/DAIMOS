@@ -1,3 +1,23 @@
+## 2026-11-06 v1243: protect u-area swap backing from stack canaries
+
+The stable process u-area has 0410 octal words, with the private PDP-6
+PUSH stack based at offset 070. Its last legal pushed word is offset
+0405; word 0406 owns the executable backing while swapped, and 0407
+owns the process BRK. The previous 0316-word private-stack bound
+included word 0406. Worse, the diagnostic PROC_STACK_WATERMARK canary
+loops in both native RUN and transient KINIT initialized through 0407,
+writing synthetic nonzero addresses into semantic backing/BRK words.
+
+The v1243 correction sets the actual private stack capacity to 0315
+octal words in C and PDP-6 assembly, and stops both canary loops at
+offset 0406 (exclusive). The native extracted-RUN test verifies that
+the first and last stack canaries are present, but saved backing and
+BRK remain zero, and rejects the historical upper-bound mutant.
+Updated v1239 idle/private exact-boundary tests and the current u-area
+layout contract PASS. The first 18-child v1243 guest with fault-owner
+diagnostics is underway. F07/E13/F11 remain OPEN, 59/64 gates;
+production requester OOM remains OFF. No size reduction is required.
+
 ## 2026-11-06 v1240/v1241: swap-exchange saved-backing ownership defect
 
 Full v1240 disposable 256K DSK/D6FS 18-child F07 guest again stopped

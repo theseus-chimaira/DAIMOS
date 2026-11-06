@@ -20,6 +20,7 @@
         .equ    PROC_FILE_TABLE_OFFSET,026
         .equ    PROC_CRED_OFFSET,066
         .equ    PROC_USTACK_BASE,070
+        .equ    PROC_SWAP_BACKING_OFFSET,0406
         .equ    PROC_UAREA_OWNER_BASE,01000
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
         .equ    EXEC_DXR_STACK_WORDS,02000
@@ -242,7 +243,8 @@ proc_run_exec_ok:
         move    1,014
         addi    1,PROC_USTACK_BASE+1
         move    2,014
-        addi    2,PROC_UAREA_WORDS
+        ; Leave the stable swap-backing and BRK tail words untouched.
+        addi    2,PROC_SWAP_BACKING_OFFSET
 proc_run_watermark_loop:
         movem   1,(1)
         addi    1,1
