@@ -1,4 +1,23 @@
-## v1269: clean 24-process F07 milestone PASS; full F07 gate still open
+## v1274: full 64-slot F07 maximum-load acceptance PASS
+
+- [x] In the frozen 256K KCC DSK/D6FS guest, admit 57 additional
+  real RUN/BRK children: all 63 user slots live at one physical OOM
+  snapshot, 55 resident process APR extents and eight swapped images.
+- [x] At genuine requester-only OOM under the held foreign FS lease,
+  reconcile 127/136 MM extents, 239576/242085 managed words allocated,
+  2509 free words, 31642 words of exact APR rounding, one 128-word
+  provider buffer, private-stack 180/206 and idle-stack 63/256 words.
+- [x] Confirm all 57 individual TERM/WAIT/reaps, witness survival,
+  exactly one requester selection, zero failed provider/ownership
+  diagnostics and final MM/FILE/backing cleanup. The expected KWP HALT
+  and original 900-second timeout PASS; 13 negative host mutants fail.
+- [x] Archive full SHA-256 verified simulator, build, map, media and
+  snapshot evidence: `daimos-f07-64slot-acceptance-v1274-r1.tar.gz`,
+  SHA256 `0fb22920bfd9f66c155ef3bb61f8db0c0f146f80f89bbc3e6e1b3406d9599e1b`.
+- [ ] E13/F11 exact-release approval and production OOM enablement
+  remain open; F07 is CLOSED for the selected S07/S08 profile.
+
+## v1269: clean 24-process F07 milestone PASS (superseded by v1274)
 
 - [x] Rebuild clean committed DAIMOS `9a841363` without experimental
   v1208/v1211 swap code; run the unchanged 900-second 256K KCC/D6FS
@@ -7,12 +26,12 @@
 - [x] Qualify the experimental branch separately: native assembler,
   nonrecursive source/mutant tests and actual fallback counts PASS.
   Identically instrumented SWAP MRES grows 16 words; KCORE unchanged.
-- [ ] Demonstrate a distinct no-equal-size-partner pressure failure
-  before accepting v1208/v1211. Test rollback and residency overhead;
-  preserve the uncommitted experiment without promoting it by default.
-- [ ] F07 maximum 64 process slots and concurrent high descriptor/
-  APR/provider/stack pressure remain unaccepted. E13/F11 OPEN;
-  59/64 OOM gates, production requester OOM OFF.
+- [x] Reject unproven v1208/v1211 from production, retaining only a
+  reversible archive. A distinct failure plus rollback/size evidence
+  would be needed to reconsider it, not to accept F07.
+- [x] The outstanding maximum-slot plus concurrent high descriptor/
+  APR/provider/stack test was completed in v1274. E13/F11 OPEN;
+  60/64 OOM gates, production requester OOM OFF.
 
 ## v1205: actual concurrent process and logical BRK/APR pressure
 
@@ -844,15 +863,14 @@ not permission to bypass the final combined regression. See
   F06 closes the measurement/inventory audit only; it does **not**
   claim 16K production fit (now outside OOM scope), and MRES remains
   boot-only/permanent with no runtime unload or OOM reclaim.
-- [ ] F07: Check peak physical MM extent/descriptor use, APR aligned
+- [x] F07: Check peak physical MM extent/descriptor use, APR aligned
   slack, startup stacks and provider buffers under maximum load.
   v1195-v1196 partial evidence PASS: real 136-slot descriptor
   saturation/recovery (v1114), physically fragmented APR-aligned
   extents and nonfatal cause -2 (v1115), private/idle stack peaks
   `0300`/`025` octal, and existing single 128-word serialized
-  D6FS/DTFS block workspace. Still require bounded quantitative
-  peak/alignment-slack and simultaneous provider-buffer audit before
-  checking this box. Frozen test outputs:
+  D6FS/DTFS block workspace. These were partial early observations;
+  the later combined 64-slot qualification is recorded below. Outputs:
   `$TMPDIR/daimos-f07-mm-evidence-v1196.tar.gz`.
   v1203 adds an exact-source physical-OOM snapshot with the foreign
   provider held: 19/136 live descriptors, six aligned process extents,
@@ -865,6 +883,17 @@ not permission to bypass the final combined regression. See
   MM allocations while the foreign FS owner is held, all freed
   exactly; both OOM modes PASS. This is still six real process
   extents, not maximum concurrent process-slot/BRK usage.
+  v1274 now closes F07 for the frozen 256K release profile: 63 live
+  user processes, 55 resident and eight swapped, 127/136 real
+  descriptors, 239576/242085 managed physical words, 31642 exact
+  APR-padding words, a still-owned 128-word FS workspace, private
+  and idle stack peaks 180/206 and 63/256 words, and 57 real
+  TERM/WAIT/reaps with zero final MM/FILE/swap leaks. Every child
+  has a distinct verified logical BRK. Complete evidence SHA256:
+  `0fb22920bfd9f66c155ef3bb61f8db0c0f146f80f89bbc3e6e1b3406d9599e1b`.
+  The test-only 1K BSS per 64-slot image does not weaken these
+  measured pressure or ownership requirements. F07 CLOSED; E13/F11
+  and production activation remain separate gates.
 - [x] F08: Retain deferred strict 32K KCORE/DSH optimization as a
   **separate** gate; do not misreport a passing 256K guest as 32K.
   The frozen first requester-OOM acceptance profile is strictly

@@ -1,3 +1,20 @@
+## 2026-11-07 v1274: OOM F07 maximum-process/descriptor gate CLOSED
+
+The first release-profile 256K KCC/DSK/D6FS kernel passed one
+simultaneous real physical-OOM snapshot with all 64 process slots in
+use (slot 0 kernel, 63 live users), 55 resident APR extents and eight
+swapped users, 127/136 MM extents, 239576/242085 managed words,
+31642 exact APR rounding words and a 128-word held provider workspace.
+Private/idle stack high-water was 180/206 and 63/256 words. All 57
+extra children were admitted and individually reaped, provider/FILE/MM
+rollback completed and the expected guest HALT was reached within
+900 seconds; 13 unsafe negative snapshot mutants are rejected.
+The verified archive SHA256 is
+`0fb22920bfd9f66c155ef3bb61f8db0c0f146f80f89bbc3e6e1b3406d9599e1b`.
+This closes F07 only for the S07/S08 scope, not E13/F11/F12/F13;
+requester OOM remains production-disabled. This 256K dynamic pressure
+measurement is NOT evidence that permanent KCORE+MRES fits 16K.
+
 ## 2026-11-07 v1269: clean production-source F07 24-process regression PASS
 
 The 256K KCC PDP-6 DSK/D6FS test runs successfully without the

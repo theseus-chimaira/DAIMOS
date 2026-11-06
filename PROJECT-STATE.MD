@@ -1,3 +1,39 @@
+## 2026-11-07 v1274: F07 64-slot/maximum-MM acceptance PASS (CLOSED)
+
+The frozen 256K KCC DSK/D6FS PDP-6 guest built from clean DAIMOS
+`226e7a5f` (disposable testkit source `027fc3f`) completed real
+requester-only physical OOM with a foreign FS lease held, 57 extra
+concurrent RUN children, all 57 individual TERM/WAIT/reaps, exact
+post-test resource accounting and expected `KWP` HALT within the
+original 900-second simulator limit. Production requester OOM is OFF.
+
+At the same original physical-OOM decision, the independent samplers
+record 63 live user slots of 64 configured (including kernel slot 0),
+55 resident process extents, eight swapped/nonresident users, 127 of
+136 actual MM descriptors occupied, 239576 of 242085 managed physical
+words allocated, 2509 free words, 31642 exact APR BRK rounding words,
+and one 128-word held provider workspace. Private kernel stack peak
+180/206 words and slot-0 idle stack peak 63/256 words are within
+capacity. The 57 children had distinct verified BRK deltas. Only the
+requester PID 3 was selected; both provider/protected-process error
+counters are zero, and final swap blocks/FILE/MM ownership was cleaned.
+This supplies *simultaneous* high descriptor, memory, APR, provider,
+process-slot and stack evidence, not separate synthetic maxima.
+
+The first 64-slot attempt cloned INIT's 16K-word pressure BSS 57
+times and was controlled-stopped after 18 admissions because of
+test-only swap traffic. The accepted fixture keeps a real corruption
+sentinel in a 1K-word BSS only in the 64-slot mode; the legacy 24-slot
+mode stays unchanged. Its actual core, descriptor and swap measurements
+remain mandatory. Testkit `89a8efa` further guards exact live u-area,
+APR and descriptor occupancy, and rejects 13 unsafe snapshot mutants.
+Archive `$TMPDIR/daimos-f07-64slot-acceptance-v1274-r1.tar.gz`, SHA256
+`0fb22920bfd9f66c155ef3bb61f8db0c0f146f80f89bbc3e6e1b3406d9599e1b`;
+all included evidence manifest hashes verify. F07 CLOSED for S07/S08.
+The outstanding E13 and F11 release-candidate signoff plus F12/F13
+production-enable/rollback gates remain OPEN, 60/64 complete. The
+separate permanent KCORE/MRES 16K size target remains unchanged.
+
 ## 2026-11-07 v1270: reject optional v1208/v1211 swap fallback; clean all source tips
 
 The frozen clean DAIMOS `9a841363` and experiment-bearing F07 guests
