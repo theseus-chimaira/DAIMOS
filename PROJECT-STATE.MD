@@ -1,3 +1,25 @@
+## 2026-11-07 v1270: reject optional v1208/v1211 swap fallback; clean all source tips
+
+The frozen clean DAIMOS `9a841363` and experiment-bearing F07 guests
+both passed the same 256K 24-process physical OOM/real disk-swap test.
+The clean guest observed 41 swap-outs/41 swap-ins and no allocation
+pressure, exchange, fallback or failures. The experimental guest saw
+33 swap-outs/33 swap-ins, 8 exchanges, 18 swap-in pressure returns,
+10 fallbacks and zero failures. Its SWAP MRES is 16 words larger.
+This is not proof that the fallback is needed: a distinct scenario with
+no viable exchange partner has not failed on the clean kernel, and the
+added reclaim/restore graph needs its own fault-rollback acceptance.
+Thus v1208/v1211 are DROPPED from production rather than silently merged.
+The exact 58-line reversible patch is preserved in
+`design/f07-swap-fallback-experiment-v1208-v1211-r1.patch.gz`, SHA256
+`c99088467b245010117cf37e350aca288e22b0f72547a437f69e87fc0ad84806`.
+It applies to the clean frozen reference but is not assembled or linked.
+Historical F07 diagnostic fixtures are committed in daimos-testkit
+`77f156a`; no unresolved test code is left untracked there.
+The 64-slot/high-descriptor combined F07 acceptance remains OPEN,
+with production requester OOM OFF. This decision does not enable OOM
+or establish a permanent KCORE/MRES 16K fit.
+
 ## 2026-11-07 v1269: clean-source F07 24-process guest PASS; swap experiments remain separate
 
 The full 256K KCC DSK/D6FS F07 guest has now PASSED against the
