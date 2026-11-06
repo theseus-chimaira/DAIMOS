@@ -1,3 +1,26 @@
+## 2026-11-06 v1252: service expired timers on software PI6 reschedule
+
+F07 v1250/v1251 showed a due process sleep timer remaining pending while
+slot-0 swap repeatedly performed synchronous DRM I/O. The normal clock
+PI6 scheduling path calls proc_timer_service, but the software PI6
+reschedule path (used after slot-0 swap and explicit executive sleeps)
+previously called proc_sched_resched_select without first servicing the
+due timer frontier. Slot-0 swap can defer the clock scheduling half;
+therefore an explicit reschedule must consume an already-due frontier
+before selecting another swapped candidate. v1252 adds that call under
+an inexpensive DUE-bit test. No new storage and no OOM policy change.
+
+The v1252 native PDP-6 test exercises the actual scheduler/timer/runq
+leaves: a due sleeper must become runnable and be queued before
+selection; an active but not-due timer must remain unchanged. A
+negative mutant removes the software-reschedule timer handling and
+reproduces the blocked sleeper. Existing timer frontier (including
+wraparound), v884 reaper scheduling and v1247 PI-register tests PASS.
+The full 256K 18-child guest test is in progress and has not established
+complete RUN/swap/WAIT or provider/MM lifecycle acceptance. F07/E13/F11
+remain OPEN, 59/64 OOM gates, production OOM OFF. The experimental
+v1208/v1211 swap changes are not accepted by this fix.
+
 ## 2026-11-06 v1250/v1251: F07 swap throughput and deferred timer diagnosis
 
 The full 256K KCC DSK/D6FS production-OOM-disabled F07 guest again

@@ -3745,6 +3745,14 @@ proc_sched_resched_save:
         pushj   17,proc_save_kernel
         .globl  proc_sched_resched_choose  ; v849 dispatch trace
 proc_sched_resched_choose:
+        ; A deferred timer frontier must be consumed on software PI6 as
+        ; well as the clock-quantum path. Slot-0 swap I/O can defer the
+        ; clock's scheduling half for many ticks; its explicit PI6 kick
+        ; may be the first safe scheduling boundary after the deadline.
+        ; Skip the call and stack traffic unless a frontier is due.
+        move    7,proc_timer_next
+        tlne    7,PROC_TIMER_DUE_LH
+        pushj   17,proc_timer_service
         pushj   17,proc_sched_resched_select
         jrst    proc_sched_restore_selected
 
