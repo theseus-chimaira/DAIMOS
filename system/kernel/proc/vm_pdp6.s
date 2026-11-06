@@ -25,6 +25,7 @@
         .globl  fs_move_words
         .globl  fs_zero_words
         .globl  mm_alloc_aligned
+        .globl  mm_arena_fits_v1260
         .globl  mm_free
         .globl  fs_provider_reg_call
         .globl  mm_extents
@@ -174,6 +175,13 @@ vm_brk_publish_only:
         jrst    vm_brk_return
 
 vm_brk_resize:
+        ; v1260: BRK's early adjacent-gap reclamation precedes the MM
+        ; allocator. Reject a physically impossible APR extent *before*
+        ; either path swaps a victim. No process, MM or APR state changes.
+        move    1,15
+        movei   2,02000
+        pushj   17,mm_arena_fits_v1260
+        jumpe   1,vm_brk_impossible_v1260
         ; Freeze scheduler/MM observers while the current mapping transaction
         ; is represented inconsistently by the descriptor table and APR.
         coni    0004,1
@@ -415,6 +423,11 @@ vm_brk_alloc_fail_v999:
         jrst    vm_brk_fail_return_v999
 vm_brk_fail:
         movni   2,4                    ; local validation failure
+        jrst    vm_brk_fail_return_v999
+vm_brk_impossible_v1260:
+        ; Proper physical NOMEM cause (not validation -4), for the
+        ; original requester-only OOM policy at syscall dispatch.
+        seto    2,
 vm_brk_fail_return_v999:
         seto    1,
 vm_brk_return:

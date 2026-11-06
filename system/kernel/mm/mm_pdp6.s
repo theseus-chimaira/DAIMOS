@@ -532,6 +532,40 @@ mm_alloc:
         popj    17,
 
 ; int mm_alloc_aligned(words,align,type,owner,preference,basep)
+; v1260: a request exceeding every arena's largest aligned interval
+; cannot succeed, regardless of swap, compaction or cache eviction.
+; AC1=words, AC2=alignment; return AC1=1 when an arena could fit or
+; AC1=0 when all arenas are too small. AC3..AC7 are scratch. Invalid
+; arguments remain the responsibility of the normal typed allocator.
+        .globl mm_arena_fits_v1260
+mm_arena_fits_v1260:
+        jumpe   1,mm_arena_fits_yes_v1260
+        jumpe   2,mm_arena_fits_yes_v1260
+        movei   3,0
+mm_arena_fits_next_v1260:
+        caml    3,mm_arena_count
+        jrst    mm_arena_fits_no_v1260
+        hrrz    4,mm_arenas(3)        ; first managed physical word
+        hlrz    5,mm_arenas(3)        ; arena capacity in words
+        move    6,4
+        add     6,2
+        subi    6,1
+        move    7,2
+        subi    7,1
+        andcm   6,7                   ; aligned start, no MM mutation
+        add     5,4                   ; exclusive arena end
+        sub     5,6                   ; maximum aligned extent length
+        caml    5,1
+        jrst    mm_arena_fits_yes_v1260
+        aoja    3,mm_arena_fits_next_v1260
+mm_arena_fits_no_v1260:
+        setz    1,
+        popj    17,
+mm_arena_fits_yes_v1260:
+        movei   1,1
+        popj    17,
+
+; int mm_alloc_aligned(words,align,type,owner,preference,basep)
 mm_alloc_aligned:
         move    5,-1(17)
         move    6,-2(17)
@@ -556,6 +590,17 @@ mm_alloc_aligned_retry:
         pushj   17,mm_alloc_aligned_noreclaim
         sub     17,[2,,2]
         movem   1,(17)
+        ; A typed physical-pressure result means argument validation
+        ; has already succeeded. Test physical arena capacity before
+        ; potentially destructive compaction or victim swap-out.
+        jumpe   1,mm_alloc_aligned_after_compact
+        camge   1,[-3]
+        jrst    mm_alloc_aligned_after_compact
+        move    1,010
+        move    2,011
+        pushj   17,mm_arena_fits_v1260
+        jumpe   1,mm_alloc_aligned_impossible_v1260
+        move    1,(17)                 ; retain the typed MM failure
         jumpe   016,mm_alloc_aligned_after_compact
         came    1,[MM_ERR_FRAGMENTED]   ; compare signed 36-bit result, not 18-bit EA
         jrst    mm_alloc_aligned_after_compact
@@ -581,6 +626,12 @@ mm_alloc_aligned_after_compact:
         jrst    mm_alloc_aligned_return
         caige   016,3
         jrst    mm_alloc_aligned_pressure
+        jrst    mm_alloc_aligned_return
+
+mm_alloc_aligned_impossible_v1260:
+        ; No possible aligned extent, even after reclaiming all users.
+        ; Preserve MM_ERR_NOMEM rather than destroying victim images.
+        seto    1,
         jrst    mm_alloc_aligned_return
 
 mm_alloc_aligned_pressure:
