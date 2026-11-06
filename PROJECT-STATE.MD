@@ -1,3 +1,30 @@
+## 2026-11-06 v1256-r1/v1259: full guest still slow after resident tie
+
+The uninstrumented 256K PDP-6 KCC DSK/D6FS release-media v1256
+candidate (built before the v1257 u-area defensive guard and v1258
+fixture-ordering correction) admitted all 18 children and reached
+`^@%*`, including three subsequent INIT sleeps, but did not complete
+the requester WAIT or any extra child reaps after 14m38s of SIMH
+runtime. A deliberate SIGINT before its 900-second test cutoff preserved
+all native stop diagnostics. PID 6 acquired the intended filesystem
+lease (`holder_enter=1`, saved lease `7,,0`), PID 4 reached the
+foreign gateway wait, but no real requester BRK OOM had yet been
+observed (`real_oom=0`; its owner-controlled lease release also stayed
+zero). 32 swap-outs, 24 exchanges and 20 ordinary swap-ins completed;
+there was no recorded swap failure branch. Clock/timer and swap request
+remained active. This is an incomplete F07 test, not proof of a hung
+single disk I/O or a completed physical OOM.
+
+Evidence: `$TMPDIR/daimos-f07-v1256-incomplete-evidence-r1.tar.gz`,
+SHA256 `0cd220a8aefc5d988a7979e7edb10984a8961912226a0ebe8f5c89ce018e725b`.
+The next isolated v1258 guest is exercising deterministic PID 6
+provider ordering, testkit `fbffb63`. Testkit v1259 (`85c3836`)
+adds opt-in user-side `&` (BRK entry) / `=` (BRK return) markers to
+distinguish swap/PIPE dispatch delay from a long physical BRK call.
+The v1259 instrumented C89 fixture compiles with real PDP-6 GCC and
+its negative controls PASS; no kernel tracing state is added.
+F07/E13/F11 remain OPEN, 59/64 acceptance, production OOM OFF.
+
 ## 2026-11-06 v1254/v1256: equal-score resident dispatch before disk swap
 
 A frozen 256K KCC DSK/D6FS 18-child F07 guest at the requester-release
