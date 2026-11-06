@@ -163,11 +163,14 @@ drm236_start_hw:
  * @brief Service Type 167 and Type 236 PI2 completion/error conditions.
  * @return Does not return normally; jumps to pdp10_pi_dispatch_done.
  *
- * AC1 and AC2 are clobbered. Type 167 DONE is acknowledged first and leaves
- * the request active. Type 236 DONE stores +1 in the descriptor event; either
- * hardware error stores -1. Completion clears the active pointer, wakes its
- * event, then promotes and starts the one pending descriptor before leaving
- * interrupt context.
+ * Only AC1/AC2 are scratch at the PI2 dispatch boundary. AC3 carries the
+ * common PI return-stub address; AC4..AC6 belong to the interrupted context.
+ * The completion helper must restore all four after its pending-descriptor
+ * promotion, which may call drm236_start_active and overwrite AC3..AC6.
+ * Type 167 DONE is acknowledged first and leaves the request active. Type
+ * 236 DONE stores +1 in the descriptor event; either hardware error stores
+ * -1. Completion clears the active pointer, wakes its event, then promotes
+ * and starts the one pending descriptor before leaving interrupt context.
  */
 drm236_pi_handler:
         coni    0010,1
@@ -201,6 +204,13 @@ drm236_pi_finish:
 ; *before* entering here from a timeout. A descriptor is never detached
 ; until its event has been published and the owner woken.
 drm236_finish_active_v1079:
+        ; This leaf is also called from the PI6 watchdog. Preserve all
+        ; caller-owned registers that a promoted DMA start can destroy.
+        ; In particular AC3 is the PI2 common-return stub, not scratch.
+        push    017,3
+        push    017,4
+        push    017,5
+        push    017,6
         hrrz    1,drm236_active_request
         jumpe   1,drm236_finish_return_v1079
         movem   2,2(1)
@@ -229,6 +239,10 @@ drm236_pi_count_done:
         hrrz    1,1
         pushj   017,drm236_start_active
 drm236_finish_return_v1079:
+        pop     017,6
+        pop     017,5
+        pop     017,4
+        pop     017,3
         popj    017,
 
 /**
