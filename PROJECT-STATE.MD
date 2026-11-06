@@ -1,3 +1,36 @@
+## 2026-11-06 v1252-r1: full F07 guest timer recovery, no requester progress
+
+An independent 256K PDP-6 KCC DSK/D6FS, production-OOM-disabled
+guest with the first v1252 timer-service correction acknowledged all
+18 additional RUN children and progressed through `^@%*`, including
+the held-provider release and three later INIT sleep calls. This is
+more evidence that the due sleep frontier can now be serviced, but it
+is NOT a successful F07 acceptance. After about 14.5 minutes the guest
+still had no requester WAIT `?` and no child reaps, so SIMH was stopped
+by SIGINT before the 900-second test timeout to retain diagnostics.
+
+The stopped machine had `proc_timer_clock=0146133` octal and
+`proc_timer_next=0`: no overdue timer remained. Current slot was 0;
+the scheduler requested swap-in of slot 5 (`cursor=0405` octal), while
+the runnable-queue head was slot 3 (requester). Swap pressure occurred
+42 times, with 32 successful swap-outs, 20 ordinary swap-ins, 32
+successful exchanges, nine reclaim fallbacks and ZERO recorded swap-in
+or swap-out failure branches. There were 1,800 allocated swap blocks,
+46 MM descriptors and a high process slot of 25. The true BRK OOM
+snapshot counters remained zero: the requester has not yet reached its
+physical allocation fault. These data establish continued swap work,
+not a lost disk completion or a proven endless loop.
+
+Evidence: `$TMPDIR/daimos-f07-v1252-fullguest-snapshot-r1.tar.gz`,
+SHA256 `71f23face2a5fd0033d716b56fa92a7b8e085bde62dcbcfaecb3e0607f27f175`.
+The guest copied the first unconditional v1252 timer-call variant; the
+final committed v1252 source additionally skips the call unless DUE.
+The copied source also included the still-unaccepted v1208/v1211 swap
+experiments. Next F07 work should measure per-slot dispatch and swap
+requests, especially whether the runnable requester makes progress;
+do not alter policy from an interrupted guest alone. F07/E13/F11 OPEN,
+59/64, production requester OOM OFF.
+
 ## 2026-11-06 v1252: service expired timers on software PI6 reschedule
 
 F07 v1250/v1251 showed a due process sleep timer remaining pending while
