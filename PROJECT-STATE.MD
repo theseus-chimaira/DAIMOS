@@ -1,3 +1,28 @@
+## 2026-11-06 v1253: real PID dispatch versus swap-selection counts
+
+The 256K PDP-6 KCC DSK/D6FS F07 v1253 guest reached all 18 extra
+RUN acknowledgments and `^@%*`, but no requester WAIT `?` or child reap.
+The native-assembled, testkit-only v1253 probes count actual per-slot
+scheduler restorations and normal nonresident swap selections. A
+controlled SIMH stop after about 12 guest minutes captured 2,125 INIT
+restorations (16 swap selections), 21 requester PID 3 restorations
+(seven swap selections) and 3,103 spinner PID 5 restorations (16 swap
+selections). Each of the extra PIDs 13..24 recorded exactly 145
+restorations and ZERO swap selections; PIDs 7..12 had only one each.
+The requester is not completely excluded from the scheduler, but its
+dispatch frequency is tiny compared with the spinner. The identical
+extra-child counts could reflect repeated PIPE wakeups or incorrect
+runnable-state handling, not necessarily a scheduler priority policy.
+No relevant fatal invariant or completed genuine BRK OOM was observed.
+
+Evidence: `$TMPDIR/daimos-f07-v1253-dispatch-evidence-r1.tar.gz`,
+SHA256 `5a18fec660cb2f955d06ce482fe8edbe44f52128710613e52f40845553066f1a`.
+The next diagnostic combines per-slot dispatch counting with the
+existing disposable v1238 process-descriptor snapshot to distinguish
+RUN/SLEEP state from wakeup churn before any production policy change.
+The copied guest still contained the unaccepted v1208/v1211 swap
+experiments; F07/E13/F11 remain OPEN, 59/64, production OOM OFF.
+
 ## 2026-11-06 v1252-r1: full F07 guest timer recovery, no requester progress
 
 An independent 256K PDP-6 KCC DSK/D6FS, production-OOM-disabled
