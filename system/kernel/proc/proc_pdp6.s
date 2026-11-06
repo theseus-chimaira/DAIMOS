@@ -418,8 +418,25 @@ proc_select_score:
         move    2,15
         sub     2,14
         andi    2,0377
-        jumpn   2,proc_select_compare
+        jumpn   2,proc_select_rank_locality_v1256
         movei   2,0400
+proc_select_rank_locality_v1256:
+        ; Equal-priority dispatch should not exchange a disk image while
+        ; an eligible resident process can run. A disk candidate ranks
+        ; behind all resident candidates within the same priority only;
+        ; a strictly better-priority swapped process still wins. This
+        ; adds no per-process state, and eventual CPU aging still gives
+        ; the nonresident job a turn. Fatal-close executive continuations
+        ; with VM=0 are not ordinary disk candidates.
+        move    3,1(16)
+        trne    3,0777777
+        jrst    proc_select_compare
+        move    3,(16)
+        hlrz    3,3
+        move    3,PROC_FDCTL_OFFSET(3)
+        trne    3,PROC_FATAL_CLOSE_BIT
+        jrst    proc_select_compare
+        addi    2,0400
 proc_select_compare:
         jumpe   11,proc_select_better
         camge   1,12
