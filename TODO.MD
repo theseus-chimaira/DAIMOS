@@ -1,3 +1,31 @@
+## v1279: correct Linux toolchain and complete F11 exact-revision regressions
+
+- [x] Isolate Linux v1112 failed-RUN guest crash at the first
+  v1257-linked image. The scheduler source was sound: Linux's
+  installed `p10fold` predated the v1141 local-relocation identity
+  fix and reproduced the exact unsafe cross-object fold; the user
+  INIT executable was byte-identical to Android.
+- [x] Rebuild portable six-column fold-plan parsers from corrected
+  `daimos-tools` `61dcb15`, validate native v1141/v1257 plus seven
+  malformed-plan mutants, and install via versioned `local.tar.gz`
+  to the Linux `$PDP10_PREFIX`, preserving old binaries. Current
+  Linux v1112 now PASSes and linked KCORE `023267` matches Android.
+- [x] Correct the F04/v1113 isolated native source fixture to link
+  actual `mm_arena_fits_v1260` instead of omitting the production
+  allocator's new helper; Android native true -2/-3 and all three
+  negative mutants PASS (testkit `69830c9`).
+- [x] Run an additional full 64-slot OOM-disabled F07 negative guest:
+  all 57 children admitted/reaped; original requester returns,
+  63 live user slots, 127/136 descriptors, real swap, safe stacks,
+  final `NWP` HALT and SHA256 evidence manifest PASS.
+- [ ] F11: re-run and accept complete exact-current-source F03/F04,
+  P0-D and E13 candidate matrices with the v1277 corrected tools.
+  Concurrent Linux jobs lost their SSH connection when the device
+  could no longer reach the home LAN; interrupted suites are NOT
+  accepted. A frozen Android F03 matrix is running independently.
+- [ ] F12/F13: do not change production OOM OFF until that final
+  F11 integration/ownership/rollback review is signed off.
+
 ## v1276: E13 exact-revision dual-host release media acceptance PASS
 
 - [x] Run current DAIMOS `226e7a5f` / testkit `ee9d92b` on
@@ -17,9 +45,10 @@
 - [x] E13 CLOSED for the specifically frozen S07/S08 first OOM
   release profile. Other emulator, boot/media and OpenBSD-host
   combinations remain separate, explicitly out-of-scope work.
-- [ ] F11 final candidate readiness remains blocked by a current
-  Linux-specific v1112 failed-RUN guest regression; source bisect
-  is in progress. Do not enable production requester OOM.
+- [ ] F11 final candidate readiness: the Linux-specific v1112 failure
+  was fixed by updating the stale v1141 host linker (v1277); the
+  remaining exact-source comprehensive F03/F04/P0-D regression suite
+  still needs completion. Do not enable production requester OOM.
 
 ## v1274: full 64-slot F07 maximum-load acceptance PASS
 

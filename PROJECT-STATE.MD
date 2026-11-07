@@ -1,3 +1,53 @@
+## 2026-11-07 v1279: F11 toolchain regression identified and fixed; final matrix OPEN
+
+The current DAIMOS `226e7a5f` F03/v1112 failed-RUN guest initially
+halted at PC 0 on Linux but passed on Android with byte-identical
+INIT DXR. A frozen Linux source bisect (37 intervening commits)
+located the first failure at `4dcaca20` (v1257 scheduler locality),
+but the actual defect was the Linux **installed** `p10fold` and
+`dlink` binaries dated October 13, before the v1141 cross-object
+LOCAL relocation fix. The old installed `p10fold` independently
+FAILed the native v1141 mutation test, folding distinct object-local
+targets. No kernel scheduler code was changed.
+
+DAIMOS tools `61dcb15` commits exact six-field portable fold-plan
+parsing in p10fold/dlink and compatible p10run examination (strict
+C99 host compile, no undeclared `strtok_r`). Testkit `ce5c266`
+adds seven malformed field-plan mutants; both Android and Linux
+native v1141 and v1257 tests PASS. Linux tools were rebuilt from
+clean source plus the tested parser patch and installed into
+`$HOME/cross` from versioned
+`$HOME/tmp/daimos-tools-v1277-clean-r1/local.tar.gz`, SHA256
+`938caf5c4e72433a470504c8ee10526abe8707c4724db52601c863566f76d37d`;
+previous binaries were preserved in `previous-bin/`. The now-correct
+Linux v1112 guest completes `<RILDNWP` and expected HALT; KCORE low
+end `023267` equals Android's, correcting the former two-word
+host-specific link mismatch. F10 host diagnostics remain strict.
+
+The v1113 real MM/VM/BRK native F04 fixture subsequently failed to
+link because it omitted the newer production allocator preflight
+`mm_arena_fits_v1260`. Testkit `69830c9` extracts the actual leaf;
+Android native v1113's -2/-3 and three bad mutants, and v1260's
+separate no-side-effects/two mutants now PASS. No production MM or
+OOM behavior was changed by this fixture repair.
+
+An additional full 64-slot/63-user OOM-disabled F07 guest completed:
+57 real child RUN/BRK and TERM/WAIT, correct requester no-fatal path,
+real provider protection, 127/136 descriptors, 232 swap blocks,
+180/206 private and 63/256 idle stack peaks, zero final leaks,
+`<`+57 `+`+`^@%&=D*?{}|`+57 `~`+`NWP` and expected HALT. Evidence
+`$TMPDIR/daimos-f07-v1280-64slot-disabled-frozen-r1.tar.gz`, SHA256
+`68c719c5901e3874acaeabe2cef6f309df0566bf99619d89dae2f53380994cd7`;
+all internal SHA256 manifest entries verify.
+
+The corrected Linux final F03/F04/P0-D/E13 matrix was started, but
+the device lost access to the home-LAN SSH hosts while jobs were
+running. Completed prior exact-revision F07/E13 evidence remains
+valid; incomplete final F11 matrix rows are NOT counted. The
+production `PROC_OOM_BRK_ENABLED_V1000` switch remains 0. Mandatory
+readiness stays **61/64**: F11 pre-activation plus F12/F13 after
+F11 signoff. The separate 16K KCORE+MRES footprint remains OPEN.
+
 ## 2026-11-07 v1276: E13 exact-source dual-platform release evidence PASS
 
 The same full 256K KCC/DSK/D6FS/PCLK60/headless release-media

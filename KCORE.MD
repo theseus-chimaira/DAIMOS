@@ -1,3 +1,17 @@
+## 2026-11-07 v1279: Linux local-relocation toolchain defect, not KCORE growth
+
+The v1257 stable-uarea scheduler locality guard did not cause the
+host-specific v1112 failed-RUN HALT. The Linux-installed October 13
+`p10fold` predates the verified v1141 cross-object LOCAL relocation
+identity fix and incorrectly folds distinct object-local code.
+After installing corrected `daimos-tools` v1277 and testing native
+v1141/v1257 safety, the Linux guest passes and its KCORE endpoint
+`023267` octal matches Android exactly; no resident KCORE or SWAP
+MRES source edit was necessary. See
+`pdp10-doc/TOOLCHAIN/P10FOLD-LOCAL-RELOCATION-SAFETY-V1141.MD`.
+OOM F11/F12/F13 release signoff remains separate from this tool bug
+and the still-unmet permanent 16K KCORE/MRES RAM target.
+
 ## 2026-11-07 v1274: OOM F07 maximum-process/descriptor gate CLOSED
 
 The first release-profile 256K KCC/DSK/D6FS kernel passed one
