@@ -1,3 +1,18 @@
+## 2026-11-07 v1325: physical owner pressure sizing; no code growth
+
+The booted v1322 256K PDP-6 guest completed 18 real child admissions
+and substantial ordinary swapping but the separate 8K test-owned MM
+allocation failed (`!t`). The strict postmortem proves zero real
+swap-in allocation pressure and cooldown events, so there is no
+kernel liveness defect to fix from this evidence. A smaller 1K
+APR-aligned, owner-tagged v1323 full-guest test has passed build
+preflight but remains unaccepted until complete physical results.
+Testkit v1324 also fixed early guest HALT misclassification by the
+read-only PTY sampler without touching the DAIMOS kernel.
+No resident KCORE/MRES size change or rejected swap fallback added.
+Independent owner admission postmortem testkit `e6e0d26` and
+corresponding pdp10-doc `2f990d6` agree on this negative result.
+
 ## 2026-11-07 v1322: no-partner full-guest physical owner test
 
 The native production MM/swap/PI6/gateway transaction tests remain

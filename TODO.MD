@@ -1,3 +1,27 @@
+## v1325: completed owner-8K negative; live owner-1K test pending
+
+- [x] v1322 real 256K guest reached all 18 additional child
+  admissions, 51 swap-outs and 35 swap-ins. The subsequent real
+  `mm_alloc_aligned_noreclaim` of one test-owned 8K-word extent
+  failed; original guest HALTed with `!t`. Test owner held no leaked
+  MM extent. Swap-in allocator errors, cooldowns and exchanges = 0.
+- [x] Independent executable-output v1325 verifier and four unsafe
+  modified-counter rejections PASS. Real negative guest evidence
+  SHA256 `388b09a28389749931eb8208ac008ff2f642fba753aeff933de44ad3ef56fd55`.
+  Independent testkit `e6e0d26`, pdp10-doc `2f990d6` and
+  separately retained negative evidence SHA256
+  `bf5304eb2ce0de91d463b8137c601e9c77f4223bea7cf67ebb3a3e4582800e31`.
+- [x] v1323 one-1K-word physical owner extent fixture preflight PASS
+  (testkit `c43fe7b`); 256K guest was still running at checkpoint.
+- [x] Fix PTY diagnostic's premature-normal-HALT false failure with
+  independent v1324 (`7bc46c0`); early HALT and truncated-postflight
+  controls PASS. Original v1306 test remains PASS.
+- [ ] Verify v1323's final genuine owner admission, MM pressure,
+  no-partner branch and backing cleanup; do not infer result from
+  a partial SIMH sample or merely from owner allocation success.
+- [ ] Keep KCORE and swap MRES unchanged pending reproduction of a
+  real production defect; historical v1208/v1211 fallback excluded.
+
 ## v1322: actual booted MM-owner no-partner pressure experiment
 
 - [x] Versioned v1321 test-only full guest combines 24K process images

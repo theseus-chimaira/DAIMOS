@@ -1,3 +1,43 @@
+## 2026-11-07 v1325: 8K owner admission negative and 1K full guest
+
+The completed v1322 disposable 256K PDP-6 guest reached all 18
+additional real process admissions and performed 51 swap-outs and
+35 swap-ins. Its real `mm_alloc_aligned_noreclaim` attempt to hold
+one additional 020000-octal-word (8K-word) APR-aligned physical
+test-owner extent returned failure. Original test INIT emitted `!t`
+and HALTed. Authoritative postflight: owner error=-1, prepared=0,
+count=0, freed=0; swap-in MM failure=0, cooldown=0, exchange=0.
+This was a failed **test-owner admission**, NOT a production swap-in
+failure or no-partner acceptance. The independent testkit v1325
+postmortem confirms the exact counters, HALT and four negative
+mutations; its versioned evidence archive checksum is
+`388b09a28389749931eb8208ac008ff2f642fba753aeff933de44ad3ef56fd55`.
+
+Testkit `c43fe7b` added v1323, one instead of 8K **1K-word**
+APR-aligned, real owner-tagged physical extent under the same
+24K-process F07 workload. Injector, strict owner accounting and
+generated guest preflight PASS. Its first full guest was running
+at this checkpoint; no final result or genuine no-partner pressure
+claim is available yet.
+
+The v1306 diagnostic sampler falsely rejected a normal guest HALT
+before its configured maximum sample budget. New versioned v1324
+(`7bc46c0`) retains original raw/guest transcript separation but
+accepts fewer samples **only** when a real HALT and complete SIMH
+postflight EXIT occur. Missing HALT, truncated postflight and failed
+simulator still fail; both original and extended self-tests PASS.
+The sampler cannot itself grant any functional guest acceptance.
+
+Documentation: `pdp10-doc/KERNEL/SWAP-OWNER-ADMISSION-NEGATIVE-V1325.MD`.
+Independent postmortem: testkit `e6e0d26`, docs
+`pdp10-doc/KERNEL/SWAP-PHYSICAL-MM-OWNER-ADMISSION-V1325.MD`
+(`2f990d6`), and second independently retained negative archive
+`$TMPDIR/daimos-swap-owner8k-rejection-v1325-evidence-r1.tar.gz`,
+SHA256 `bf5304eb2ce0de91d463b8137c601e9c77f4223bea7cf67ebb3a3e4582800e31`.
+No production kernel code, RAM footprint, KCORE/MRES policy or swap
+fallback was modified. Full-system physical no-partner liveness
+remains OPEN.
+
 ## 2026-11-07 v1322: booted no-partner MM-owner stress in progress
 
 Testkit `6dab196` introduced the distinct v1321 full-guest F07
