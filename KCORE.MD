@@ -1,3 +1,48 @@
+## 2026-11-07 v1298: requester-only BRK OOM F12/F13 accepted
+
+The 256K KCC PDP-6 DSK/D6FS PCLK60 headless CTY writable-process
+release profile now has production requester-only physical BRK OOM ON.
+The accepted F11 62/64 gates are joined by completed F12 activation
+and F13 post-enable signoff: 64/64 active OOM release gates CLOSED.
+All 14 F03 booted policy cases, all 18 P0-D native stages, all 17
+P0-D physical guests individually, and both fresh 64-slot F07
+pressure profiles PASS. The interrupted P0-D monolithic attempt
+is not represented as an uninterrupted run.
+
+Recovered original post-activation v1285 Android and independent
+Linux x86-64 E13 archives both use candidate `78259106`, whose sole
+change from `e6993a76` is the production OOM switch. The bundled
+assembly is byte-identical to the released source. Both policies
+on both hosts PASS; the same-policy linked KCORE maps match exactly,
+and independent PDP-6 simulator hashes differ. All four full-media
+builds pass strict F10 diagnostics with no unexplained errors.
+The v1298 evidence package is
+`$TMPDIR/daimos-f13-release-evidence-v1298-r1.tar.gz`, SHA256
+`5dcb4d75ea6ea2291e5ec01f54874ce8d704713c1608fff9dcd64ab8aab83221`.
+Release evidence is scoped to the selected 256K profile; restricted
+raw MEMFS XIP, strict 32K operation, other machine/media targets
+and the separate 16K permanent residency optimization are not
+claimed. DTFS tests remain excluded during the planned rewrite.
+
+## 2026-11-07 v1296: F12 activation and exact-source local acceptance
+
+The requester-only physical BRK OOM production switch is now 1 in
+the uncommitted kernel working tree. Fresh source/dispatch/cause
+checks, both 64-slot 256K release-media policy guests, all 18 native
+P0-D release stages, all 17 individually completed physical P0-D
+guests and all 14 F03 two-policy full-system cases PASS. The
+interrupted P0D_FULL matrix is not called an uninterrupted PASS.
+The v1190 F10 diagnostics checker accepts both current 64-slot
+release-media logs, with no unexplained diagnostics.
+
+Local SHA256-verified evidence is archived at
+`$TMPDIR/daimos-f12-production-oom-evidence-v1296-r1.tar.gz`.
+F12 remains OPEN for independent post-activation second-host/media
+qualification and final release review; F13 remains OPEN for
+post-enable signoff and commit/push. The older v1286 default-OFF
+report below is a dated source snapshot, not the current switch.
+DTFS tests remain excluded. No KCORE optimization was performed.
+
 ## 2026-11-07 v1279: Linux local-relocation toolchain defect, not KCORE growth
 
 The v1257 stable-uarea scheduler locality guard did not cause the

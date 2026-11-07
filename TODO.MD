@@ -1,3 +1,92 @@
+## v1298: F12/F13 requester-only BRK OOM release accepted (2026-11-07)
+
+- [x] F12: production `PROC_OOM_BRK_ENABLED_V1000=1` and exact-source
+  256K KCC PDP-6 DSK/D6FS release acceptance PASS. All 14 F03
+  policy guests, 18 P0-D native stages, 17 individually completed
+  physical P0-D guests, both 64-slot/high-MM F07 policies and source
+  cause/negative mutant controls PASS.
+- [x] Independent post-activation E13 evidence: recovered original
+  v1285 Android and Linux x86-64 archives with production OOM ON
+  for both guest policies. The identical candidate `78259106` is
+  the sole one-word switch relative to F11 `e6993a76`. Both hosts'
+  corresponding linked KCORE maps are byte-identical and simulator
+  binary SHA256 identities differ. Per-guest SHA256 manifests PASS.
+  Strict v1190 F10 audit of all four host/media builds PASS with
+  zero unexplained compiler, assembler or media diagnostics.
+- [x] F13: post-enable review and protected-requester/provider,
+  fault-cause, memory-accounting and rollback acceptance PASS.
+  The release profile completes 64/64 mandatory OOM gates.
+  Evidence: `$TMPDIR/daimos-f13-release-evidence-v1298-r1.tar.gz`,
+  SHA256 `5dcb4d75ea6ea2291e5ec01f54874ce8d704713c1608fff9dcd64ab8aab83221`.
+- [ ] Separate pre-final-KCORE feature tracks: D6CODEC streaming
+  cutover, BSTORE consumer integration, restricted MEMFS raw XIP,
+  and executable-opt-in compressed swap. No size optimization yet.
+
+## v1296: F12 exact-source guest coverage, host qualification outstanding
+
+- [x] Completed the 11 remaining P0-D physical guests individually
+  on the production-OOM-ON source: v1104, v1105, v1119, v1121,
+  v1122, v1120 OFF/ON, v1106, v1107, v1077 and v1101 all PASS.
+  Together with the six v1293 physical guests, all 17 physical
+  fault-injection cases now have actual PASS results. The earlier
+  interrupted monolithic P0D_FULL run is NOT an uninterrupted PASS.
+- [x] F03: complete both-policy 14-guest set on OOM-ON source.
+  Prior accepted v1075 OFF/ON and v1110 ON, plus v1120 OFF/ON in
+  P0-D; new v1110 OFF, v1112 OFF/ON, v1114 OFF/ON,
+  v1115 OFF/ON and v1116 OFF/ON all PASS.
+- [x] F10 v1190 diagnostic checker self-test and direct audit of
+  both fresh v1288/v1289 64-slot full release-media build logs PASS,
+  with 12 approved diagnostic classes per log and no unexpected
+  compiler, assembler or media warnings/errors.
+- [x] SHA256-verified archival evidence saved at
+  `$TMPDIR/daimos-f12-production-oom-evidence-v1296-r1.tar.gz`;
+  SHA256 `13411b8dbbf548a425567a6ed2a460e57cf3e8d2155a9ad32e4bbf84ba2a6e07`.
+- [ ] F12: independent second-host exact source/media qualification
+  still missing; two configured SSH hosts were unreachable on this
+  attempt. Preserve original F11 E13 evidence but do not mislabel
+  it a post-activation independent-host run. Freeze/commit only after
+  the required host acceptance and final release audit.
+- [ ] F13: post-enable signoff, production commit and push still OPEN.
+
+## v1293: F12 full P0-D physical matrix checkpoint (2026-11-07)
+
+- [x] Re-run all 18 native `daimos-p0d-release-matrix-v1096.sh`
+  component stages plus v1083/v1087 fatal-release graph on the
+  production OOM-ON working tree: PASS.
+- [x] First six real 256K PDP-6 P0-D guests PASS in order: v1125
+  wrong-owner MM/provider, v1124 TTY/VM/u-area, v997 pre-VM retry,
+  v1103 PIPE/FILE/HUP/VM/u-area, v1117 repeated WAIT/PID/event,
+  v1118 simultaneous PIPE/VM pin/MM_BUSY and swap detach.
+- [ ] Full P0-D remains INCOMPLETE, not failed or accepted: the
+  sequential run was stopped during the seventh v1104 guest build;
+  the interrupted guest did not produce an accepted result. Continue
+  v1104 and all subsequent physical cases before F12 signoff.
+  Partial log: `$TMPDIR/daimos-f12-p0d-full-v1293-r1.log`.
+- [ ] F03 14-guest and grouped dual-host/F10 release checks remain
+  open; F13 release signoff remains blocked until F12 is complete.
+
+## v1292: F12 production OOM activation in progress (2026-11-07)
+
+- [x] Set production `PROC_OOM_BRK_ENABLED_V1000=1` after accepted F11.
+- [x] v1283 both-policy source mutation, v1000 branch classification,
+  v998/v999 causes, v1113 native -2/-3, and v1123 writable RUN/EXEC
+  scope checks PASS on the production-enabled tree.
+- [x] Fresh booted v1075 and provider-held v1150 256K KCC/D6FS
+  negative/positive policies PASS with provider owner, scheduler progress,
+  requester-only selection and resource accounting intact.
+- [x] Fresh v1274 F07 64-slot maximum-pressure enabled/disabled guests
+  PASS with 63 live users, 127/136 MM descriptors, eight swapped,
+  31642 APR rounding words, and bounded private/idle stack peaks.
+  Evidence in `$TMPDIR/daimos-f12-f07-64slot-v1288-r1` and
+  `$TMPDIR/daimos-f12-f07-64slot-disabled-v1289-r1`.
+- [x] v1096 native P0-D ownership/release matrix PASS (without the
+  17 physical guests); booted v1110 invalid-BRK enabled-policy PASS.
+- [ ] F12 remains OPEN: complete exact-source F03 14-case matrix,
+  full P0D_FULL=1 physical guests, grouped F10/E13 and release
+  diagnostics on the production-enabled image; independent host
+  verification and evidence hashes remain to be signed off.
+- [ ] F13 post-enable signoff or safe revert on any regression.
+
 ## v1284: F11 OOM preactivation signoff complete (2026-11-07)
 
 - [x] F11 exact-source 256K KCC DSK/D6FS integration review: 14/14

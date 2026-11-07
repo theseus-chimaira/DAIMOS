@@ -1,3 +1,112 @@
+## 2026-11-07 v1298: F12/F13 requester-only OOM release accepted
+
+F12 production activation and F13 post-enable signoff are accepted
+for the frozen 256K KCC PDP-6 DSK Stage 1, four-member D6FS root,
+PCLK60, headless CTY, writable RUN/EXEC release profile. All 64/64
+mandatory OOM gates are now CLOSED. The sole production kernel change
+is `PROC_OOM_BRK_ENABLED_V1000=1` in syscall_dispatch_pdp6.s.
+
+The native v1296 phase passed 14/14 F03 positive/negative booted
+policy cases, 18/18 P0-D native stages and 17/17 individual booted
+P0-D physical faults (the interrupted initial P0D_FULL sequence is
+not called an uninterrupted pass). Both 64-slot F07 policy cases
+also pass with 63 users, 127/136 MM descriptors, eight swapped,
+31642 APR-rounding words and safe stack watermarks.
+
+The original archived v1285 independent post-enable Android and
+Linux release-media tests were recovered locally, then verified.
+Their candidate `78259106e267636130a4ab41f01d020981fe8c41`
+has parent `e6993a764d9fc82f2421c8b71862c1aa80e2fa14` and only
+the OOM policy switch differs. Both policy guest archives on both
+hosts record production_oom=ON and identical testkit revision
+`74baec8b9be739d20ba55780491410556b8448f6`. All four archived
+guest manifests pass SHA256, cross-host KCORE maps match byte-for-byte
+per policy, and distinct PDP-6 binary hashes prove independent
+simulator builds. Strict F10 build diagnostics pass all four logs,
+with no unexplained errors or warnings.
+
+Versioned combined evidence archive:
+`$TMPDIR/daimos-f13-release-evidence-v1298-r1.tar.gz`, SHA256
+`5dcb4d75ea6ea2291e5ec01f54874ce8d704713c1608fff9dcd64ab8aab83221`.
+Other platforms, raw MEMFS XIP, full 32K DSH, and strict 16K
+permanent residency are not certified by these release gates.
+Next feature completion: D6CODEC, BSTORE, restricted XIP and
+opt-in compressed process swapping. No KCORE optimization performed.
+DTFS tests are not acceptance blockers during the planned rewrite.
+
+## 2026-11-07 v1296: F12 complete local guest matrix, host signoff pending
+
+The production-enabled requester-only BRK OOM source (switch=1)
+passed all 17 P0-D physical guest cases individually: six in the
+partial v1293 monolithic matrix and eleven in the sequential v1294
+continuation. All eighteen v1096 native release stages had already
+passed. This does not retroactively turn the interrupted monolithic
+P0-D run into a continuous PASS. The full F03 fourteen-guest
+disabled/enabled matrix also passed, combining earlier v1075,
+v1110-ON and v1120-OFF/ON results with the nine v1295 guests.
+All cases ran on the current working source with production OOM ON.
+
+The v1190 diagnostic audit passed on both fresh 64-slot F07
+release-media build logs: twelve approved diagnostic classes per
+profile, no unexpected compiler/assembler/media diagnostics. The
+complete local evidence, source diff and tool identity manifests
+are SHA256-protected in the versioned archive
+`$TMPDIR/daimos-f12-production-oom-evidence-v1296-r1.tar.gz`,
+SHA256 `13411b8dbbf548a425567a6ed2a460e57cf3e8d2155a9ad32e4bbf84ba2a6e07`.
+
+F12 and F13 remain OPEN: the independent post-activation host/media
+qualification and final release audit are not signed off. Both
+previously configured LAN SSH endpoints were unreachable during this
+attempt. Prior F11 E13 acceptance is preserved, not substituted
+for a new post-activation dual-host result. No commit/push or
+KCORE size optimization was performed; DTFS tests remain excluded.
+
+## 2026-11-07 v1293: F12 full P0-D partial physical guest checkpoint
+
+Production requester BRK OOM remains ON in the uncommitted source.
+The full `P0D_FULL=1` v1096 runner passed all 18 native component
+stages and the allocation-free v1083/v1087 release graph, followed
+by the first six actual 256K PDP-6 physical fault-injection guests:
+v1125, v1124, v997, v1103, v1117 and v1118. These cover permanent
+wrong-owner MM/provider leases, TTY/VM/uarea MM_BUSY, pre-VM retry,
+combined PIPE/FILE/HUP/VM/uarea owner stages, 48 repeated stale
+WAIT/PID/event refusals and simultaneous PIPE/VM pin/MM_BUSY with
+actual swap detach. Every completed guest reported PASS.
+
+The sequential runner was interrupted while assembling the seventh,
+v1104 physical HUP/pinned PIPE case. The interruption is not a kernel
+test failure, but the full 17-guest matrix MUST NOT be reported PASS.
+Partial log: `$TMPDIR/daimos-f12-p0d-full-v1293-r1.log`.
+F03 14-guest, remaining P0-D, grouped host/media diagnostics, F12
+release acceptance and F13 post-enable signoff remain OPEN. Keep
+source activation uncommitted and do not claim production release.
+DTFS tests are excluded and no KCORE optimization was performed.
+
+## 2026-11-07 v1292: production requester-OOM F12 partial activation
+
+The production BRK OOM selection is now enabled in the working tree
+(`PROC_OOM_BRK_ENABLED_V1000=1`); this is not yet a committed or
+release-signed-off state. The v1283 policy/mutation guard, v1000
+dispatch, v998/v999 cause classification, v1113 native actual MM
+negative causes and v1123 RUN/EXEC source scope pass. Fresh physical
+v1075 and held-provider v1150 enabled/disabled guests both pass.
+
+Fresh enabled and disabled 64-slot F07 full 256K KCC/DSK/D6FS guests
+each passed with 63 live user processes, 127/136 MM descriptors,
+eight swapped processes, 239576 MM allocated words, 31642 exact
+APR-rounding words, private kernel stack 180/206 and idle stack
+63/256. Both archived guest evidence directories were created under
+`$TMPDIR/daimos-f12-f07-64slot-v1288-r1` and
+`$TMPDIR/daimos-f12-f07-64slot-disabled-v1289-r1`.
+The v1096 native P0-D release/ownership component matrix and booted
+enabled-policy v1110 invalid BRK negative controls also pass.
+
+F12 is OPEN until the complete production-enabled F03/P0D_FULL
+and exact-source release diagnostics/host matrix are accepted. F13
+remains OPEN; do not commit/push or claim release acceptance until
+full signoff. DTFS tests remain excluded for the planned rewrite.
+No KCORE optimization was performed.
+
 ## 2026-11-07 v1284: F11 exact-source OOM release-candidate review CLOSED
 
 The frozen S07/S08 256K PDP-6 KCC DSK/D6FS candidate has completed
