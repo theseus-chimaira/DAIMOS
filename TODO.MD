@@ -1,3 +1,21 @@
+## v1315: native clock aging and real scheduler gate PASS
+
+- [x] Production PI6 clock timekeeping code executes 63 ticks with
+  cooldown still 1, then the 64th releases the pressure backoff.
+- [x] Actual `proc_select_rt_normal_swap_v879` selects independent
+  runnable work during cooldown and raises a slot-0 swap request
+  only after expiry; no synthetic cursor overwrite is needed.
+- [x] Real MM owner free and retry succeed with READY_ONCE.
+  Six executable native mutations rejected, including clock aging
+  and scheduler-gate bypass. Testkit `bfb629ae`.
+- [x] Evidence with verified SHA256:
+  `$TMPDIR/daimos-swap-native-clock-gate-v1315-evidence-r1.tar.gz`,
+  `17f4d19c56b7776c608cfc88a0e94f0c3674cb62ce2d09094e503193ebb87134`.
+- [ ] Booted 256K full no-partner scenario: real PI6 device and
+  scheduler execution, genuine backstore swap-in/rollback, independent
+  user process freeing occupied MM, final leak-free cleanup.
+  No speculative v1208/v1211 fallback or kernel code growth.
+
 ## v1314: real-MM no-partner native recovery, full guest still pending
 
 - [x] Production MM allocator on PDP-6 reports actual typed -1 when

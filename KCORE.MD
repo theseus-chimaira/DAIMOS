@@ -1,3 +1,19 @@
+## 2026-11-07 v1315: PDP-6 PI6 cooldown and scheduler gate
+
+Production kernel source and resident size remain unchanged.
+Testkit `bfb629ae` extends the native real-MM no-partner test
+to execute actual PI6 clock timekeeping and the scheduler's
+swapped-process gate. 63 consecutive tick calls leave a 1-tick
+cooldown and allow the independent runnable path; the 64th tick
+expires backoff and permits a real swap request. An actual `mm_free`
+of the independent owner's physical extent allows retry, actual
+MM allocation and one-shot scheduler dispatch. Six executable
+negative mutants fail as intended. The fixture excludes hardware
+PI6 dispatch and substitutes disk swap-in and partner admission,
+so booted full-system recovery remains OPEN, without any proposed
+RAM growth or fallback. Full detail:
+`pdp10-doc/KERNEL/SWAP-NATIVE-REAL-MM-NO-PARTNER-V1314.MD`.
+
 ## 2026-11-07 v1314: swap-in actual MM shortage native acceptance
 
 No production kernel memory or swap algorithm changes in v1314.

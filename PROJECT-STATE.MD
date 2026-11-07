@@ -1,3 +1,33 @@
+## 2026-11-07 v1315: production PI6 aging/swap gate native PASS
+
+The native PDP-6 real-MM no-partner fixture now also extracts and
+executes the production `proc_sched_pi_tick` timekeeping section
+and `proc_select_rt_normal_swap_v879` gate without any DAIMOS
+kernel edits. After an actual MM_ERR_NOMEM, bounded reclaim and
+three rejected exchange candidates, its cooldown starts at 0100.
+Exactly 63 clock-prefix calls leave cooldown 1. The actual
+scheduler gate chooses the independent runnable path and does not
+request swap-in. The occupying owner releases physical memory via
+real `mm_free`. The 64th production tick expires cooldown, and
+the production scheduler gate raises cursor 0402, followed by
+production MM allocation and slot-0 READY_ONCE success. No TERM,
+exchange or ownership leak occurs in this native scenario.
+
+Six executable negative mutants are rejected (typed MM shortage,
+FS reclaim, process reclaim, cooldown publication, clock decrement
+and scheduler gate bypass); neighboring native v756/v1111/v1260/
+v1300/v1301/v1303 tests PASS. Testkit commit `bfb629ae`; source
+documentation `pdp10-doc/KERNEL/SWAP-NATIVE-REAL-MM-NO-PARTNER-V1314.MD`
+commit `12f899a`. Versioned positive and negative evidence archive:
+`$TMPDIR/daimos-swap-native-clock-gate-v1315-evidence-r1.tar.gz`,
+SHA256 `17f4d19c56b7776c608cfc88a0e94f0c3674cb62ce2d09094e503193ebb87134`.
+
+**LIMIT:** the native fixture stops before PI6's hardware dispatch
+and still substitutes disk transfer and exchange eligibility.
+Booted full-system no-partner liveness, real backstore read and
+rollback cleanup remain OPEN. The accepted 64/64 production OOM
+gates are unchanged, as are KCORE/MRES footprint and kernel source.
+
 ## 2026-11-07 v1314: native real-MM no-partner/retry integration PASS
 
 Production DAIMOS `9475f50a` remains unchanged in `system/kernel`.
