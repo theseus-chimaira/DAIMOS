@@ -1,3 +1,44 @@
+## 2026-11-07 v1280: both 64-slot F07 OOM policies pass the mandatory provider barrier
+
+Full 256K KCC DSK/D6FS F07 64-slot guests now PASS with the original
+production kernel unchanged and testkit `26d0e39` requiring *observed*
+foreign-provider contention before initiating the physical requester
+BRK OOM. The old fixed sleep could allow the gateway waiter and spinner
+to miss the provider-held window; earlier unbarriered disabled guests
+therefore either failed the liveness assertions or, in one stopped
+diagnostic, stalled during admission. No production scheduler root cause
+has been established from that stopped run. The new disposable-only
+three-counter, bounded read-only BRK probe does not modify ordinary
+production syscall handling. Its host negative mutants and native
+assembler check PASS.
+
+Both enabled and disabled guests completed 57 independent RUN admissions,
+actual MM pressure and disk swapping, 57 individual TERM/WAIT/reaps,
+protected-process and held FS-owner checks, final FILE/MM/swap accounting
+and expected HALT within the 1800-second bound. At physical OOM both
+show 63 user processes, 55 resident/eight nonresident, 127/136 MM
+descriptors, 239576 allocated managed words, 31642 APR rounding words,
+180/206 private and 63/256 idle stack high-water. The disabled policy
+returns BRK -1, records predispatch=1, spinner=11, zero fatal victim
+and reaches `NWP`; the disposable-enabled policy selects *only* PID 3,
+records predispatch=1, spinner=38 and reaches `KWP`. Both owner error
+counters are zero. All manifest SHA256s and 13 v1274 negative snapshot
+mutants PASS. Archives:
+
+* `$TMPDIR/daimos-f07-v1280-64slot-disabled-frozen-r1.tar.gz` SHA256
+  `68c719c5901e3874acaeabe2cef6f309df0566bf99619d89dae2f53380994cd7`.
+* `$TMPDIR/daimos-f07-v1280-64slot-enabled-frozen-r1.tar.gz` SHA256
+  `bb0173c726d4e243edec0a09c977b0e4bb68147a4117f90ab932df2e0936b253`.
+
+DAIMOS profile revisions `3978b50a` and `67fd397f` differ only in
+documentation, not kernel or boot source. The testkit was frozen at
+`69830c9` for both policy runs (the v1280 barrier itself is `26d0e39`).
+The v1280 evidence is documented in pdp10-doc `e1fbad6`. F07 and E13
+are CLOSED, 61/64 active mandatory OOM gates are checked, **F11 final
+integration remains OPEN**, then F12 production enable and F13
+post-enable release acceptance remain OPEN. Production requester OOM
+is still OFF; the separate 16K permanent residency target is unaffected.
+
 ## 2026-11-07 v1279: F11 toolchain regression identified and fixed; final matrix OPEN
 
 The current DAIMOS `226e7a5f` F03/v1112 failed-RUN guest initially
