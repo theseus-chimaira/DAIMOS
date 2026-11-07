@@ -1,3 +1,26 @@
+## v1318: native production swap-in transaction and rollback accepted
+
+- [x] Real physical MM occupancy produces native typed allocation
+  pressure, preserved swap ownership, no eligible test exchange
+  candidate, actual production PI6 tick countdown and scheduler gate.
+- [x] Production `proc_swap_in` (not a stub) successfully allocates,
+  pins, reads physical words through a test disk provider, unpins,
+  publishes VM and packed RESIDENT mode, clears backing allocation
+  with actual `backstore_free`, and grants one-shot dispatch.
+- [x] A failing test disk provider exercises production rollback:
+  exact MM unpin/free, retained disk bitmap/record, DISK mode,
+  no leaked physical extent and one fatal TERM. Three executable
+  mutations (missing MM free, bitmap free, storage publication)
+  fail their assertions. Testkit `7ffd840e`.
+- [x] Retained v1318 positive/rollback/three negative native PDP-6
+  maps and reports, extracted production code and SHA256 evidence:
+  `$TMPDIR/daimos-swap-in-real-transaction-v1318-evidence-r1.tar.gz`,
+  SHA256 `4459b6c916c52d7cc71c5062ff727bb76989edb4a2b6e93cb056f962dc47d8eb`.
+- [ ] Booted 256K guest: genuine no-partner swap-in pressure, independent
+  runnable execution during clock backoff, true DSK/D6FS restore and
+  rollback, final MM/backing accounting. Do not confuse native disk
+  stub success with full-system acceptance or add the rejected fallback.
+
 ## v1315: native clock aging and real scheduler gate PASS
 
 - [x] Production PI6 clock timekeeping code executes 63 ticks with

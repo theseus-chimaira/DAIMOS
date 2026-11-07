@@ -1,3 +1,21 @@
+## 2026-11-07 v1318: full native production swap-in transaction
+
+There is no production KCORE/MRES source, footprint, ABI or runtime
+allocation-policy change. Testkit `7ffd840e` now executes actual
+native PDP-6 `proc_swap_in` after real MM NOMEM and three rejected
+test exchange candidates; production PI6 countdown, scheduler
+swap request, MM allocation, pin/unpin, resident VM and packed storage
+mode publication, and backstore bitmap release all PASS. The physical
+disk read provider remains a native test stub, but its two copied
+physical endpoint words are checked. A failing read invokes the
+production MM unpin/free rollback, preserving backing ownership and
+terminating the failed restore request exactly once. Three unsafe
+production-code mutants are detected at runtime. See
+`pdp10-doc/KERNEL/SWAP-IN-TRANSACTION-NATIVE-V1318.MD` and the
+versioned v1318 test evidence (SHA256 recorded in PROJECT-STATE.MD).
+This does **not** close the booted 256K full-system no-partner gate;
+no historical v1208/v1211 fallback was merged or resized.
+
 ## 2026-11-07 v1315: PDP-6 PI6 cooldown and scheduler gate
 
 Production kernel source and resident size remain unchanged.

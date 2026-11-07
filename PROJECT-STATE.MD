@@ -1,3 +1,38 @@
+## 2026-11-07 v1318: production swap-in native commit/rollback PASS
+
+Production `system/kernel` remains unchanged from the accepted v1315
+baseline. daimos-testkit `7ffd840e` adds native v1316/v1317 PDP-6
+execution of the **actual** `proc_swap_in` transaction, slot-0 service,
+MM allocator and pin/unpin/free, packed DISK/RESIDENT storage mode,
+real backing bitmap release, and PI6 countdown/scheduler gate.
+Physical MM occupancy drives a typed NOMEM; all three test-controlled
+exchange peers refuse admission, backing remains intact and cooldown
+0100 is entered. The production clock prefix reaches tick 63 with
+one tick outstanding, then expires it at tick 64. After the physical
+owner's genuine `mm_free`, the subsequent production swap-in transaction
+allocates and pins a process extent, reads via a test disk provider,
+unpins, publishes the resident base/storage mode, and releases the
+eight backstore blocks using the production bitmap. Correct VM owner,
+two endpoint payload words, zero outstanding pins and zero block usage
+are verified. A second test returns an I/O error from the disk stub;
+the production rollback unpins and frees the new physical extent,
+preserves the original DISK record and bitmap, clears TRANSITION after
+rollback, and emits exactly one fatal TERM. Three executable mutants
+(leaked MM extent, leaked backing blocks, missed storage publication)
+are rejected. Older v1315/v1301/v1300/v756 regressions remain PASS.
+
+These are **native testkit integration** results, NOT a fully booted
+256K guest: disk read, candidate admission, independent runnable-path
+execution and hardware PI6 interrupt entry are controlled fixtures.
+The full-system real no-partner liveness and authentic disk rollback
+gate remains OPEN. No kernel RAM/code growth, no kernel changes, and
+the rejected v1208/v1211 fallback stays excluded.
+
+Native evidence:
+`$TMPDIR/daimos-swap-in-real-transaction-v1318-evidence-r1.tar.gz`,
+SHA256 `4459b6c916c52d7cc71c5062ff727bb76989edb4a2b6e93cb056f962dc47d8eb`.
+Documentation: `pdp10-doc/KERNEL/SWAP-IN-TRANSACTION-NATIVE-V1318.MD`.
+
 ## 2026-11-07 v1315: production PI6 aging/swap gate native PASS
 
 The native PDP-6 real-MM no-partner fixture now also extracts and
