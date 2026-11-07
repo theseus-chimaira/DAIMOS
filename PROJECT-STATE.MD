@@ -1,3 +1,33 @@
+## 2026-11-07 v1322: booted no-partner MM-owner stress in progress
+
+Testkit `6dab196` introduced the distinct v1321 full-guest F07
+combination: 18 additional 24K-word physical process images and
+owner-tagged 8K-word non-process MM extents, allocated by the real
+`mm_alloc_aligned_noreclaim` and released by the real `mm_free`.
+Its original v1207-only guest policy stays untouched; the temporary
+runner has its own explicit real-concurrent/swap/owner gate. The
+v1321 first execution was deliberately interrupted after three
+read-only SIMH samples (15 swap-outs, 8 swap-ins, zero MM failures)
+and BEFORE the additional owner MM allocations. It is not a guest
+PASS, no-partner test, or evidence of a kernel problem.
+
+The preceding completed 24K-word full-guest v1308 physical MM
+snapshot showed 15840 free managed words at BRK OOM. Six additional
+8K-word extents would need 49152 words and likely fail during test
+setup. Testkit `b961c8f` therefore adds versioned v1322 using ONE
+8K-word owner-tagged extent instead, keeping the same real allocator,
+original process lifecycle and strict full-guest MM/swap checks.
+The v1322 injection, syntax and generated-runner preflight PASS.
+Its new 256K physical guest was building/running at this checkpoint,
+with NO final result or no-partner liveness acceptance yet.
+
+Both fixtures are testkit-only; no production kernel source, resident
+footprint or scheduler/swap policy has changed. The rejected
+v1208/v1211 fallback stays excluded. A full 256K guest must still
+demonstrate real swap-in allocation failure without an eligible
+exchange partner, later independent process progress, actual backing
+restoration and zero leaked resources to close the OPEN liveness gate.
+
 ## 2026-11-07 v1320: native DEVICE-backed swap-in gateway PASS
 
 Testkit `d65899c` extends the already accepted native v1317

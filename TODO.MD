@@ -1,3 +1,25 @@
+## v1322: actual booted MM-owner no-partner pressure experiment
+
+- [x] Versioned v1321 test-only full guest combines 24K process images
+  with real owner-tagged 8K-word physical MM extents. Native syntax,
+  generated-runner preflight and real-MM injector PASS; ordinary
+  production v1207 mode contract remains unchanged (`6dab196`).
+- [x] v1321 exploratory guest deliberately interrupted BEFORE MM
+  owner allocation after 3 live samples, 15 swaps out/8 in, no MM
+  failures. Not full-guest or no-partner acceptance.
+- [x] Quantified the completed v1308 physical F07 MM snapshot:
+  15840 free managed words at OOM, insufficient for six 8192-word
+  additional extents. Created v1322 with ONE such extent, six-to-one
+  count adjustment in disposable fixture and strict owner verifier;
+  preflight PASS, testkit `b961c8f`.
+- [ ] Complete and independently verify the v1322 booted 256K guest:
+  exact owner allocation/free, typed actual MM pressure, no-partner
+  cooldown, independently runnable progress, backstore restore and
+  complete MM/backing cleanup. At this checkpoint the run has no
+  accepted final result; never treat partial samples as PASS.
+- [ ] Keep production kernel and KCORE/MRES footprint unchanged; do
+  not merge the speculative 16-word v1208/v1211 swap fallback.
+
 ## v1320: production DEVICE backing gateway in native swap-in test
 
 - [x] Execute the production `fs_mres.s` DEVICE `backstore_read`

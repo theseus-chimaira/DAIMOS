@@ -1,3 +1,20 @@
+## 2026-11-07 v1322: no-partner full-guest physical owner test
+
+The native production MM/swap/PI6/gateway transaction tests remain
+PASS, but a booted 256K genuine no-partner swap-in has not yet been
+demonstrated. Testkit v1321 tried to combine the 24K process F07
+with six actual 8K-word MM_TYPE_KERNEL_DYNAMIC test-owner extents.
+The initial run was intentionally interrupted during admission
+(15 swap-outs and 8 swap-ins, zero MM failures), before the extra
+allocations. The earlier completed v1308 snapshot measured only
+15840 managed words free at OOM; a six-times-8K reservation is
+therefore unlikely to fit. Testkit v1322 instead uses one 8K-word
+real owner extent with exact typed owner release and same physical
+swap-in no-partner acceptance requirements. Its disposable guest
+preflight PASS, but a completed full-system result remains OPEN.
+No production KCORE, MM, swap or MRES source was modified and
+no permanent RAM footprint increase is introduced by this test.
+
 ## 2026-11-07 v1320: native swap-in via production DEVICE gateway
 
 The native PDP-6 swap-in transaction now executes the unchanged
