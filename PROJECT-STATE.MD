@@ -1,3 +1,47 @@
+## 2026-11-07 v1312: completed F07 trace, offline full postflight replay
+
+Production DAIMOS `417fbade` (kernel source unchanged from `f78145db`)
+has no newly demonstrated swap-in MM defect. The first instrumented
+24K-BSS 256K KCC PDP-6 DSK/D6FS full guest, launched on the earlier
+v1308 testkit, recorded all 15 Ctrl-E read-only live samples, all 18
+RUN admissions and 18 TERM/WAIT reaps, requester-only BRK OOM,
+provider/witness milestones and HALT. Its final recorded counters
+show 51 swap-outs, 51 swap-ins, 0 real swap-in allocation failures,
+0 exchanges, 0 fatal swap failures and 0 no-partner cooldowns.
+
+The original v1308 guest runner returned failure after the v1075 OOM
+PASS because interactive SIMH `sim> ` prefixes in its final memory
+EXAMINE output prevented v1150 from finding a provider counter. The
+later v1309 testkit correction for that PTY formatting PASSes the
+complete protocol selftest, but was committed after this runner had
+started. Do not report this original invocation as an ordinary
+full-system runner PASS.
+
+Testkit `9ddb748` v1311 replays the UNMODIFIED original v1075
+postflight validation source against a separate prompt-normalized
+copy of the captured guest output. All v1150 provider, v1159
+protected-process, v1203 physical MM, v1205 actual process/BRK,
+v1207 swap/stack, and v1160 release-media evidence checks PASS.
+The nested E13 evidence SHA256 manifest verifies. A disposable
+negative test replacing the provider's real armed counter with zero
+fails the original v1150 verification, as required. This is **offline
+validation of completed recorded guest behavior**, not a new direct
+F07 runner PASS. All original files and the full raw debugger trace
+are retained unmodified.
+
+Versioned evidence:
+`$TMPDIR/daimos-swap-no-partner-evidence-v1312-r1.tar.gz`, SHA256
+`e5224db0e4266bea68c7e953c22f49c6074443ea930a5b360665725ab8a1b669`.
+Both outer and inner evidence manifests are verified. Operator/source
+documentation: `pdp10-doc/KERNEL/SWAP-SIMH-LIVE-TRACE-V1309.MD`.
+
+**Still OPEN:** real full-system no-equal-partner swap-in MM pressure
+and later conditional forward-progress/leak-free cleanup. All present
+clean-source 24K and 16K loads progress via ordinary disk swap, never
+entering the no-partner path. Historical v1208/v1211 16-word SWAP
+fallback remains excluded; no production code, KCORE/MRES size or
+profile gate was changed during this diagnostic acceptance.
+
 ## 2026-11-07 v1309: live swap-pressure tracing, full no-partner still open
 
 Production requester-only OOM remains enabled and accepted (F12/F13

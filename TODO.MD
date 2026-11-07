@@ -1,3 +1,25 @@
+## v1312: completed live F07 guest, strict offline postflight replay
+
+- [x] v1308 real 256K KCC PDP-6 24K-BSS trace: all 15 live samples,
+  18 RUNs, 18 TERM/WAIT reaps, OOM provider/witness and HALT.
+  Final: 51 successful swaps out and in, 0 MM-pressure returns,
+  0 exchanges, 0 cooldowns. The **original runner failed** on
+  SIMH post-HALT `sim> ` formatting, not an asserted kernel fault.
+- [x] v1309 testkit corrects interactive PTY prompt prefixes in
+  guest-only postflight records; protocol and negative selftests PASS.
+- [x] v1311 testkit replays the unchanged original v1075 postflight
+  verification against a copied prompt-normalized console: v1150,
+  v1159, v1203, v1205, v1207, v1160 plus manifest checks PASS.
+  Deliberately corrupted provider-owner counter fails as expected.
+  This is offline recorded-guest validation, NOT a new direct run.
+- [x] Archive original console, 15 snapshots, full raw debugger,
+  build/map, copied replay and negative evidence with SHA256:
+  `$TMPDIR/daimos-swap-no-partner-evidence-v1312-r1.tar.gz`,
+  SHA256 `e5224db0e4266bea68c7e953c22f49c6074443ea930a5b360665725ab8a1b669`.
+- [ ] Full physical no-partner liveness with actual MM failure and
+  independent freeing owner: UNEXERCISED, not accepted. Do not
+  enable v1208/v1211 fallback or reopen accepted requester OOM gates.
+
 ## v1309: live no-partner pressure trace and acceptance boundary
 
 - [x] v1303 physical 256K F07 evidence parser and five negative

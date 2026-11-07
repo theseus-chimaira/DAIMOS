@@ -1,3 +1,25 @@
+## 2026-11-07 v1312: full live-swap guest trace and replay
+
+On the same production-source kernel, the fully traced 24K-BSS
+256K PDP-6 guest completed 15 live read-only PC/scheduler/swap
+snapshots, 18 additional RUN/TERM/WAIT cycles, requester-only OOM,
+provider/witness milestones and HALT. The final counters recorded
+51 successful swap-outs and swap-ins, zero real swap-in allocator
+pressure, zero exchange and zero cooldown. The original runner
+could not parse interactive SIMH post-HALT `sim> ` prefixes. That
+simulator-formatting issue is corrected by v1309 testkit; v1311
+replays the unchanged original v1075 postflight checks against a
+separate prompt-normalized copy, all provider/protected/MM/slot/
+swap/media validations PASS. A corrupted provider counter is
+rejected. This is evidence replay, not a direct rerun claim.
+
+See `pdp10-doc/KERNEL/SWAP-SIMH-LIVE-TRACE-V1309.MD` and
+`$TMPDIR/daimos-swap-no-partner-evidence-v1312-r1.tar.gz`
+(SHA256 `e5224db0e4266bea68c7e953c22f49c6074443ea930a5b360665725ab8a1b669`).
+The remaining full-system no-partner allocation-pressure path was
+not entered; its liveness gate remains OPEN. No production KCORE,
+MRES or swap algorithm change and no RAM footprint optimization.
+
 ## 2026-11-07 v1309: read-only SIMH swap progress observation
 
 The kernel remains unchanged since production OOM activation.
