@@ -1,3 +1,33 @@
+## 2026-11-07 v1336: real 256K no-partner pressure observed, recovery open
+
+The retained, source-linked v1335 live 256K KCC PDP-6 guest actually
+entered the previously unexercised swap-in MM resource-pressure branch.
+With four genuine early `MM_TYPE_KERNEL_DYNAMIC` 8K-word owner extents
+(32K total), the twelfth read-only SIMH sample contained 93 typed
+`MM_ERR_NOMEM` failed swap-in allocations, 93 slot-0 no-partner
+cooldowns, zero exchanges and fatal swap-ins, 54 normal swap-outs
+and 37 normal swap-ins. Production MM, scheduler, swap service and
+KCORE/MRES code were unchanged. The sample's process request was
+26624 words, owner slot 5, with no matching free LOW/HIGH fit.
+
+Independent testkit `c642d28` parses the raw linked SIMH counters
+and rejects eight unsafe mutations. `swapout_fail` at this stage
+also counts rejected reclamation attempts and is not automatically
+a fatal published swap-out. The stricter final full-guest rollback
+and leak requirements remain unchanged. Documentation:
+`pdp10-doc/KERNEL/SWAP-NO-PARTNER-LIVE-PRESSURE-V1336.MD` (`d143f08`).
+
+**NOT full acceptance:** after 17 additional children, INIT waited
+on the next child RUN/ACK while retaining the 32K test reservation.
+No independent owner release could occur. The run was interrupted
+without HALT, restore-after-release or final MM/backing cleanup.
+The separate testkit v1336 (`745690a`) stages a real, pinned,
+independently scheduled spinner process to observe true cooldown
+and release all four owner-tagged extents through production
+`mm_free`/`mm_unpin`. Its guest preflight PASS, with full-system
+recovery still awaiting a complete and strictly verified run.
+No +16-word v1208/v1211 fallback has been merged.
+
 ## 2026-11-07 v1330: 1K late owner failure; native resident pins under test
 
 The booted v1323 256K F07 guest completed all 18 additional

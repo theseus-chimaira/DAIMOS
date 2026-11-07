@@ -1,3 +1,24 @@
+## v1336: genuine booted no-partner shortage observed; recovery still OPEN
+
+- [x] Verify booted 256K v1335 live source-linked MM pressure: 93
+  actual MM_ERR_NOMEM swap-in failures, 93 no-partner cooldowns,
+  zero exchanges/fatal swap-ins, 54 swap-outs, 37 swap-ins, request
+  26624 words, and four real 8K-word owner extents. Testkit
+  `c642d28` independently verifies raw SIMH + addresses with eight
+  executable negative counter mutations; docs `d143f08`.
+- [x] Classify blocked INIT versus real production kernel liveness:
+  INIT held test physical owners while awaiting the 18th RUN/ACK,
+  so no independent release occurred. No final guest HALT or leak
+  acceptance; do not label it a production deadlock.
+- [x] Prepare a source-authentic independent resident spinner
+  with real `mm_pin`/`mm_unpin` and typed owner `mm_free` after an
+  observed cooldown (testkit `745690a`); disposable guest preflight PASS.
+- [ ] Complete booted v1336 guest: prove release from scheduled
+  independent user, subsequent normal swap-in, all 18 RUN/TERM/WAIT,
+  original OOM/provider milestones and zero MM/backing leak.
+- [ ] Keep KCORE/MRES/production MM and swap unchanged unless the
+  complete test reveals an actual defect; no speculative fallback.
+
 ## v1330: late MM owner test failed; existing-resident-pin guest pending
 
 - [x] Complete v1323 genuine 256K F07 execution: 18 admissions,

@@ -1,3 +1,21 @@
+## 2026-11-07 v1336: real guest swap-in shortage/no-partner branch
+
+The previously native-only no-partner pressure path has now been
+observed under an actual 256K PDP-6 DSK/D6FS boot. A disposable
+guest with four early genuine 8K MM owner extents recorded 93
+real typed swap-in allocation failures and exactly 93 cooldown
+entries, no exchanges, 54 ordinary swap-outs and 37 swap-ins.
+Testkit `c642d28` verifies the source-linked read-only SIMH sample
+and rejects eight mutated counter states. These measurements
+establish reachability of the production branch, not completion
+of full-system recovery: INIT was blocked waiting for child RUN/ACK
+while owning the memory required to proceed. The test was stopped
+without release, HALT or final leak checks. The independent resident
+user releaser (testkit `745690a`) has passed disposable preflight
+but still requires complete booted acceptance. No KCORE/MRES
+source or resident footprint was modified. Documentation in
+`pdp10-doc/KERNEL/SWAP-NO-PARTNER-LIVE-PRESSURE-V1336.MD`.
+
 ## 2026-11-07 v1330: no-partner full-guest pin strategy (zero growth)
 
 The v1323 booted 256K 24K-process F07 guest successfully swapped
