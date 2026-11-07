@@ -1,3 +1,20 @@
+## v1284: F11 OOM preactivation signoff complete (2026-11-07)
+
+- [x] F11 exact-source 256K KCC DSK/D6FS integration review: 14/14
+  Android F03 and 14/14 Linux F03 full guests PASS; uninterrupted
+  Android P0D_FULL 18 native stages + 17 booted physical guests PASS.
+- [x] The interrupted Linux full P0-D v1121 SIGKILL is preserved, not
+  accepted as a monolithic PASS. All missing v1121..v1101 physical
+  guests were independently retested with clean successful checks.
+- [x] Recheck original F07/E13, F04/F10, v1087 allocation-free release,
+  v1092/v1282 provider quarantine, v1123 writable-VM/XIP scope;
+  none requires an unrelated process as OOM victim.
+- [ ] F12: enable requester-only BRK OOM in production only now, with
+  the exact conditional no-memory cause and full negative controls;
+  redo the actual booted release candidate in both guest policies.
+- [ ] F13: only after the post-enable matrix PASS, record release
+  evidence, keep production ON; on failure revert safely.
+
 ## v1279: correct Linux toolchain and complete F11 exact-revision regressions
 
 - [x] Isolate Linux v1112 failed-RUN guest crash at the first
@@ -975,7 +992,7 @@ not permission to bypass the final combined regression. See
   remains recorded separately; the v1190 checker is testkit-only.
   Final *exact candidate* source/diagnostic rerun stays mandatory
   under A04/F02/F11; no production OOM change is authorized.
-- [ ] F11: Explicitly review and sign off S/A/B/C, all applicable
+- [x] F11: Explicitly review and sign off S/A/B/C, all applicable
   D/E tasks and F02-F10 excluding retired F05; never infer activation readiness from one
   matrix PASS or from unreviewed checkbox changes.
 - [ ] F12: Only after F11, change default-off requester OOM in the

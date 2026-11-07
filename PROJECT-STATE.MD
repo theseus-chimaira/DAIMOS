@@ -1,3 +1,39 @@
+## 2026-11-07 v1284: F11 exact-source OOM release-candidate review CLOSED
+
+The frozen S07/S08 256K PDP-6 KCC DSK/D6FS candidate has completed
+all mandatory preactivation OOM tests and independent F11 integration
+review. Current DAIMOS `f110be06` has byte-identical production
+`system/kernel` and `system/boot` to the frozen `3978b50a` source;
+the F03 Android worktree used frozen testkit `69830c9`. Both Android
+and Linux exact-source **F03 14/14 full-system cases PASS**, including
+both disposable OOM policies for BRK, invalid causes, failed RUN,
+MM slots, fragmentation, RUN cause and 24-PID reuse. Evidence SHA256:
+Android `c167a89c44ef2480c0c9d91f92e588b15d1a4c9e928a75113c6c2bca1f62e19e`;
+Linux `0252a5900c7e9850e4c6251e7d52a01898c3b9e1dff5f26e1af5b88d832bb88b`.
+The uninterrupted Android `P0D_FULL=1` matrix completed 18 native
+stages, the allocation-free v1087 release graph and **all 17 genuine
+booted physical owner/teardown guests**, with in-order PASS and normal
+exit. Archive `$TMPDIR/daimos-f11-android-p0d-v1284-r1.tar.gz`, SHA256
+`0565d7e879b432e728ea3262e3cd65774126fda129fe27c6b38ef1233a5819c9`.
+An initial Linux P0-D monolithic run suffered an external simulator
+SIGKILL/exit137 during v1121; it is **not** called an uninterrupted
+PASS. The nine earlier physical cases had completed, and v1121 plus
+seven remaining guests were independently rerun with PASS, with the
+initial failure preserved: SHA256
+`901326d12c562d7bdb313c05009b370b33219cd45312ffea1defae7c5b47685d`.
+Both F07 64-slot/127-descriptor/held-provider modes and E13 exact-
+revision independent simulator/media hosts remain CLOSED. F10 diagnostic
+scan, F04 exact MM causes, v1260 no-side-effect feasibility, v1092/v1282
+provider wait quarantine, and v1123 scope/call-graph controls PASS.
+
+**F11 CLOSED, 62/64 mandatory gates complete.** This is an explicit
+release-candidate review, not evidence that production OOM has already
+been switched on: `PROC_OOM_BRK_ENABLED_V1000` remains **0**. Next are
+F12 guarded production activation, complete both-policy regression,
+then F13 post-enable signoff/revert on any failure. Raw MEMFS XIP
+RUN/EXEC and static 16K KCORE+MRES optimization remain separate.
+See `pdp10-doc/KERNEL/OOM-F11-RELEASE-ACCEPTANCE-V1284.MD`.
+
 ## 2026-11-07 v1280: both 64-slot F07 OOM policies pass the mandatory provider barrier
 
 Full 256K KCC DSK/D6FS F07 64-slot guests now PASS with the original
