@@ -1,3 +1,39 @@
+## 2026-11-07 v1340: independent release and post-release swap progress
+
+The booted 256K KCC PDP-6 v1338 test reached real swap-in
+MM_ERR_NOMEM/no-eligible-exchange-partner cooldown. A genuinely
+scheduled spinner (slot 5) observed cooldown=1 via a read-only
+diagnostic syscall and invoked exactly one original typed-owner
+release. Production `mm_free` released all four 8K-word extents;
+production `mm_unpin` released the real spinner VM pin. Source-
+linked counters: queries=273, release calls=1, released=1,
+prepared=4, freed=4, count=0, error=0, spinner pin base=0.
+Immediately after release, successful swap-ins increased from
+13 to 16 and then 18 (swap-outs 31 to 34), with no fatal swap-in
+or exchange. This closes the previously missing **booted real-MM
+independent release plus immediate forward-progress subcase**.
+
+**Overall no-partner full-system liveness still OPEN.** The guest
+then remained after the INIT `^` milestone without completing its
+remaining process lifecycle. It was interrupted after 20 samples,
+without final HALT or complete MM/backing cleanup. No KCORE bug
+is established by this unresolved late stall.
+
+The original v1338 read-only sampler dropped genuine guest `@%&`
+bytes emitted after Ctrl-E but before SIMH's stop acknowledgment.
+Testkit v1340 (`e9dc25c`) fixes this host diagnostic boundary,
+retaining those bytes in the canonical guest stream while excluding
+debugger prompts. The reproduction selftest, normal/early HALT,
+linked process inspection and truncated-postflight controls PASS.
+The next full guest observes the production `proc_timer_next`
+frontier to distinguish a timer wake issue from another dependency.
+Original source and traces, validated manifest:
+`$TMPDIR/daimos-swap-independent-release-v1340-evidence-r1.tar.gz`,
+SHA256 `cb5ebee862a0129e9955ef3beaba4635bca8f796aeda19166855b5241f63573e`.
+Documentation `pdp10-doc/KERNEL/SWAP-INDEPENDENT-OWNER-RELEASE-V1340.MD`
+(`311121c`). No production KCORE/MM/PI6/SWAP/MRES edits or RAM growth;
+v1208/v1211 fallback remains rejected.
+
 ## 2026-11-07 v1336: real 256K no-partner pressure observed, recovery open
 
 The retained, source-linked v1335 live 256K KCC PDP-6 guest actually

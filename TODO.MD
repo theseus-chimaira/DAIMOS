@@ -1,3 +1,24 @@
+## v1340: independent no-partner recovery subcase PASS, final cleanup OPEN
+
+- [x] Booted 256K PDP-6: one real swap-in `MM_ERR_NOMEM`, one no-
+  partner cooldown, independent slot-5 user sees cooldown=1 and
+  invokes exactly one original typed owner release; four 8K-word
+  real MM owner extents freed, spinner MM pin released, owner/error
+  counters 0; normal swap-in then grows from 13 to 18. No kernel
+  code, additional permanent memory, or speculative fallback.
+- [x] Correct testkit SIMH Ctrl-E race dropping guest `@%&`
+  immediately before stop acknowledgment; v1340 selftest and
+  early-HALT/truncated-postflight controls PASS (`e9dc25c`).
+- [x] Preserve v1338 source-linked traces and SHA256 evidence:
+  `$TMPDIR/daimos-swap-independent-release-v1340-evidence-r1.tar.gz`,
+  `cb5ebee862a0129e9955ef3beaba4635bca8f796aeda19166855b5241f63573e`.
+- [ ] Complete v1340 source-linked `proc_timer_next` frontier
+  investigation following INIT `^`: sleeping process wakeups,
+  run queue, final requester/provider milestones, 18 TERM/WAIT,
+  full guest HALT and zero outstanding MM/backing resources.
+- [ ] Do not promote immediate post-release swap progress to
+  full-system no-partner acceptance until strict final verification.
+
 ## v1336: genuine booted no-partner shortage observed; recovery still OPEN
 
 - [x] Verify booted 256K v1335 live source-linked MM pressure: 93

@@ -1,3 +1,22 @@
+## 2026-11-07 v1340: genuine independent MM release and swap recovery
+
+The booted 256K F07 guest v1338 entered the authentic no-partner
+allocation-pressure cooldown (one MM_ERR_NOMEM, no exchange/fatal
+swap-in). The pinned slot-5 user independently read cooldown=1,
+freed four original owner-075 8K MM extents through production
+`mm_free`, and unpinned its own VM through production `mm_unpin`.
+All source-linked owner/pin counters reconcile. Normal swap-in
+success rose from 13 to 18 afterward, proving immediate resumed
+physical swap activity after independent release.
+
+The same full guest stalled subsequently after INIT `^`; no final
+HALT, provider/OOM completion, 18 TERM/WAIT or zero-backed cleanup
+has passed, so overall liveness remains OPEN. The testkit v1340
+sampler fixes loss of guest output at Ctrl-E/SIMH stop boundary
+(selftests PASS) and adds read-only `proc_timer_next` for diagnosing
+the late wait. No production KCORE or MRES code or RAM change.
+See `pdp10-doc/KERNEL/SWAP-INDEPENDENT-OWNER-RELEASE-V1340.MD`.
+
 ## 2026-11-07 v1336: real guest swap-in shortage/no-partner branch
 
 The previously native-only no-partner pressure path has now been
