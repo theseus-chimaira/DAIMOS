@@ -1,3 +1,33 @@
+## 2026-11-07 v1309: live swap-pressure tracing, full no-partner still open
+
+Production requester-only OOM remains enabled and accepted (F12/F13
+64/64) on the strict 256K KCC PDP-6 DSK/D6FS profile. No production
+kernel, scheduler, MM, swap or size-optimization source changed.
+The original 16K-BSS 24-process F07 physical guest on `f78145db`
+completed all 18 RUN/reap lifetimes, requester OOM and final MM
+cleanup: 41 real swap-ins, 0 allocator pressure, 0 no-partner
+cooldowns. A separate 24K-BSS guest admitted all 18 extra children
+and was stopped deliberately before its old 900s timeout and before
+cleanup: 49 swap-outs, 33 swap-ins, 0 swap-in MM failures and 0
+cooldowns. This INTERRUPTED run is not accepted as a completed guest.
+
+The daimos-testkit `5e23ff0` adds v1303 physical counter and
+negative-mutation classifier, v1304 disposable 24K pressure fixture,
+and v1306 live read-only SIMH sampler. Its PTY Ctrl-E/EXAMINE/GO
+protocol and two-sample real PDP-6 smoke PASS. Separate
+`simh.out.raw-v1306.log` and `simh-sampler.log` hold debugger output;
+`simh.out` retains the strict F07 guest-only record. Testkit `3fa4792`
+fixes interactive `sim> ` prompt spill into post-HALT resource
+records; a protocol selftest verifies cleanup and untouched boot.ini.
+The v1308 24K full guest with 15 periodic samples was still active at
+this checkpoint and has NO accepted final result yet. Do not count
+an interrupted, unexercised, or short diagnostic as proof of
+full-system no-partner forward progress. The native v1301 no-partner
+branch test stays PASS, while actual full-system no-partner liveness
+remains OPEN. Do not merge the rejected v1208/v1211 fallback.
+The new operator reference is
+`pdp10-doc/KERNEL/SWAP-SIMH-LIVE-TRACE-V1309.MD` (`9ff31eb`).
+
 ## 2026-11-07 v1302: current-source swap-in pressure audit (partial)
 
 Production DAIMOS `283b54dc`, with the v1298 requester OOM release

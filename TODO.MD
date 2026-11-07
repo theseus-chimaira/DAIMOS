@@ -1,3 +1,24 @@
+## v1309: live no-partner pressure trace and acceptance boundary
+
+- [x] v1303 physical 256K F07 evidence parser and five negative
+  mutants: exact ordinary-swapping and unexercised-pressure outcomes
+  distinguished, with exit 3 for incomplete/no-pressure evidence.
+- [x] v1304 isolated 24K-BSS process-image full-guest workload:
+  original 900-second diagnostic run admitted all 18 children and
+  counted 49 actual swap-outs and 33 swap-ins, but was interrupted
+  before TERM/WAIT; this is NOT a full-guest PASS.
+- [x] v1306 PTY periodic read-only live PDP-6 PC/scheduler/swap/MM
+  probe: two real SIMH samples and interrupt/examine/GO/post-HALT
+  protocol selftest PASS. Guest transcript and raw debugger output
+  separated; v1309 strips PTY prompts after HALT. Testkit commits
+  `5e23ff0`, `3fa4792`; documented in pdp10-doc `9ff31eb`.
+- [ ] v1308 24K guest with periodic sampler: at this checkpoint
+  still running; full original strict F07 completion not accepted.
+- [ ] Genuine 256K full-system swap-in MM pressure with **no eligible
+  exchange partner** and later bounded progress/cleanup: NOT
+  demonstrated by successful ordinary swap-outs and swap-ins.
+  No production kernel change or speculative fallback authorized.
+
 ## v1302: swap-in pressure/current-source regression (PARTIAL)
 
 - [x] Clean production v852 256K PDP-6 GCC/DSK/D6FS physical

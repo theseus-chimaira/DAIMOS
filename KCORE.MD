@@ -1,3 +1,22 @@
+## 2026-11-07 v1309: read-only SIMH swap progress observation
+
+The kernel remains unchanged since production OOM activation.
+Testkit v1306 now observes the exact linked PDP-6 KCORE PC,
+scheduler timer/cursor, swap-in/out service counts, actual MM
+allocation failures, exchange/cooldown state and backing ownership
+at bounded host-selected intervals using SIMH Ctrl-E/EXAMINE/GO.
+Its separate raw and guest logs preserve the original F07 post-HALT
+acceptance contract. The operator procedure and acceptance limits
+are in pdp10-doc `KERNEL/SWAP-SIMH-LIVE-TRACE-V1309.MD`.
+
+The original full 24-process 16K-BSS physical F07 guest PASSes
+with 41 swap-ins and no pressure/cooldown. An exploratory 24K-BSS
+guest counted 49 swap-outs and 33 swap-ins, but was interrupted
+before its complete release/cleanup checks; no full acceptance.
+The concurrently running v1308 long diagnostic is not yet accepted
+at this checkpoint. Full-system no-partner liveness remains open,
+with no evidence warranting v1208/v1211 fallback RAM or code growth.
+
 ## 2026-11-07 v1302: swap-in pressure and no-partner validation
 
 Functional acceptance of production requester-only OOM remains
