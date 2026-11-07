@@ -1,3 +1,19 @@
+## 2026-11-07 v1320: native swap-in via production DEVICE gateway
+
+The native PDP-6 swap-in transaction now executes the unchanged
+`fs_mres.s` backing DEVICE gateway and its eight-sector dispatch
+loop, with only the terminal DSK270 hardware read stubbed. The
+test verifies physical sector translation and 0200-word buffer
+progression, correct RESIDENT payload/owner and bitmap cleanup.
+Both first- and third-sector I/O failure preserve the DISK image,
+undo process MM allocation and report one TERM. A buffer-advance
+mutation is rejected by executable PDP-6 assertions. Testkit
+`d65899c`, docs `pdp10-doc/KERNEL/SWAP-DEVICE-GATEWAY-NATIVE-V1320.MD`.
+
+This does not change production KCORE or MRES RAM. Booted 256K
+full-system no-partner liveness remains OPEN. No swap fallback
+has been added; no kernel size optimization was attempted.
+
 ## 2026-11-07 v1318: full native production swap-in transaction
 
 There is no production KCORE/MRES source, footprint, ABI or runtime

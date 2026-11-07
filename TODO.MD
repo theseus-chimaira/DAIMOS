@@ -1,3 +1,22 @@
+## v1320: production DEVICE backing gateway in native swap-in test
+
+- [x] Execute the production `fs_mres.s` DEVICE `backstore_read`
+  bridge during the native source-authentic `proc_swap_in` test;
+  DSK270 hardware dispatch remains a controlled test endpoint.
+- [x] Verify eight sector translations (021..030), sequential
+  physical VM buffer progression in 0200-word increments, correct
+  restored image, backing bitmap release and RESIDENT publication.
+- [x] First- and third-sector hardware errors exercise production
+  MM unpin/free rollback, DISK/backing retention and one TERM.
+- [x] Executable PDP-6 mutation disabling gateway buffer advancement
+  is rejected. Testkit `d65899c`; docs `a4fa226`.
+- [x] Versioned validated evidence:
+  `$TMPDIR/daimos-swap-device-gateway-v1320-evidence-r1.tar.gz`,
+  SHA256 `c63d3f14a09d0873bb4958bbf40de7dd61bff84c3a4cf7901d1c54e06348bbab`.
+- [ ] Full booted 256K no-partner liveness with actual hardware
+  read, independent process progress and exact MM/backing cleanup.
+  No production kernel RAM growth or v1208/v1211 fallback.
+
 ## v1318: native production swap-in transaction and rollback accepted
 
 - [x] Real physical MM occupancy produces native typed allocation

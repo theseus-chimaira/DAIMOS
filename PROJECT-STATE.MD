@@ -1,3 +1,34 @@
+## 2026-11-07 v1320: native DEVICE-backed swap-in gateway PASS
+
+Testkit `d65899c` extends the already accepted native v1317
+production `proc_swap_in`/MM/pinning/rollback test through the
+unchanged `fs_mres.s` DEVICE backing gateway. A test-only DSK270
+hardware endpoint verifies eight translated sectors, logical
+backing blocks 1..8 mapped to physical sectors 021..030, and
+0200-word physical destination progression per sector. The
+production swap-in transaction successfully allocates/pins,
+transfers the image via the gateway, unpins, publishes RESIDENT
+mode, frees the backing bitmap and offers READY_ONCE. Both a
+first-sector and a third-sector read error exercise full production
+MM rollback, preserve the DISK record/bitmap, and invoke one TERM.
+An executable PDP-6 mutation suppressing the production gateway
+buffer increment is correctly rejected. The v1317 test suite is
+also rerun by the new fixture, and the v1319 target PASSes twice.
+
+This is **native integration, not full-system acceptance**: actual
+DSK270 hardware, guest PI6 scheduling, independent user process
+progress and genuine exchange eligibility are still test-controlled.
+Production kernel source, resident footprint and v1208/v1211
+fallback policy remain unchanged. See
+`pdp10-doc/KERNEL/SWAP-DEVICE-GATEWAY-NATIVE-V1320.MD` (`a4fa226`).
+Evidence `$TMPDIR/daimos-swap-device-gateway-v1320-evidence-r1.tar.gz`,
+SHA256 `c63d3f14a09d0873bb4958bbf40de7dd61bff84c3a4cf7901d1c54e06348bbab`.
+
+**OPEN:** booted 256K physical no-partner swap-in pressure followed
+by independently runnable progress, real disk restoration, and final
+leak-free termination or recovery. Do not count the native test as
+closing that acceptance gate.
+
 ## 2026-11-07 v1318: production swap-in native commit/rollback PASS
 
 Production `system/kernel` remains unchanged from the accepted v1315
