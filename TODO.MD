@@ -1,3 +1,25 @@
+## v1314: real-MM no-partner native recovery, full guest still pending
+
+- [x] Production MM allocator on PDP-6 reports actual typed -1 when
+  a real 010000-word arena is filled by a kernel-dynamic extent;
+  pending slot 2 requests 02000 words. Two FS and one process
+  reclaim calls fail, as intended by the controlled physical owner.
+- [x] Unmodified slot-0 service scans all three rejected candidates,
+  preserves disk ownership, avoids TERM, and sets cooldown 0100.
+- [x] Exact production `mm_free` releases the independent owner;
+  subsequent production MM allocation succeeds, checks extent owner
+  2 and grants READY_ONCE. Test-only disk and exchange admission
+  stubs are explicitly excluded from full-system acceptance.
+- [x] Executable PDP-6 mutations (pressure classification, FS
+  reclaim, swap reclaim, cooldown) all rejected; neighboring v756,
+  v1300/v1301, v1111 and v1260 remain PASS. Testkit `d40a1158`.
+- [x] v1314 source/map/positive/four-negative evidence SHA256
+  `c30cccf491176a4488ffcf8933dff0b0485ce85dc198c3d10db60e06c884ed92`.
+- [ ] Full booted 256K no-partner liveness including real swap disk
+  read, retry after PI6 clock delay, resident owner scheduling,
+  backing admission, transaction rollback and leak-free cleanup.
+  Historical v1208/v1211 fallback remains excluded.
+
 ## v1312: completed live F07 guest, strict offline postflight replay
 
 - [x] v1308 real 256K KCC PDP-6 24K-BSS trace: all 15 live samples,

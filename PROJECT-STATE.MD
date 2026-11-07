@@ -1,3 +1,44 @@
+## 2026-11-07 v1314: native real-MM no-partner/retry integration PASS
+
+Production DAIMOS `9475f50a` remains unchanged in `system/kernel`.
+The new daimos-testkit `d40a1158` v1313 native PDP-6 test extracts
+the authoritative MM find-fit/noreclaim/bounded allocator, arena
+feasibility, compaction and free code and unchanged slot-0 swap
+service. A full 010000-octal-word managed physical arena is occupied
+by a real kernel-dynamic extent owned by slot 3, while a pending
+swapped RUN process (slot 2) requests 02000 words. Production MM
+returns typed MM_ERR_NOMEM (-1) after exactly two filesystem and
+one process reclaim calls (all three intentionally refuse to free
+the owner). The production slot-0 service checks three candidates,
+finds no eligible exchange, retains the backing image, avoids TERM,
+and sets the 0100-octal cooldown. A genuine `mm_free` releases the
+original typed/owned extent; a subsequent service request allocates
+the process extent with correct owner 2 and grants READY_ONCE.
+
+The actual disk transfer/publication wrapper and candidate-admission
+decisions are **test stubs**, not production swap-in implementation.
+This is therefore a real-MM + production-scheduler-service *native*
+recovery result, NOT a full-system physical swap-in/deadlock or
+backstore rollback acceptance. Four executable PDP-6 mutations
+(collapsed NOMEM, missed FS reclaim, missed process reclaim and
+missing cooldown) all fail their assertions. Neighboring native
+v756, v1300/v1301, v1111 and v1260 remain PASS. No kernel source
+or RAM overhead change is justified.
+
+The versioned source/map/report and negative-case evidence is
+`$TMPDIR/daimos-swap-real-mm-no-partner-v1314-evidence-r1.tar.gz`,
+SHA256 `c30cccf491176a4488ffcf8933dff0b0485ce85dc198c3d10db60e06c884ed92`.
+The archive's internal manifest verifies. Final documentation is in
+`pdp10-doc/KERNEL/SWAP-NATIVE-REAL-MM-NO-PARTNER-V1314.MD`.
+
+**OPEN:** a booted 256K guest must naturally or through a temporary
+physical occupancy fixture experience actual swap-in MM pressure
+with no valid exchange partner, preserve runnable independent
+processes through the PI6 cooldown, then perform authentic
+backstore swap-in and complete cleanup/rollback. Do not substitute
+v1313's mocked disk completion for this gate, or merge historical
+v1208/v1211 fallback without a genuine reproduced kernel defect.
+
 ## 2026-11-07 v1312: completed F07 trace, offline full postflight replay
 
 Production DAIMOS `417fbade` (kernel source unchanged from `f78145db`)

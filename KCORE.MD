@@ -1,3 +1,21 @@
+## 2026-11-07 v1314: swap-in actual MM shortage native acceptance
+
+No production kernel memory or swap algorithm changes in v1314.
+The native PDP-6 testkit `d40a1158` now exercises the unchanged
+production physical MM allocator plus slot-0 swap service under
+a real occupied 8K-word arena, instead of fabricating an MM error.
+The 1K-word pending process extent obtains MM_ERR_NOMEM after the
+bounded reclaim attempts; all three exchange candidates are
+rejected, the disk-backed process retains its record and cooldown
+0100, and no TERM occurs. A real MM free of the occupying extent
+allows allocation, correct process ownership and one-shot dispatch.
+Four executable negative mutations are rejected, and adjacent
+native MM/swap tests pass. Test stubs still model backstore transfer
+and exchange admission, so this does not close **full-system**
+no-partner forward-progress, PI6 retry or disk rollback acceptance.
+See `pdp10-doc/KERNEL/SWAP-NATIVE-REAL-MM-NO-PARTNER-V1314.MD`.
+The v1208/v1211 fallback and KCORE size optimization stay deferred.
+
 ## 2026-11-07 v1312: full live-swap guest trace and replay
 
 On the same production-source kernel, the fully traced 24K-BSS
