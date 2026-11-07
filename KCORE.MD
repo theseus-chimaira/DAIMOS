@@ -1,3 +1,16 @@
+## 2026-11-07 v1330: no-partner full-guest pin strategy (zero growth)
+
+The v1323 booted 256K 24K-process F07 guest successfully swapped
+51 images out and 35 in but failed to allocate even a new 1K
+APR-aligned, typed MM test-owner extent after 18 child admissions.
+Its explicit `!t` failure and zero real swap-in MM pressure/cooldown
+show a test-setup limitation, not a production kernel defect.
+Existing resident image pinning through unchanged production MM
+(`mm_pin`/`mm_unpin`, testkit `1a0693e`) is the v1329 alternative.
+It avoids any synthetic owner allocation or fabricated MM return,
+but was still awaiting full-guest final classification at checkpoint.
+No KCORE/MRES source or RAM growth, nor historical fallback, applies.
+
 ## 2026-11-07 v1325: physical owner pressure sizing; no code growth
 
 The booted v1322 256K PDP-6 guest completed 18 real child admissions

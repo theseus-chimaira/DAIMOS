@@ -1,3 +1,35 @@
+## 2026-11-07 v1330: 1K late owner failure; native resident pins under test
+
+The booted v1323 256K F07 guest completed all 18 additional
+24K-image child admissions and 51 ordinary swap-outs / 35 swap-ins.
+Even one test-only APR-02000-aligned 02000-octal-word (1024-word)
+MM_TYPE_KERNEL_DYNAMIC owner extent was refused by the real
+nonreclaiming MM allocator at the **late** owner-reservation stage.
+INIT printed `!t` and HALTed. Its final counters: test owner
+prepared=0, count=0, freed=0, error=-1; actual swap-in MM pressure,
+exchange and no-partner cooldown all zero. Normal cleanup did NOT
+execute; 3440 backing blocks remained at this early fatal test HALT.
+This is a completed **negative setup** result, not production swap
+liveness acceptance or evidence of a kernel defect. The original
+source/map/logs and validated manifest are retained in
+`$TMPDIR/daimos-swap-physical-owner-v1323-setup-failure-r1.tar.gz`,
+SHA256 `04944fa347f6b259ca779ea96126ab440fa1eeeb9081794b56f0ed4d1bf3cb25`.
+
+Late owner allocation cannot force real swap-in resource pressure
+because physical MM is already too full for the test reservation.
+Testkit `1a0693e` instead uses genuine production `mm_pin` and
+`mm_unpin` on existing resident process extents, keeping the
+actual requester excluded so its OOM lifecycle remains possible.
+The v1329 source-authentic full-guest wrapper `5a0adb8` uses the
+new v1326 SIMH prompt-safe sampler (`e436459`). Its 256K booted
+guest had started and **no final no-partner outcome** was available
+at this checkpoint. Preflight PASS is not full-system acceptance.
+
+Authoritative documentation: `pdp10-doc/KERNEL/SWAP-PHYSICAL-MM-OWNER-ADMISSION-V1330.MD`
+(`bbfeefd`). Production KCORE, MM, scheduler, swap MRES and permanent
+RAM unchanged. The speculative v1208/v1211 fallback stays excluded.
+Full-system physical no-partner liveness remains OPEN.
+
 ## 2026-11-07 v1325: 8K owner admission negative and 1K full guest
 
 The completed v1322 disposable 256K PDP-6 guest reached all 18

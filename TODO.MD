@@ -1,3 +1,24 @@
+## v1330: late MM owner test failed; existing-resident-pin guest pending
+
+- [x] Complete v1323 genuine 256K F07 execution: 18 admissions,
+  51 swap-outs/35 swap-ins; one real 1024-word owner allocation
+  failed (`!t`), owner count=0/error=-1, swap-in MM failures=0,
+  no-partner cooldown=0 and exchange=0. Guest HALTed early with
+  3440 backing blocks still outstanding; NOT a completed guest PASS.
+- [x] Preserve exact negative traces and linked counters:
+  `$TMPDIR/daimos-swap-physical-owner-v1323-setup-failure-r1.tar.gz`,
+  SHA256 `04944fa347f6b259ca779ea96126ab440fa1eeeb9081794b56f0ed4d1bf3cb25`.
+- [x] New testkit v1326 (`1a0693e`) pins resident MM extents through
+  production `mm_pin` and unpins through `mm_unpin`; requester stays
+  excluded. v1329 wrapper (`5a0adb8`) selects the prompt-clean
+  sampler v1326 (`e436459`); full 256K guest preflight PASS.
+- [ ] Complete v1329 booted 256K test and require actual typed MM
+  swap-in pressure, no eligible exchange partner, PI6 cooldown,
+  independent user work, normal restore, and zero MM/backing leaks.
+  No partial sample or fixture-only test is valid acceptance.
+- [ ] Do not alter KCORE, MRES or add v1208/v1211 fallback unless
+  this controlled full-system test demonstrates a production defect.
+
 ## v1325: completed owner-8K negative; live owner-1K test pending
 
 - [x] v1322 real 256K guest reached all 18 additional child
