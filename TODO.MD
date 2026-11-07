@@ -1,3 +1,26 @@
+## v1302: swap-in pressure/current-source regression (PARTIAL)
+
+- [x] Clean production v852 256K PDP-6 GCC/DSK/D6FS physical
+  16-child post-INIT scheduler-pressure workload: PASS.
+- [x] v855 incoming-image, v958 failed swap-in rollback, v666
+  late swap-out rollback, and v757 pressure wiring: PASS.
+- [x] New daimos-testkit v1300 current-source no-partner cooldown,
+  candidate scan, fatal-vs-pressure, backing ownership and scheduler
+  gate guard: PASS; six unsafe mutations rejected.
+- [x] New native PDP-6 v1301 executes current slot-0 service with
+  allocator PRESSURE, no viable exchange candidate, then fatal and
+  successful restore: intact disk backing, 0100 cooldown, no wrongful
+  TERM and one-shot successful dispatch all PASS.
+- [x] Repair old v756 stale C-result assertion to inspect the native
+  assembler, reject four unsafe result-classification mutations;
+  native compile/result contract PASS.
+- [ ] Current-source genuine full-system no-equal-partner pressure
+  with eventual forward progress remains UNPROVEN. Require bounded
+  256K guest with verified pressure/cooldown counters, independently
+  runnable freeing owner, exact backing-space and MM state, plus
+  failure rollback and leak checks. Only change kernel code if this
+  reproduces a defect; do not merge v1208/v1211 fallback on inference.
+
 ## v1298: F12/F13 requester-only BRK OOM release accepted (2026-11-07)
 
 - [x] F12: production `PROC_OOM_BRK_ENABLED_V1000=1` and exact-source

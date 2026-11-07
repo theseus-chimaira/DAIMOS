@@ -1,3 +1,42 @@
+## 2026-11-07 v1302: current-source swap-in pressure audit (partial)
+
+Production DAIMOS `283b54dc`, with the v1298 requester OOM release
+already accepted, was rechecked for swap-in pressure and forward
+progress. No production kernel source was changed in this audit.
+The clean v852 real 256K PDP-6 GCC/DSK/D6FS scheduler-pressure
+guest completed a 16-child post-INIT pressure cycle and HALT: PASS.
+Native v855 incoming-image setup, v958 failed-unpin/free rollback,
+v666 late swap-out rollback and v757 scheduler-pressure wiring PASS.
+
+daimos-testkit v1300 now checks the current native no-partner
+candidate scan, pressure/fatal classification, cooldown, backing
+ownership and scheduler retry gate; six unsafe source mutations are
+rejected. Native PDP-6 v1301 executes the current slot-0 service
+with a synthetic allocator PRESSURE and every pair rejected: the
+backing remains owned, the request is consumed, cooldown is 0100,
+all three candidates are tested, and no TERM occurs. Separate real
+assembly service outcomes confirm fatal TERM and successful one-shot
+dispatch. The previously stale v756 test was repaired to check the
+native assembler rather than removed C implementation; compilation,
+the pressure/fatal contract and four unsafe mutations PASS.
+Testkit commit: `3cc0882a62d26a6a06e4a7904af4ff9d4e3f0f56`.
+Retained partial-acceptance logs and tool/source hashes:
+`$TMPDIR/daimos-swap-pressure-audit-v1302-r2.tar.gz`, SHA256
+`6a59446e07ec2dc5c6b16753ce789f04b26f26b43d1de7b9f39295b9555cd003`.
+
+This is NOT a full-system test proving eventual progress with no
+viable exchange partner. The clean v852 guest completed but did not
+prove that exact pressure branch was reached. The old v750-v754
+boot-directory traces and the v1208/v1211 experimental 16-word
+fallback do not establish a current production defect. A separate
+physical 256K no-partner pressure fixture must demonstrate actual
+forward progress or a reproducible stall, including no recursive
+reclaim, backing-space admission and transaction rollback, before
+any new production swap algorithm is authorized. The older v850
+trace wrapper also depends on obsolete DAS_REPO setup; its initial
+failure was a fixture/build dependency, not evidence of kernel
+failure. Functional completion remains OPEN; optimization deferred.
+
 ## 2026-11-07 v1298: F12/F13 requester-only OOM release accepted
 
 F12 production activation and F13 post-enable signoff are accepted

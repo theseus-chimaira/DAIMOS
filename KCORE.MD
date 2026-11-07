@@ -1,3 +1,21 @@
+## 2026-11-07 v1302: swap-in pressure and no-partner validation
+
+Functional acceptance of production requester-only OOM remains
+unchanged. The subsequent swap-in pressure audit used the clean
+`283b54dc` kernel and changed no production code. A fresh 256K
+PDP-6 16-child scheduler-pressure guest PASSes; current native
+incoming, rollback and service-wiring tests PASS. New daimos-testkit
+v1300 source/mutation guards and v1301 real native no-partner service
+test PASS, including preserving disk ownership and deferring retries
+without terminating a viable process. The obsolete C check in
+v756 is repaired to examine the current native assembly contract.
+
+The still-open question is full-system forward progress during real
+swap-in pressure with no exchange partner; none of these results
+establish that scenario. Historical v1208/v1211 fallback experiments
+remain rejected pending a demonstrable present-day failure and exact
+rollback acceptance. No KCORE feature size optimization is authorized.
+
 ## 2026-11-07 v1298: requester-only BRK OOM F12/F13 accepted
 
 The 256K KCC PDP-6 DSK/D6FS PCLK60 headless CTY writable-process
