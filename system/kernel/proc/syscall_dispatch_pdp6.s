@@ -695,7 +695,7 @@ native_sys_settime_call:
 native_sys_brk:
         move    1,2
         pushj   17,vm_space_brk_current
-        .equ    PROC_OOM_BRK_ENABLED_V1000,0
+        .equ    PROC_OOM_BRK_ENABLED_V1000,1
 .if PROC_OOM_BRK_ENABLED_V1000
         camn    1,[-1]
         jrst    native_sys_brk_check_cause_v1000
