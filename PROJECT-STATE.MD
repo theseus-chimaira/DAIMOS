@@ -1,3 +1,21 @@
+## 2026-11-08 v1369: functional grouped EXEC/PURE/TSFS acceptance
+
+`daimos-testkit/tests/validation/d6codec-runtime-exec-v1369` now
+includes a test-only grouped DXR2 writer preserving original
+image, entry, BSS/other flags, TX2 text metadata and relocation
+bitmap. Native PDP-6 tests link the *actual unchanged*
+`exec_load_process` and `proc_swap_reload_pure` decoder body
+against grouped v1367. A compiled two-instruction C89 marker loads
+and EXECUTES from VM core, while a linked 390-word tape MRES image
+decodes from 379 grouped words using short seven-word VFS refills.
+PURE immutable reload, corrupt stream and provider EOF rollback
+PASS. Actual `tsfs_read_words` read/copy/free tests PASS with a
+35-word grouped restart representing 0400 output words, including
+malformed grouped control cleanup. These are native function tests
+using deterministic provider/VM stubs, NOT a full operating-system
+boot or production format change. See
+`design/d6codec-functional-runtime-v1369.md`.
+
 ## 2026-11-08 v1368: real KCORE link and grouped runtime RAM measurement
 
 The versioned `daimos-testkit` v1368 linker experiments reproduce

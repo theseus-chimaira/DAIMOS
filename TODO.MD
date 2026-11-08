@@ -1,3 +1,19 @@
+## v1369: functional grouped EXEC/PURE/TSFS integration
+
+- [x] Generate versioned grouped DXR2 test executables without
+  changing header metadata or relocation bitmaps.
+- [x] Native actual `exec_load_process`: compiled C89 program runs
+  after grouped load; larger linked image, short VFS refills and
+  malformed/provider-error staged VM rollback all PASS.
+- [x] Native actual `proc_swap_reload_pure` decodes evicted immutable
+  grouped backing, rejects corrupt compressed input.
+- [x] Native actual `tsfs_read_words` decodes grouped restart extent
+  and releases the transient buffer on success or error.
+- [ ] Build an isolated complete grouped KCORE, KINIT, MRES, D6FS
+  root and userland image and cold boot through INIT/LOGIN/RUN.
+- [ ] Test real VFS/VM provider call stack, swap backing identity,
+  media failure recovery, and atomic host/runtime format switch.
+
 ## v1368: real grouped KCORE residency and MRES relocation
 
 - [x] Reproduce the production complete KCORE DXR/RIM/stream

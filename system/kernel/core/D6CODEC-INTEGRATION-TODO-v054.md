@@ -1,3 +1,16 @@
+## 2026-11-08 v1369 functional grouped runtime checkpoint
+
+Versioned test-only grouped DXR2 writer now preserves original
+executable metadata and relocation bitmaps. Native PDP-6 actual
+EXEC and PURE-reload code links to the staged grouped VFS adapter;
+compiled marker execution, 390-word linked DXR short refills,
+corrupt streams and provider-failure rollback PASS. Actual TSFS
+read/copy/free integration decodes a one-block grouped restart
+and frees transient memory on valid and invalid input. These tests
+use deterministic VFS/VM stubs, not real boot-media providers.
+Full grouped KCORE/KINIT/root filesystem cold boot and synchronous
+host/runtime production cutover remain OPEN. No D6LZ36 changes.
+
 # D6 codec v054 — complete integration TODO
 
 **Status:** integration specification, NOT implemented. The v053 encoder and

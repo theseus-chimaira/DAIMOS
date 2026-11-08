@@ -1,3 +1,16 @@
+## 2026-11-08 v1369: grouped EXEC/PURE/TSFS functionality
+
+The grouped DXR2 test writer preserves entry, TX2 metadata and
+relocations. Native PDP-6 tests execute the real `exec_load_process`
+and `proc_swap_reload_pure` body using a compiled program that runs
+after grouped VM loading, a larger current linked DXR with short
+VFS refills, and malformed/provider-error VM rollback. Native
+`tsfs_read_words` decodes and copies a grouped 0400-word restart,
+freeing temporary memory on success and error. All v1369 test
+cases PASS with controlled VFS/VM providers. Real cold boot, file
+providers and runtime media migration remain OPEN. The v1368
++216/+256-word linked KCORE increase is unchanged.
+
 ## 2026-11-08 v1368: full KCORE and MRES grouped link measurement
 
 The complete KCORE linker reproduces production output byte-for-byte
