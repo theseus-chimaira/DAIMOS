@@ -1,3 +1,13 @@
+## 2026-11-08 v1357: staged codec error-path stack acceptance
+
+The native v1357 failure-path suite covers malformed decoder input,
+physical input wrap and encoder literal, zero-run and repeated-word
+match-search capacity failures through the v055 wrapper. It verifies
+the error return and the 512-word CRT canary depth of 016 octal
+(14 decimal words). This agrees with the v1356 full-DXR stack
+measurement but does not establish worst-case nested kernel stack.
+No production KCORE source, D6LZ36 boot format or resident RAM changed.
+
 ## 2026-11-08 v1356: measured staged codec wrapper stack
 
 The native PDP-6 full-DXR v1356 fixture confirms 14 decimal stack

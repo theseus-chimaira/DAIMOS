@@ -181,3 +181,18 @@ This is a verified representative workload, **not** a proved maximum
 across all failures or nested KCORE consumer paths. No code or
 persistent RAM is added by the test. Continue explicit error-path
 and nested VFS/EXEC/TSFS stack measurement before activation.
+
+## v1357: failure-path wrapper stack regression (2026-11-08)
+
+Native testkit `d6codec-stack-fail-v1357` exercises malformed and
+truncated decoder control input, invalid physical input geometry,
+encoder short-capacity literal and zero-run failures, and a
+repeated-word match-search path that later exhausts output capacity.
+All calls return -1, and the 512-word CRT stack-canary observation is
+again 016 octal (14 decimal words) including the main-call frame and
+v055 wrapper. v1357 PASS and the existing v1356 full-DXR stack PASS
+with the same staged sources.
+
+No actual worst-case nested VFS/EXEC/TSFS production stack has yet
+been measured; these results must not be promoted to a universal
+stack bound or a release gate for the atomic format conversion.

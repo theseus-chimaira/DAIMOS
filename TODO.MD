@@ -1,3 +1,11 @@
+## v1357: staged codec malformed/capacity stack
+
+- [x] Native PDP-6 test staged decoder malformed/invalid-address
+  returns and encoder short-capacity literal, zero-run and match-search
+  failures with a 512-word canary stack: 016 octal / 14 decimal words.
+- [ ] Prove native stack upper bounds under real nested VFS/EXEC/TSFS
+  consumers and wider malformed-input coverage before codec cutover.
+
 ## v1356: staged native codec stack baseline
 
 - [x] Record 512-word-canary full-DXR v055 wrapper-inclusive stack:

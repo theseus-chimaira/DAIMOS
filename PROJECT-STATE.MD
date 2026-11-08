@@ -1,3 +1,14 @@
+## 2026-11-08 v1357: staged grouped codec error stack checks
+
+Native PDP-6 `d6codec-stack-fail-v1357` passes decoder malformed /
+truncated control data, physical input-wrap refusal, and three encoder
+capacity failures including a repeated-word match-search path. Every
+codec call returns -1 on the expected failure. The 512-word canary
+stack measured 016 octal (14 decimal), including the CRT call and
+v055 wrapper frame. The full-DXR v1356 baseline remains distinct.
+This is not a proof of maximum nested production stack or a grouped
+format cutover; production D6LZ36 and KCORE residency remain unchanged.
+
 ## 2026-11-08 v1356: staged codec native wrapper stack baseline
 
 Using the 512-word canary CRT and complete darc DXR v051 corpus, the
