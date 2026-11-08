@@ -1,3 +1,16 @@
+## v1363: direct-linked full-buffer grouped Stage-1 prototype
+
+- [x] Audit DSK/DRM/DTC/MTC/PTR: all already buffer the complete
+  compressed KINIT before decode. Generate smaller linked v053
+  Stage-1 alternatives and measure read-in text/BSS geometry.
+- [x] Native PDP-6 test generated handoffs with one-literal valid
+  grouped input and malformed-control rejection at load base 000060.
+- [ ] Validate output+compressed staging physical geometry *before*
+  media writes, then boot all five real loader variants with rebuilt
+  grouped KINIT images as part of an atomic producer/runtime cutover.
+- [ ] Runtime VFS streaming remains separate; no double-decoder
+  production KCORE footprint accepted without quantified net savings.
+
 ## v1362: grouped native streaming representative corpus
 
 - [x] Verify staged native grouped NEED_INPUT with current KCORE,

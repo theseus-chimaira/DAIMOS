@@ -1,3 +1,23 @@
+## 2026-11-08 v1363: staged direct-linked grouped Stage-1 alternative
+
+A full source audit establishes that all five production Stage-1
+loaders already stage their *entire* compressed KINIT input before
+decode. The grouped v053 complete-buffer decoder can therefore be
+linked directly into Stage-1 text without a resumable 26-word state
+or a BLT copy over old low-core address 000060. The testkit v1363
+generator builds test-only DSK/DRM/DTC/MTC/PTR alternatives, assembles
+their DXRs, emits Stage-0 read-in images at 000060 and verifies their
+low-core footprint. Text word sizes: DSK 432, DRM 424, DTC 229,
+MTC 195, PTR 224 (increases 82, 82, 89, 89, 85 respectively).
+No additional BSS is needed; previous BSS remains DSK/DRM 879,
+DTC/MTC 0, PTR 3. The v1363 native PDP-6 test harness checks each
+generated direct-linked KINIT handoff with valid and malformed
+grouped input. This is staged testing, **not** five physical-media
+Stage-0 boot successes, and no production Stage-1 or stored boot
+format has changed. KCORE resident codec, VFS provider refill and
+all runtime consumers still require synchronized cutover acceptance.
+See `design/d6codec-stage1-inline-v1363.md`.
+
 ## 2026-11-08 v1362: native grouped stream refill corpus
 
 The v1362 native testkit runs current-build KCORE, D6FS, MonitorFS,

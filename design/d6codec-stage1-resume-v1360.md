@@ -92,6 +92,18 @@ absolute targets, validated stack and refill/provider behavior, plus
 much more malformed-stream acceptance. Stage-1 installation and all
 five boot devices remain OPEN; do not activate the new format yet.
 
+## v1363 correction: Stage-1 itself does not require continuation
+
+A fresh audit of **all five real Stage-1 sources** confirmed that
+each buffers the entire compressed payload after the decoded KINIT
+window before decoding. A direct-linked complete-buffer v053 decoder
+is therefore smaller and simpler for Stage-1 than embedding this
+v1361 resumable engine. The 230-word streaming engine remains a
+candidate for **runtime VFS/provider** reads. See
+`design/d6codec-stage1-inline-v1363.md` for the validated staged
+linked-code alternative. Do not activate either path until the full
+host/runtime/image migration gate is complete.
+
 ## v1362: current-build native streaming matrix
 
 The v1361 native assembler also PASSes fifteen additional PDP-6

@@ -1,3 +1,16 @@
+## 2026-11-08 v1363: direct-linked grouped Stage-1 decoding
+
+Stage-1 never uses NEED_INPUT while decoding KINIT: every loader
+already buffers its complete compressed input. Test-only direct-
+linked v053 decoder alternatives assemble for all five boot modes
+without the fixed-low-core BLT; staged text sizes DSK 432, DRM 424,
+DTC 229, MTC 195, PTR 224 words, with zero new BSS. Native PDP-6
+tests exercise direct KINIT handoffs at load base 000060 with valid
+and invalid grouped streams. This eliminates the need for the
+230-word streaming v1361 *inside Stage-1 only*. Runtime VFS still
+requires a resumable solution; production D6LZ36 and permanent
+KCORE RAM remain unchanged.
+
 ## 2026-11-08 v1362: native streamed grouped codec corpus
 
 The staged v1361 assembler decoder now passes 15 representative

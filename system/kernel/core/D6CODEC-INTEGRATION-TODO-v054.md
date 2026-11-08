@@ -82,6 +82,15 @@ its active build in this staging checkpoint.
 
 ## Phase C — Stage-1, low-core and boot-image migration
 
+**v1363 design correction:** Every current Stage-1 loader already
+stages the entire compressed KINIT payload. A resumable grouped
+decoder is therefore not required *inside Stage-1*. Test-only v1363
+variants build and exercise the smaller direct-linked full-buffer
+v053 decoder without BLT copying it into the old `000060` slot.
+Runtime VFS still needs resumable refill handling. No production
+Stage-1 or KINIT format cutover has occurred.
+
+
 - [ ] Replace `system/stand/pdp6/common/decompressor.inc` and its fixed
   low-core installation contract (000060) with a **new-format** decoder.
   Inspect relocation, decoder size, boot-stage scratch placement, KINIT
