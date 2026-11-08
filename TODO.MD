@@ -1,3 +1,14 @@
+## v1361: staged native PDP-6 grouped resumable engine
+
+- [x] Implement separate assembler-only grouped NEED_INPUT decoder:
+  26-word state, 15 packed descriptors, native split-word/control
+  and KCORE host-golden prefix PASS. No production linkage.
+- [ ] Reduce/restructure measured 230-word text to satisfy an actual
+  Stage-1 low-core placement/relocation contract; measure caller
+  state, stack, provider refill and native invalid-stream cases.
+- [ ] Atomically migrate all Stage-1, KCORE and host producers only
+  after a complete boot/runtime acceptance gate.
+
 ## v1360: grouped decoder resumable interface staging
 
 - [x] Test a bounded descriptor-only resumable grouped-format host

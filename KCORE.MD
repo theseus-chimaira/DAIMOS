@@ -1,3 +1,14 @@
+## 2026-11-08 v1361: first native grouped resumable decoder
+
+A staged, nonproduction PDP-6 assembler decoder now implements +1
+NEED_INPUT across word-size refill windows with a 26-word caller
+state (15 descriptors). Its native literal, split zero descriptor,
+30-match stress, malformed/geometry and host-golden KCORE prefix
+tests PASS. Object size is 230 text, zero data/BSS, 82 relocations.
+It is not fixed-low-core relocatable/installed, C ABI safe or booted.
+Production D6LZ36 remains unchanged; see
+`design/d6codec-stage1-resume-v1360.md`.
+
 ## 2026-11-08 v1360: grouped low-core continuation host reference
 
 An executable host reference demonstrates a grouped-stream continuation

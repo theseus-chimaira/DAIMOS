@@ -1,3 +1,17 @@
+## 2026-11-08 v1361: staged native PDP-6 streaming grouped decoder
+
+`system/kernel/core/d6codec_stream_v1361.s` now provides a real native
+PDP-6 assembly NEED_INPUT grouped decoder, with a 26-word caller-owned
+state including 15 descriptor words. Native PDP-6 tests PASS the
+split literal/zero/control cases, maximum descriptor group, invalid
+control/output geometry, and host-golden KCORE 128-word prefix with
+one-word refill. The assembler object has 230 instruction words,
+no data/BSS and 82 relocations. This is staged-only: the source has
+NOT been linked into production KCORE, relocated to octal 000060,
+booted by any Stage-1 or used by VFS/EXEC/TSFS. Production D6LZ36
+and permanent RAM are unchanged. Native low-core footprint, provider
+refill, ABI and full boot/runtime acceptance remain OPEN.
+
 ## 2026-11-08 v1360: bounded grouped codec refill state model
 
 The testkit v1360 host reference now explicitly suspends and resumes a

@@ -66,3 +66,28 @@ it does not establish native PDP-6 register preservation or stack.
 5. Only then move all five Stage-1 loaders, KINIT production, VFS,
    EXEC/PURE and TSFS to the new format in a single synchronized
    rebuild. No permanent dual-codec fallback or mixed-format image.
+
+## v1361 native assembly implementation checkpoint (2026-11-08)
+
+`system/kernel/core/d6codec_stream_v1361.s` implements the first
+actual PDP-6 grouped-format resumable decoder, staged and unlinked.
+Its assembly-only ABI is AC1 = caller-owned 26-word state, AC2 =
+compressed input window, AC3 = window words, and AC0 = 0 exact complete,
++1 NEED_INPUT, or -1 malformed. AC2 and AC3 advance to the unread
+source position and remaining window words; AC4..16 are volatile.
+The state block includes exactly 15 packed descriptor words, plus
+control/group flags, progress, output geometry and source count.
+
+The native testkit v1361 simulator suite PASSes one-word refill
+windows for a literal, a split zero descriptor, a 30-match/15-word
+descriptor stress group, invalid group count, invalid physical output
+endpoint and an independently host-encoded 128-word KCORE DXR prefix.
+Native object inspection reports **230 text words, 0 data, 0 BSS and
+82 relocations**. No KCORE link or Stage-1 production boot was made.
+
+This engine is intentionally not claimed to fit the fixed `000060`
+installation region. Its 230-word text and 26-word caller state need
+measured address placement, position-independent relocation or linked
+absolute targets, validated stack and refill/provider behavior, plus
+much more malformed-stream acceptance. Stage-1 installation and all
+five boot devices remain OPEN; do not activate the new format yet.
