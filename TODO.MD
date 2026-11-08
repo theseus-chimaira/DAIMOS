@@ -1,3 +1,33 @@
+## v1351: booted 256K F07 owner lifetime and native codec baseline accepted
+
+- [x] Complete a **second fresh** physical 256K PDP-6 guest, with
+  original 18-child RUN/ACK and TERM/WAIT, requester OOM, protected
+  held provider, independent spinner count 8 >= 5, HALT, SIMH EXIT;
+  original v1075/v1150/v1207/v1336 postflight PASS.
+- [x] Prove one real no-partner `MM_ERR_NOMEM`/cooldown, 34 successful
+  swap-ins, zero exchanges, final zero swap and backstore blocks.
+- [x] Integrate source-linked two-phase owner-lifetime verification
+  in the *same* original guest postflight: four 8K extents and real
+  spinner pin before shortage, exact post-cooldown independent
+  free/unpin, prepared=4, freed=4, count=0, error=0 at HALT.
+  Six owner mutations plus two missing/duplicate mandatory-field
+  mutants rejected. Testkit `f156746`; docs `ac34157`.
+- [x] Preserve immutable v1351 evidence:
+  `$TMPDIR/daimos-swap-complete-lifecycle-v1351-evidence-r1.tar.gz`,
+  SHA256 `4ab99004129151bc475e7a5a577d39ebf336e6c290acb701696c5f1655e7e644`.
+- [x] Finish the reproducible staged grouped D6CODEC native
+  regression baseline: v045/v047/v048/v049/v051/v055 38/38 PASS,
+  testkit `239a191`, docs `ac34157`. Evidence:
+  `$TMPDIR/daimos-d6codec-native-baseline-v1350-evidence-r1.tar.gz`,
+  SHA256 `a1052dfa875e91213faf39da2643c9b87721492d2d365c281f98ddfe13ce5ea3`.
+- [ ] Next: atomic grouped codec production/boot/consumer cutover,
+  then remaining BSTORE, restricted XIP, compressed swap, grouped
+  integration and final permanent KCORE RAM minimization. The native
+  codec staging PASS is not a production cutover acceptance.
+- [x] No production KCORE/MM/FS/PI6/swap source modification, new
+  permanent RAM growth or historical v1208/v1211 fallback required
+  for the accepted 256K raw-swap no-partner workload.
+
 ## v1348: actual booted no-partner and original held-provider F07 CLOSED
 
 - [x] Complete the genuine 256K PDP-6 F07 full-system guest with all

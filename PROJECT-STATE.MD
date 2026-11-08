@@ -1,3 +1,39 @@
+## 2026-11-08 v1351: full 256K F07 plus exact MM owner lifecycle PASS
+
+A **fresh** v1349 256K KCC PDP-6 guest completed original strict
+v1075/v1150/v1207/v1336 F07 postflight and the independently added
+real MM owner-lifetime verifier in the same final guest/evidence
+manifest. Testkit `f156746` verifies 18 authentic child RUN/ACK and
+TERM/WAIT operations, requester-only OOM, held-provider recovery,
+real independent spinner progress (8 SLEEPs >= 5 required),
+HALT and SIMH EXIT. The production allocator returned one genuine
+swap-in MM_ERR_NOMEM with no eligible exchange partner; slot 0
+entered one cooldown. There were 34 successful swap-ins, zero
+exchanges and zero final swap/backstore blocks.
+
+The v1349 two-phase owner test observes four real 8K owner MM
+extents and a pinned resident spinner before pressure (sample 1),
+and exactly one independent owner/pin release after the real
+cooldown (sample 13); final prepared=4/freed=4/count=0/error=0.
+Six corrupted owner states and two missing/duplicate mandatory
+postflight-field cases are rejected. Existing strict provider,
+stack, MM and media checks remain active. The tested PDP-6 booted
+physical no-partner and full original F07 suite gates are CLOSED.
+
+Verified original guest and independent reports archive:
+`$TMPDIR/daimos-swap-complete-lifecycle-v1351-evidence-r1.tar.gz`,
+SHA256 `4ab99004129151bc475e7a5a577d39ebf336e6c290acb701696c5f1655e7e644`.
+Documentation `pdp10-doc/KERNEL/SWAP-FULLGUEST-OWNER-LIFECYCLE-V1351.MD`
+(`ac34157`). No production kernel changes, extra resident words,
+or speculative swap fallback were necessary.
+
+The next pre-optimization functional track, grouped D6CODEC, has
+a freshly verified staging baseline: native v045/v047/v048/v049/
+v051/v055 **38/38 PASS**, testkit `239a191`, docs
+`pdp10-doc/KERNEL/D6CODEC-NATIVE-STAGING-V1350.MD` (`ac34157`).
+This is NOT production activation; the atomic D6LZ36-to-grouped
+cutover and the other feature-freeze tracks remain OPEN.
+
 ## 2026-11-08 v1348: booted 256K physical no-partner F07 acceptance CLOSED
 
 The original strict v1075/v1150/v1207 256K KCC PDP-6 guest now

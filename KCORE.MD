@@ -1,3 +1,26 @@
+## 2026-11-08 v1351: complete physical 256K F07 owner lifetime PASS
+
+The fresh v1349 256K PDP-6 guest passed the original strict 18-child
+RUN/ACK/TERM/WAIT, physical requester OOM, held FS provider,
+independent spinner witness, HALT/EXIT and zero-leak F07 checks.
+One genuine swap-in MM_ERR_NOMEM/no-partner cooldown, 34 disk
+swap-ins, zero exchanges and zero final swap/backstore blocks were
+observed. The new phase-correct MM owner test confirms four actual
+8K test-owner extents with resident spinner pin pre-pressure,
+then exact independent typed owner/pin release after cooldown,
+final prepared=4/freed=4/count=0/error=0; all six negative owner
+controls and two mandatory-field schema controls are rejected.
+Testkit `f156746`, docs
+`pdp10-doc/KERNEL/SWAP-FULLGUEST-OWNER-LIFECYCLE-V1351.MD`.
+
+This definitively closes the booted physical no-partner swap-in
+liveness gate **for the tested 256K PDP-6 guest configuration**.
+No production KCORE, PI6, MM, FS, swap, MRES source, or permanent
+resident RAM changed. The old speculative fallback stays excluded.
+Other feature-freeze and memory optimization work remains OPEN;
+native grouped D6CODEC staging baseline v1350 is 38/38 PASS but
+does not activate its production replacement for D6LZ36.
+
 ## 2026-11-08 v1348: full physical no-partner PDP-6 suite accepted
 
 The original strict 256K KCC PDP-6 test, including all 18 real
