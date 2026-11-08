@@ -145,3 +145,25 @@ encoded-size arithmetic, full malformed-input fuzz or linked stack use.
 
 Neither encoder nor decoder is currently linked into production KCORE;
 the complete atomic grouped-format cutover remains OPEN.
+
+## v1355: conservative encoder buffer bound (2026-11-08)
+
+The staged encoder provides `d6codec_v053_max_encoded_words`:
+AC1 input word count, AC1 returned worst-case output count or -1;
+clobbers AC0/AC2/AC3, no stack or BSS. For N=0 the bound is zero;
+otherwise it is `N + ceil(N/30)` 36-bit words. The helper rejects
+counts with high address bits, negative counts and a result exceeding
+the physical 18-bit word address range. A caller still must validate
+the destination start plus its chosen capacity before compression.
+
+Proof: all complete groups contain 30 tokens, so group count is at
+most `ceil(N/30)`; each token consumes one or more source words and
+each descriptor pair fits in one word, so the output payload does
+not exceed N source words. There is no persistent scratch buffer.
+
+Testkit v1355 checks exact/one-word-short capacities for 30/31
+distinct literals, one-word zero-run capacity, native roundtrip,
+sentinel preservation outside the advertised destination region,
+and helper boundaries including maximum allowed N=253687. The
+combined v1355, v1353, v1354 and full-DXR v055 native PDP-6 tests PASS.
+No production linker, image or installed MRES has been changed.

@@ -1,3 +1,12 @@
+## v1355: staged grouped compressor output-capacity guarantee
+
+- [x] Prove the bound N + ceil(N/30) words for N input words (zero for
+  empty), implement an allocation-free native staged bound helper and
+  reject unrepresentable physical output counts. Testkit v1355 native
+  exact/short 30/31-token and zero-run cases plus edge counts PASS.
+- [ ] Measure worst-case codec stack/high-water, host/native parity,
+  and complete coordinated boot/consumer cutover. No production switch.
+
 ## v1354: staged grouped encoder physical bounds
 
 - [x] Validate source/capacity 18-bit geometry and reject source/output

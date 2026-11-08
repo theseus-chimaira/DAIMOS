@@ -1,3 +1,14 @@
+## 2026-11-08 v1355: staged D6CODEC worst-case output bound
+
+An optional no-stack staged native helper computes a conservative
+maximum encoded word count, N+ceil(N/30) (zero for N=0), rejecting
+unrepresentable 18-bit physical buffer capacity. Native PDP-6
+v1355 tests pass exact-capacity and one-word-short 30/31-token and
+zero-run inputs, full roundtrips and boundary count checks. Earlier
+v1353/v1354 bounds and the full-DXR v055 ABI corpus also PASS.
+Active D6LZ36 KCORE/boot and permanent RAM remain unchanged.
+See `design/d6codec-cutover-entry-v1352.md`.
+
 ## 2026-11-08 v1354: staged D6CODEC encoder geometry
 
 The grouped v053 encoder now rejects 18-bit physical source and output

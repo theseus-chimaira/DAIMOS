@@ -1,3 +1,19 @@
+## 2026-11-08 v1355: staged grouped codec buffer sizing
+
+The inactive D6CODEC encoder now exports an allocation-free PDP-6
+worst-case output word bound: zero for N=0, otherwise N+ceil(N/30),
+failing negative, over-18-bit and physically unrepresentable counts.
+The exact maximum representable case is input 253687 / output 262144
+words. Native testkit v1355 passes 30/31 distinct-literal exact and
+one-word-short tests, a one-word zero-run, physical bound edges and
+roundtrips. The earlier native v1353/v1354 tests and complete v055
+DXR ABI/corpus all PASS against the same isolated sources.
+
+This is staged-only work: no production grouped stream enablement,
+KCORE linkage, boot image, MRES or permanent RAM change. Native stack
+high-water, host/producer parity and atomic consumer/boot cutover
+remain OPEN. Details: `design/d6codec-cutover-entry-v1352.md`.
+
 ## 2026-11-08 v1354: staged D6CODEC encoder address bounds
 
 On the isolated grouped-codec branch, `d6codec_encode_v053.s` now

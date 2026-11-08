@@ -149,6 +149,34 @@ d6codec_v053_invalid_input:
         seto    1,
         popj    17,
 
+/* Compute a conservative encoded-buffer requirement without allocation.
+ * Input AC1: original 36-bit word count.
+ * Return AC1: words required, or -1 if not representable in one 18-bit
+ * physical address space. Clobbers AC0, AC2 and AC3; no stack/BSS.
+ *
+ * Every nonfinal group has 30 tokens, so there can be no more than
+ * ceil(N/30) control words. Each descriptor covers at least one input
+ * token and two descriptors fit in one word. Literal and descriptor
+ * payload together never exceed N words. N=0 has no header.
+ * The bound is safe, not an assertion that every input needs this much.
+ */
+        .globl d6codec_v053_max_encoded_words
+d6codec_v053_max_encoded_words:
+        jumpl   1,d6codec_v053_max_bad
+        move    0,1
+        lsh     0,-022
+        jumpn   0,d6codec_v053_max_bad
+        move    2,1
+        addi    2,035
+        idivi   2,036
+        add     1,2
+        camle   1,[01000000]
+        jrst    d6codec_v053_max_bad
+        popj    17,
+d6codec_v053_max_bad:
+        seto    1,
+        popj    17,
+
 d6codec_v053_word_probe:
         ; Search backward up to 128 existing source words. AC15 holds
         ; candidate distance; AC13 holds the longest match distance.
