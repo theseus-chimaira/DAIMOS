@@ -1,3 +1,16 @@
+## 2026-11-08 v1360: bounded grouped codec refill state model
+
+The testkit v1360 host reference now explicitly suspends and resumes a
+grouped compressed stream at arbitrary input-word boundaries using
+only a 15-word maximum descriptor scratch region and scalar decoder
+state. It passes 162 combinations (27 present-build kernel/MRES DXRs
+at six window sizes, including single-word refills), 60 malformed
+input/window combinations and a forced 15-descriptor group. The
+results are **host model only**: no PDP-6 low-core continuation has
+been assembled, installed or guest-booted. Production D6LZ36 remains
+fully unchanged. Native interface/relocation, stack and atomic image
+migration remain OPEN. Design: `design/d6codec-stage1-resume-v1360.md`.
+
 ## 2026-11-08 v1359: current DXR corpus grouped-codec parity
 
 Native testkit v1359 replaces the stale historical absolute-path

@@ -1,3 +1,13 @@
+## v1360: grouped decoder resumable interface staging
+
+- [x] Test a bounded descriptor-only resumable grouped-format host
+  state machine at all refill positions: 27 current DXRs x 6 windows
+  (162 successes), ten malformed examples x 6, and a maximum
+  15-descriptor group. Host reference PASS only.
+- [ ] Implement and measure the native PDP-6 low-core continuation,
+  including VFS/Stage-1 state preservation, stack and relocation.
+  No production decoder/format change is accepted yet.
+
 ## v1359: source-authentic grouped codec DXR parity
 
 - [x] Host reference roundtrip all 27 currently linked kernel/MRES

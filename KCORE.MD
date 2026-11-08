@@ -1,3 +1,13 @@
+## 2026-11-08 v1360: grouped low-core continuation host reference
+
+An executable host reference demonstrates a grouped-stream continuation
+that retains at most 15 descriptor words instead of buffering an entire
+group. Six input-window sizes including a one-word refill pass against
+27 present-build DXRs (162 successful runs) plus malformed streams.
+Native low-core assembler, measured relocation/stack and all production
+format migration are **not yet implemented**. See
+`design/d6codec-stage1-resume-v1360.md`.
+
 ## 2026-11-08 v1359: current linked DXR codec host/native parity
 
 The staged codec now has 27/27 present-build kernel/MRES DXR host
