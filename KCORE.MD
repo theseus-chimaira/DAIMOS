@@ -1,3 +1,11 @@
+## 2026-11-08 v1362: native streamed grouped codec corpus
+
+The staged v1361 assembler decoder now passes 15 representative
+native PDP-6 host-golden DXR prefix tests (KCORE, D6FS, MonitorFS,
+SWAP, tape at refill widths 1, 7, 64). All reconstructed 128-word
+prefixes compare exactly. Fixed-low-core relocation and full
+boot/runtime integration remain OPEN; production D6LZ36 is unchanged.
+
 ## 2026-11-08 v1361: first native grouped resumable decoder
 
 A staged, nonproduction PDP-6 assembler decoder now implements +1

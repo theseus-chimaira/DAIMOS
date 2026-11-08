@@ -1,3 +1,12 @@
+## v1362: grouped native streaming representative corpus
+
+- [x] Verify staged native grouped NEED_INPUT with current KCORE,
+  D6FS, MonitorFS, SWAP and tape host-golden 128-word prefixes under
+  1/7/64-word refill windows (15/15 PDP-6 PASS).
+- [ ] Reduce/relocate the native decoder, prove kernel caller ABI
+  and provider failure semantics, and migrate all five Stage-1
+  loaders and runtime consumers in a synchronized format cutover.
+
 ## v1361: staged native PDP-6 grouped resumable engine
 
 - [x] Implement separate assembler-only grouped NEED_INPUT decoder:

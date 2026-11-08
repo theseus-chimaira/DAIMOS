@@ -1,3 +1,13 @@
+## 2026-11-08 v1362: native grouped stream refill corpus
+
+The v1362 native testkit runs current-build KCORE, D6FS, MonitorFS,
+SWAP and tape DXR 128-word prefixes at compressed refill windows of
+1, 7 and 64 words, all 15/15 native PDP-6 tests PASS. These are
+independent host-generated grouped streams. The staged decoder remains
+230 text words with 26 caller-owned state words, not an installed
+fixed-low-core/C-ABI/boot decoder. Production D6LZ36 and permanent
+KCORE RAM remain unchanged.
+
 ## 2026-11-08 v1361: staged native PDP-6 streaming grouped decoder
 
 `system/kernel/core/d6codec_stream_v1361.s` now provides a real native

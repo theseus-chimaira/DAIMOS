@@ -91,3 +91,14 @@ measured address placement, position-independent relocation or linked
 absolute targets, validated stack and refill/provider behavior, plus
 much more malformed-stream acceptance. Stage-1 installation and all
 five boot devices remain OPEN; do not activate the new format yet.
+
+## v1362: current-build native streaming matrix
+
+The v1361 native assembler also PASSes fifteen additional PDP-6
+decoding regressions against independently host-generated compressed
+DXR prefixes. KCORE, D6FS, MonitorFS, SWAP and tape are each decoded
+with 1-, 7- and 64-word refill windows, reconstructing all 128 source
+words and checking exact completion. The v1362 testkit regenerates
+fixtures from the current linked build, not stale historical paths.
+This does not establish low-core relocation, full-image runtime or
+Stage-1 boot acceptance; production D6LZ36 is unchanged.
