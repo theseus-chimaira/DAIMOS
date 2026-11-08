@@ -1,3 +1,15 @@
+## 2026-11-08 v1365: staged grouped media boots to KINIT entry
+
+Actual linked 32,670-word KINIT, grouped into 29,023 compressed words,
+now reaches KINIT entry 053524 from all five simulated PDP-6 Stage-1
+device loaders: DSK, DRM, DTC, MTC, two-volume PTR. The tests boot
+through real Stage-0 paper tape and each corresponding virtual
+controller. Both oversized-image and malformed-compressed-control
+DECtape negatives halt before KINIT with unchanged output guard.
+These are test-only staged boot images; permanent KCORE RAM and the
+production D6LZ36 runtime/host format are unchanged. Actual
+post-entry KINIT and VFS/EXEC/PURE/TSFS grouped cutover remain OPEN.
+
 ## 2026-11-08 v1364: staged KINIT loader physical-geometry guard
 
 The generated grouped Stage-1 alternatives now test that the decoded

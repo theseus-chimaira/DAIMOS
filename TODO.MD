@@ -1,3 +1,16 @@
+## v1365: grouped KINIT full-image boot devices
+
+- [x] Rebuild the real linked full-profile KINIT, encode and verify
+  all 32,670 words through the independent host grouped reference.
+- [x] Boot isolated staged grouped KINIT through actual Stage-0 and
+  all five simulator media controllers to KINIT entry (5/5 PASS).
+- [x] Reject oversized header and zero-token grouped corruption on
+  actual DECtape controller media before KINIT or output writes.
+- [ ] Extend negative media/EOF checks to all devices; verify wider
+  reconstructed KINIT image coverage and post-entry boot behavior.
+- [ ] Complete synchronized grouped host producer, KCORE resident,
+  VFS, EXEC/PURE, swap and TSFS integration; no mixed-format fallback.
+
 ## v1364: Stage-1 physical geometry before first payload copy
 
 - [x] Implement staged PDP-6 word-accurate image/stack and

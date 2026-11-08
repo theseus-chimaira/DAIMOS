@@ -1,3 +1,21 @@
+## 2026-11-08 v1365: staged grouped full-KINIT media boots
+
+The testkit builds the real linked full-profile KINIT (`kinit.words`)
+and an independent host encoded, host roundtripped grouped stream
+without touching production boot media: 32,670 decoded words,
+29,023 compressed words, entry 053524 octal, staged end 0220375.
+With the v1363/v1364 test-only direct-linked/geometry-guarded Stage-1,
+all FIVE native PDP-6 Stage0/controller/full grouped stream/KINIT-entry
+boot cases now PASS: four-member DSK270 and DRM236 DBOOT, Type-136
+DECtape, Type-516 seven-track magnetic tape and Type-760 two-volume
+PTR. Two additional corrupt Type-136 images (oversized decoded header,
+invalid zero-token group) reject and halt without entering KINIT or
+writing physical output at 030000. Host impossible-geometry checks
+also reject without publishing images. These are **KINIT entry**
+breakpoints, not full OS startup. KCORE resident/VFS/EXEC/PURE/TSFS
+format remains D6LZ36 and there is no accepted full runtime cutover.
+See `design/d6codec-stage1-real-boot-v1365.md`.
+
 ## 2026-11-08 v1364: Stage-1 physical image admission (staged)
 
 Added unlinked `system/stand/pdp6/common/stage1-geometry-v1364.inc`

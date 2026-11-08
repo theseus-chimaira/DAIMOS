@@ -99,6 +99,14 @@ PASS; PTR also rejects an overlong first-tape segment before copying.
 No production image or decoder selection has been changed. Physical
 device boot and synchronized runtime cutover are still OPEN.
 
+**v1365 actual staged boot acceptance:** All five media paths now
+run the staged guarded direct-linked grouped decoder on a complete
+real KINIT: DSK270, DRM236, DTC, MTC and two-volume PTR (5/5
+KINIT-entry PASS). Two corrupt DECtape image cases halt before KINIT
+without writing 030000. These proofs stop at KINIT entry and do not
+activate grouped runtime consumers. The original D6LZ36 production
+images, callers and KCORE residence remain unchanged.
+
 
 - [ ] Replace `system/stand/pdp6/common/decompressor.inc` and its fixed
   low-core installation contract (000060) with a **new-format** decoder.

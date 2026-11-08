@@ -91,3 +91,14 @@ The grouped format must ultimately be enabled atomically across
 host producers, all Stage-1 loaders, KINIT, KCORE, VFS, EXEC/PURE
 and TSFS without a production mixed-format fallback. Permanent KCORE
 RAM and production D6LZ36 are unchanged by v1364.
+
+## v1365 subsequent boot validation
+
+The grouped v1364 pre-write guards and direct-linked v053 decoders
+are now exercised by five **actual SIMH PDP-6 controller boot paths**
+using a real complete linked KINIT image. DSK, DRM, DECtape, magnetic
+tape and two-volume paper tape all enter KINIT at 053524. Two corrupt
+DECtape media tests (oversized decoded length and zero-token control)
+halt before KINIT and leave 030000 untouched. See
+`design/d6codec-stage1-real-boot-v1365.md`. No production format
+selection or resident KCORE code has changed.
