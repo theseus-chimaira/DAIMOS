@@ -1,3 +1,13 @@
+## 2026-11-08 v1354: staged D6CODEC encoder geometry
+
+The grouped v053 encoder now rejects 18-bit physical source and output
+extent overflow and overlapping buffers before output stores. Native
+PDP-6 testkit v1354 and existing complete v055 corpus pass, including
+the expected negative witness on the previous staged encoder. Active
+D6LZ36/KCORE boot and resident code remain unchanged. See
+`design/d6codec-cutover-entry-v1352.md` for scope and outstanding
+production cutover gates.
+
 ## 2026-11-08 v1353: staged D6CODEC decoder bound checks
 
 The isolated v1352 D6CODEC integration branch now has a v1353 native

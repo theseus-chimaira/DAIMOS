@@ -1,3 +1,13 @@
+## v1354: staged grouped encoder physical bounds
+
+- [x] Validate source/capacity 18-bit geometry and reject source/output
+  overlaps before writing a control word. Native PDP-6 v1354 negative
+  suite and v055 full-DXR ABI test PASS; original encoder fails the
+  expected negative witness.
+- [ ] Continue codec producer format/capacity contract and native stack
+  proof, then the indivisible Stage-1/KINIT/VFS/EXEC/PURE/TSFS consumer
+  cutover and full image/rollback acceptance. No production activation.
+
 ## v1353: staged D6CODEC geometry/canonicality validation
 
 - [x] Native staged decoder rejects buffer pointer/length overflow,

@@ -127,3 +127,21 @@ the original v1351 decoder with code 1 (unused control flag accepted).
 This is **only staged decoder hardening**. It is not production KCORE
 integration, not a full malformed-input fuzz campaign, not an encoder
 bound guarantee, and not a 32K or complete-image boot acceptance.
+
+## v1354: staged encoder physical geometry milestone (2026-11-08)
+
+The staged `d6codec_encode_v053.s` encoder now checks its source and
+maximum destination extents against the physical 18-bit word address
+boundary, refuses nonzero high pointer/count bits and nonempty source /
+destination overlap before reserving a control word. Empty input and
+zero-capacity output remain valid when combined; nonempty input with
+zero output capacity is rejected without modifying the destination.
+
+Testkit `1d2b15c` adds native `d6codec-encode-bounds-v1354`: PASS on
+the modified encoder, expected code-1 negative witness against the
+unmodified v1353 encoder. The staged full-DXR v055 native corpus PASSes
+with the change. These tests do not cover complete host/encoder maximum
+encoded-size arithmetic, full malformed-input fuzz or linked stack use.
+
+Neither encoder nor decoder is currently linked into production KCORE;
+the complete atomic grouped-format cutover remains OPEN.

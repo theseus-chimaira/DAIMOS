@@ -2,6 +2,38 @@
 .text
 .globl d6codec_v053_encode_literals
 d6codec_v053_encode_literals:
+        ; Validate full source and maximum destination geometry before
+        ; reserving a group header. Physical PDP-6 addresses are 18 bit.
+        move    0,1
+        lsh     0,-022
+        jumpn   0,d6codec_v053_invalid_input
+        move    0,2
+        lsh     0,-022
+        jumpn   0,d6codec_v053_invalid_input
+        move    0,3
+        lsh     0,-022
+        jumpn   0,d6codec_v053_invalid_input
+        move    0,4
+        lsh     0,-022
+        jumpn   0,d6codec_v053_invalid_input
+        move    0,1
+        add     0,2
+        camle   0,[01000000]
+        jrst    d6codec_v053_invalid_input
+        move    6,3
+        add     6,4
+        camle   6,[01000000]
+        jrst    d6codec_v053_invalid_input
+        ; An empty source or zero capacity cannot alias through a write.
+        jumpe   2,d6codec_v053_geometry_ok
+        jumpe   4,d6codec_v053_geometry_ok
+        camge   1,6
+        jrst    d6codec_v053_overlap_check
+        jrst    d6codec_v053_geometry_ok
+d6codec_v053_overlap_check:
+        camge   3,0
+        jrst    d6codec_v053_invalid_input
+d6codec_v053_geometry_ok:
         move    5,3
         push    17,5
         move    16,1
@@ -109,6 +141,11 @@ d6codec_v053_encode_literals:
         popj    17,
  d6codec_v053_fail:
         pop     17,5
+        seto    1,
+        popj    17,
+
+d6codec_v053_invalid_input:
+        ; Geometry failure occurs before installing the saved frame.
         seto    1,
         popj    17,
 

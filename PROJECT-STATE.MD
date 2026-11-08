@@ -1,3 +1,19 @@
+## 2026-11-08 v1354: staged D6CODEC encoder address bounds
+
+On the isolated grouped-codec branch, `d6codec_encode_v053.s` now
+rejects physical 18-bit source/destination overflow, high address bits
+and overlapping nonempty buffers before any group-header write. Zero
+capacity with nonempty input refuses without modifying the destination;
+empty input with zero capacity returns an empty stream. Native PDP-6
+testkit `d6codec-encode-bounds-v1354` PASS, original v1353 encoder
+fails its expected negative witness, and native full-DXR v055 ABI test
+PASS. Testkit commit `1d2b15c`.
+
+This is staged-only hardening, with no production D6LZ36, KCORE link,
+boot image, swap or permanent RAM change. Atomic format cutover,
+encoder maximum-output arithmetic, stack/physical-memory accounting,
+host producer parity and full boot/EXEC/TSFS acceptance remain OPEN.
+
 ## 2026-11-08 v1353: staged D6CODEC strict geometry and canonical padding
 
 On isolated `d6codec-cutover-v1352-20261108`, the inactive grouped
