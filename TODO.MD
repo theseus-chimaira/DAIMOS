@@ -1,3 +1,22 @@
+## v1370: actual complete grouped PDP-6 minimal-system cold boot
+
+- [x] Rebuild full grouped KCORE/KINIT and all **27** MRES packages
+  against the same map, with byte-identical original-map controls.
+- [x] Install grouped KCORE into resized KINIT stream word-for-word;
+  guarded Stage-1/Stage-0 boot to new KINIT entry.
+- [x] Create native KCC userland and a CLEAN 15-node D6FS test root
+  containing plain INIT/MOUNTALL and grouped LOGIN/DSH/ECHO.
+- [x] Native Type-136 DECtape Stage-1 -> full grouped KCORE/MRES ->
+  DSK270/D6FS -> INIT/LOGIN -> interactive DSH -> grouped ECHO output
+  -> DSH exit/LOGIN respawn; independent D6LZ36 failure control PASS.
+- [ ] Rebuild the entire standard distribution's compressed commands
+  and full filesystem/boot media as a single grouped-format set.
+- [ ] Test actual grouped TSFS-root restarts, PURE eviction/swap and
+  real nested-provider kernel-stack watermark and injected I/O errors.
+- [ ] Commit a validated atomic host/media/runtime production switch
+  only after all cold-boot/EXEC/failure acceptance gates PASS; never
+  install a permanent old/new codec fallback.
+
 ## v1369: functional grouped EXEC/PURE/TSFS integration
 
 - [x] Generate versioned grouped DXR2 test executables without

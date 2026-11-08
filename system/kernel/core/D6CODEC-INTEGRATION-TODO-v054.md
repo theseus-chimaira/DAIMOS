@@ -1,3 +1,18 @@
+## 2026-11-08 v1370 complete grouped minimal-system native boot
+
+The full testkit `d6codec-fullboot-v1370` runs grouped Stage-1 and
+an actually grouped KCORE (using non-executable legacy low-core
+reservation), all 27 re-linked MRES packages, an actual DSK270/D6FS
+root and real INIT -> grouped LOGIN -> grouped DSH -> grouped ECHO.
+The ECHO output and LOGIN respawn are verified interactively under
+PDP-6 SIMH. The negative control uses old D6LZ36 KCORE and fails
+to RUN grouped LOGIN as expected. Each boot uses independent pristine
+media; the normal D6FS newer DIRTY superblock is never suppressed.
+Only a small 15-node root is exercised; full distribution and all
+runtime TSFS/PURE/swap/stack/failure gates remain to be completed.
+The compiled production DAIMOS KCORE/host producers/media are still
+unchanged. See `design/d6codec-fullboot-v1370.md`.
+
 ## 2026-11-08 v1369 functional grouped runtime checkpoint
 
 Versioned test-only grouped DXR2 writer now preserves original

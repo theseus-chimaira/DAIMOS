@@ -1,3 +1,18 @@
+## 2026-11-08 v1370: grouped KCORE actually boots and runs programs
+
+The isolated grouped KCORE with a non-executable 40-word legacy
+low-core reservation, plus all 27 grouped-map MRES packages,
+**boots to INIT, LOGIN and DSH and executes grouped ECHO** on a
+real D6FS/DSK270 root under native PDP-6 SIMH. Grouped compression
+also drives the Stage-1 KINIT boot stream. Complete KINIT embeds the
+grouped KCORE word-for-word at `030037..053240`. An independent
+original D6LZ36 KCORE control fails to RUN grouped LOGIN, proving
+real codec selection on the same root content. No resident codec
+size was changed in v1370: +256 linked text words over production
+remain for the fixed-layout grouped candidate. Full distribution,
+runtime PURE/swap, TSFS media, VFS fault and nested kernel stack
+tests remain required. Details `design/d6codec-fullboot-v1370.md`.
+
 ## 2026-11-08 v1369: grouped EXEC/PURE/TSFS functionality
 
 The grouped DXR2 test writer preserves entry, TX2 metadata and

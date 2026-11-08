@@ -1,3 +1,27 @@
+## 2026-11-08 v1370: actual grouped D6CODEC cold boot to DSH/RUN PASS
+
+The versioned daimos-testkit `d6codec-fullboot-v1370` now proves an
+isolated full native PDP-6 grouped KCORE boot, not just reaching the
+KINIT entry. All **27** production MRES recipes were reproduced
+byte-for-byte against the old KCORE map and re-linked against the
+grouped map with unchanged individual residency. The complete original
+KINIT also relinks byte-identically, while the grouped v1367 KCORE is
+installed word-for-word into its resized KINIT load slot (entry
+`054124`, slot `030037..053240`, 32926 decoded/29235 grouped boot
+words). The guarded direct-linked Type-136 Stage-1 reads this image
+under actual PDP-6 SIMH, and DSK270/D6FS boots INIT V1. A minimal
+15-node root supplies grouped LOGIN/DSH/ECHO executables generated
+from KCC userland DXRs. Interactive ROOT login, grouped DSH prompt,
+real grouped ECHO command output, shell exit and INIT LOGIN respawn
+all PASS. Original D6LZ36 KCORE independently reaches INIT but
+correctly fails to RUN the grouped LOGIN (negative control).
+Every boot receives a new CLEAN root clone so that D6FS DIRTY
+superblock transactions cannot contaminate comparisons. Production
+remains unchanged; full distribution, grouped TSFS media, real
+PURE/swap and nested provider stack/fault tests remain OPEN. This
+milestone performs **no size optimization**. See
+`design/d6codec-fullboot-v1370.md`.
+
 ## 2026-11-08 v1369: functional grouped EXEC/PURE/TSFS acceptance
 
 `daimos-testkit/tests/validation/d6codec-runtime-exec-v1369` now
