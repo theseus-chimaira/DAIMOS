@@ -1,3 +1,15 @@
+## 2026-11-08 v1359: current DXR corpus grouped-codec parity
+
+Native testkit v1359 replaces the stale historical absolute-path
+81-DXR manifest with the linked current disk-root build inventory for
+this checkpoint: 27 kernel/MRES DXR artifacts, 19,270 source words,
+17,899 host-encoded words. All full-stream independent host reference
+decode checks PASS. Native PDP-6 v053/v055 bit-exact host golden
+comparison and roundtrip PASS for 128-word prefixes from KCORE,
+D6FS, MonitorFS, SWAP and tape (5/5). These are not 81 userland
+executables and not 27 complete native compressed streams.
+Production D6LZ36 consumers, boot and KCORE residency remain unchanged.
+
 ## 2026-11-08 v1358: staged grouped codec host/native golden parity
 
 The three existing v045 host-generated golden DXR streams for

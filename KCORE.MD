@@ -1,3 +1,13 @@
+## 2026-11-08 v1359: current linked DXR codec host/native parity
+
+The staged codec now has 27/27 present-build kernel/MRES DXR host
+complete-stream roundtrips (19,270 input; 17,899 encoded 36-bit
+words). Five native PDP-6 current-image prefix fixtures reproduce
+the independent host streams exactly and decode them successfully:
+KCORE, D6FS, MonitorFS, SWAP and tape (5/5 PASS). No claim is made
+for the old unavailable 81-userland-DXR corpus or full 27-stream
+native parity. Production D6LZ36 and resident memory remain unchanged.
+
 ## 2026-11-08 v1358: staged grouped-codec host golden parity
 
 Native PDP-6 staged v053/v055 codec tests now reproduce the host

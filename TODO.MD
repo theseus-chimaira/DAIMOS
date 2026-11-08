@@ -1,3 +1,11 @@
+## v1359: source-authentic grouped codec DXR parity
+
+- [x] Host reference roundtrip all 27 currently linked kernel/MRES
+  DXRs, and verify five representative 128-word prefixes bit-exactly
+  on PDP-6 against the host golden streams.
+- [ ] Rebuild the full userland DXR corpus with current paths; extend
+  complete native/host compatibility and production format consumers.
+
 ## v1358: grouped codec host/native source parity
 
 - [x] Verify three independent host-golden 128-word real-DXR streams

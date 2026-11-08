@@ -213,3 +213,20 @@ The three accepted samples are not a production-wide host format
 migration, nor proof of the current full 81-executable corpus.
 Full host/native format parity, current artifact regeneration and
 all stage-1/runtime consumers remain OPEN.
+
+## v1359: present-build DXR corpus and native prefix parity
+
+`daimos-testkit` v1359 reads the actual linked DXR artifacts under
+this worktree's disk-root build, avoiding the historical 81-DXR
+manifest's unavailable absolute paths. Its independent host reference
+completes 27/27 full-format encode/decode roundtrips: 19,270 input
+words and 17,899 grouped compressed words. Five generated native
+PDP-6 fixtures compare the first up-to-128 input words and their
+encoded host-golden streams bit-exactly through the staged v053/v055
+ABI, with full native roundtrip of each prefix. KCORE, D6FS,
+MonitorFS, SWAP, and tape all PASS.
+
+This validates the current linked kernel/package artifacts, not the
+81 userland DXRs. Native parity of full-length 27-member streams,
+present-day host producers, Stage-1 decompression and all runtime
+consumer interfaces remain OPEN. No production KCORE or format switch.
