@@ -1,3 +1,22 @@
+## 2026-11-08 v1366: staged grouped runtime VFS frontend
+
+`system/kernel/core/d6codec_stream_v1366.s` and
+`d6codec_vfs_v1366.s` now implement grouped NEED_INPUT and an
+assembly-only VFS/buffer frontend using the current AC1..AC4 caller
+convention. AC3=0 still selects trusted immutable VFS backing;
+exact-length calls and direct buffers require exact source use.
+The testkit native PDP-6 current-KCORE-golden suite PASSes exact,
+7-word short refill, trusted excess input, direct buffer, malformed,
+EOF, bounds and caller-register tests. The isolated VFS frame uses
+68 stack words (vs 72 legacy), and the leaf-provider native stack
+canary reaches 0110 octal words including CRT and decoder calls.
+This is NOT real nested VFS/provider stack acceptance. Standalone
+native decoder+adapter text is 237+96=333 words, versus legacy
+40+57=97: **236 additional permanent code words** if directly
+substituted. This is a RAM-cost blocker requiring optimization and
+linked KCORE measurement. No production KCORE, host formats or
+runtime consumers changed. See `design/d6codec-vfs-stream-v1366.md`.
+
 ## 2026-11-08 v1365: staged grouped full-KINIT media boots
 
 The testkit builds the real linked full-profile KINIT (`kinit.words`)

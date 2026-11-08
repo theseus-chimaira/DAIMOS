@@ -107,6 +107,16 @@ without writing 030000. These proofs stop at KINIT entry and do not
 activate grouped runtime consumers. The original D6LZ36 production
 images, callers and KCORE residence remain unchanged.
 
+**v1366 staged VFS runtime:** Versioned PDP-6 grouped VFS/buffer
+entries now handle exact input and trusted immutable AC3=0 backing.
+The 32-word VFS input window plus 26-word state gives a 68-word
+temporary frame. Native fake-provider and leaf-provider stack tests
+PASS, but real nested provider stack remains unmeasured. New decoder
+and frontend are 237+96=333 text words, compared with legacy 40+57=97.
+The resulting +236 resident text words are a RAM-first cutover blocker
+until reduced or justified by full linked KCORE measurements. No
+production D6LZ36 interface, boot image, producer or consumer changes.
+
 
 - [ ] Replace `system/stand/pdp6/common/decompressor.inc` and its fixed
   low-core installation contract (000060) with a **new-format** decoder.

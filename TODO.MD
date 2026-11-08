@@ -1,3 +1,19 @@
+## v1366: grouped runtime VFS continuation and RAM accounting
+
+- [x] Implement staged PDP-6 VFS and buffer decoder entries with
+  exact framing, trusted AC3=0 immutable backing, 32-word refill
+  windows, 26-word decode state, and AC10..AC16 preservation.
+- [x] Native fake-provider and stack-canary tests PASS; verify
+  68-word frame and 0110-octal test stack high-water. No production
+  linkage or format change.
+- [ ] Address measured +236-word text growth (333 grouped vs 97
+  legacy) under the RAM-first KCORE budget. Analyze code sharing,
+  instruction reduction and full linked KCORE size before cutover.
+- [ ] Test actual nested VFS/FS-provider stack watermark, PURE/EXEC
+  trusted backing failures, TSFS restarts and all caller paths.
+- [ ] Apply final grouped runtime and host/media formats only as a
+  single atomic conversion, without a long-lived dual-codec mode.
+
 ## v1365: grouped KINIT full-image boot devices
 
 - [x] Rebuild the real linked full-profile KINIT, encode and verify

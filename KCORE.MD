@@ -1,3 +1,15 @@
+## 2026-11-08 v1366: staged grouped VFS decode and residency budget
+
+The grouped streaming PDP-6 engine and VFS/buffer ABI now PASS
+native fake-provider bounded/short-read/trusted backing and error
+tests, preserving AC10..AC16. The 32-word refill window plus 26-word
+continuation state yields a 68-word temporary frame (legacy 72).
+The leaf-provider canary reaches 0110 octal stack words, not a real
+provider-nested worst case. **New code totals 333 text words vs
+97 old; +236 resident words before folding**. Do not link or
+activate the grouped runtime until RAM cost and nested cold-read
+stack safety are accepted. Production D6LZ36 remains unchanged.
+
 ## 2026-11-08 v1365: staged grouped media boots to KINIT entry
 
 Actual linked 32,670-word KINIT, grouped into 29,023 compressed words,
