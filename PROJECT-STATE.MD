@@ -1,3 +1,25 @@
+## 2026-11-08 v1373: KCC native nested call-argument corruption fixed
+
+DAIMOS testkit `kcc-native-refresh-v1373` isolated an actual host
+KCC code-generation bug behind native KGEN's wrong `P_CVALUE` and
+`P_DFMP` pseudo instructions. KCC's direct GCC-ABI call-argument
+path passed incoming AC1/AC3 values after a nested argument call
+had clobbered those physical registers. KCC `ccgen2.c` now snapshots
+incoming register arguments in tracked VREGs before side-effecting
+argument evaluation, preserving normal zero-copy calls. A patched
+host KCC is rebuilt first and then all five native compiler phases
+are rebuilt with it. A full 237-file grouped D6FS root and native
+PDP-6 simulator pass **9/9 tests**: host/native packed assembler
+output equals word-for-word for minimal C89 source, independent
+KCPP/KPARSE/KGEN(KPCODE2)/KOPT replay equals host, and a compiled
+nested-call C89 DXR executes with all three arguments intact.
+**Further compiler defects remain:** native KGEN reconstructs an
+invalid global identifier `Sclass 0` on a multi-function source;
+standalone KGEN `-N` returns 126 after a UUO. Both are still open,
+so native self-hosting and a production grouped-codec cutover are
+NOT approved. No installed binaries or production media changed.
+See `design/kcc-native-abi-v1373.md`.
+
 ## 2026-11-08 v1372: documented C-SIX packed7 conversion PASS
 
 The existing reversible **C-SIX** source-storage rule from

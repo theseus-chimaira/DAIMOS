@@ -1,3 +1,19 @@
+## v1373: correct KCC nested-call ABI register lifetime
+
+- [x] Find bad KGEN opcode origin: the wrong opcode was already an
+  incoming argument to NEWCODE, not a KPCODE2 writer/KOPT defect.
+- [x] Fix KCC GCC-ABI side-effecting call argument evaluation, so
+  incoming register arguments survive nested calls.
+- [x] Rebuild a patched host KCC and all five native KCC phases in
+  isolation, then verify real grouped-root PDP-6 KCC/KGEN/KOPT
+  output equality and nested-call executable (9/9 PASS).
+- [ ] Fix native split KIR global symbol with Sclass 0 when a
+  multi-function C89 program references initialized globals.
+- [ ] Fix standalone native KGEN -N UUO/exit 126; verify -N
+  phase output and host/native equality independently.
+- [ ] Verify native compiler -> canonical SIXBIT assembler -> native
+  DAS/DLINK -> executable end-to-end before native self-hosting.
+
 ## v1372 native CSIX conversion and new KCC compiler blocker
 
 - [x] Reuse the documented reversible C-SIX/S6REC source format,
@@ -7,10 +23,12 @@
 - [x] Validate test-only native CSIX converter on grouped PDP-6:
   canonical S6REC equality against host, normal text readability,
   KCC input, malformed-input rejection and cleanup.
-- [ ] **Highest priority:** fix native KCC assembler output corruption.
-  For valid C89 `return 012345`, native KCC currently produces
-  `FMPL 017,0` and loses `MOVEI`; host KCC generates correct code.
-  Reproducible without -O, before any source converter or DAS work.
+- [x] **Resolved in v1373:** native KCC's minimal `return 012345`
+  output corruption was caused by cross-host KCC losing incoming
+  register arguments across nested calls. The fixed host rebuilds
+  native KGEN, yielding the expected `MOVEI` and matching host bytes.
+  Multi-function global-symbol KIR and unoptimized KGEN still require
+  separate correctness fixes; see the current v1373 priorities above.
 - [ ] Complete full native KCC -> ordinary SIXBIT assembler source
   -> native DAS/DLINK -> execution validation; C-SIX is for C input,
   while DAS expects uppercase SIXBIT S6REC assembly.
