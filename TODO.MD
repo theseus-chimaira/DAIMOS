@@ -1,3 +1,19 @@
+## v1346: fix final no-partner postflight refusal classification
+
+- [x] Distinguish common `proc_swap_out_fail` preflight rejection
+  from a proven fatal swap-out transaction. It rejects ineligible
+  victims, including pinned VM; a nonzero entry count is not an
+  independently fatal published backing failure. Testkit `f12880d`.
+- [x] Preserve strict end-of-guest HALT, all 18 child reaps,
+  actual typed MM pressure/cooldown, correct swap-in accounting,
+  zero fatal swap-in and zero final swap/backstore allocated words.
+- [x] Original v1303 selftest and v1345 linked physical guest
+  evidence verifier PASS; seven v1346 unsafe negative controls PASS.
+  Documented in pdp10-doc `25a1772`.
+- [ ] Finish 256K booted physical no-partner follow-up guest and
+  prove HALT, process termination and zero leaked MM/backing; the
+  v1346 verifier correction is not a full-system acceptance result.
+
 ## v1345: real slot-0 DRM event and independent provider return verified
 
 - [x] Confirm nine booted PDP-6 `proc_wait_boot` samples have the

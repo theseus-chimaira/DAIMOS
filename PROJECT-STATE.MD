@@ -1,3 +1,25 @@
+## 2026-11-08 v1346: final reclaim-refusal verifier corrected
+
+Testkit `f12880d` fixes a false-positive in the final physical
+no-partner postflight verifier: `proc_swap_out_fail` is a shared
+production preflight ineligibility path (for example pinned/owner
+or wrong-state resident candidates), NOT an unambiguous fatal
+swap-out transaction counter. The accepted v1345 booted no-partner
+sample recorded one such rejected reclaim attempt, alongside one
+real MM_ERR_NOMEM, one cooldown and no fatal swap-in. The verifier
+now treats the source-linked counter diagnostically. Strict final
+guest HALT, all real child TERM/WAIT reaps, typed MM/no-partner
+evidence, correct restore balance, zero fatal swap-in and **zero**
+swap/backstore allocated blocks are still mandatory.
+
+The original v1303 selftest and independent v1345 linked booted
+trace checks PASS. Seven new v1346 unsafe mutations fail (missing
+cooldown/allocator, fallback, fatal swap-in, wrong restore, both
+backing leaks). Docs: `pdp10-doc/KERNEL/SWAP-RECLAIM-REFUSAL-VERIFIER-V1346.MD`
+(`25a1772`). The separate full 256K follow-up guest was still
+running when checked; no accepted final HALT/zero-leak result yet.
+No production KCORE/FS/MM/PI6/DRM/SWAP/MRES or RAM size changed.
+
 ## 2026-11-08 v1345: source-linked DRM event and independent recovery verified
 
 The bounded v1344 booted 256K PDP-6 diagnostic captured the actual

@@ -1,3 +1,19 @@
+## 2026-11-08 v1346: final swap-out reclaim refusal accounting
+
+The production `proc_swap_out_fail` shared return label rejects
+ineligible reclaim candidates before a backing transaction as
+well as later failed operations. Consequently its raw v1209 count
+cannot by itself establish a fatal swap-out. Testkit `f12880d`
+corrects the v1303 final physical no-partner verifier without
+changing kernel code. Strict full-guest HALT, 18 child TERM/WAIT,
+typed allocator failure and cooldown, balanced restores, zero
+fatal swap-in and **zero outstanding backing** remain mandatory.
+Seven unsafe evidence mutations are rejected. Original v1303
+and source-linked v1345 tests PASS. The full booted 256K guest
+cleanup/liveness acceptance remains OPEN. Documentation:
+`pdp10-doc/KERNEL/SWAP-RECLAIM-REFUSAL-VERIFIER-V1346.MD`.
+No KCORE/MRES/FS/DRM/PI6/SWAP source or resident size changed.
+
 ## 2026-11-08 v1345: booted physical no-partner and DRM event boundary
 
 The v1344 bounded booted 256K PDP-6 guest proved a genuine
