@@ -1,3 +1,22 @@
+## v1372 native CSIX conversion and new KCC compiler blocker
+
+- [x] Reuse the documented reversible C-SIX/S6REC source format,
+  including case escapes and punctuation; no silent semantic casefold.
+- [x] Extend host CSIX to read packed native KCC ASCII7 words using
+  the existing C-SIX encoding rules; test exact byte identity.
+- [x] Validate test-only native CSIX converter on grouped PDP-6:
+  canonical S6REC equality against host, normal text readability,
+  KCC input, malformed-input rejection and cleanup.
+- [ ] **Highest priority:** fix native KCC assembler output corruption.
+  For valid C89 `return 012345`, native KCC currently produces
+  `FMPL 017,0` and loses `MOVEI`; host KCC generates correct code.
+  Reproducible without -O, before any source converter or DAS work.
+- [ ] Complete full native KCC -> ordinary SIXBIT assembler source
+  -> native DAS/DLINK -> execution validation; C-SIX is for C input,
+  while DAS expects uppercase SIXBIT S6REC assembly.
+- [ ] Integrate native CSIX into normal Makefile/root only after
+  compiler correctness and userland toolchain regression gates PASS.
+
 ## v1371: full distribution grouped cold boot
 
 - [x] Expand the actual Makefile D6FS root manifest, stage its

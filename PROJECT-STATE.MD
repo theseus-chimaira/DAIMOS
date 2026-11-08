@@ -1,3 +1,25 @@
+## 2026-11-08 v1372: documented C-SIX packed7 conversion PASS
+
+The existing reversible **C-SIX** source-storage rule from
+`pdp10-doc/KERNEL/SELFHOSTING.MD` is retained; no new source format
+is introduced. `tools/host/csix.c` supports `-e -p` to read KCC's
+native five-ASCII7-chars-per-36-bit-word container and feed the
+existing encoder. The isolated C89 native `csix_v1372.c` uses a
+16-word input buffer and the standard S6REC writer to create
+canonical, editable C-SIX files. Native image 002700 words, BSS
+000106. v1372 host checks prove exact equality with ordinary
+`csix -e`, bitwise S6REC roundtrip, and malformed-input rejection.
+The full grouped PDP-6 boot under daimos-testkit verifies actual
+native CSIX output matches the host S6REC reference by guest `CMP`,
+is readable by native `CAT`, is accepted as input by KCC, and is
+removed on failed conversion; the separate CRLF/tab comparison also
+passes, for eight native probes total. No production
+kernel, DAS, boot or D6LZ36 binary changed. **Separate critical bug:**
+native KCC emitted invalid assembly (`FMPL 017,0` and missing `MOVEI`
+from a valid C89 return fixture) even without -O, before conversion.
+Fix compiler/emitter and require true native KCC->DAS->RUN acceptance
+next. See `design/csix-packed7-converter-v1372.md`.
+
 ## 2026-11-08 v1371: complete normal D6FS distribution boots grouped
 
 `daimos-testkit/tests/validation/d6codec-fulldist-v1371` PASSes a
