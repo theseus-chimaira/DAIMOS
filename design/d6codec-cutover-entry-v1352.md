@@ -196,3 +196,20 @@ with the same staged sources.
 No actual worst-case nested VFS/EXEC/TSFS production stack has yet
 been measured; these results must not be promoted to a universal
 stack bound or a release gate for the atomic format conversion.
+
+## v1358: independent host-golden/native codec parity (2026-11-08)
+
+The native PDP-6 testkit `d6codec-parity-v1358` reuses three original
+v045 real-DXR, 128-word input and host-generated encoded-golden
+fixtures. Only their entry names were changed to invoke the staged
+DAIMOS v053 engines through the v055 register-saving ABI. Configctl,
+darc and d6lz all PASS bit-for-bit comparison of the native encoded
+words with host-generated expected streams, followed by exact native
+decoded roundtrips. Production D6LZ36 is unaffected.
+
+The historical 81-DXR host manifest references an older absolute
+build tree and is not directly reproducible from that inventory.
+The three accepted samples are not a production-wide host format
+migration, nor proof of the current full 81-executable corpus.
+Full host/native format parity, current artifact regeneration and
+all stage-1/runtime consumers remain OPEN.

@@ -1,3 +1,12 @@
+## 2026-11-08 v1358: staged grouped codec host/native golden parity
+
+The three existing v045 host-generated golden DXR streams for
+configctl, darc and d6lz pass v1358 native PDP-6 encoding parity
+and exact decoding with the staged v053 engines and v055 ABI wrapper.
+The historical 81-DXR manifest has stale absolute paths; no
+full-current-corpus parity or production host migration is claimed.
+Production D6LZ36, KCORE residency and stored images are unchanged.
+
 ## 2026-11-08 v1357: staged grouped codec error stack checks
 
 Native PDP-6 `d6codec-stack-fail-v1357` passes decoder malformed /

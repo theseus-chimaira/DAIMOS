@@ -1,3 +1,11 @@
+## 2026-11-08 v1358: staged grouped-codec host golden parity
+
+Native PDP-6 staged v053/v055 codec tests now reproduce the host
+reference's bit-exact 128-word compressed output and decoded input
+for configctl, darc and d6lz (3/3 PASS). The older 81-DXR host
+manifest has stale absolute paths and cannot be counted as current
+corpus acceptance. No production KCORE, boot or format change.
+
 ## 2026-11-08 v1357: staged codec error-path stack acceptance
 
 The native v1357 failure-path suite covers malformed decoder input,

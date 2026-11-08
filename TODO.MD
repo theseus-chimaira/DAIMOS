@@ -1,3 +1,11 @@
+## v1358: grouped codec host/native source parity
+
+- [x] Verify three independent host-golden 128-word real-DXR streams
+  against the staged native PDP-6 encoder and decoder (3/3 PASS).
+- [ ] Reconstruct the current full host DXR corpus with real paths,
+  compare native/host format over representative complete programs,
+  and complete atomic boot/runtime/producer format migration.
+
 ## v1357: staged codec malformed/capacity stack
 
 - [x] Native PDP-6 test staged decoder malformed/invalid-address
