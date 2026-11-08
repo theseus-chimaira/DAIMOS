@@ -1,3 +1,31 @@
+## 2026-11-08 v1343: proven disposable provider-release dependency repaired
+
+The v1342 256K PDP-6 source-linked live sample confirms genuine
+requester OOM=1 and **12** real fatal provider-busy attempts, but
+the test-only holder release and holder return were still zero.
+The linked process table shows INIT in CHILD wait, requester in
+timer SLEEP, gateway waiting for `fs_provider_wait_event_v917`,
+and holder waiting for `daimos_test_hold_event_v1150`. The original
+v1150 test-only release hook required a subsequent INIT sleep,
+which could no longer occur after INIT entered `proc_wait_child`.
+This proves a **disposable test-fixture scheduling dependency**;
+it does not prove a production kernel MM/PI6/provider defect.
+
+Evidence (12 live samples, interrupted deliberately after proof):
+`$TMPDIR/daimos-swap-provider-dependency-v1342-evidence-r1.tar.gz`,
+SHA256 `9a286c2a48e635d19411fab3fa2cbc453c99763561608200fcf704130bbb875b`.
+
+Testkit v1343 `28bd504` now allows the independent resident spinner
+to invoke the *same original* test-only guarded provider release
+after actual OOM and at least two busy failures. The original
+holder must still wake and call production `fs_provider_unlock`;
+no direct unlock, synthetic MM result, process-state override or
+new production resident code is introduced. Preflight and three
+unsafe fixture mutation tests PASS. Full booted guest HALT,
+18-child TERM/WAIT and final zero-backing acceptance still OPEN.
+Docs: `pdp10-doc/KERNEL/SWAP-TEST-PROVIDER-RELEASE-V1343.MD`
+(`d8cdb87`). No production KCORE/MM/FS/PI6/SWAP/MRES changes.
+
 ## 2026-11-08 v1342: post-release wait dependencies isolated
 
 The v1340 booted 256K PDP-6 guest did not reach final HALT after

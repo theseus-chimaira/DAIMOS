@@ -1,3 +1,21 @@
+## v1343: original provider release preconditions verified, fixture fixed
+
+- [x] v1342 booted 256K PDP-6 source-linked counters: real OOM=1,
+  fatal provider-busy=12, holder entered=1, release=0, holder
+  returned=0, INIT CHILD wait, holder test event wait. Proven
+  disposable v1150 release dependency, not production kernel bug.
+- [x] Preserve original raw SIMH/map/source/addresses with verified
+  manifest: `$TMPDIR/daimos-swap-provider-dependency-v1342-evidence-r1.tar.gz`,
+  SHA256 `9a286c2a48e635d19411fab3fa2cbc453c99763561608200fcf704130bbb875b`.
+- [x] v1343 test-only spinner may call original guarded provider
+  release after real OOM and >=2 busy failures; original holder
+  must still execute normal unlock. Source preflight and three
+  unsafe injection mutations PASS (testkit `28bd504`).
+- [ ] Fresh booted v1343 full guest: prove holder release, requester
+  exit, provider/witness milestones, all 18 TERM/WAIT, HALT,
+  zero MM owners/pins and zero swap backing. No final acceptance
+  before the original strict postflight verifier passes.
+
 ## v1342: diagnose provider-held guest after real MM release
 
 - [x] Decode the last 24 genuine v1340 SIMH samples using linked
