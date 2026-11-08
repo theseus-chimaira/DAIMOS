@@ -1,3 +1,26 @@
+## 2026-11-08 v1348: full physical no-partner PDP-6 suite accepted
+
+The original strict 256K KCC PDP-6 test, including all 18 real
+RUN/ACK and TERM/WAIT child lifecycles, held-provider conflict,
+genuine requester-only BRK OOM, independent spinner >=5 SLEEP
+progress, HALT and SIMH EXIT, now PASSes. The v1348 disposable
+fixture waits for **actual** spinner progress instead of lowering
+the held-provider witness threshold (observed count 8).
+
+One real production MM_ERR_NOMEM/no-eligible-partner cooldown was
+followed by 34 successful disk swap-ins, no exchanges and final
+zero outstanding swap/backstore blocks. Independent v1349 offline
+verification of this same completed guest confirms four genuine
+8K-word test-owner MM extents before release, resident process pin,
+one post-cooldown independent typed owner release, exact four frees
+and no retained owner; six corrupted evidence controls are rejected.
+No production KCORE/FS/MM/PI6/SWAP/MRES source was modified and
+no RAM grew. The old +16-word fallback is not justified. Full
+256K booted no-partner acceptance is CLOSED for this exact guest.
+See `pdp10-doc/KERNEL/SWAP-FULLGUEST-COMPLETE-V1348.MD` and its
+validated v1348 evidence. Other KCORE functionality and resident
+size optimization remain OPEN.
+
 ## 2026-11-08 v1347: actual 256K physical no-partner guest completed
 
 The unbounded 256K PDP-6 guest now completes authentic 18-child

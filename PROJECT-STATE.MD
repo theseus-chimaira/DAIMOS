@@ -1,3 +1,40 @@
+## 2026-11-08 v1348: booted 256K physical no-partner F07 acceptance CLOSED
+
+The original strict v1075/v1150/v1207 256K KCC PDP-6 guest now
+PASSes its **entire** 18-child RUN/ACK, TERM/WAIT, protected
+requester/witness, serialized held-provider, genuine BRK OOM,
+original spinner-progress, HALT and SIMH EXIT requirements.
+Testkit v1348 (`8ea7d66`) adds only a disposable INIT wait for five
+actual independent spinner SLEEP operations before TERM. No witness
+threshold is lowered or synthetic MM/PI6/swap outcome inserted.
+
+The same completed source-linked guest independently passes the
+strict v1303 physical no-partner postflight: one real swap-in
+MM_ERR_NOMEM, one no-eligible-partner cooldown, 34 real swap-ins,
+zero exchanges and zero outstanding swap/backstore blocks. The
+original provider suite reports genuine requester OOM, three
+fatal-busy retries, exactly one guarded holder return and normal
+provider unlock; spinner count 8 exceeds the original 5 required.
+The additional v1349 **offline** owner-lifecycle verifier of this
+completed v1348 guest also PASSes: four real 8K owner MM extents
+with resident pin before pressure, one independent MM release after
+cooldown, final prepared=4/freed=4/count=0/error=0, six negative
+counter mutations rejected. This does not claim the separate
+v1349 guest rerun has completed; its build was underway.
+
+The previously OPEN **booted 256K physical no-partner recovery**
+acceptance and held-provider/independent-scheduler witness are now
+CLOSED for the tested PDP-6 guest profile. Production KCORE, MM,
+PI6, FS, swap and MRES source and RAM footprint are unchanged;
+the speculative 16-word v1208/v1211 fallback is not required.
+Detailed results: `pdp10-doc/KERNEL/SWAP-FULLGUEST-COMPLETE-V1348.MD`
+(`453e103`). Verified archived original strict guest and independent
+checks: `$TMPDIR/daimos-swap-original-suite-v1348-evidence-r1.tar.gz`,
+SHA256 `d97d0d05ef0c0cf6bd047d99e8c81ca64c5496b8b81690b50f588dea409e9951`.
+
+Other distinct KCORE feature tracks (D6CODEC, BSTORE, restricted XIP,
+compressed swap and KCORE RAM minimization) remain separately OPEN.
+
 ## 2026-11-08 v1347: 256K physical no-partner guest HALT; suite stage open
 
 The unbounded v1344 256K KCC PDP-6 guest has now completed its

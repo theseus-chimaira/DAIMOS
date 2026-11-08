@@ -1,3 +1,31 @@
+## v1348: actual booted no-partner and original held-provider F07 CLOSED
+
+- [x] Complete the genuine 256K PDP-6 F07 full-system guest with all
+  18 RUN/ACK and TERM/WAIT children, real held-provider/foreign
+  waiter, requester-only OOM, correct spinner SLEEP count (8 >= 5),
+  original HALT, and complete SIMH postflight/EXIT. The v1348
+  disposable-only INIT barrier waits for actual scheduled spinner
+  progress; no original safety threshold was weakened (`8ea7d66`).
+- [x] Reverify booted no-eligible-partner swap-in: 1 genuine
+  `MM_ERR_NOMEM`, 1 pressure cooldown, 34 successful swap-ins,
+  zero exchanges, zero outstanding swap and backstore blocks.
+- [x] Independently verify source-linked two-phase real MM owner
+  lifetime against the completed v1348 guest: four genuine 8K
+  allocations, resident process pin, exactly one post-cooldown
+  independent release, four matching frees, no outstanding owner,
+  and six negative controls rejected (v1349 offline verifier).
+- [x] Retain validated v1348 original suite evidence:
+  `$TMPDIR/daimos-swap-original-suite-v1348-evidence-r1.tar.gz`,
+  SHA256 `d97d0d05ef0c0cf6bd047d99e8c81ca64c5496b8b81690b50f588dea409e9951`.
+  Docs `pdp10-doc/KERNEL/SWAP-FULLGUEST-COMPLETE-V1348.MD` (`453e103`).
+- [ ] Complete separate v1349 full-guest rerun with two-phase owner
+  verifier wired into its own after-HALT evidence manifest. The
+  already completed v1348 full-system acceptance does NOT depend
+  on claiming this later repeat passed.
+- [ ] Continue distinct remaining KCORE feature tracks, grouped
+  integration regressions and RAM minimization. No extra fallback,
+  MM/swap production change or permanent kernel growth was needed.
+
 ## v1347/v1348: full physical guest HALT, strict spinner witness pending
 
 - [x] Complete the unbounded 256K PDP-6 physical no-partner guest:
