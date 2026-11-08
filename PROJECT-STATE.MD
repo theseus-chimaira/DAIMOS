@@ -1,3 +1,20 @@
+## 2026-11-08 v1364: Stage-1 physical image admission (staged)
+
+Added unlinked `system/stand/pdp6/common/stage1-geometry-v1364.inc`
+to validate octal `030000+U+S<=M` and `030000+U+C<=M` for decoded
+KINIT length U, configured stack reserve S, physical core size M,
+and compressed payload length C, before any payload stores. The
+testkit generates all five Stage-1 grouped-decoder alternatives with
+this pre-write guard. Native PDP-6 helper boundary tests PASS, as do
+all ten 32K/256K loader header-guard tests and two 64K/custom-stack
+reserve tests. An oversized PTR first-tape segment is now rejected
+before its first copy in the staged alternative. Code growth from
+v1363 ranges +20..+25 transient Stage-1 words; BSS growth is zero.
+The current production Stage-1, KCORE, boot images and stored format
+remain D6LZ36. Real device boots, VFS/provider ABI, grouped image
+generation and atomic cutover are OPEN. See
+`design/d6codec-stage1-geometry-v1364.md`.
+
 ## 2026-11-08 v1363: staged direct-linked grouped Stage-1 alternative
 
 A full source audit establishes that all five production Stage-1

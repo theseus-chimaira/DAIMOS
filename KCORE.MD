@@ -1,3 +1,15 @@
+## 2026-11-08 v1364: staged KINIT loader physical-geometry guard
+
+The generated grouped Stage-1 alternatives now test that the decoded
+KINIT plus reserved stack and its separately staged compressed payload
+both fit the configured PDP-6 memory profile before loading payload
+words. All five loaders pass native guard tests under 32K and 256K;
+DTC/PTR additionally pass 64K with custom stack reserve (12/12 native
+tests, independent helper boundary suite PASS). PTR rejects first-tape
+segment overflow before copying. The new staged helper adds no BSS
+and no permanent KCORE RAM; production D6LZ36 is unchanged. See
+`design/d6codec-stage1-geometry-v1364.md`.
+
 ## 2026-11-08 v1363: direct-linked grouped Stage-1 decoding
 
 Stage-1 never uses NEED_INPUT while decoding KINIT: every loader

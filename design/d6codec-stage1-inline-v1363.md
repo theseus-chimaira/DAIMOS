@@ -86,3 +86,15 @@ writes**, rebuild KINIT and every compressed artifact atomically,
 test real Stage-0/device boots including truncation and rollback,
 and separately integrate the runtime VFS/EXEC/PURE/TSFS decoder
 without a permanent D6LZ36 fallback.
+
+## v1364 geometry preflight
+
+A staged source-level pre-write admission guard now verifies that
+`030000 + decoded_words + stack_reserve` and
+`030000 + decoded_words + compressed_words` fit the configured
+physical core size. DSK, DRM, DTC, MTC and PTR each pass native
+PDP-6 header-guard tests in 32K and 256K profiles; DTC and PTR
+also pass a 64K/custom-reserve profile. PTR rejects an oversized
+first tape segment before any data copy. All variants add zero BSS;
+see `design/d6codec-stage1-geometry-v1364.md` for measurements.
+No production boot switch has occurred.

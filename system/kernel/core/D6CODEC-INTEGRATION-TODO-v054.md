@@ -90,6 +90,15 @@ v053 decoder without BLT copying it into the old `000060` slot.
 Runtime VFS still needs resumable refill handling. No production
 Stage-1 or KINIT format cutover has occurred.
 
+**v1364 staging geometry gate:** A dedicated PDP-6 assembler helper
+and test-only Stage-1 alternatives now validate decoded KINIT plus
+stack reserve and decoded KINIT plus compressed staging input against
+the configured physical core limit, before the first payload store.
+Twelve native header-guard tests and the independent helper tests
+PASS; PTR also rejects an overlong first-tape segment before copying.
+No production image or decoder selection has been changed. Physical
+device boot and synchronized runtime cutover are still OPEN.
+
 
 - [ ] Replace `system/stand/pdp6/common/decompressor.inc` and its fixed
   low-core installation contract (000060) with a **new-format** decoder.

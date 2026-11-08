@@ -1,3 +1,14 @@
+## v1364: Stage-1 physical geometry before first payload copy
+
+- [x] Implement staged PDP-6 word-accurate image/stack and
+  image/compressed-staging admission checks, parameterized by physical
+  memory size and KINIT stack reserve. Native geometry and 12
+  generated-loader header-guard tests PASS (32K, 256K, 64K/custom
+  reserve). PTR also validates first tape segment count pre-write.
+- [ ] Wire the accepted geometry helper into real Stage-1 only as
+  part of atomic grouped producer/runtime format conversion; boot
+  all five devices and exercise media errors and rollback.
+
 ## v1363: direct-linked full-buffer grouped Stage-1 prototype
 
 - [x] Audit DSK/DRM/DTC/MTC/PTR: all already buffer the complete
@@ -5,9 +16,10 @@
   Stage-1 alternatives and measure read-in text/BSS geometry.
 - [x] Native PDP-6 test generated handoffs with one-literal valid
   grouped input and malformed-control rejection at load base 000060.
-- [ ] Validate output+compressed staging physical geometry *before*
-  media writes, then boot all five real loader variants with rebuilt
-  grouped KINIT images as part of an atomic producer/runtime cutover.
+- [x] Validate output+compressed staging geometry *before* payload
+  writes in staged v1364 variants (native tests only).
+- [ ] Boot all five real loader variants with rebuilt grouped KINIT
+  images as part of an atomic producer/runtime format cutover.
 - [ ] Runtime VFS streaming remains separate; no double-decoder
   production KCORE footprint accepted without quantified net savings.
 
