@@ -117,6 +117,15 @@ The resulting +236 resident text words are a RAM-first cutover blocker
 until reduced or justified by full linked KCORE measurements. No
 production D6LZ36 interface, boot image, producer or consumer changes.
 
+**v1367 bounded native RAM optimization:** The staged grouped engine
+and VFS adapter now total 225+92=317 text words, reducing v1366 by
+16 words, with 25 continuation state words and a 67-word temporary
+VFS frame. The native fake-provider, max-descriptor, refill corpus
+and leaf-stack canary acceptance use the versioned v1367 testkit.
+The codec still costs +220 resident text words against legacy; full
+KCORE link/cold-provider stack and synchronized format cutover remain
+OPEN. No production format or resident memory has changed.
+
 
 - [ ] Replace `system/stand/pdp6/common/decompressor.inc` and its fixed
   low-core installation contract (000060) with a **new-format** decoder.

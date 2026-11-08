@@ -1,3 +1,21 @@
+## 2026-11-08 v1367: reduced staged grouped runtime RAM
+
+Versioned grouped engine/adapter sources `d6codec_stream_v1367.s`
+and `d6codec_vfs_v1367.s` retain the v1366 exact and trusted input
+contract with native PDP-6 compatibility. The descriptor-ingestion
+count and token descriptor index now share a state slot: 25 total
+continuation words, with the fixed 15-word descriptor array. The VFS
+frame falls from 68 to **67** temporary words (legacy D6LZ36 72).
+Native text falls from 237+96=333 to **225+92=317** words, saving
+16 words but still **+220 permanently resident words over the old
+97-word codec path** before folding. Native KCORE/MRES refill, ABI,
+max-descriptor and leaf-stack canary tests are in
+`daimos-testkit/tests/validation/d6codec-ram-v1367`; the canary
+reads `0107` octal (71 decimal) touched words. Production KCORE
+remains 9,601 text/269 BSS words, D6LZ36 is still active, and full
+kernel linking and nested VFS cold-provider stack remain OPEN.
+See `design/d6codec-vfs-ram-v1367.md`.
+
 ## 2026-11-08 v1366: staged grouped runtime VFS frontend
 
 `system/kernel/core/d6codec_stream_v1366.s` and

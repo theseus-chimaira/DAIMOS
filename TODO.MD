@@ -1,3 +1,15 @@
+## v1367: RAM-minimize grouped runtime decoder
+
+- [x] Reduce native grouped engine + adapter from 333 to 317 text
+  words without changing the format. Reuse descriptor counters to
+  shrink continuation state 26 -> 25 and VFS frame 68 -> 67 words.
+- [x] Verify PDP-6 VFS ABI, exact/trusted mode, maximum descriptors,
+  1/7/64-word DXR refills, stack canary and no static data/BSS.
+- [ ] Eliminate or justify remaining +220 resident text words versus
+  the legacy 97-word D6LZ36 runtime on a complete staged KCORE link.
+- [ ] Measure true cold-provider/EXEC/PURE/TSFS nested kernel-stack
+  usage, plus failure rollback and caller ownership, before cutover.
+
 ## v1366: grouped runtime VFS continuation and RAM accounting
 
 - [x] Implement staged PDP-6 VFS and buffer decoder entries with

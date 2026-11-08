@@ -1,3 +1,16 @@
+## 2026-11-08 v1367: grouped VFS memory reduction, still staged
+
+Grouped decoder/adapter text drops from v1366 333 to v1367 **317**
+words (225 engine + 92 VFS frontend). No static BSS is added.
+Reusing the descriptor cursor during ingestion reduces state to 25
+words and the temporary VFS frame to 67 words; the leaf-provider
+stack canary reaches `0107` octal words. Full native VFS, maximum
+descriptor and current-build KCORE/MRES streaming tests are staged.
+The remaining **+220 resident words over legacy D6LZ36** are not
+accepted under the RAM-first KCORE target. No production codec,
+image or permanent memory has changed. See
+`design/d6codec-vfs-ram-v1367.md`.
+
 ## 2026-11-08 v1366: staged grouped VFS decode and residency budget
 
 The grouped streaming PDP-6 engine and VFS/buffer ABI now PASS
