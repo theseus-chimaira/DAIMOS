@@ -1,3 +1,13 @@
+## 2026-11-08 v1356: staged codec native wrapper stack baseline
+
+Using the 512-word canary CRT and complete darc DXR v051 corpus, the
+staged v055 encoder/decoder ABI wrapper reaches 14 decimal stack
+words (`016` octal), including the CRT's PUSHJ to main. Testkit
+v1356 passes the explicit `__v051_first_changed=016` assertion.
+This establishes one real native stacked path only, not the maximum
+stack under malformed input or nested VFS/EXEC/TSFS callers.
+No production KCORE, boot format or resident RAM changes occurred.
+
 ## 2026-11-08 v1355: staged grouped codec buffer sizing
 
 The inactive D6CODEC encoder now exports an allocation-free PDP-6

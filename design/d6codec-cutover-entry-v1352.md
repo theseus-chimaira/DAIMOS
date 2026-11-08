@@ -167,3 +167,17 @@ sentinel preservation outside the advertised destination region,
 and helper boundaries including maximum allowed N=253687. The
 combined v1355, v1353, v1354 and full-DXR v055 native PDP-6 tests PASS.
 No production linker, image or installed MRES has been changed.
+
+## v1356: first wrapper-inclusive native stack measurement
+
+Testkit `d6codec-stack-v1356` executes the complete v051 darc DXR
+roundtrip with the staged v055 encoder/decoder ABI adapter and
+saved-register probes. The existing 512-word canary CRT observes
+`__v051_first_changed=016` octal: 14 decimal stack words measured
+including `PUSHJ main`, the v055 save/restore frame, codec internals
+and the encoder's search call. The reproducible v1356 test PASSes.
+
+This is a verified representative workload, **not** a proved maximum
+across all failures or nested KCORE consumer paths. No code or
+persistent RAM is added by the test. Continue explicit error-path
+and nested VFS/EXEC/TSFS stack measurement before activation.

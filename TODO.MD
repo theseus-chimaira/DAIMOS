@@ -1,3 +1,10 @@
+## v1356: staged native codec stack baseline
+
+- [x] Record 512-word-canary full-DXR v055 wrapper-inclusive stack:
+  016 octal = 14 decimal words, native PDP-6 v1356 PASS.
+- [ ] Check malformed-input/insufficient-capacity stack and real nested
+  VFS/EXEC/TSFS call peaks before claiming a production maximum.
+
 ## v1355: staged grouped compressor output-capacity guarantee
 
 - [x] Prove the bound N + ceil(N/30) words for N input words (zero for

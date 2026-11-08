@@ -1,3 +1,12 @@
+## 2026-11-08 v1356: measured staged codec wrapper stack
+
+The native PDP-6 full-DXR v1356 fixture confirms 14 decimal stack
+words (`016` octal) with the v055 saved-register adapter, including
+the CRT's initial call. This is not a worst-case KCORE nested-call
+bound. Production D6LZ36 boot and KCORE remain unchanged; additional
+failure-path and consumer stack tests are still necessary. See
+`design/d6codec-cutover-entry-v1352.md`.
+
 ## 2026-11-08 v1355: staged D6CODEC worst-case output bound
 
 An optional no-stack staged native helper computes a conservative
