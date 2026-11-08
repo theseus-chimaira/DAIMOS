@@ -1,3 +1,17 @@
+## 2026-11-08 v1371: full normal grouped distribution acceptance
+
+The actual normal boot Makefile root manifest (237 files, 29 dirs,
+89 DXRs) now packs and boots with the v1367 grouped KCORE and all
+27 coherently linked MRES packages. All 71 D6LZ36-compressed
+program inputs are converted and independently roundtripped as
+grouped DXR2, preserving entry/text/relocation metadata; 18 stay
+uncompressed. The complete D6FS volume is CLEAN with 336 FCBs.
+Interactive PDP-6 SIMH RUN of grouped ECHO, LS, CAT, GREP, WC and
+STAT, grouped LOGIN/DSH, and LOGIN respawn PASS. Native toolchain
+files are present but not yet execution-tested. KCORE remains the
+same +256-text reserved-slot grouped candidate; production D6LZ36
+is untouched. `design/d6codec-full-distribution-v1371.md`.
+
 ## 2026-11-08 v1370: grouped KCORE actually boots and runs programs
 
 The isolated grouped KCORE with a non-executable 40-word legacy

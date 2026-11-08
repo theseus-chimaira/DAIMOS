@@ -1,3 +1,20 @@
+## v1371: full distribution grouped cold boot
+
+- [x] Expand the actual Makefile D6FS root manifest, stage its
+  native DAS, KCC-source, manual, configuration and tooling inputs.
+- [x] Generate and roundtrip all 71 normally legacy-compressed
+  DXR programs as grouped DXR2, without mixed codec payloads.
+- [x] Boot actual 237-file/29-directory, 336-FCB CLEAN D6FS root
+  with grouped KCORE/KINIT and 27 MRES packages under PDP-6 SIMH.
+- [x] Verify grouped LOGIN/DSH, ECHO/LS/CAT/GREP/WC/STAT output,
+  native-tool directory entries and LOGIN respawn after shell exit.
+- [ ] Replace legacy-producing `D6LZ` user utility in final format
+  conversion; it remains present as an uncompressed executable.
+- [ ] Execute native KCC/DAS toolchains, TSFS root/restart media,
+  physical PURE/swap reload and device/provider failure regression.
+- [ ] Measure nested runtime stack and do atomic production
+  host/media/kernel switchover only after all release gates pass.
+
 ## v1370: actual complete grouped PDP-6 minimal-system cold boot
 
 - [x] Rebuild full grouped KCORE/KINIT and all **27** MRES packages

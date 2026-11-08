@@ -1,3 +1,20 @@
+## 2026-11-08 v1371 full normal D6FS distribution checkpoint
+
+The full normal D6FS Makefile manifest is now booted in an isolated
+native grouped KCORE/KINIT environment: 237 files, 29 directories,
+89 executable inputs, with all 71 prior `.d6lz.dxr` programs
+converted and independently decoded as grouped DXR2. The resulting
+336-FCB CLEAN D6FS root boots to INIT, grouped LOGIN/DSH and native
+guest ECHO/LS/CAT/GREP/WC/STAT; EXIT respawns LOGIN. This is true
+real-provider boot testing, not a small three-executable test root.
+Installed native toolchains have not yet run, and the included
+uncompressed D6LZ tool still *writes* obsolete D6LZ36; it must be
+replaced or removed as part of the synchronized format cutover.
+Physical PURE/swap, TSFS root, nested stack, media fault/recovery and
+atomic production switchover remain unaccepted. There is no change
+to production D6LZ36 or the existing KCORE memory budget.
+See `design/d6codec-full-distribution-v1371.md`.
+
 ## 2026-11-08 v1370 complete grouped minimal-system native boot
 
 The full testkit `d6codec-fullboot-v1370` runs grouped Stage-1 and

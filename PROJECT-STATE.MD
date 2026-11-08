@@ -1,3 +1,27 @@
+## 2026-11-08 v1371: complete normal D6FS distribution boots grouped
+
+`daimos-testkit/tests/validation/d6codec-fulldist-v1371` PASSes a
+complete isolated standard D6FS distribution build and native PDP-6
+grouped cold boot. It reads the **real** Makefile `D6FS_ROOT_ARGS`:
+29 directories, 237 files, 89 DXR executables, 148 binword files.
+All 71 normal `.d6lz.dxr` inputs are rebuilt as independently
+verified grouped DXR2 from original uncompressed linked DXRs; the
+other 18 executable inputs remain uncompressed. Native DAS, KCC
+sources/headers, manuals, config and optional tooling are staged
+through the actual Makefile dependencies in test-only paths. The
+four-member root builds with `mkdsk/mkd6fs/logstore`; `d6fsck`
+reports CLEAN with 336 FCBs. The full v1370 grouped KCORE plus all
+27 MRES packages boots this root from real guarded Type-136 Stage-1
+through DSK270/D6FS, INIT, grouped LOGIN/DSH; guest ECHO, LS, CAT,
+GREP, WC, STAT and toolchain-directory listing RUN and their output
+PASS; DSH EXIT respawns LOGIN. V1370 legacy-kernel negative control
+also PASSes in the full runner. The uncompressed installed D6LZ
+utility **still generates legacy format**, and native KCC/DAS actual
+execution, TSFS root, PURE/swap, nested provider stack and device
+failure/recovery remain release blockers. Production D6LZ36 and
+media were not changed; no further size optimization. See
+`design/d6codec-full-distribution-v1371.md`.
+
 ## 2026-11-08 v1370: actual grouped D6CODEC cold boot to DSH/RUN PASS
 
 The versioned daimos-testkit `d6codec-fullboot-v1370` now proves an
