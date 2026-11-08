@@ -2,6 +2,39 @@
         .text
         .globl d6codec_v053_decode
 d6codec_v053_decode:
+        ; Check complete-buffer geometry before the first load or store.
+        ; PDP-6 physical word addresses are 18 bits. Reject wrapped
+        ; pointer/length pairs rather than allowing an aliased buffer.
+        move    0,1
+        lsh     0,-022
+        jumpn   0,d6codec_v053_bad
+        move    0,2
+        lsh     0,-022
+        jumpn   0,d6codec_v053_bad
+        move    0,3
+        lsh     0,-022
+        jumpn   0,d6codec_v053_bad
+        move    0,4
+        lsh     0,-022
+        jumpn   0,d6codec_v053_bad
+        move    0,1
+        add     0,2
+        camle   0,[01000000]
+        jrst    d6codec_v053_bad
+        move    5,3
+        add     5,4
+        camle   5,[01000000]
+        jrst    d6codec_v053_bad
+        ; Adjacent buffers are valid; intersecting nonempty ones are not.
+        jumpe   2,d6codec_v053_geometry_ok
+        jumpe   4,d6codec_v053_geometry_ok
+        camge   1,5
+        jrst    d6codec_v053_overlap_check
+        jrst    d6codec_v053_geometry_ok
+d6codec_v053_overlap_check:
+        camge   3,0
+        jrst    d6codec_v053_bad
+d6codec_v053_geometry_ok:
         move    5,3                     ; output origin
         add     4,3                     ; output end pointer
         jumpe   2,d6codec_v053_empty
@@ -110,6 +143,14 @@ d6codec_v053_group:
  d6codec_v053_next:
         lsh     10,1
         sojg    7,d6codec_v053_token
+        ; A short final group must not carry unused flag bits.
+        jumpn   10,d6codec_v053_bad
+        ; An odd descriptor count leaves the low half unused.
+        jumpe   11,d6codec_v053_padding_ok
+        move    0,0(14)
+        trne    0,0777777
+        jrst    d6codec_v053_bad
+d6codec_v053_padding_ok:
         camn    3,4
         jrst    d6codec_v053_finish
         jumpn   2,d6codec_v053_group

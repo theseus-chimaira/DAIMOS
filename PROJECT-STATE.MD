@@ -1,3 +1,22 @@
+## 2026-11-08 v1353: staged D6CODEC strict geometry and canonical padding
+
+On isolated `d6codec-cutover-v1352-20261108`, the inactive grouped
+decoder now rejects 18-bit source/destination pointer overflow, nonzero
+high address bits, overlapping nonempty buffers, unused control flags
+and unused right descriptor-half padding. The native PDP-6 v1353
+boundary fixture and the existing full-DXR v055 ABI/corpus both PASS.
+The same v1353 fixture fails the unmodified v1351 decoder as a negative
+control. Testkit `97e222d`; integration audit
+`design/d6codec-cutover-entry-v1352.md`.
+
+The unchanged D6LZ36 production KCORE linked baseline is 9,870 words
+(`023216` octal), and the complete optional-package sum is 19,734
+words, not actual installed MRES RAM. The package-limit check fails;
+it does not implicate the inactive grouped codec. No production format,
+boot image, decoder, KCORE linkage or permanent RAM was altered.
+Atomic producer/boot/EXEC/VFS/TSFS migration and full acceptance remain
+OPEN.
+
 ## 2026-11-08 v1351: full 256K F07 plus exact MM owner lifecycle PASS
 
 A **fresh** v1349 256K KCC PDP-6 guest completed original strict

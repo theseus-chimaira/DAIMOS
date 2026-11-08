@@ -1,3 +1,14 @@
+## 2026-11-08 v1353: staged D6CODEC decoder bound checks
+
+The isolated v1352 D6CODEC integration branch now has a v1353 native
+PDP-6 decoder-bounds and canonical-padding regression PASS, plus the
+existing full-DXR v055 ABI/corpus PASS. The unchanged v1351 decoder
+fails the new native negative witness. This is staged source only;
+production boot/KCORE still uses D6LZ36. New source details and linked
+pre-cutover size baseline are in
+`design/d6codec-cutover-entry-v1352.md`. Production consumer migration,
+stack measurement and exact image acceptance remain OPEN.
+
 ## 2026-11-08 v1351: complete physical 256K F07 owner lifetime PASS
 
 The fresh v1349 256K PDP-6 guest passed the original strict 18-child

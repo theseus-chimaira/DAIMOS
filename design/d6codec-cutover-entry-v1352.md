@@ -105,3 +105,25 @@ noncanonical padding. Then implement bounded production wrappers and
 validate their stack/ABI. Only then begin the synchronized producer,
 stage-1 and KCORE consumer switch in this isolated worktree. Measure
 both KCORE endpoint and total loaded permanent/dynamic words.
+
+## v1353: staged decoder safety milestone (2026-11-08)
+
+The isolated implementation now rejects out-of-range 18-bit input and
+output address geometry, high address bits, and overlapping nonempty
+source/destination buffers before accessing either buffer. It also
+rejects nonzero unused control flags and a nonzero unused right
+descriptor halfword. The existing complete-stream, exact-output check
+and failure-on-partial-output contract are unchanged.
+
+The full-word octal `01000000` endpoint check must use `CAMLE` with a
+literal, not an 18-bit `CAILE` immediate: the initial implementation
+was caught by its native regression and corrected before acceptance.
+
+Testkit branch `test-d6codec-bounds-v1353-20261108`, commit `97e222d`:
+native `d6codec-bounds-v1353` PASS, existing native
+`d6codec-kcore-abi-v055` PASS. The negative-control test fails against
+the original v1351 decoder with code 1 (unused control flag accepted).
+
+This is **only staged decoder hardening**. It is not production KCORE
+integration, not a full malformed-input fuzz campaign, not an encoder
+bound guarantee, and not a 32K or complete-image boot acceptance.

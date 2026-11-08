@@ -1,3 +1,14 @@
+## v1353: staged D6CODEC geometry/canonicality validation
+
+- [x] Native staged decoder rejects buffer pointer/length overflow,
+  aliasing, unused control bits and unused descriptor-half padding.
+  Staged native v055 full-DXR roundtrip and new v1353 negative tests
+  PASS; original v1351 decoder fails the negative witness as expected.
+- [ ] Continue D6CODEC production cutover: bounded encoder, native stack
+  peak, full producer parity, stage-1 streaming interface, KCORE/VFS,
+  EXEC/PURE and TSFS integration, atomic artifacts and boot tests.
+  Existing bootable D6LZ36 remains unchanged until all gates pass.
+
 ## v1351: booted 256K F07 owner lifetime and native codec baseline accepted
 
 - [x] Complete a **second fresh** physical 256K PDP-6 guest, with
