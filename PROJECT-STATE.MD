@@ -1,3 +1,31 @@
+## 2026-11-08 v1342: post-release wait dependencies isolated
+
+The v1340 booted 256K PDP-6 guest did not reach final HALT after
+successful independent physical MM owner release and subsequent
+swap-in progress (13 to 18). At the last of 24 source-linked
+read-only SIMH samples, PI6 clock and timer frontier still advanced
+but swap successes remained 34 out / 18 in. The retained genuine
+guest output included `@%&*` after the v1340 Ctrl-E correction.
+
+New testkit `daimos-swap-stall-waits-v1341.py` decodes the real
+linked process descriptors and clock from that raw SIMH trace.
+INIT slot 1 was waiting for a CHILD, requester slot 3 was in a
+timed sleep, gateway slot 4 waited for `fs_provider_wait_event_v917`,
+spinner slot 5 slept for 2 ticks, and holder slot 6 waited for the
+**disposable-only** `daimos_test_hold_event_v1150`. The original
+v1150 fixture signals that held provider only from an INIT sleep
+after real OOM and at least two provider-busy failures. INIT was
+instead in a child wait. This is a possible **test fixture circular
+dependency**, not established production kernel deadlock.
+
+Testkit `24dd9bd` stages a v1342 fresh booted diagnostic that
+samples exact `real_oom`, `fatal_busy`, holder, release and provider
+state from linked addresses; sampler/PTY/early-HALT selftests PASS.
+The full guest must determine whether the original v1150 release
+preconditions were satisfied before modifying any fixture. Docs:
+`pdp10-doc/KERNEL/SWAP-POST-RELEASE-WAIT-DIAGNOSIS-V1342.MD`
+(`9d96543`). Production KCORE/MM/FS/PI6/SWAP/MRES remain unchanged.
+
 ## 2026-11-07 v1340: independent release and post-release swap progress
 
 The booted 256K KCC PDP-6 v1338 test reached real swap-in

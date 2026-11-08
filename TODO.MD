@@ -1,3 +1,23 @@
+## v1342: diagnose provider-held guest after real MM release
+
+- [x] Decode the last 24 genuine v1340 SIMH samples using linked
+  `proc_table`/`proc_timer_clock`: clock advances; INIT CHILD wait,
+  requester timer sleep, gateway provider-event wait, spinner timer,
+  holder on disposable v1150 hold event (testkit `24dd9bd`).
+- [x] Identify v1150's *test-only* provider-release prerequisite:
+  INIT must enter sleep after genuine OOM and >=2 fatal provider
+  busy observations. It was instead waiting for the requester.
+  Do not infer a production deadlock from this dependency alone.
+- [x] Stage v1342 read-only actual `real_oom`, `fatal_busy`, release,
+  provider, holder and predispatch counter sampling; selftests PASS.
+- [ ] Interpret fresh v1342 full-guest counters. If the original
+  release prerequisite was reached but its INIT-only hook was
+  missed, fix the disposable workload's release ownership, not
+  production MM or scheduler. Preserve exact provider lease
+  unlock, independent real user execution, and strict final checks.
+- [ ] Complete original 18-child RUN/TERM/WAIT and OOM/provider
+  milestones, final HALT, exact MM owner/pin and backstore cleanup.
+
 ## v1340: independent no-partner recovery subcase PASS, final cleanup OPEN
 
 - [x] Booted 256K PDP-6: one real swap-in `MM_ERR_NOMEM`, one no-
