@@ -1,3 +1,36 @@
+## 2026-11-08 v1345: source-linked DRM event and independent recovery verified
+
+The bounded v1344 booted 256K PDP-6 diagnostic captured the actual
+production slot-0 `proc_wait_boot` completion-event pointer in AC1.
+Nine observed wait samples matched `AC1 == RH(drm236_active_request)+2`.
+The real device request was live, not an unaccounted unknown wait;
+active descriptors changed during normal swapping. The native
+v1079 DRM 300-tick watchdog and MINIT binding tests both PASS.
+
+In the same genuine guest, the production swap-in MM allocator
+reported one `MM_ERR_NOMEM` and slot-0 no-partner cooldown with no
+exchange. The independent user released all four real 8K MM owner
+extents via production `mm_free`, unpinned its resident process, and
+successful swap-ins rose from 13 to 18. The independently triggered
+v1343 guarded held-provider release then observed real OOM, three
+fatal busy attempts, one holder return, and the owner's normal
+production unlock. Six negative source-linked evidence mutations
+were rejected by testkit v1345 `453e269`, on top of the accepted
+v1344 sampler `8e24f6e` and its regression tests. See
+`pdp10-doc/KERNEL/SWAP-SLOT0-DRM-AND-INDEPENDENT-RELEASE-V1345.MD`
+(`178d5f0`). Retained evidence:
+`$TMPDIR/daimos-swap-slot0-device-recovery-v1345-evidence-r1.tar.gz`,
+SHA256 `8045c4f8f79e4893f31a0d39aaa347c8573b1619603d1ac5807f10e22d70ccd4`.
+
+**Acceptance boundary:** the v1344 sample run intentionally ended
+at 18 read-only samples, so original strict postflight correctly
+reported zero reaped children. It did NOT reach HALT, final 18-child
+TERM/WAIT, or zero MM/backing leaks. Full-system swap recovery is
+still OPEN. The earlier v1343 run was stopped and retained after
+26 samples of insufficient progress; no production defect has
+yet been demonstrated. KCORE, MM, FS, PI6, DRM, swap and permanent
+resident footprint remain unchanged; no historical fallback merged.
+
 ## 2026-11-08 v1343: proven disposable provider-release dependency repaired
 
 The v1342 256K PDP-6 source-linked live sample confirms genuine

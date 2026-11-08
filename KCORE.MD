@@ -1,3 +1,21 @@
+## 2026-11-08 v1345: booted physical no-partner and DRM event boundary
+
+The v1344 bounded booted 256K PDP-6 guest proved a genuine
+no-eligible-partner MM allocation failure followed by release of
+four owner-tagged 8K extents and five additional ordinary swap-ins
+(13 to 18). The independent test-only guarded provider release
+also returned its original holder after three actual busy attempts.
+The production slot-0 polling PC was source-mapped to the DRM236
+completion event: in nine samples, AC1 equaled the active request
+descriptor plus two words. The DRM native watchdog regression PASS.
+Testkit `453e269` verified actual linked counters and rejected six
+unsafe evidence mutations; docs `pdp10-doc/KERNEL/SWAP-SLOT0-DRM-AND-INDEPENDENT-RELEASE-V1345.MD`.
+
+The diagnostic intentionally stopped at 18 read-only samples:
+all-child TERM/WAIT, normal HALT and complete MM/backing cleanup
+remain UNVERIFIED. No production MM, PI6, KCORE, swap, provider or
+device source changed and no permanent KCORE/MRES RAM grew.
+
 ## 2026-11-07 v1340: genuine independent MM release and swap recovery
 
 The booted 256K F07 guest v1338 entered the authentic no-partner

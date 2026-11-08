@@ -1,3 +1,26 @@
+## v1345: real slot-0 DRM event and independent provider return verified
+
+- [x] Confirm nine booted PDP-6 `proc_wait_boot` samples have the
+  actual DRM236 active-request completion address in AC1. Existing
+  native DRM watchdog and MINIT regression PASS. No established
+  production I/O/PI6 defect.
+- [x] Preserve v1343 26-sample stalled guest read-only evidence before
+  stopping its disposable simulator, with SHA256 manifest.
+- [x] Bounded v1344 physical guest: one true no-partner MM_ERR_NOMEM,
+  four original 8K physical owner frees, actual process unpin,
+  successful swap-ins 13 to 18, then three real fatal-busy failures
+  and one normal held-provider return through guarded v1343 release.
+- [x] Source-linked v1345 independent evidence checker rejects six
+  mutation controls; testkit `453e269`, docs `178d5f0`.
+  `$TMPDIR/daimos-swap-slot0-device-recovery-v1345-evidence-r1.tar.gz`,
+  SHA256 `8045c4f8f79e4893f31a0d39aaa347c8573b1619603d1ac5807f10e22d70ccd4`.
+- [ ] Finish strict 256K full-guest acceptance: 18 real child
+  TERM/WAIT, requester/provider/witness milestones, guest HALT,
+  exact MM extents/pins and zero backing allocation. The v1344
+  run intentionally stopped before this phase; it is NOT a PASS.
+- [ ] Keep production KCORE/MRES footprint unchanged and exclude
+  v1208/v1211 speculative fallback absent a measured kernel defect.
+
 ## v1343: original provider release preconditions verified, fixture fixed
 
 - [x] v1342 booted 256K PDP-6 source-linked counters: real OOM=1,
