@@ -1,3 +1,24 @@
+## 2026-11-08 v1347: actual 256K physical no-partner guest completed
+
+The unbounded 256K PDP-6 guest now completes authentic 18-child
+RUN/ACK and TERM/WAIT lifecycles, requester/witness KWP, HALT and
+SIMH EXIT after real no-partner swap-in MM pressure. The corrected
+source-linked v1303 postflight checker verifies one MM_ERR_NOMEM,
+one cooldown, 34 successful swap-ins, no exchanges and zero final
+swap/backstore allocated blocks. Optional v1342+ read-only sampler
+address symbols do not replace or extend original mandatory v1303
+after-HALT counters; testkit `a7454e4` rejects absent/duplicate
+mandatory fields. Retained evidence SHA256:
+`dcab588ef04e13280b8417ce017e7e47a012ea89cb99fe4a1246eb3cc4d65045`.
+
+One original v1150 suite witness remains unaccepted: the completed
+guest recorded four genuine independent spinner sleeps after the
+provider lease/predispatch, against the original threshold of five.
+The versioned v1348 disposable guest requires one more *real*
+scheduled spinner sleep before INIT sends its TERM event, using
+only a read-only test selector. Full-suite acceptance is still OPEN.
+Production KCORE/MM/FS/PI6/DRM/SWAP/MRES remains unchanged.
+
 ## 2026-11-08 v1346: final swap-out reclaim refusal accounting
 
 The production `proc_swap_out_fail` shared return label rejects

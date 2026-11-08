@@ -1,3 +1,24 @@
+## v1347/v1348: full physical guest HALT, strict spinner witness pending
+
+- [x] Complete the unbounded 256K PDP-6 physical no-partner guest:
+  18 authentic RUN/ACK and TERM/WAIT reaps, requester/witness KWP,
+  original HALT and SIMH EXIT, one real MM_ERR_NOMEM/cooldown,
+  34 genuine swap-ins, zero final swap and backstore blocks.
+- [x] Correct v1303 fixed postflight schema to ignore newer optional
+  source-linked live sampler addresses not emitted at final HALT.
+  Require all established original counters; missing/duplicate
+  mandatory fields are rejected. Testkit `a7454e4`, docs `77fb0ed`.
+  Evidence `$TMPDIR/daimos-swap-fullguest-halt-v1347-evidence-r1.tar.gz`,
+  SHA256 `dcab588ef04e13280b8417ce017e7e47a012ea89cb99fe4a1246eb3cc4d65045`.
+- [ ] Close the *remaining* v1150 held-provider spinner witness:
+  the completed v1347 guest has genuine spinner count 4, but the
+  original test requires 5. The separate disposable v1348 test
+  adds an INIT read-only wait barrier for five actual scheduled
+  spinner SLEEP events before TERM. Preflight/source injection PASS;
+  complete and verify the full new guest without relaxing this gate.
+- [ ] Do not change kernel/MRES or add fallback: no production
+  memory, device, scheduler, or swap defect is established.
+
 ## v1346: fix final no-partner postflight refusal classification
 
 - [x] Distinguish common `proc_swap_out_fail` preflight rejection

@@ -1,3 +1,36 @@
+## 2026-11-08 v1347: 256K physical no-partner guest HALT; suite stage open
+
+The unbounded v1344 256K KCC PDP-6 guest has now completed its
+full 18-child RUN/ACK admission and TERM/WAIT reaping, original
+requester/witness KWP milestones, HALT and SIMH EXIT, after one
+real swap-in MM_ERR_NOMEM/no-eligible-partner cooldown. Production
+MM, PI6, FS, DRM236, swap, KCORE and MRES source are unchanged.
+
+The source-linked v1303 checker, corrected by testkit `a7454e4`
+to ignore *optional* newer live sampler addresses absent from
+the fixed after-HALT diagnostic schema, now PASSes on the actual
+completed guest: 34 swap-ins, one real MM failure/cooldown, zero
+exchanges, and **zero final swap and backstore blocks**. A new
+v1347 regression verifies optional-address compatibility and
+rejects missing/duplicate mandatory postflight counters. v1346
+typed refusal/fatal and previous v1345 physical recovery tests PASS.
+Docs: `pdp10-doc/KERNEL/SWAP-FULLGUEST-POSTFLIGHT-SCHEMA-V1347.MD`
+(`77fb0ed`). Evidence archive:
+`$TMPDIR/daimos-swap-fullguest-halt-v1347-evidence-r1.tar.gz`,
+SHA256 `dcab588ef04e13280b8417ce017e7e47a012ea89cb99fe4a1246eb3cc4d65045`.
+
+**Full original F07 suite remains OPEN for one distinct v1150
+diagnostic witness**: four real independent spinner SLEEP calls
+were observed after the held provider acquired its lease, but
+the original strict threshold is five. All other provider/owner
+data were consistent: one true requester OOM, three actual BUSY
+retries, one guarded holder return and normal lease release.
+The new v1348 disposable fixture synchronizes spinner termination
+against the original source-linked >=5 real-sleep counter, without
+changing production code or forging test progress. It passed
+generated-runner and source-injection checks; its new full guest
+had no accepted final result at this checkpoint.
+
 ## 2026-11-08 v1346: final reclaim-refusal verifier corrected
 
 Testkit `f12880d` fixes a false-positive in the final physical
