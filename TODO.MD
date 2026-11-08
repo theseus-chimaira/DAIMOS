@@ -1,3 +1,19 @@
+## v1368: real grouped KCORE residency and MRES relocation
+
+- [x] Reproduce the production complete KCORE DXR/RIM/stream
+  byte-for-byte and link the v1367 grouped runtime against actual
+  KCORE objects with both original and regenerated p10fold plans.
+- [x] Measure +216 text words with a reclaimed low-core decoder
+  slot or +256 with a 40-word reservation; verify unchanged BSS.
+- [x] Relink five current MRES packages against both grouped maps,
+  retaining unchanged resident sizes and export resolution.
+- [ ] Verify that Stage-1/KINIT can reclaim `000060..000127`
+  without breaking early EXEC or PI low-core ownership; full
+  grouped runtime boot still untested.
+- [ ] Reduce remaining +216 linked resident words; measure actual
+  provider-nested stack and group decoded EXEC/PURE/TSFS payloads
+  before synchronized production cutover.
+
 ## v1367: RAM-minimize grouped runtime decoder
 
 - [x] Reduce native grouped engine + adapter from 333 to 317 text

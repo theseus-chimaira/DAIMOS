@@ -1,3 +1,23 @@
+## 2026-11-08 v1368: real KCORE link and grouped runtime RAM measurement
+
+The versioned `daimos-testkit` v1368 linker experiments reproduce
+the production KCORE DXR/RIM/initialized stream byte-for-byte
+(9,601 text, 269 BSS words; low end `023276`). A test-only v1367
+grouped decoder/ABI-alias frontend links with the *real* complete
+KCORE object order and a regenerated p10fold plan. Eliminating the
+40-word old low-core decoder slot produces 9,817 text/269 BSS,
+**+216 text**; preserving its physical address range using a
+non-executable reservation produces 9,857 text/269 BSS,
+**+256 text**. Reusing the original fold plan instead increases
+these deltas by four words. Five real SWAP, DTFS/TSFS, D6FS,
+MonitorFS and tape MRES packages relink successfully against both
+grouped KCORE maps, with unchanged MRES resident sizes. Both grouped
+KCORE variants generate valid test-only RIM/initialized-word streams.
+No grouped KINIT runtime boot is claimed, and low-core relocation
+and actual nested VFS provider stack high-water remain unaccepted.
+Production D6LZ36/KCORE/MRES and host media remain unchanged.
+Details: `design/d6codec-kcore-link-v1368.md`.
+
 ## 2026-11-08 v1367: reduced staged grouped runtime RAM
 
 Versioned grouped engine/adapter sources `d6codec_stream_v1367.s`

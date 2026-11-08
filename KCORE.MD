@@ -1,3 +1,17 @@
+## 2026-11-08 v1368: full KCORE and MRES grouped link measurement
+
+The complete KCORE linker reproduces production output byte-for-byte
+at 9,601 text/269 BSS. Replacing the runtime frontend with grouped
+v1367 and regenerating p10fold yields **9,817 text (+216)** when
+the old low-core 40-word image is removed, or **9,857 (+256)** with
+its physical range reserved to preserve early EXEC addresses. BSS
+is unchanged. Re-linking SWAP, DTFS/TSFS, D6FS, MonitorFS and tape
+MRES packages against either grouped map PASSes with unchanged
+resident sizes; KCORE RIM and initialized-stream conversion PASS.
+The grouped layout still has a substantial RAM penalty and has NOT
+been booted as a complete KINIT or used by real VFS/EXEC/TSFS.
+See `design/d6codec-kcore-link-v1368.md`. Production is unchanged.
+
 ## 2026-11-08 v1367: grouped VFS memory reduction, still staged
 
 Grouped decoder/adapter text drops from v1366 333 to v1367 **317**

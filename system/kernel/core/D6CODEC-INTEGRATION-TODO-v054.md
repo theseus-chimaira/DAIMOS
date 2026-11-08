@@ -126,6 +126,16 @@ The codec still costs +220 resident text words against legacy; full
 KCORE link/cold-provider stack and synchronized format cutover remain
 OPEN. No production format or resident memory has changed.
 
+**v1368 temporary full-KCORE link:** The exact production link
+rebuild (9,601 text/269 BSS) matches byte-for-byte. Replacing the
+legacy VFS frontend with staged grouped v1367 yields 9,817 text
+(+216) when the fixed-lowcore slot is reclaimed, 9,857 (+256) with
+its old physical range reserved. Five real MRES packages relocate
+cleanly against either test map with unchanged resident sizes. RIM
+and initialized KCORE stream generation PASS; the resulting image
+has NOT been run through KINIT or native cold VFS. The low-core
+relocation and nested provider stack remain release blockers.
+
 
 - [ ] Replace `system/stand/pdp6/common/decompressor.inc` and its fixed
   low-core installation contract (000060) with a **new-format** decoder.
