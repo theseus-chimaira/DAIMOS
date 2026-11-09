@@ -1,3 +1,17 @@
+## 2026-11-09 v1403: native relocatable DOBJ1 output remaining
+
+- [x] Prove native DLINK links DOBJ1 C89 main/CRT0/syscall objects
+  into a byte-identical host/native DXR that runs and exits 7.
+  daimos-testkit v1403: 5/5 strict PDP-6 guest checks PASS.
+- [ ] Implement native DAS1/DAS2 `-C` output with bounded symbol and
+  relocation metadata, correct DASIR2 phase transport and DOBJ1
+  serialization; do not substitute a host conversion workaround.
+- [ ] Re-test native KCC -> DAS -A -C -> DLINK -> RUN with all
+  relocatable objects produced on target, then independent -N output
+  equality, 96K peak memory and native self-hosting coverage.
+
+The final KCORE size-only sweep stays LAST per v1379.
+
 ## 2026-11-09 v1402: native DAS packed ASCII7 path
 
 - [x] Add explicit native DAS `-A` reader for KCC packed ASCII7
@@ -7,10 +21,10 @@
 - [x] Rebuild all three native DAS images and the five v1401 compiler
   phases in a full grouped D6FS test root; 17/17 strict PDP-6 probes
   PASS, including compiled C assembly word identity and direct DAS RUN.
-- [ ] Complete native `DAS -C` relocatable DOBJ, native DLINK and a
-  freshly native-C-compiled/assembled/linked C89 program execution.
-  Then measure the 96K compiler working set and release-toolchain
-  correctness before native self-hosting or installation.
+- [ ] Complete native `DAS -C` relocatable DOBJ and execute C89
+  built entirely through native tools.  Native DLINK with the host
+  DOBJ1 input is accepted by v1403; object generation remains OPEN.
+  Measure 96K memory and release correctness before installation.
 
 Size-only KCORE optimization remains LAST after all functional and
 integration acceptance per v1379.
