@@ -1,3 +1,39 @@
+## 2026-11-09 v1410: corrected KCC outgoing ABI stack and DAS symbol core
+
+The host KCC direct GCC ABI argument path could overwrite the fifth or
+sixth outgoing argument when another argument contained a nested call.
+Incoming register values and outgoing stack slots had different
+lifetimes, but compiler-generated spills could shift SP between the
+initial outgoing push and the final PUSHJ.  KCC `ccgen2.c` v1410
+reserves the outgoing stack-only slots before evaluating arguments,
+stores each value using its displacement relative to the *current*
+SP (including VREG spills), and removes the same slots after PUSHJ.
+No heap allocation or new runtime ABI is introduced.
+
+The versioned v1407/v1410 testkit compares actual linked C89
+executables in the PDP-6 guest: old KCC returns 5 (fault), corrected
+optimized KCC returns 7, and corrected KCC with the real lowercase
+`-n` no-optimization switch returns 7.  **3/3 PASS**.  Rebuilding all
+five native KCC phases with corrected host KCC passed **16/16** native
+compiler/KIR1/KGEN/KOPT tests with host assembly equality.
+
+Native DAS v1410 reuses the same spill-backed hashed lookup and insert
+logic across normal symbols, indexed-XCT/visibility markers and DOBJ
+global metadata, preserving distinct hash namespaces without another
+resident symbol array.  The v1405 native global tests pass **5/5**;
+the v1402 full ASCII7/S6REC, quoted-literal, malformed-input and RUN
+regression passes **17/17** with these changes.  With the *same* v1410
+host KCC, DAS1 linked image shrinks from octal 034552 (v1405) to
+034474 (v1410), saving octal 056 = 46 decimal words; BSS is unchanged.
+
+Source and testkit were committed and pushed on versioned KCC, DAS and
+daimos-testkit branches.  Production executables and disks were not
+replaced.  Native DAS `-A -C` DOBJ1 relocation/write remains OPEN;
+native DLINK and host-DOBJ execution remain separately accepted v1403.
+Continue the native object writer, 96K memory tests and full toolchain
+acceptance before functional KCORE completion.  KCORE size-only work
+remains LAST after all functional and integration gates per v1379.
+
 ## 2026-11-09 v1405: native DASIR2 DOBJ global-symbol transport
 
 The native DAS1 assembler now tracks `.globl`, `.extern`, `.entry`

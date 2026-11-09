@@ -1,3 +1,25 @@
+## 2026-11-09 v1410: native compiler ABI correction and assembler groundwork
+
+- [x] Correct KCC's outgoing stack-only argument lifetime across
+  nested argument evaluation.  Preserve VREG spills and use the
+  current SP displacement, not a fixed slot relative to transient
+  pushes.  No added heap allocations or ABI changes.
+- [x] Execute old/optimized/non-optimized C89 five-/six-argument
+  test on PDP-6: old exits 5, both corrected variants exit 7.
+  The frontend `-n`, not omission of `-O`, disables optimization.
+- [x] Rebuild all five native KCC phases and pass v1401 16/16 tests.
+- [x] Share native DAS spill-backed symbol hash/record operations;
+  pass v1405 5/5 and v1402 17/17; reduce linked DAS1 image by
+  octal 056 words versus v1405 with the same corrected KCC.
+- [ ] Complete native DOBJ1 relocation serialization, DAS -A -C,
+  native DLINK and C89 RUN.  The versioned v1403 link test still
+  imports its DOBJ from the host; it is not full self-hosting.
+- [ ] Run independent unoptimized host/native compiler equality,
+  native 96K working-set and full self-hosting acceptance before
+  installing new production binaries.
+
+Final KCORE size-only optimization remains LAST, per v1379.
+
 ## 2026-11-09 v1405: native DOBJ1 phase metadata accepted
 
 - [x] Introduce spill-backed native global symbol indices, preserving
