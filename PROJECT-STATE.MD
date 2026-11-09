@@ -1,3 +1,13 @@
+## 2026-11-09 v1374: DECtape documentation consolidated (no runtime changes)
+
+The filesystem-specific DTFS/TSFS V1 contracts, proposed TSFS V1.2
+metadata design, dated tape acceptance reports, and four historical
+implementation design notes have been relocated to
+`../pdp10-doc/KERNEL/DECTAPE.MD`. Pure hardware/emulator timing remains
+in `../pdp10-doc/HARDWARE/dectape.md`. All TSFS V1.2 development and
+validation gates remain OPEN. No production source or filesystem format
+was changed by this documentation-only reorganization.
+
 ## 2026-11-08 v1351: full 256K F07 plus exact MM owner lifecycle PASS
 
 A **fresh** v1349 256K KCC PDP-6 guest completed original strict
@@ -6486,7 +6496,7 @@ The standalone extracted DTFS unlink routine had an unresolved shared
 `kconst_2_2` stack constant. Testkit now supplies the same 2,,2
 word as `core/ret.s`; `test-daimos-dtfs-unlink` PASS with native/ITS,
 TENEX, corruption and rollback paths. No production change; KCORE
-baseline **8982**. See `design/dtfs-unlink-testkit-link-contract-20261026-v444.md`.
+baseline **8982**. See `../pdp10-doc/KERNEL/DECTAPE.MD (relocated historical design: dtfs-unlink-testkit-link-contract-20261026-v444.md)`.
 
 ## 2026-10-26 Proposal B v443: shared VFS mutation path
 
@@ -6605,7 +6615,7 @@ Accepted removal of a redundant TSFS child-record pointer copy.
 Full linked image KCORE=8995 (unchanged), KCORE+MRES=15542,
 PERMANENT_LAST=15589 (one MRES word saved). TSFS multiextent, D6LZ
 and source-projection tests PASS. Provider locking unchanged; see
-`design/tsfs-readdir-projection-20261026-v430.md`.
+`../pdp10-doc/KERNEL/DECTAPE.MD (relocated historical design: tsfs-readdir-projection-20261026-v430.md)`.
 
 ## 2026-10-26 Proposal B v429: TSFS value-record cost gate
 
@@ -6614,7 +6624,7 @@ four-word extent records and buffer pointer consumers in parent,
 READDIR and D6LZ paths. Copying entire records requires 8/4
 additional per-call stack words, without inherently shortening
 sleeping I/O ownership. No production change or saving accepted.
-See `design/tsfs-value-record-lease-cost-20261026-v429.md`.
+See `../pdp10-doc/KERNEL/DECTAPE.MD (relocated historical design: tsfs-value-record-lease-cost-20261026-v429.md)`.
 
 ## 2026-10-26 Proposal B v428: native provider interleaving test
 
@@ -10258,7 +10268,7 @@ was attached on DTC0, and separate three-member TSFS media on DTC4–6.
 The kernel's existing tape-root-only provider was used; there were no
 additional resident TSFS modules on disk-root systems or kernel changes.
 Evidence: `$TMPDIR/daimos-tsfs-tape-root-v96/report-v96.md` and
-`pdp10-doc/STATUS/DAIMOS-TSFS-SECONDARY-MOUNT-TAPE-ROOT-20261020-V96.MD`.
+`pdp10-doc/KERNEL/DECTAPE.MD (historical v96 acceptance record)`.
 This validates the three specific probes only.  The original group-027
 disk-root TSFS mount fixtures require adaptation and full retesting.
 The 32K and permanent-size gates remain **deferred**.
