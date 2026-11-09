@@ -1,4 +1,33 @@
-## 2026-11-09 v1377: staged PURE-only RAM transaction, not live
+## 2026-11-09 v1379/v1380: registry-free PURE staging, not live
+
+- [x] Remove redundant dense/sparse inactive process registry from the
+  **raw PURE-only** transaction. The owner/type/size of one
+  MM_TYPE_PACKED_PROCESS extent and the original VM/immutable PURE
+  metadata are enough to restore it; use the existing assembler
+  storage-mode map and avoid a second permanent per-slot index.
+- [x] Native KCC PDP-6 v1379 host/target tests PASS three cycles,
+  allocation/restore/MM failure rollback and terminal cleanup. Native
+  v1380 reuses actual resident PURE vnode and mount busy scanners:
+  mount 18 fifth-bit disambiguation and every old process/retained
+  suffix release window PASS.
+- [x] Measure the pre-link improvement: transaction 672 -> 567 KCC
+  text words, zero DATA/BSS. The staged C registry dependencies
+  (121+310+273 = 704 words) are removed from the new test link.
+  This is not a full linked KCORE size/CPU/RAM improvement claim.
+- [ ] **Critical RAM-first follow-up:** replace the transient second
+  full mutable-suffix allocation if a safe in-place PURE drop
+  can be implemented. Current `mm_process_shrink_pinned` only permits
+  02000-octal process extents; add an atomic MM conversion/copy
+  primitive only with full allocator/PI serialization and a
+  no-fallible-step-after-overwrite proof. Never release the original
+  suffix tail before its copy is complete.
+- [ ] Finish the actual minimal swapless build and process lifecycle:
+  KINIT registry-free mode selection, VFS/provider serialization,
+  real MM compaction, process scheduling/reload, EXEC/EXIT/WAIT
+  fault recovery and native 32K/48K high-water measurements.
+  Leave v1377/v1379 out of production until accepted.
+
+## 2026-11-09 v1377: historical prototype (superseded by v1379)
 
 - [x] Implement an **unlinked** PURE-only stop/drop/restore/discard
   transaction using owner-checked managed RAM, the existing storage
@@ -11,18 +40,11 @@
   real in-core suffix copies, reconstruction, MM shortage/retry and
   discard all PASS in daimos-testkit v1377. The failed-restore MM pin
   leak found during testing was corrected.
-- [ ] **Next integration:** prove immutable executable vnode mutation/
-  unmount exclusion across inactive publication and actual reload,
-  connect KINIT-selected registry ownership, real MM transaction paths,
-  VM/EXIT/EXEC teardown, slot-0 wake/retry and scheduler admission.
-  No production activation until complete native 32K/48K swapless
-  tape-root lifecycle and pressure acceptance, with no disk backing.
-- [ ] Shrink the linked resident implementation before use: standalone
-  KCC PURE transaction = 672 text words; existing staged storage-map,
-  layout and owner C helpers add 121+310+273 = 704 words. The isolated
-  1376-word pre-fold sum is **not** a measured linked KCORE delta or
-  a net RAM-saving result. Avoid pulling KINIT-only descriptor planning
-  into resident KCORE. Keep the separate 449-word v1376 codec unlinked.
+The old registry allocation and 672+704 word prototype footprint are
+retired from the implementation queue. The remaining full-system
+acceptance, zero-disk mode and transient-RAM questions are tracked in
+the current v1379/v1380 section above. Preserve the historical v1377
+regression evidence; do not reactivate its per-slot layout metadata.
 
 ## 2026-11-09 v1375: swapless reclamation replaces compressed disk swap
 

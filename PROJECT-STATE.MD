@@ -1,3 +1,60 @@
+## 2026-11-09 v1379/v1380: remove redundant inactive process registry
+
+The replacement staging source `system/kernel/proc/proc_pure_ram_v1379.[ch]`
+derives PURE skip length from the existing immutable executable backing
+word, original process size from `vm_state`, and the raw suffix physical
+base and exact word count from the already authoritative, owner-tagged
+MM_TYPE_PACKED_PROCESS extent. It uses the existing resident assembler
+`proc_storage_expect_v30` / `proc_storage_publish_v30` operations and
+the already allocated 2-bit process mode map. The separate v1377
+dense/sparse layout index and per-slot metadata allocation are no longer
+needed for this **raw PURE-only** configuration. v1377 remains retained
+as historical test/implementation evidence, not as the new integration
+candidate. Both versions are unlinked from production.
+
+Native PDP-6 KCC/DAS object text fell from 672 to **567 words** for the
+transaction itself (0 static DATA/BSS). The 121+310+273 = 704 words of
+old staged C map/layout/owner dependencies are now absent from the
+v1379 native link: storage mode comes from the existing assembler
+routine and MM tracks the entire raw suffix. This is a component-object
+comparison, NOT a measured production KCORE+MRES linked-size delta.
+No process map/registry or BACKSTORE module was added to the build.
+
+`daimos-testkit/tests/system/pure-ram-registryfree-v1379` verifies
+three consecutive drop/restore cycles under the old dense/sparse test
+fixtures *without using either layout*, plus MM pressure, abort,
+provider reload refusal, and terminal discard. The native PDP-6
+`pure-ram-registryfree-v1379` executes the transaction linked to
+the genuine PDP-6 assembler mode map, including failed allocation
+and retry: PASS. The v1380 native regression additionally links the
+actual resident PURE vnode/mount busy scanners, including the fifth
+mount-slot bit for public mount 18. They stay effective through old
+APR release, restored suffix release, execution/reload, second drop
+and terminal cleanup: PASS. The prior v1377/v1378 native cases are
+unchanged and still accepted.
+
+The busy scanners already protect the immutable PURE source across
+the storage transition: before dropping the APR base they consult the
+resident record; after it becomes zero, they consult the saved stable
+u-area record. The file WRITE/TRUNCATE/UNLINK and unmount callers
+already use these guards in the inspected code. RENAME providers reject
+an occupied destination, so they do not currently silently replace
+an existing PURE vnode. This is targeted native guard evidence, NOT
+an assertion that full filesystem concurrency and production process
+scheduling have been verified.
+
+RAM peak remains an open issue: the staged v1379 implementation
+temporarily allocates a second raw suffix before releasing the APR
+extent. Existing `mm_process_shrink_pinned` only accepts process
+extents and 02000-octal-word size multiples; it cannot directly
+retag an extent as packed or reclaim a 0200-sector PURE prefix.
+Investigate an **atomic, allocator-serialized in-place retype/shrink
+and suffix copy** before accepting a size/RAM benefit. Never overwrite
+the only runnable image or publish freed tail memory while a source
+copy still depends on it. Full 32K/48K guest testing, KINIT selection,
+immutable provider lifetime, scheduler and EXIT/EXEC integration
+remain OPEN. Existing raw swap and OOM tests remain unchanged.
+
 ## 2026-11-09 v1377: staged PURE-only swapless RAM transaction
 
 The first raw-PURE-only inactive-process transaction is staged in

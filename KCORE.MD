@@ -1,3 +1,31 @@
+## 2026-11-09 v1379/v1380: registry-free PURE-only staging
+
+`proc_pure_ram_v1379.[ch]` supersedes the standalone v1377
+prototype for the **raw swapless** inactive-process representation.
+No dense/sparse registry is required: the existing owner-tagged
+MM_TYPE_PACKED_PROCESS extent supplies the suffix physical base and
+length, while `vm_state` and PURE backing supply the logical span.
+Existing two-bit modes are published using resident assembler
+functions. Host and native PDP-6 tests PASS roundtrips, MM fault
+rollback and terminal teardown without linking the old C registry.
+
+The v1380 native regression combines v1379 with real resident PURE
+write/unmount busy scanners and verifies public mount 18 across
+all MM release windows. No new resident VFS guard is needed on those
+tested paths. The v1379 transaction object is **567 PDP-6 KCC words**
+with zero DATA/BSS, versus 672 for v1377. It also drops 704 words
+of prototype C map/layout/owner objects from the isolated test link,
+reusing existing native KCORE mode operations. These are NOT linked
+image savings, and no production build was changed.
+
+An in-place MM conversion/copy could avoid the current second-suffix
+peak RAM allocation, but requires a correct atomic allocator primitive:
+the existing `mm_process_shrink_pinned` only permits 02000-octal
+granularity for live PROCESS extents. This is unresolved. VFS
+serialization, KINIT, scheduler, EXIT/WAIT, 32K/48K tape-root runtime
+and real RAM high-water acceptance remain open. v1377 is retained
+as historical regression evidence.
+
 ## 2026-11-09 v1377: PURE-only inactive RAM lifecycle staged
 
 `proc_pure_ram_v1377.[ch]` stages a no-codec, no-disk, owner-checked
