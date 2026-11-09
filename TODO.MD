@@ -1,3 +1,21 @@
+## 2026-11-09 v1405: native DOBJ1 phase metadata accepted
+
+- [x] Introduce spill-backed native global symbol indices, preserving
+  `.globl`, `.extern`, `.entry` and public common symbols without
+  allocating a permanent array of names.
+- [x] Extend private DASIR2 state with global count and entry ID and
+  validate every symbol marker and index after phase import.
+- [x] Validate 5/5 native PDP-6 testkit v1405 cases with real KCC
+  output, duplicate declarations, external names and an entry.
+- [ ] Finish native DOBJ1 relocation records and writer, including
+  section-relative addends, left/right-half relocations, symbol
+  definitions and undefined references.  Preserve low resident RAM;
+  no host transcode or fake DXR object output.
+- [ ] Native KCC -> DAS -A -C -> DLINK -> RUN, then 96K and full
+  self-hosting acceptance, followed by functional KCORE completion.
+
+Size-only KCORE work is LAST, per v1379.
+
 ## 2026-11-09 v1403: native relocatable DOBJ1 output remaining
 
 - [x] Prove native DLINK links DOBJ1 C89 main/CRT0/syscall objects

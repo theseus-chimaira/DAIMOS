@@ -1,3 +1,26 @@
+## 2026-11-09 v1405: native DASIR2 DOBJ global-symbol transport
+
+The native DAS1 assembler now tracks `.globl`, `.extern`, `.entry`
+and public `.comm` symbols in its existing spill-backed symbol store,
+using a separate hash namespace and stable 1-based global indices.
+The native source adds no resident global-name array.  DASIR2 state
+now transports global count and entry index; DAS2 verifies every
+reconstructed marker in order before any output can be produced.
+
+The versioned daimos-testkit v1405 regression rebuilt all three native
+DAS phases and a clean full grouped D6FS root.  On the real PDP-6
+simulator, **5/5 strict tests passed**: native C89 compilation, normal
+DXR assembly, exact global count for compiled C, duplicate global/
+external/common declarations with entry reconstruction (3 globals,
+entry index 1), and no invalid DOBJ output.  The v1402 17-case
+normal assembler regression is separately rerun against this stage.
+
+Native DOBJ relocation records and the final DOBJ1 writer remain
+OPEN; `DAS -C` still fails intentionally rather than emitting a DXR
+with a misleading extension.  Native DLINK v1403 remains accepted
+for host-produced DOBJ1.  No production tools or media were changed.
+KCORE size-only optimization remains the final KCORE stage.
+
 ## 2026-11-09 v1403: native DOBJ1 DLINK and C89 RUN verified
 
 The native DLINK is independently accepted for a newly compiled C89
