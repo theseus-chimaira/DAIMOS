@@ -1,3 +1,20 @@
+## 2026-11-09 v1402: native DAS packed ASCII7 path
+
+- [x] Add explicit native DAS `-A` reader for KCC packed ASCII7
+  without a conversion file or a second resident word-input buffer.
+- [x] Accept mixed-case mnemonics/directives, preserve symbol spelling
+  and quoted data, and reject invalid spare bits/NUL/trailing words.
+- [x] Rebuild all three native DAS images and the five v1401 compiler
+  phases in a full grouped D6FS test root; 17/17 strict PDP-6 probes
+  PASS, including compiled C assembly word identity and direct DAS RUN.
+- [ ] Complete native `DAS -C` relocatable DOBJ, native DLINK and a
+  freshly native-C-compiled/assembled/linked C89 program execution.
+  Then measure the 96K compiler working set and release-toolchain
+  correctness before native self-hosting or installation.
+
+Size-only KCORE optimization remains LAST after all functional and
+integration acceptance per v1379.
+
 ## 2026-11-09 v1401: native compiler KIR1 and KGEN correctness
 
 - [x] Correct host KCC's call-unsafe induction-pointer optimization
@@ -7,8 +24,9 @@
 - [x] Rebuild corrected host KCC and all five native phases; pass the
   strict 16/16 PDP-6 KCC/KIR1/KGEN/KOPT and host assembly comparison.
 - [ ] Prove independently generated unoptimized -N host/native output
-  equality; then perform native KCC -> canonical SIXBIT assembler ->
-  DAS/DLINK -> executable RUN using the normal distribution binaries.
+  equality.  v1402 now proves native packed ASCII7 KCC -> DAS DXR
+  output and direct DAS RUN; native DOBJ -> DLINK -> compiled C RUN
+  remains OPEN.
 - [ ] Complete native 96K peak heap/stack acceptance, compiler source
   coverage and full self-hosting release gates before installing KCC.
 

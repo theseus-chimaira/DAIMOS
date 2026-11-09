@@ -1,3 +1,29 @@
+## 2026-11-09 v1402: native DAS direct packed ASCII7 compiler input
+
+The native DAS source reader now accepts the real KCC five-ASCII7-
+character-per-36-bit-word assembly format through explicit `DAS -A`.
+Native `DAS -S` and the default retain S6REC; no intermediate source
+conversion or second resident line buffer is needed.  The word reader
+rejects invalid spare bits, embedded NULs and trailing noncanonical
+words, while handling case-insensitive assembler keywords without
+altering quoted data or symbol spelling.
+
+The v1402 daimos-testkit native PDP-6 suite rebuilt all three DAS
+phases from source with the accepted v1401 host KCC, staged them
+alongside all five corrected KCC phases in a CLEAN full 237-file
+grouped D6FS test root, and passed **17/17 strict native probes**.
+Native KCC's lowercase packed ASCII7 output assembled directly to
+a DXR byte-identical to the host reference.  Explicit/default S6REC
+remained identical, mixed-case quoted literals matched, bad inputs
+were rejected, and a freshly native-DAS-assembled standalone DXR
+executed under DAIMOS and exited with status 7.  No production
+compiler, assembler, media or kernel image was installed or changed.
+
+Native relocatable DOBJ output, DLINK and execution of a newly
+compiled C program still need integrated native acceptance, as do
+independent unoptimized KCC host equality and 96K self-hosting.
+Final KCORE size-only optimization stays LAST per v1379.
+
 ## 2026-11-09 v1401: native KGEN KIR1 stack-lifetime defect corrected
 
 The v1395 corrected host KCC fixes a call-unsafe loop induction address
