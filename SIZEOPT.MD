@@ -1,5 +1,15 @@
 # DAIMOS SIZE OPTIMIZATION WORKLIST
 
+SCHEDULING OVERRIDE (2026-11-09 v1379): This entire size-only queue is
+**LAST in KCORE development**.  Do not resume it during grouped D6CODEC,
+BSTORE/BCACHE/LOGSTORE, XIP EXEC/RUN, compressed process swap, or their
+functional/rollback/integration acceptance.  First resolve compiler,
+assembler and kernel correctness bugs.  After the complete KCORE feature
+and acceptance gates are closed, perform the final linked-size sweep and
+strict low-memory measurements.  Existing RAM/stack growth limits still
+apply to functional work, but are not authorization to optimize early.
+TSFS v1.2 remains post-KCORE, before release 0.9.
+
 FUNCTIONAL FREEZE GATE (2026-10-27 v512): Complete or explicitly defer the
 architecture-changing feature decisions in TODO.MD section
 "Pre-final-KCORE functional freeze inventory" before conducting the final

@@ -1,3 +1,14 @@
+## 2026-11-09 v1379: final KCORE work order
+
+KCORE optimization is the LAST KCORE development stage.  Resolve all
+compiler/assembler/kernel correctness blockers first, complete grouped
+D6CODEC cutover, BSTORE/BCACHE/LOGSTORE, privileged XIP EXEC/RUN, and
+opt-in compressed swap, then pass full integrated and failure acceptance.
+Only afterward revisit resident-word reduction, EXEC/RUN consolidation,
+JRST folding and final low-memory size gates.  RAM budgets remain active
+during functional work, but no new size-only sweeps run concurrently.
+TSFS v1.2 sharded metadata is separate, post-KCORE work before 0.9.
+
 ## 2026-11-08 v1371: full normal grouped distribution acceptance
 
 The actual normal boot Makefile root manifest (237 files, 29 dirs,

@@ -1,3 +1,18 @@
+## 2026-11-09 v1379: KCORE optimization rescheduled to final stage
+
+The final KCORE code/RAM-size optimization is now the **last KCORE work
+stage**, after compiler/assembler/kernel correctness, grouped D6CODEC,
+BSTORE/BCACHE/LOGSTORE, restricted XIP EXEC/RUN, opt-in compressed swap,
+and full functional/integration/failure-rollback acceptance.  Size-only
+work is paused, not abandoned; functional changes still require RAM and
+stack budgets.  TSFS v1.2 remains separate post-KCORE work before 0.9.
+
+The isolated v1378 native multi-function KIR1 reproduction confirms
+`gaddress: bad Sclass 0` and KGEN optimized/-N UUO exit 126.  Its five
+diagnostic probe matches do not constitute passing compiler behavior.
+No production compiler, kernel, or storage change is accepted by this
+planning milestone.
+
 ## 2026-11-08 v1373: KCC native nested call-argument corruption fixed
 
 DAIMOS testkit `kcc-native-refresh-v1373` isolated an actual host

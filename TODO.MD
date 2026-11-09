@@ -1,3 +1,23 @@
+## 2026-11-09 v1379: KCORE work order (size optimization LAST)
+
+The final KCORE memory/code-size sweep is **the last KCORE development
+stage**, not a parallel activity and not a prerequisite for completing
+any remaining functionality.  First fix compiler/assembler/kernel defects;
+finish grouped D6CODEC, BSTORE/BCACHE/LOGSTORE, privileged non-writing
+XIP EXEC/RUN and opt-in compressed process swap; then complete their
+integrated native boot, media, pressure and failure/rollback acceptance.
+Only after all required KCORE functionality and correctness gates have
+passed may the final KCORE size sweep, EXEC/RUN consolidation, p10fold
+selection and strict size measurements begin.  Maintain the current RAM
+budgets and avoid unnecessary growth meanwhile, but do not start new
+size-only optimizations.  Keep strict 32K DSH separate; TSFS v1.2 is
+post-KCORE and must not block this order.
+
+The v1378 native diagnostic reproduces the still-open multi-function
+KIR1 global-symbol Sclass 0 and standalone KGEN UUO/126 faults.  Its
+original five probes match command transcripts rather than requiring
+successful compiler exit status; they are diagnostic, not acceptance.
+
 ## v1373: correct KCC nested-call ABI register lifetime
 
 - [x] Find bad KGEN opcode origin: the wrong opcode was already an
@@ -4739,7 +4759,8 @@ swap tests, at 32K. Functional tests requiring DSH use 48K, 96K or 256K.
 The complete ROOT -> DSH -> command workload at 32K is explicitly deferred
 to a separate DSH optimization run and is not a gate for this sweep.
 Keep the KCORE below-020000 size goal as a tracked, deferred acceptance
-milestone while exhausting verified no-growth RAM optimizations.
+milestone.  Begin size-only experiments only in the final KCORE stage,
+after feature and integration acceptance as specified in v1379 above.
 
 - [ ] DEFERRED: design explicit loadable MRES modules only after KINIT size
   optimization makes module loading feasible. Do not automatically load
@@ -4805,8 +4826,8 @@ milestone while exhausting verified no-growth RAM optimizations.
 - [ ] Repeat all size and correctness gates after each accepted source
   reduction; fix compiler/assembler/kernel correctness bugs first.
 
-**Strict 32K acceptance is explicitly deferred; current storage work and
-source-level RAM optimization continue independently.** See
+**Strict 32K acceptance and all new size-only changes are deferred to the
+final KCORE optimization stage, after functional and integration gates.** See
 `design/p0-strict-32k-gates-20261027-v474.md`.
 
 ## XIP v219 MRES gateway
