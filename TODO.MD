@@ -1,8 +1,9 @@
 ## Unified DECtape filesystem redesign (documentation direction, 2026-11-09)
 
 - [ ] Replace the two native DECtape formats and providers with one TSFS
-  namespace/read/extent format. Only one-member TSFS may be writable;
-  multi-member TSFS is always read-only. Drop legacy media/foreign format
+  namespace/read/extent format. TSFS root is ALWAYS read-only; only non-root
+  one-member TSFS may be writable; multi-member TSFS is always read-only.
+  Drop legacy media/foreign format
   compatibility and do not link two resident readers.
 - [ ] Measure native 32K/64K PDP-6 tape-root memory AND tape latency.
   Preserve the strict low-core budget, shared 128-word block workspace,
@@ -11,9 +12,17 @@
 - [ ] Use grouped D6codec for compressed immutable TSFS payloads, not the
   current production D6LZ36. Reuse the shared grouped decoder and perform
   codec/boot/TSFS format activation as one validated transition.
-- [ ] Decide write durability, mtime, per-file access classes and whether
-  single-member root can be RW; prove controller multi-drive prepositioning
+- [ ] Decide write durability, mtime and per-file access classes for non-root
+  one-member RW TSFS volumes. Prove controller multi-drive prepositioning
   against real Type-551/555 semantics and corrected AAP behavior.
+- [ ] Implement build-time `TAPE_AUX=none|drum|disk` and `TAPE_TMPFS=0|1`.
+  The minimal `ROOT=tape TAPE_AUX=none TAPE_TMPFS=0` build has NO process
+  swap, BACKSTORE, LOGSTORE, AUXSTORE, or RAM temporary filesystem modules,
+  tables, media reservations or initialization. No runtime disk/drum probe
+  may enable services absent from that build. Explicit disk/drum backing
+  requires a matching configured device; failure must be reported clearly.
+  Verify RO root, denied RW remount, out-of-memory behavior and optional
+  secondary single-member RW TSFS on real 32K/64K boots.
 - [ ] Introduce only unversioned active source, utility, ABI and test names;
   rename existing suffixed identifiers only in a coordinated, validated
   caller/build/test cutover. See `../pdp10-doc/KERNEL/DECTAPE.MD`.
