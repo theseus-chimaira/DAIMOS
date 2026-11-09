@@ -1,3 +1,27 @@
+## 2026-11-09: unified TSFS design direction (no runtime changes)
+
+The proposed DECtape redesign replaces separate native DTFS/TSFS formats
+with one TSFS namespace, metadata and reader. One-member volumes may be
+read/write; multi-member volumes are read-only. No legacy TSFS/DTFS media
+format and no TENEX/ITS format compatibility is required. The two design
+objectives are minimum tape positioning/transfer latency and minimum
+permanent code/RAM/stack on 32K-64K tape-root machines. The resident
+memory limit is a hard gate; optimize elapsed time within that budget.
+
+New compressed immutable tape payloads use grouped D6codec, not D6LZ36.
+This is a DESIGN requirement: current production source still uses the
+old D6LZ36 decoder, and grouped D6codec production acceptance remains a
+separate open gate. The unified format, writable durability, file timestamp
+policy, small permission classes and tape-root mutability remain to be
+validated/decided. New active file, utility, symbol and test names must be
+unversioned. Historical evidence paths and existing ABI symbols are not
+renamed without the corresponding atomic code/test migration.
+
+The target and outstanding decisions are in
+`../pdp10-doc/KERNEL/DECTAPE.MD`. The historical hardware performance
+source remains `../pdp10-doc/HARDWARE/dectape.md`. No production format,
+kernel/provider source or active ABI was changed by this documentation work.
+
 ## 2026-11-09 v1374: DECtape documentation consolidated (no runtime changes)
 
 The filesystem-specific DTFS/TSFS V1 contracts, proposed TSFS V1.2

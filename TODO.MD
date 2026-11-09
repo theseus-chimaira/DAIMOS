@@ -1,3 +1,23 @@
+## Unified DECtape filesystem redesign (documentation direction, 2026-11-09)
+
+- [ ] Replace the two native DECtape formats and providers with one TSFS
+  namespace/read/extent format. Only one-member TSFS may be writable;
+  multi-member TSFS is always read-only. Drop legacy media/foreign format
+  compatibility and do not link two resident readers.
+- [ ] Measure native 32K/64K PDP-6 tape-root memory AND tape latency.
+  Preserve the strict low-core budget, shared 128-word block workspace,
+  transient mount validation and compact per-drive state. Host-side placement
+  optimization must not impose persistent kernel tables/buffers.
+- [ ] Use grouped D6codec for compressed immutable TSFS payloads, not the
+  current production D6LZ36. Reuse the shared grouped decoder and perform
+  codec/boot/TSFS format activation as one validated transition.
+- [ ] Decide write durability, mtime, per-file access classes and whether
+  single-member root can be RW; prove controller multi-drive prepositioning
+  against real Type-551/555 semantics and corrected AAP behavior.
+- [ ] Introduce only unversioned active source, utility, ABI and test names;
+  rename existing suffixed identifiers only in a coordinated, validated
+  caller/build/test cutover. See `../pdp10-doc/KERNEL/DECTAPE.MD`.
+
 ## v1351: booted 256K F07 owner lifetime and native codec baseline accepted
 
 - [x] Complete a **second fresh** physical 256K PDP-6 guest, with
