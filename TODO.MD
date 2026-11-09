@@ -1,14 +1,36 @@
+## 2026-11-09 v1405: native DAS relocatable DOBJ1 staged
+
+- [x] Implement native DAS1/DAS2 `-A -C` DOBJ1 output using
+  scratch-backed globals and relocation records with object-only
+  DASIR2 transport; preserve the default S6REC/DXR format.
+- [x] Native KCC -> DAS `-A -C` -> DLINK -> RUN passed 29/29
+  strict PDP-6 tests for external function, data and local-data
+  C89 fixtures.  Each native DOBJ/DXR matched its host golden.
+- [x] Pass full v1402 compatibility suite (17/17) with final
+  native DAS source, including literal equality and malformed input.
+- [ ] P0: Investigate intermittent native KCC stall under sustained
+  sequential compile stress: final-source full-run retry passed
+  16 probes then hung at local-data compile; the isolated identical
+  fixture passed 7/7.  Test guest swap/proc/FS resource lifetimes;
+  diagnose root cause, do not mask by splitting/rebooting tests.
+- [ ] Verify relocatable `.set` alias semantics and uncommon LH/RH
+  relocation expressions; correct any metadata-lifetime defect.
+- [ ] Complete 96K peak RAM/stack and broader self-hosting, media
+  fault-recovery and negative-object input regressions before
+  replacing production compiler/assembler binaries.
+
+All size-only KCORE optimization is deferred until the final KCORE
+development stage, after functional and integration acceptance.
+
 ## 2026-11-09 v1403: native relocatable DOBJ1 output remaining
 
 - [x] Prove native DLINK links DOBJ1 C89 main/CRT0/syscall objects
   into a byte-identical host/native DXR that runs and exits 7.
   daimos-testkit v1403: 5/5 strict PDP-6 guest checks PASS.
-- [ ] Implement native DAS1/DAS2 `-C` output with bounded symbol and
-  relocation metadata, correct DASIR2 phase transport and DOBJ1
-  serialization; do not substitute a host conversion workaround.
-- [ ] Re-test native KCC -> DAS -A -C -> DLINK -> RUN with all
-  relocatable objects produced on target, then independent -N output
-  equality, 96K peak memory and native self-hosting coverage.
+- [x] Completed for tested C89 relocation profiles in v1405:
+  native DAS1/DAS2 bounded DOBJ1 metadata and full native link/RUN.
+- [ ] Finish sustained-repeatability, uncommon relocation and 96K
+  qualification as listed in v1405 before production acceptance.
 
 The final KCORE size-only sweep stays LAST per v1379.
 
@@ -21,10 +43,9 @@ The final KCORE size-only sweep stays LAST per v1379.
 - [x] Rebuild all three native DAS images and the five v1401 compiler
   phases in a full grouped D6FS test root; 17/17 strict PDP-6 probes
   PASS, including compiled C assembly word identity and direct DAS RUN.
-- [ ] Complete native `DAS -C` relocatable DOBJ and execute C89
-  built entirely through native tools.  Native DLINK with the host
-  DOBJ1 input is accepted by v1403; object generation remains OPEN.
-  Measure 96K memory and release correctness before installation.
+- [x] Completed for C89 fixture profiles in v1405: native `DAS -C`
+  DOBJ1 and end-to-end native link/RUN.  Sustained workload and
+  full 96K release qualification remain OPEN as noted above.
 
 Size-only KCORE optimization remains LAST after all functional and
 integration acceptance per v1379.
