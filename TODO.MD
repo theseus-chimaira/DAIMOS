@@ -1,3 +1,29 @@
+## 2026-11-09 v1377: staged PURE-only RAM transaction, not live
+
+- [x] Implement an **unlinked** PURE-only stop/drop/restore/discard
+  transaction using owner-checked managed RAM, the existing storage
+  map/registry and exact mutable-suffix copies. Require the explicit
+  `DAIMOS_SWAPLESS_PURE_RAM_V1377=1` compile gate; no BACKSTORE
+  dependency, no codec and no disk-swap record change.
+- [x] Validate host dense/sparse repeated drop/restore, no-eligible
+  image, interrupted/failing MM and loader operations, terminal ZOMB
+  release and mount-extension cleanup; native KCC/PDP-6 unit tests for
+  real in-core suffix copies, reconstruction, MM shortage/retry and
+  discard all PASS in daimos-testkit v1377. The failed-restore MM pin
+  leak found during testing was corrected.
+- [ ] **Next integration:** prove immutable executable vnode mutation/
+  unmount exclusion across inactive publication and actual reload,
+  connect KINIT-selected registry ownership, real MM transaction paths,
+  VM/EXIT/EXEC teardown, slot-0 wake/retry and scheduler admission.
+  No production activation until complete native 32K/48K swapless
+  tape-root lifecycle and pressure acceptance, with no disk backing.
+- [ ] Shrink the linked resident implementation before use: standalone
+  KCC PURE transaction = 672 text words; existing staged storage-map,
+  layout and owner C helpers add 121+310+273 = 704 words. The isolated
+  1376-word pre-fold sum is **not** a measured linked KCORE delta or
+  a net RAM-saving result. Avoid pulling KINIT-only descriptor planning
+  into resident KCORE. Keep the separate 449-word v1376 codec unlinked.
+
 ## 2026-11-09 v1375: swapless reclamation replaces compressed disk swap
 
 The former decision 5/P0-D executable-opt-in **compressed process disk

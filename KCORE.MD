@@ -1,3 +1,27 @@
+## 2026-11-09 v1377: PURE-only inactive RAM lifecycle staged
+
+`proc_pure_ram_v1377.[ch]` stages a no-codec, no-disk, owner-checked
+inactive process representation for an explicitly swapless PDP-6
+build. PURE-sector omission reuses the conservative existing swap
+prefix boundary and assumes user ACs are saved in the stable u-area.
+Drop retains every mutable suffix word verbatim; restore reconstructs
+text before overlaying those saved bytes; discard frees terminal
+process RAM while clearing the mount-extension credential bit. These
+are scoped to a caller already holding lifecycle TRANSITION and
+immutable source protection, and reject compilation without the
+swapless-only profile macro. The original raw process swap is intact.
+
+Host tests PASS with dense/sparse descriptor layouts, repeated image
+roundtrips and injected failure cases. The KCC-generated transaction
+executes successfully on PDP-6 SIMH against controlled MM, provider
+and scheduler stubs, including retry after allocation exhaustion.
+No production scheduler code, KINIT link, file/mount locking or
+process-switch path has changed. This is not a complete swapless
+booted acceptance. Standalone KCC transaction size is 672 words
+(data/BSS zero); three existing staged support modules total 704
+additional pre-fold words in the isolated native test. See
+`../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD` for the remaining gates.
+
 ## 2026-11-09 v1375: P0-D compressed swap retired; swapless reclamation planned
 
 Production disk/drum process swapping remains RAW. The old opt-in

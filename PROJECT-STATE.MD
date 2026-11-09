@@ -1,3 +1,49 @@
+## 2026-11-09 v1377: staged PURE-only swapless RAM transaction
+
+The first raw-PURE-only inactive-process transaction is staged in
+`system/kernel/proc/proc_pure_ram_v1377.[ch]`, without linking it into
+the active PDP-6 kernel. `drop` copies the complete mutable suffix into
+an unaligned MM_TYPE_PACKED_PROCESS extent (without invoking any codec),
+releases the previous APR process extent and publishes the inactive mode.
+`restore` allocates a complete aligned private APR image, invokes the
+existing executable-PURE reload ABI and then overlays the saved mutable
+words. `discard` frees an inactive image on terminal teardown, including
+ZOMB process state, and clears the executable mount-extension bit.
+
+The implementation uses the existing compact 2-bit process storage map
+and dense/sparse MM-authoritative registry. All tests supply lifecycle
+TRANSITION and simulate a held immutable-vnode/mount guard. The code
+requires `DAIMOS_SWAPLESS_PURE_RAM_V1377=1` at compilation; compiling
+without that macro fails. It does not reference BACKSTORE services or
+enable disk-swap compression. KCC native source and DAS/DLINK accept
+the staged module. Host tests execute three drop/restore cycles for
+both registry formats, failure rollback, source release, recoverable
+restore shortage and ZOMB teardown. The target PDP-6 SIMH KCC test
+PASSes a real drop/reconstruction, retry after MM_ERR_NOMEM, second
+drop and terminal release. Tests are in
+`daimos-testkit/tests/{system,validation}/pure-ram-lifecycle-v1377`.
+
+The native test uses controlled MM, VFS and scheduler stubs and is NOT
+a production process scheduling, complete MM, immutable VFS backing or
+32K tape-root acceptance. In particular the real vnode write/unmount
+exclusion and KINIT registry allocation are not yet integrated.
+An early host regression exposed a pinned inactive extent left behind
+on a failed restore allocation; corrected cleanup now passes repeated
+failure/retry tests. An MM pin/unpin failure with ambiguous state still
+requires owner-held TRANSITION recovery; there is no silent unlock.
+
+Isolated native KCC object costs: PURE transaction 672 TEXT words,
+0 static DATA/BSS; existing staged C helpers linked for the test:
+storage-map 121, layout 310 and owner 273 words. Combined 1376
+unfolded TEXT words is NOT acceptable evidence of net RAM savings,
+and is not a production linked-size increase. The KCC tests still
+print identifier-truncation notices from existing legacy prototype
+headers; no new KCC fatal errors occur. KINIT-only registry setup,
+shared resident service overlap, folding and RAM peak require a
+full-profile measurement before any linking/activation. The separate
+v1376 codec remains unlinked; compression is not required by PURE
+dropping. Strict raw disk-swap behavior and OOM acceptance are unchanged.
+
 ## 2026-11-09 v1375: swapless PURE reclamation replaces compressed disk swap
 
 The prior decision 5 / P0-D requirement to implement opt-in compressed
