@@ -1,3 +1,20 @@
+## 2026-11-09 v1401: native compiler KIR1 and KGEN correctness
+
+- [x] Correct host KCC's call-unsafe induction-pointer optimization
+  which had corrupted native KGEN local symbol classes (KCC v1395).
+- [x] Correct nested KIR1 record stack lifetime; native KGEN -N and
+  optimized modes now return zero on minimal/multi-function inputs.
+- [x] Rebuild corrected host KCC and all five native phases; pass the
+  strict 16/16 PDP-6 KCC/KIR1/KGEN/KOPT and host assembly comparison.
+- [ ] Prove independently generated unoptimized -N host/native output
+  equality; then perform native KCC -> canonical SIXBIT assembler ->
+  DAS/DLINK -> executable RUN using the normal distribution binaries.
+- [ ] Complete native 96K peak heap/stack acceptance, compiler source
+  coverage and full self-hosting release gates before installing KCC.
+
+The KCORE size-only sweep remains the final KCORE stage after all
+feature and functional/integration acceptance, per v1379.
+
 ## 2026-11-09 v1379: KCORE work order (size optimization LAST)
 
 The final KCORE memory/code-size sweep is **the last KCORE development
@@ -27,10 +44,9 @@ successful compiler exit status; they are diagnostic, not acceptance.
 - [x] Rebuild a patched host KCC and all five native KCC phases in
   isolation, then verify real grouped-root PDP-6 KCC/KGEN/KOPT
   output equality and nested-call executable (9/9 PASS).
-- [ ] Fix native split KIR global symbol with Sclass 0 when a
-  multi-function C89 program references initialized globals.
-- [ ] Fix standalone native KGEN -N UUO/exit 126; verify -N
-  phase output and host/native equality independently.
+- [x] Fix native split KIR symbol with Sclass 0 (host compiler v1395).
+- [x] Fix standalone native KGEN -N UUO/exit 126 (v1401).
+- [ ] Independently verify -N host/native assembly identity.
 - [ ] Verify native compiler -> canonical SIXBIT assembler -> native
   DAS/DLINK -> executable end-to-end before native self-hosting.
 
@@ -47,8 +63,8 @@ successful compiler exit status; they are diagnostic, not acceptance.
   output corruption was caused by cross-host KCC losing incoming
   register arguments across nested calls. The fixed host rebuilds
   native KGEN, yielding the expected `MOVEI` and matching host bytes.
-  Multi-function global-symbol KIR and unoptimized KGEN still require
-  separate correctness fixes; see the current v1373 priorities above.
+  The later v1395/v1401 fixes resolve the separate multi-function
+  KIR and standalone KGEN failure paths; see the current v1401 record.
 - [ ] Complete full native KCC -> ordinary SIXBIT assembler source
   -> native DAS/DLINK -> execution validation; C-SIX is for C input,
   while DAS expects uppercase SIXBIT S6REC assembly.

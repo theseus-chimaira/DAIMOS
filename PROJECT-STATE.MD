@@ -1,3 +1,24 @@
+## 2026-11-09 v1401: native KGEN KIR1 stack-lifetime defect corrected
+
+The v1395 corrected host KCC fixes a call-unsafe loop induction address
+that corrupted a native KGEN graph's local symbol class.  The separate
+standalone KGEN UUO/126 was caused by KIR1 reader nesting two 512-word
+automatic record buffers on the bounded PDP-6 startup stack.  KCC
+`cckirread.c` v1401 reuses the caller-owned record buffer and preserves
+only the 24-word graph header, with no new heap allocation or KIR ABI
+change.  The corrected host compiler rebuilt all five native phases;
+daimos-testkit `kcc-kgen-stack-lifetime-v1401` independently rebuilt
+a complete 237-file grouped D6FS root and passed **16/16 strict native
+PDP-6 SIMH compiler probes**.  Optimized and -N standalone KGEN and
+KOPT return zero for minimal and multi-function C89, and optimized
+native output equals the host reference word-for-word.  No KCC,
+kernel or boot binary was installed in production.
+
+Full native KCC -> canonical SIXBIT assembler source -> native DAS/
+DLINK -> executed program, independent -N host equality and complete
+self-hosting still require acceptance.  KCORE size optimization remains
+the LAST KCORE development stage per v1379.
+
 ## 2026-11-09 v1379: KCORE optimization rescheduled to final stage
 
 The final KCORE code/RAM-size optimization is now the **last KCORE work
