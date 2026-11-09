@@ -1,5 +1,14 @@
 # KCORE compressed-process split: staged implementation v1
 
+**Superseded (2026-11-09 v1375):** The production requirement for
+executable-opt-in compressed disk swap is cancelled. This file is
+historical research, and all PACKED v1-v46 code remains inactive.
+The replacement is swapless-only PURE text dropping plus opt-in RAM
+compression of mutable process memory, with a separate native gate.
+See `pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`. The old phase list below
+is not a current implementation queue.
+
+
 V46 stages registry-backed restore matching v45 publication. It reconstructs
 the packed span using MM ownership, performs PURE reload then writable
 decoding, and clears the actual dense/sparse slot record only after a

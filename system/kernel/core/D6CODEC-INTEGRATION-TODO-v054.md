@@ -11,15 +11,17 @@ its active build in this staging checkpoint.
   codec everywhere. **No permanent legacy decoder, format auto-detection,
   compatibility switch, or mixed-format images.** Keep the old system bootable
   only until the atomic change passes all regressions.
-- [ ] Both **compressor and decompressor must be resident in KCORE**. The
-  provisional 129+99 = 228 code-word baseline excludes wrappers and safety
-  checks. Optimize combined **code + stack + persistent workspace**, not
-  isolated object sizes. No additional permanent buffers without evidence.
+- [ ] The runtime decompressor must be available to active KCORE consumers.
+  A native encoder is needed only for the separately admitted **swapless
+  opt-in mutable-RAM compression** feature; it is not a prerequisite to
+  the basic executable/boot codec cutover. Do not install an unused encoder
+  in swap-enabled KCORE. Optimize linked code + stack + workspace together.
 - [ ] Defer shared encoder/decoder routines, unrelated refactoring, and
   generic streaming frameworks until after production integration.
-- [ ] Preserve the existing disk-swap fallback until complete PACKED
-  lifecycle, scheduler and restore regression acceptance. Replacing a codec
-  does not imply enabling process packing or deleting swapping.
+- [ ] Preserve existing **raw** disk swapping. Compressed disk-swap records
+  are explicitly cancelled (v1375). The independently planned swapless
+  PURE-dropping and opt-in mutable-RAM compression must not gate the
+  executable/boot grouped-codec conversion.
 - [ ] Keep all tests in `daimos-testkit`, production documentation in
   `pdp10-doc` **after successful integration**, and update PROJECT-STATE.MD
   only after the corresponding integration milestone genuinely passes.
@@ -49,10 +51,10 @@ its active build in this staging checkpoint.
 
 ## Phase B — production encoder and decoder ABI
 
-- [ ] Keep both `system/kernel/core/d6codec_encode_v053.s` and
-  `d6codec_decode_v053.s` resident and linked exactly once. Give the final
-  production entry symbols stable names without conflating old and new
-  calling conventions.
+- [ ] Link `d6codec_decode_v053.s` exactly once in the required runtime
+  paths. Retain `d6codec_encode_v053.s` as separately qualified code for
+  swapless-only opt-in RAM compression, not mandatory KCORE residency.
+  Give final entry symbols stable names and retain the ABI.
 - [ ] Verify the actual PDP-6 compiler ABI and assembly call sites (not
   merely the testkit prototype). In particular preserve callee-saved
   AC10..AC15, maintain AC17 pushdown stack and define AC0..AC7 clobbers.
@@ -122,16 +124,11 @@ its active build in this staging checkpoint.
   bounded memory and seek/refill behavior.
 - [ ] Review `system/kernel/proc/proc_swap_pdp6.s` and every reference to
   `d6lz36_decode_vfs`, `d6lz36_decode_buffer` or old fixed decoder ABI.
-- [ ] Replace the temporary identity implementation
-  `system/kernel/core/kpack_codec_v1.c` (and its header/interface) with the
-  **real** encoder/decompressor path when hooking up PACKED process state.
-  Never claim compression on an identity-copy path; the allocator must
-  reject nonshrinking results and maintain transactional ownership.
-- [ ] Integrate with the existing inactive packed lifecycle code only after
-  current PROJECT-STATE gates pass: registry, transition discipline,
-  pin/free failure injection, scheduler suppression, eviction/restore
-  rollback and disk-swap fallback. Avoid turning on a partially wired
-  scheduler path.
+- [ ] Treat `kpack_codec_v1.c` as an **inactive identity-copy experiment**,
+  not a functional compressor. Do not activate it or the old PACKED
+  disk-swap lifecycle as part of executable codec conversion. Future
+  swapless-only RAM compression must obey the admission, MM ownership
+  and no-net-RAM-growth requirements of the swapless memory design.
 
 ## Phase E — migrate every format producer and checker
 
@@ -169,12 +166,12 @@ its active build in this staging checkpoint.
 - [ ] Full simulator boot smoke: all Stage-1 devices, KINIT, root selection,
   disk/TSFS filesystems, login, shell, EXEC of compressed applications,
   PURE backing page-in, invalid executable rejection, restart/extents,
-  scheduler/packed tests and disk-swap fallback.
+  scheduler tests and unchanged raw disk-swap behavior.
 - [ ] Failure injection: corrupted compressed boot payload, truncated
-  executable, short VFS read, malformed TSFS extent, no memory for packed
-  payload, encoder insufficient capacity, decoder output mismatch,
-  interrupted eviction/restore. No ownership leaks or partially published
-  process state.
+  executable, short VFS read, malformed TSFS extent, decoder output
+  mismatch and interrupted PURE restore. Future swapless-only mutable
+  RAM compression has its own encoder/eviction/restore fault tests and
+  must not be conflated with this executable format migration.
 - [ ] Confirm every code path is new-format-only via repository search
   (D6LZ36 identifiers, `.d6lz` artifacts and old decode entry symbols),
   while distinguishing legitimate historical documentation.
@@ -193,7 +190,7 @@ its active build in this staging checkpoint.
 2. In an isolated integration branch, switch the boot payload producer,
    Stage-1 decoder, KCORE resident routines, runtime consumers, and image
    builders together. Build **all** compressed artifacts anew.
-3. Execute complete boot/EXEC/TSFS/packing failure-injection regressions.
+3. Execute complete boot/EXEC/TSFS and raw-swap failure-injection regressions.
 4. Merge/deploy only after the new-format boot image and kernel agree.
    Rollback means selecting the **entire previous image/artifact set**, never
    a mixture of old and new compressed objects. There is no in-system

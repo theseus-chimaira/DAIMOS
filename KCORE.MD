@@ -1,3 +1,38 @@
+## 2026-11-09 v1375: P0-D compressed swap retired; swapless reclamation planned
+
+Production disk/drum process swapping remains RAW. The old opt-in
+compressed disk-swap record requirement (decision 5/P0-D) is withdrawn.
+This does not refer to or alter the separate accepted OOM P0-D test
+matrix.
+Swapless-only PURE text dropping and opt-in compression of **mutable
+process RAM** are the replacement work. The existing swap path already
+omits reconstructible PURE sectors from disk writes; this does not
+constitute swapless RAM reclamation. The PDP-6 single contiguous APR
+process mapping requires inactive-state storage and full reconstruction
+before rescheduling. Both new features are currently NOT implemented;
+no KCORE size or executable behavior changed in this revision.
+
+Current KCORE C-source inventory from the actual PDP-6 Makefiles:
+`proc/proc.c`, `fs/file.c`, `proc/vm_pdp6_swap.c` = **3 linked C
+translation units**. `drivers/wall_clock.c` is compiled but its
+`wall_clock.dobj` is removed from the fixed KCORE object list in favor
+of the selected clock MRES/gateway; `proc_pure_attach.c` is textually
+included by `vm_pdp6_swap.c`, not an independent translation unit.
+Most other kernel C sources are KINIT or MRES code or inactive prototypes.
+Canonical design: `../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`.
+
+v1376 implements a separate unlinked, lossless, allocation-free
+36-bit-word RAM codec and gives it accepted host and KCC/PDP-6 native
+unit tests in `daimos-testkit`. Its standalone object has 449 KCC
+text words, no static data/BSS, so no overall savings are established.
+PURE-only inactive-process retention and full APR restoration remain
+unimplemented and must precede any production compression mode.
+
+The older KCORE.MD v219 packed-process task list and historical
+compressed-swap references below are superseded for current scope.
+Keep prior test evidence but do not execute old compressed-disk-swap
+TODOs. The active queue is the top of TODO.MD.
+
 ## 2026-11-08 v1351: complete physical 256K F07 owner lifetime PASS
 
 The fresh v1349 256K PDP-6 guest passed the original strict 18-child
@@ -7068,34 +7103,25 @@ completed until linked, measured and accepted on the relevant PDP-6.
 - [ ] Audit source-level size hotspots, generated objects and real post-p10fold
   link maps; reject optimizations that increase the 32K resident footprint.
 
-## P1: packed-process lifecycle and compression
+## Historical P1 packed-process plan (superseded by v1375)
 
-The v33-v45 packed registry/layout and transaction sources are staged
-experiments, not active production packed processes; retain ordinary swap.
-
-- [ ] Choose a compact dense or bounded sparse packed registry using measured
-  whole-KCORE code + dynamic data + MM extent cost, not isolated v33-v45
-  prototype sizes; preserve MM-authoritative extent ownership.
-- [ ] Connect KINIT registry allocation, boot abort, process exit, VM destroy,
-  packed publication and teardown; validate exclusion and failure rollback.
-- [ ] Complete packed restore against the selected registry, rather than its
-  private descriptor, then integrate packed eviction/restoration with the
-  scheduler; do not remove disk swap before full native acceptance.
-- [ ] Integrate the production D6 codec with the resident KCORE encoder and
-  streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
-  KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan
-  in system/kernel/core/D6CODEC-INTEGRATION-TODO-v054.md.
-- [ ] Measure combined resident codec text, stack, workspace and peak MM
-  descriptors; test direct ABI, malformed input, resumptions, packed
-  transaction failures and real PDP-6 execution before activating it.
+The inactive v33-v46 PACKED registry, eviction and restore prototypes
+remain historical research. The old opt-in compressed **disk-swap**
+track is cancelled. A new swapless-only design retains mutable process
+state in RAM, optionally compresses it by explicit eligibility, drops
+immutable PURE text from *inactive* process storage, and restores one
+full APR extent before the process runs. Disk raw-swap is unchanged.
+No production activation is claimed. See the authoritative
+`pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`.
 
 ## P2: kernel data structures and workload-specific sizing
 
 These are profiling/selection tasks, not claims that the existing MM,
 scheduler, pipe or slot-tier implementations are absent.
 
-- [ ] Evaluate runtime-sized MM extent descriptors versus the current static
-  `MM_MAX_EXTENTS=32` two-word table (mm/mm.h, mm/mm.c, mm/mm_pdp6.s);
+- [ ] Evaluate runtime-sized MM extent descriptors versus the current
+  RAM-scaled `MM_MAX_EXTENTS=136` two-word descriptor capacity
+  (`mm/mm.h`, `mm/mm_pdp6.s`; normal boot may select fewer entries);
   measure nested MAKE/KCC/KCPP load and relocation-sensitive assembly cost.
 - [ ] Compare sorted linear MM scans with optional lookup indexes only for
   measured large-core workloads; avoid permanent small-core dispatch cost.
@@ -7105,9 +7131,9 @@ scheduler, pipe or slot-tier implementations are absent.
   to the post-KCORE filesystem effort (v906).
 - [ ] Profile VFS directory lookup under native MAKE/KCC and test compact
   entry caching or optional indexes, reusing D6FS hashing if advantageous.
-- [ ] Benchmark dense versus sparse packed layout capacity and lookup cost
-  under 24/40/64+ process slots, keeping the inactive experiments isolated
-  until an accepted resident implementation is ready.
+- [ ] For swapless-only inactive process storage, benchmark the smallest
+  MM-authoritative representation against actual 24/40/64-slot usage;
+  do not activate the archived dense/sparse PACKED registry without proof.
 - [ ] Profile intrusive scheduler queue scans at larger process counts before
   adding priority indexing or extra branches to the common context-switch path.
 - [ ] Benchmark the existing fixed eight-word, word-only pipe FIFO ring

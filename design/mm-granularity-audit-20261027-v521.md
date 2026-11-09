@@ -1,5 +1,12 @@
 # PDP-6 memory granularity P0 source audit (v521, 2026-10-27)
 
+**2026-11-09 v1375 scope update:** The earlier v524 expectation of
+eligible-image compressed **disk** swap is withdrawn. Profile MM
+fragmentation after the swapless-only PURE dropping / optional
+mutable-RAM compression feature and other active storage/XIP work
+are stable. The historical v524 paragraph below is retained as
+dated evidence of its original scope, not a current work order.
+
 ## V561 acceptance: full-system scheduler continuation after compaction (2026-10-28)
 
 **Accepted.** The production 256K full-profile PDP-6 SIMH kernel now has

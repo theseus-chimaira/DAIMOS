@@ -1,5 +1,12 @@
 # D6 codec v053 — source staging only
 
+**2026-11-09 v1375 note:** The old intention to wire compression of
+process **disk-swap records** into the grouped-codec cutover is
+cancelled. A separate swapless-only mutable-RAM codec experiment
+exists (v1376), but it is not a dependency for executable format
+conversion. The following v053 text is preserved as historical
+staging evidence, not current production integration requirements.
+
 This checkpoint brings both native PDP-6 routines into the DAIMOS source
 repository **without linking or activating them**. The integration workspace
 will perform the actual codec format cutover, replacing D6LZ36 producers,

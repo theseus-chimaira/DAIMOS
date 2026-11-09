@@ -1,3 +1,58 @@
+## 2026-11-09 v1375: swapless PURE reclamation replaces compressed disk swap
+
+The prior decision 5 / P0-D requirement to implement opt-in compressed
+**disk-swap records** is CANCELLED. Existing production raw swap, its
+PURE-sector omission, and accepted 256K no-partner/OOM tests are unchanged.
+Do not implement disk-swap record compression or use old PACKED prototypes
+to change the production disk path.
+Here P0-D refers only to the numbered workstream in the previous
+inventory; the **unrelated OOM regression suite also named P0-D** remains
+accepted and is not cancelled.
+
+The replacement scope applies ONLY when process swap/backing is absent.
+Two swapless techniques are required: (1) release reconstructible PURE
+executable text while an otherwise inactive process retains all mutable
+memory in RAM, and (2) optionally losslessly compress that mutable memory
+into RAM for explicitly admitted processes. They are separate: PURE text
+drops need not opt in to mutable compression. On PDP-6, text and writable
+memory share one contiguous APR mapping: a process must be quiesced and
+its complete runnable extent reconstructed before scheduling it again.
+The source currently implements PURE omission for disk swap, NOT this
+swapless lifecycle. The old PACKED v1-v46 code is inactive historical
+research, not production acceptance. No new runtime code is enabled by
+this policy change.
+
+Require ownership-preserving MM transitions, a guarded immutable vnode,
+exact count restoration, explicit compression eligibility and distinct
+actual representation state, lossless rollback, bounded restore headroom,
+and true net physical-RAM savings. A failed attempt must not overwrite
+the only valid image or fabricate disk backing. The minimal
+`ROOT=tape TAPE_AUX=none TAPE_TMPFS=0` policy still links no swap,
+BACKSTORE, LOGSTORE, AUXSTORE or MEMFS/TMPFS modules. Any new swapless
+reclamation code must be measured as its own feature and must not silently
+enable those services. No progress or implementation is claimed.
+
+The authoritative design and native acceptance tasks are in
+`../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`; the active checklist is in
+`TODO.MD`. Existing earlier milestone text concerning compressed swap
+is historical only, not an active release instruction.
+
+### v1376 staged no-allocation RAM codec (not production process reclamation)
+
+The new `system/kernel/core/kpack_ram_rle_v1376.[ch]` implements a
+lossless zero-run/repeated-word/literal-run codec for 36-bit process
+words, with exact-length preflight, output capacity limits and zero
+dynamic allocations. It is NOT included in the production Makefiles.
+Host roundtrip/malformed/boundary acceptance and a KCC-generated,
+real PDP-6 SIMH encode/decode/negative ABI test PASS in daimos-testkit
+`swapless-ram-codec-v1376`. Standalone KCC/DAS/DLINK object measured
+449 instructions with no static DATA/BSS. This high code cost is not
+yet justified by measured net physical RAM savings; no claim of
+optimized KCORE, eligible process admission, PURE dropping, process
+eviction or complete restore is made. First implement and verify the
+PURE-only inactive RAM lifetime, then benchmark whether adding a
+compressor is economically sound on 32K/48K configurations.
+
 ## 2026-11-09: unified TSFS design direction (no runtime changes)
 
 The proposed DECtape redesign replaces separate native DTFS/TSFS formats

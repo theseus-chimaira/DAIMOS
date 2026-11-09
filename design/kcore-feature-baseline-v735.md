@@ -1,5 +1,14 @@
 # KCORE feature-phase size baseline v735 (2026-10-30)
 
+**Policy reconciliation, 2026-11-09 v1375:** This is a historical size
+baseline, not a current feature list. Previous item 5's opt-in
+compressed **disk-swap** requirement is cancelled. Swapless-only PURE
+text dropping and opt-in mutable RAM compression are the new track.
+The item 3 TSFS v1.2 sharding mandate is superseded by unified TSFS
+v1374; the new format remains deferred until after KCORE optimization.
+Earlier OOM/swap scheduler blockers were later retested and accepted
+in the defined v1298/v1351 profiles.
+
 Source HEAD: `eb7a407` (v734), with pre-existing working-tree changes
 in KCORE.MD, PROJECT-STATE.MD and userland/dsh/dsh_exec.c left untouched.
 
@@ -31,12 +40,12 @@ under-020000 target is deferred until the KCORE feature freeze.
    bootstrap blocker; isolated swap failure tests do not replace this gate.
 2. Complete shared AUXSTORE/BACKING integration, native provisioning and
    failure acceptance; retain fail-closed VOLUME behavior.
-3. Complete D6 codec integration and TSFS v1.2 sharded metadata against
-   the agreed VFS/KCORE interfaces.
+3. Complete D6 codec integration; unified TSFS is separately scheduled
+   after KCORE under v1374 and is not a mandatory sharded format.
 4. Complete the privileged raw MEMFS XIP process path and full native
    process-lifecycle acceptance before enabling it in production.
-5. Complete and benchmark opt-in compressed process swap, including
-   rollback and mixed compressed/uncompressed records.
+5. Superseded v1375: omit PURE text and optionally compress mutable RAM
+   only for swapless processes; do not implement compressed disk swap.
 6. Revalidate all KINIT/MRES direct bindings and driver watchdog failure
    paths, including removable-provider lifetime behavior.
 7. Measure actual loaded-module sets and peak physical RAM independently

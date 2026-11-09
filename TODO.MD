@@ -1,3 +1,46 @@
+## 2026-11-09 v1375: swapless reclamation replaces compressed disk swap
+
+The former decision 5/P0-D executable-opt-in **compressed process disk
+swap** feature is CANCELLED. Production raw disk/drum swap stays intact.
+Do not implement an encoded disk-swap record type or use the historical
+PACKED v1-v46 code as a production-ready subsystem.
+The separate v1298 **P0-D OOM test suite** remains closed; the name
+collision is only with the previous summary's workstream label.
+
+- [ ] **PURE dropping on swapless systems:** after validating immutable
+  executable backing and the PURE prefix, quiesce a process, retain all
+  writable user words in managed RAM, free the old APR-aligned process
+  extent, then reconstruct PURE from its guarded vnode and restore all
+  writable bytes before scheduling. Preserve mount/file lifetime, process
+  state, PID/WAIT and failure rollback. No partial runnable images.
+- [ ] **Opt-in mutable-RAM compression, swapless systems only:** default
+  uncompressed; authorize per validated executable/privileged policy;
+  record eligibility separately from actual RAM representation. Compress
+  only after a two-phase ownership-preserving transaction into separate
+  RAM, and only with proven net memory savings. Preserve raw-RAM
+  fallback, exact restored word count and no temporary peak-RAM hazard.
+  Never allocate or write a disk swap record.
+- [x] **v1376 staged codec proof:** implement a bounded, allocation-free
+  36-bit-word RAM run codec; pass host roundtrip/error/count limits,
+  native KCC-generated PDP-6 encode/decode/error ABI and DAS/DLINK
+  acceptance. Standalone KCC object is 449 code words with zero BSS/data.
+  This is a component PASS, NOT process eviction or a net-RAM improvement.
+- [ ] **v1376 next:** measure a PURE-only no-compression inactive-state
+  lifecycle, then compare a smaller grouped-codec reuse or faster/lower
+  text-size alternatives before linking the staged run compressor.
+- [ ] Measure 32K/48K swapless KCC linked residency, temporary workspace,
+  scheduler/VM overhead, APR fragmentation and restore headroom. Native
+  SIMH/AAP tests in daimos-testkit: multiple inactive processes, PURE
+  reconstruction, mutable bytes, successful resume, EXEC/EXIT/WAIT/reap,
+  denied mutation/unmount, non-PURE/incompressible fallback, MM/provider
+  failures, OOM and negative rollback. No production implementation has
+  been enabled yet.
+- [ ] Implement only in explicitly swapless profiles. Existing
+  `ROOT=tape TAPE_AUX=none TAPE_TMPFS=0` continues to omit swap,
+  BACKSTORE, AUXSTORE, LOGSTORE and RAM-only TMPFS/MEMFS. Swap-enabled
+  systems retain their present raw process swap without the new policy.
+  See `../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`.
+
 ## Unified DECtape filesystem redesign (documentation direction, 2026-11-09)
 
 - [ ] Replace the two native DECtape formats and providers with one TSFS
@@ -50,7 +93,7 @@
   `$TMPDIR/daimos-d6codec-native-baseline-v1350-evidence-r1.tar.gz`,
   SHA256 `a1052dfa875e91213faf39da2643c9b87721492d2d365c281f98ddfe13ce5ea3`.
 - [ ] Next: atomic grouped codec production/boot/consumer cutover,
-  then remaining BSTORE, restricted XIP, compressed swap, grouped
+  then remaining BSTORE, restricted XIP, swapless PURE/RAM reclamation, grouped
   integration and final permanent KCORE RAM minimization. The native
   codec staging PASS is not a production cutover acceptance.
 - [x] No production KCORE/MM/FS/PI6/swap source modification, new
@@ -462,7 +505,7 @@
   SHA256 `5dcb4d75ea6ea2291e5ec01f54874ce8d704713c1608fff9dcd64ab8aab83221`.
 - [ ] Separate pre-final-KCORE feature tracks: D6CODEC streaming
   cutover, BSTORE consumer integration, restricted MEMFS raw XIP,
-  and executable-opt-in compressed swap. No size optimization yet.
+  and swapless PURE/RAM reclaim. No size optimization yet.
 
 ## v1296: F12 exact-source guest coverage, host qualification outstanding
 
@@ -4183,7 +4226,7 @@ V524 SEQUENCING (2026-10-27): current fragmentation readings are useful
 as correctness diagnostics, not final optimization evidence. First validate
 native APR isolation, MM ownership, pin/release, compaction and transactional
 swap/BRK failure recovery without resident telemetry. BSTORE, production XIP
-and compressed swap change occupancy and lifetimes. After those features
+and swapless process reclaim change occupancy and lifetimes. After those features
 are accepted, measure representative 32K/48K/256K physical high-water,
 free gaps, APR rounding and fragmentation and only then optimize placement
 or compaction based on net physical RAM and CPU measurements.
@@ -4197,7 +4240,7 @@ not an optimization. Next measure rounding waste per user VM and enumerate
 any software-managed consumers that actually overallocate at 02000 octal.
 Only implement reductions where supported by hardware and measurements.
 
-- [ ] After BSTORE/XIP/compressed swap integration, measure physical allocation high-water, total free words, largest free
+- [ ] After BSTORE/XIP/swapless reclaim integration, measure physical allocation high-water, total free words, largest free
   gap, process APR rounding waste and extent-descriptor overhead on 32K,
   48K and 256K workloads in daimos-testkit.
 - [ ] Evaluate placement and compaction against measured fragmentation;
@@ -4452,34 +4495,28 @@ outstanding, NOT that scheduling is undecided.
   unpin and rollback; validate scheduled process lifetime on native PDP-6
   simulators. Existing admission and isolated VM tests are not production
   process-launch acceptance. Decision recorded, implementation outstanding.
-- [ ] **DECISION 5 ACCEPTED (2026-10-27):** Implement and benchmark opt-in
-  compressed process swap BEFORE final KCORE optimization, restricted to
-  explicitly allowed executable images (for example, the shell). Mark
-  eligibility in a validated executable-header flag at EXEC; unmarked or
-  unapproved images MUST use raw swap without attempting compression.
-  Fork inherits the opt-in only as appropriate to the image contract; EXEC
-  replaces it. Keep an independent swap-record compressed bit recording
-  actual encoding, plus atomic failure/non-shrinking raw fallback. Confirm
-  eligibility cannot be forged by untrusted executables or writable media.
-  Benchmark PDP-6 ticks, compressed blocks, transient RAM and full linked
-  resident size. Accept production only with no net permanent RAM growth
-  and passing mixed raw/packed rollback and process tests in daimos-testkit.
-  Decision recorded; not yet implemented or benchmarked.
+- [ ] **DECISION 5 REPLACED (2026-11-09 v1375):** Complete swapless-only
+  PURE image dropping and opt-in in-RAM mutable-state compression, with
+  exact MM/process ownership and full native lifecycle acceptance before
+  the final KCORE size sweep. Disk-swap compression is not a requirement.
+  See the active v1375 checklist above and the subject design in
+  `pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`.
 
-### Deferred post-KCORE work: TSFS v1.2 (not a KCORE gate)
+### Deferred post-KCORE work: unified TSFS (not a KCORE gate)
 
-- [ ] **DECISION 2 ACCEPTED (2026-10-27; deferred v903):** After ALL
-  KCORE feature completion, regression acceptance and KCORE optimization,
-  implement TSFS v1.2 sharded metadata, reader, boot/format compatibility
-  and native tests, before the 0.9 release. Keep TSFS-specific changes in
-  provider MRES and host tools wherever possible; audit any necessary
-  KCORE/VFS/KINIT ABI impact when the TSFS effort actually starts.
-  Do not make TSFS v1.2 a blocker for KCORE completion or its size sweep.
+- [ ] **DECISION 2 UPDATED (2026-11-09 v1374):** After KCORE feature
+  completion, regression acceptance and optimization, implement **one
+  unified TSFS** namespace/read engine and the new root/auxiliary profiles.
+  No legacy DTFS/TSFS or TENEX/ITS compatibility is needed. The historical
+  sharded-metadata proposal is input for measuring metadata locality,
+  not a mandated format. Keep FS-specific work in the provider MRES
+  and host tools; audit necessary KCORE/VFS/KINIT ABI changes separately.
+  Implement and test before 0.9, not as a current KCORE sweep gate.
 
 Explicitly outside the 0.9 final KCORE functional freeze unless a verified
 release dependency is found: new dynamic/unloadable MRES framework, user
 overlays, runtime module movement, hardware pager,
-Type-340 input/chess, PDP-6 TS 1.4 foreign DECtape, and full 32K DSH
+Type-340 input/chess and full 32K DSH
 command execution (separate DSH shrink effort). Never auto-load MEMFS
 based on AUXSTORE presence. Do not treat KCORE `proc_swap`, `bcache`,
 `fs_mres`, p10fold or dead-data audits as functional prerequisites.
@@ -4487,7 +4524,7 @@ based on AUXSTORE presence. Do not treat KCORE `proc_swap`, `bcache`,
 The **online D6FS packer and other agreed storage/admin extensions are
 required for 0.9**, not post-0.9. This release-scope correction does not
 bring the deferred DTFS/TSFS work into the current KCORE feature sequence.
-TSFS v1.2 is explicitly scheduled after completion of KCORE.
+Unified TSFS is explicitly scheduled after completion of KCORE.
 Implement these features before release acceptance; KCORE feature
 implementation takes precedence over any new size-optimization sweep.
 
@@ -5237,107 +5274,7 @@ KERNEL ABIS.
   THAN INVENTING A LARGE GRAPHICS INPUT SUBSYSTEM.  COVER LIGHT-PEN HIT, DATAI
   COORDINATES, EDGE/STOP CONDITIONS, ACKNOWLEDGEMENT, AND RESUME ON AAP-PDP6.
 
-- ADD DEC PDP-6 TIMESHARING SYSTEM 1.4 DECTAPE FORMAT COMPATIBILITY TO DTFS AS
-  ANOTHER FOREIGN MEDIA PERSONALITY.  START READ-ONLY: DETECT/VALIDATE THE
-  MONITOR 1.4 FORMAT, READ ITS BLOCK-1 DIRECTORY AND FOUR-WORD DIRECTORY
-  ENTRIES, AND MAP LOOKUP/READDIR/STAT/FILE READS THROUGH THE EXISTING
-  DTC/BCACHE/VFS PATH.  REUSE THE EXISTING PACKED PERSONALITY STATE; `030` IS
-  CURRENTLY AVAILABLE AFTER NATIVE `000`, TENEX `010`, AND ITS `020`.
-  CONSIDER WRITABLE COMPATIBILITY ONLY AFTER READ-ONLY SUPPORT HAS GOLDEN-IMAGE
-  TESTS FOR DIRECTORY, BLOCK-CHAIN, AND ALLOCATION SEMANTICS.  DO NOT IMPLEMENT
-  THIS BEFORE 0.9.
 - RECOVERY/SINGLE-USER MODE: BOOTABLE RECOVERY DECTAPE MEDIA USING THE NORMAL
   MAINTENANCE TOOLS; DO NOT ADD AN INITFS ROOT.
 - SLAVE REVERSE INTERRUPTS AND PCLK INTERRUPT DELIVERY.
 - A HARDWARE-PAGER VM BACKEND FOR LATER PDP-10 MACHINES.
-
-## Deferred: executable opt-in for compressed process swap (2026-10-15)
-
-### v763: variable-sized in-place swap exchange (critical correctness)
-
-- [ ] Establish the bounded, lossless sector-transfer order for unequal
-  resident/swap sizes and unequal PURE boundaries; see
-  `design/swap-exchange-v763.md`. RAM capacity, disk extent capacity,
-  contiguous allocation, and workspace lifetime are distinct invariants.
-  No persistent journal/crash recovery is required for volatile swap.
-- [ ] Implement and test exchange as a new transaction only when source
-  preservation, MM ownership, BACKSTORE bitmap accounting, and process
-  descriptor publication are proven. Keep the current disk format unless
-  variable-sized exchange demonstrably requires a replacement. Accept only
-  after native writer WAIT/EXIT and failure-injection regression pass.
-
-### v761: optional link-time compression of PURE executable backing
-
-
-- [ ] Evaluate opting PURE DXR2 executables into the already-supported
-  compressed executable-payload format at link time. Measure raw versus
-  encoded storage blocks and estimate PDP-6 decode time for disk and DECtape;
-  select compressed backing only when it pays off. Reuse existing executable
-  size/PURE-boundary metadata and swap-in reload; do not confuse executable
-  payload compression with runtime process-state compression.
-- [ ] Validate original-image reconstruction and repeated PURE eviction /
-  reload for compressed and raw DXR2, without storing another compressed
-  text copy in RAM by default. Keep this strictly deferred and independent
-  from the currently failing native raw-swap pressure regression.
-
-
-### v760 design separation: capacity recovery first; compression later
-
-- [ ] Treat RESIDENT, PACKED-in-RAM, and DISK as *alternative storage
-  representations*, not a mandatory RESIDENT -> PACKED -> DISK sequence.
-  A disk-backed image may be raw or compressed. The reclaim policy must
-  select a representation using measured RAM savings, BACKSTORE blocks,
-  compression CPU cost, restore latency, and scratch/rollback headroom.
-  On a PDP-6, do not assume compressing before each disk swap is faster.
-- [ ] Preserve the original *logical process image size* in the stable
-  process descriptor across every storage transition, independently of
-  the encoded payload length. For PACKED, also retain the omitted PURE
-  boundary and decoded writable extent; for compressed DISK, retain the
-  encoded block count and exact decoded word count, including any padding.
-  First audit the existing three-word process descriptor, one-word
-  overloaded disk record, stable u-area, and two-bit storage mode map;
-  do not allocate another per-slot word or steal an encoding bit without
-  proving non-overlap. Reject mismatching sizes on restore.
-- [ ] Before activation, benchmark PURE prefix omission alone against
-  raw disk swap, compressed disk swap, and PACKED-in-RAM using actual
-  process data and PDP-6 timing; record worst-case incompressible images
-  and temporary peak RAM, not only compression ratios. Reuse lossless
-  codec primitives where safe, not disk/RAM transaction semantics.
-- [ ] Keep the native v758/v759 writer deadlock as a separate critical
-  correctness problem. Fix resource-pressure admission/forward progress
-  without making either compressed swap or PACKED a prerequisite. First
-  establish which eligible victims require 208 blocks after PURE omission;
-  then specify an admission/headroom invariant covering the case with no
-  runnable resident producer of free RAM or swap space. Preserve valid
-  swapped processes on retryable pressure and require passing native
-  writer WAIT/EXIT acceptance. A cooldown is not a capacity guarantee.
-
-- [ ] Reserve an unused, backwards-compatible DXR executable-header flag
-  (`COMPRESSIBLE` or equivalent) after auditing existing DXR flag allocations.
-  This flag describes the expected compressibility of *runtime process memory*;
-  it is distinct from the existing DXR `COMPRESSED` executable-payload flag.
-- [ ] On `exec`, initialize the process compressibility bit from the executable;
-  inherit it across `fork`, and replace it on a subsequent `exec`. Keep the
-  default uncompressed for unmarked executables; no adaptive statistics,
-  heuristics, size-only prepass, or runtime policy controls initially.
-- [ ] Swap-out: bypass the codec entirely for unmarked processes. For marked
-  processes, attempt the native compressor; if it cannot encode safely or
-  produces no useful reduction, retain the existing raw swap transaction.
-  Preserve atomic allocation/write/rollback semantics on any failure.
-- [ ] Keep a separate *swap-record* `COMPRESSED` bit to describe the actual
-  stored representation, independent of the process opt-in bit. Swap-in must
-  decode according to the record and validate the exact restored word count.
-- [ ] Before activation, benchmark representative non-text 36-bit process
-  images with AAP logical ticks for encode/decode, compressed block count,
-  temporary stack/RAM, and I/O tradeoffs. Test roundtrip, incompressible
-  fallback, allocation failure, rollback, `fork`/`exec` inheritance and
-  mixed compressed/raw swap records in daimos-testkit. Do not modify the
-  running parallel kernel implementation as part of this TODO entry.
-
-- [x] v618 mutually exclusive PCLK/SCLK MRES: KINIT boot selection,
-  shared APR scheduler, target GETTIME/SETTIME acceptance, and measured
-  linked low-memory occupancy. Both calendar providers are optional.
-
-- [x] v618 native exclusive-provider gate: testkit
-  `daimos-clock-mres-v618` PASS at 50 and 60 Hz, with PCLK enabled
-  and disabled in separate clean boots. Lowmem GCC links PASS at both rates.

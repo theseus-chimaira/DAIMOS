@@ -1,5 +1,14 @@
 # v761: Link-time compressed PURE executable backing (deferred)
 
+**2026-11-09 v1375 supersession:** This is an archival experiment for
+compressing immutable DXR executable payloads, not a specification for
+compressing process disk-swap records. The old runtime-COMPRESSIBLE
+disk-swap record proposal has been cancelled. For swapless machines,
+the active replacement is PURE-only inactive-process text dropping
+with optional opt-in *mutable-RAM* compression, not compressed disk
+swap. See `pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`. The original text
+below remains dated research and is not an active implementation queue.
+
 Status: design idea only; no kernel, linker, or codec change authorized.
 
 DAIMOS already supports DXR2 compressed executable payloads via D6LZ36
