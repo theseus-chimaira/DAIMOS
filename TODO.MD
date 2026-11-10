@@ -12,12 +12,17 @@
   53-file/401-extent image and native PDP-6 decoding of
   LOGIN's actual 149-word final compressed restart.
 - [x] Cold boot 256K TSFS-root to ROOT LOGIN and DSH V1.
+- [x] Execute external ECHO from the real TSFS root and
+  return to DSH prompt. The 240-second guest-command
+  allowance passes; the earlier 70-second allowance timed out.
 - [x] Reconstruct complete LOGIN, DSH and ECHO executables
   directly from the real TSFS restart extents; compare every
   decoded/stored word against the linked source DXRs.
-- [ ] Complete guest ECHO execution and full compressed
-  restart-file regression; distinguish long DECtape seeks
-  from EXEC/TSFS failures with bounded simulator traces.
+- [x] Complete guest ECHO execution and compressed LOGIN
+  restart-file acceptance in the full 256K TSFS-root image.
+- [ ] Expand TSFS guest acceptance to additional external
+  executables and low-memory profiles. Preserve bounded
+  simulator timeouts and never treat timeout as success.
 - [ ] Retain strict 32K/48K memory gates as open.
 
 ## 2026-11-10 v1460 five-device Stage-1 completion

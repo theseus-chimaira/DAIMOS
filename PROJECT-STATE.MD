@@ -21,7 +21,10 @@ LOGIN compressed restart (149 decoded words, 64 compressed)
 passes the independent host decoder and native PDP-6 v1458
 fixed-core/VFS test. A real 256K TSFS-root cold boot with
 isolated media reaches INIT, ROOT LOGIN and DSH V1. The
-guest ECHO completion is still under independent acceptance.
+external guest ECHO execution also **PASSES** with the
+DECtape guest-command timeout extended to 240 seconds.
+The original 70-second allowance was insufficient for this
+media access pattern; no kernel or codec changes were needed.
 An additional independent reconstruction of all TSFS restart
 extents against their source DXRs passes for LOGIN (3221 words,
 13 extents), DSH (15760 words, 62 extents), and ECHO (1035
