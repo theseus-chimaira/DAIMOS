@@ -6,7 +6,7 @@
  * tape containing the DAIMON header and first compressed segment, prompts
  * "TAPE2 ", resets the reader, then appends a counted second compressed
  * segment. Both segments must exactly equal the declared compressed-word count.
- * The fixed block LZ/RLE decoder is then installed at 000060 and expands KINIT at
+ * The fixed D6LZ36 decoder is then installed at 000060 and expands KINIT at
  * 030000. AC17 is reset above the image before entry.
  *
  * Type-760 PTR exposes no reader-error status; a missing tape therefore waits
@@ -129,15 +129,15 @@ daimon_magic:.word 0444151555756
 bootstrap_sixbit_image:
         .include "../common/sixbit-fixed.inc"
 
-        .include "../common/block_decompressor_v1458.inc"
+        .include "../common/decompressor.inc"
 
 ; Production Stage0 loads PTR Stage1 at 000060.  Keep the decoder-copy and
 ; post-copy instructions above the installed 000060 decoder image.
 stage1_handoff:
-        movei 01,d6b_image_start_v1458
+        movei 01,d6lz_image_start
         hrl 01,01
-        hrri 01,d6b_low_base_v1458
-        blt 01,d6b_low_base_v1458+(d6b_image_end_v1458-d6b_image_start_v1458)-1
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
 
         movei 012,030000
         move 013,image_words
@@ -146,7 +146,7 @@ stage1_handoff:
         move 04,compressed_words
         move 014,012
         setz 011,
-        pushj 017,d6b_low_base_v1458
+        pushj 017,d6lz_fixed_base
         jumpn 00,bad_tape
         jumpn 04,bad_tape
         move 017,012                  ; KINIT stack starts at image end

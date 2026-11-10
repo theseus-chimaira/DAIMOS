@@ -1,3 +1,21 @@
+## 2026-11-10 v1462: merge complete, production D6LZ36 retained
+
+- [x] Integrate all fetched feature-branch tips and their common ancestors
+  in DAIMOS, daimos-testkit and pdp10-doc. Preserve unique historical
+  status sections and independently committed native toolchain advances.
+- [x] Reconcile the divergent v1459/v1461 codec branch histories; retain
+  new versioned sources/tests without selecting the new production decoder.
+  Restore original D6LZ36 Stage-1/KCORE/host/userland release inputs.
+- [x] Build fresh lowmem disk-root and measure KCORE 9687, SWAP MRES 1762,
+  KCORE+MRES 16367; the known strict single-root overage remains 31 words.
+- [x] Re-run native PDP-6 BACKSTORE ownership, checked swap-in rollback,
+  metadata and exchange cleanup tests against the merged source.
+- [ ] Repair the 31-word strict single-root placement deficit after the
+  remaining correctness/integration work, without changing kernel ABI.
+- [ ] Complete trusted MEMFS raw-XIP RUN/EXEC and swapless PURE pressure
+  scheduling; then independently consider the block-codec production
+  cutover using the retained v1461 and earlier acceptance suites.
+
 ## 2026-11-10 v1406: current physical swap acceptance and remaining scope
 
 - [x] Fresh strict 256K PDP-6 KCC DSK/D6FS F07 full guest on committed

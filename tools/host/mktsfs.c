@@ -1,7 +1,7 @@
 /* mktsfs.c - create a TSFS DECtape set. */
 
 #include "tsfs-format.h"
-#include "d6block-codec-v1452.h"
+#include "d6lz-codec.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -961,7 +961,7 @@ main(int argc, char **argv)
                             TSFS_BLOCK_WORDS;
                         compressed = NULL;
                         compressed_words = 0U;
-                        if (d6block_compress_v1452(source + logical_start,
+                        if (d6lz_codec_compress(source + logical_start,
                             logical_words, &compressed, &compressed_words) != 0) {
                                 free(source);
                                 goto fail;
@@ -970,7 +970,7 @@ main(int argc, char **argv)
                         blocks = raw_blocks;
                         if (raw_blocks > 1U && compressed_words + 2U <=
                             TSFS_BLOCK_WORDS) {
-                                flags = TSFS_EXTENT_FLAG_BLOCK;
+                                flags = TSFS_EXTENT_FLAG_D6LZ;
                                 blocks = 1U;
                         }
                         while (data_member < members &&
@@ -984,7 +984,7 @@ main(int argc, char **argv)
                         }
                         dst = images[data_member] +
                             (size_t)next_block[data_member] * TSFS_BLOCK_WORDS;
-                        if (flags == TSFS_EXTENT_FLAG_BLOCK) {
+                        if (flags == TSFS_EXTENT_FLAG_D6LZ) {
                                 dst[0] = logical_words;
                                 dst[1] = compressed_words;
                                 memcpy(dst + 2U, compressed,

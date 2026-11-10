@@ -89,7 +89,7 @@
  * MEMBER_INDEX,,START_BLOCK.  SHAPE is FLAGS,,BLOCK_COUNT.  CHECKSUM covers
  * every 36-bit word in the extent blocks, including zero padding in the last
  * block. Regular-file data uses fixed 0400-word restart extents. Each
- * extent is explicitly encoded as STORED or block LZ/RLE.
+ * extent is explicitly encoded as STORED or D6LZ.
  */
 #define TSFS_EXTENT_WORDS            4U
 #define TSFS_EXTENT_FILE_WORD_START  0U
@@ -97,7 +97,7 @@
 #define TSFS_EXTENT_SHAPE            2U
 #define TSFS_EXTENT_CHECKSUM         3U
 #define TSFS_EXTENT_FLAG_STORED     0U
-#define TSFS_EXTENT_FLAG_BLOCK       1U
+#define TSFS_EXTENT_FLAG_D6LZ       1U
 #define TSFS_EXTENT_FLAG_MASK       1U
 #define TSFS_RESTART_WORDS          0400U
 

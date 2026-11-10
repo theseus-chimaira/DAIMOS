@@ -21,7 +21,7 @@
 ; reconstructs a round-robin compressed
 ; image stream across one to four
 ; members, skips each member's bad-run
-; table, stages the block LZ/RLE payload after
+; table, stages the D6LZ36 payload after
 ; its final image range, expands it at
 ; 030000, and jumps to the relative entry.
 ;
@@ -29,7 +29,7 @@
 ;   0  SIXBIT DAIMON
 ;   1  uncompressed_words,,entry_offset
 ;   2  compressed_words,,0
-;   3+ block LZ/RLE payload
+;   3+ D6LZ36 payload
 
         .text
         .globl __start
@@ -409,10 +409,10 @@ fail_decompress:
         jrst stage1_fail_b1
 
 stage1_handoff:
-        movei 01,d6b_image_start_v1458
+        movei 01,d6lz_image_start
         hrl 01,01
-        hrri 01,d6b_low_base_v1458
-        blt 01,d6b_low_base_v1458+(d6b_image_end_v1458-d6b_image_start_v1458)-1
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
 
         ; Expand the opaque boot image into its normal KINIT load address.
         movei 012,030000
@@ -422,7 +422,7 @@ stage1_handoff:
         move 04,compressed_words
         move 014,012                  ; output base for match validation
         setz 011,                      ; force first control-word load
-        pushj 017,d6b_low_base_v1458      ; execute installed low-core core
+        pushj 017,d6lz_fixed_base      ; execute installed low-core core
         jumpn 00,fail_decompress
         jumpn 04,fail_decompress        ; exact compressed payload required
 
@@ -435,7 +435,7 @@ stage1_enter_kinit:
 
 daimon_magic: .word 0444151555756
         .include "../common/stage1-error.inc"
-        .include "../common/block_decompressor_v1458.inc"
+        .include "../common/decompressor.inc"
         .bss
 any_read_ok: .block 01
 current_unit: .block 01

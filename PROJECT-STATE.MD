@@ -1,3 +1,34 @@
+## 2026-11-10 v1462: branch convergence without premature D6 codec cutover
+
+All fetched local/remote feature-branch histories in the DAIMOS,
+daimos-testkit and pdp10-doc repositories were integrated into the
+v1462 merge worktrees. The ancestry gate finds no remaining unmerged
+`origin/*` feature branch. Independent native compiler, assembler and
+linker lines, older E07/F10 checks, grouped/block codec experiments,
+and the divergent v1459 and v1461 Stage-1/TSFS lines retain their
+commits. Existing v1316 user worktree changes were not used or modified.
+
+The codec cutover is **still deferred**. Integration retains all newly
+versioned v1420-v1461 block-codec implementations, host encoder sources,
+native tests, and historical experimental/guest reports, but restores
+every release-selected Stage-1, KCORE, VFS, swap, host-tool and userland
+decoder input from the pre-codec integration commit. This includes the
+historical `d6lz.h` and `d6lz.c` files that Git identified as renames.
+Production remains on the accepted D6LZ36 format and the complete v1405
+checked-BACKSTORE-free transaction; v1461's isolated TSFS acceptance is
+NOT a blanket acceptance of the new combined release tree or authorization
+for codec cutover.
+
+The fresh GCC disk-root lowmem size gate built the integrated tree and
+reported fixed **KCORE 9687 words**, **SWAP MRES 1762 words**, and total
+**KCORE+MRES 16367 words**, exactly the accepted v1406 figures. The
+strict single-root 16K permanent-placement limit still fails by **31
+words**, an established pre-existing gap. Native PDP-6 v1405 checked
+swap-in refusal/retry, v1393 BACKSTORE owner validation, v803 metadata
+integration, and v787/v781/v782 exchange cleanup tests PASS against the
+integrated source. More complete raw-XIP RUN/EXEC, swapless PURE, 32K
+placement and compiler/assembler release acceptance remain open.
+
 ## 2026-11-10 v1406: strict 256K full-guest SWAP ownership acceptance PASS
 
 Following the committed/pushed v1405 checked-release transaction changes,

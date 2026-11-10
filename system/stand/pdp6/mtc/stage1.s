@@ -19,7 +19,7 @@
 ;       word 0      SIXBIT DAIMON
 ;       word 1      uncompressed_words,,entry_offset
 ;       word 2      compressed_words,,0
-;       remainder   block LZ/RLE payload
+;       remainder   D6LZ36 payload
 ;
 ; Compressed input is staged immediately after the final image range, expanded
 ; at 030000 by the shared fixed low-core decoder, and entered at the relative
@@ -53,13 +53,10 @@ start:
         pushj 017,read_word
         hlrz 013,03
         jumpe 013,bad_tape
-        ; v1460: AC5 is the fixed decoder's back-reference source register.
-        ; Hold the entry address in otherwise-unused AC16 across decoding.
-        ; No new instruction or static storage is necessary.
-        hrrz 016,03
-        caml 016,013
+        hrrz 05,03
+        caml 05,013
         jrst bad_tape
-        addi 016,030000
+        addi 05,030000
         pushj 017,read_word
         hlrz 04,03
         jumpe 04,bad_tape
@@ -99,25 +96,25 @@ read_wait:
 read_error:
         jrst bad_tape
 daimon_magic: .word 0444151555756
-        .include "../common/block_decompressor_v1458.inc"
+        .include "../common/decompressor.inc"
 
 ; Execute the decoder installation from above its low-core destination.
 stage1_handoff:
-        movei 01,d6b_image_start_v1458
+        movei 01,d6lz_image_start
         hrl 01,01
-        hrri 01,d6b_low_base_v1458
-        blt 01,d6b_low_base_v1458+(d6b_image_end_v1458-d6b_image_start_v1458)-1
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
 
         movei 012,030000
         move 03,012
         add 03,013
         move 014,012
         setz 011,
-        pushj 017,d6b_low_base_v1458
+        pushj 017,d6lz_fixed_base
         jumpn 00,bad_tape
         jumpn 04,bad_tape
         move 017,012                  ; KINIT stack starts at image end
-        jrst 0(016)
+        jrst 0(05)
 
 bad_tape:
         .include "../common/stage1-error.inc"

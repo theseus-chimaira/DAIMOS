@@ -1,3 +1,19 @@
+## 2026-11-10 v1462: merged branches; fixed footprint unchanged
+
+Merged native-toolchain and v1420-v1461 block-codec experiment histories
+without activating their unaccepted alternate production decoder.
+Release Stage-1, KCORE, filesystem, swap and host tools keep the existing
+D6LZ36 decoder while versioned block-codec sources and tests remain
+available for isolated research. This avoids silently combining a codec
+format change with the already accepted v1405 BACKSTORE release behavior.
+
+Fresh GCC disk-root lowmem measurements: **9687 fixed KCORE words**,
+**1762 SWAP MRES words**, **16367 KCORE+MRES words**, with a strict 32K
+single-root permanent-placement deficit of **31 words**. The normal
+native BACKSTORE/swap tests PASS; 256K v1406 F07 full-guest acceptance
+remains historical evidence for the unchanged production code paths,
+not a new full-guest run of every integrated optional feature.
+
 ## 2026-11-10 v1406: full 256K owner/OOM acceptance; no code growth
 
 The committed v1405 SWAP-MRES checked-free implementation now passed the

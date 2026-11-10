@@ -28,9 +28,9 @@
 #define TSFS_FILE_OWNER_SHIFT      9U
 
 /* Regular-file payloads use fixed restart extents.  Metadata is never
- * compressed.  A payload extent is always explicitly STORED or BLOCK. */
+ * compressed.  A payload extent is always explicitly STORED or D6LZ. */
 #define TSFS_EXTENT_FLAG_STORED    0U
-#define TSFS_EXTENT_FLAG_BLOCK      1U
+#define TSFS_EXTENT_FLAG_D6LZ      1U
 #define TSFS_EXTENT_FLAG_MASK      1U
 #define TSFS_RESTART_WORDS         0400U
 
