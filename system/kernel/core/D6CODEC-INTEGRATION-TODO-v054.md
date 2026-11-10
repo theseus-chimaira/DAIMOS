@@ -130,6 +130,19 @@ its active build in this staging checkpoint.
   with native boundary-crossing tests, as part of the atomic cutover.
   Do not add a permanent size word or retain legacy codec support
   solely to solve this problem.
+
+## v1386-v1388 shared executable parser staging (not linked)
+
+- [x] Native standalone DXR1/2 FULL and RAW PURE_PREFIX parse/read
+  engine implemented and tested; existing D6LZ36 compressed FULL
+  delegation retained, but compressed PURE_PREFIX refuses safely.
+- [x] Native real PURE MM restore and a generated disposable EXEC
+  caller both use this common parser/reader and PASS focused tests.
+- [ ] Grouped-codec bounded-prefix cutover, legacy full-reload
+  unification, and permanent-code size reduction still required.
+  The current isolated EXEC FULL refactor adds 105 pre-fold words:
+  do not link the candidate into fixed KCORE without net RAM benefit
+  and full 32K/48K guest acceptance.
 - [ ] Adapt `system/kernel/fs/tsfs_runtime.s` for restart extents and
   immutable compressed contents; verify exact consume/decoded length,
   bounded memory and seek/refill behavior.

@@ -1,3 +1,65 @@
+## 2026-11-10 v1386-v1388: shared EXEC/PURE image engine, staged
+
+The new **unlinked** `system/kernel/proc/exec_image_common_v1386.s`
+provides one DXR1/DXR2 parser and one data loader used in two modes:
+`FULL` fills all initialized text and data (plain DXR1/2 and
+existing exact-bounded D6LZ36 DXR2), while `PURE_PREFIX` loads only
+the whole-sector omitted immutable prefix of a DXR2 PURE file,
+preserving the original writable suffix and user ACs. The parser
+checks executable entry, uncompressed image and BSS lengths, DXR
+magic/shape, compressed payload/relocation-map geometry, text count
+and TX2 tag *before publishing* a four-word temporary descriptor.
+The loader uses the same descriptor for both call paths; compressed
+PURE_PREFIX reports unsupported before writing memory, requiring the
+already tested full-image fallback until bounded grouped-codec
+decoding exists. No permanent process metadata or BACKSTORE is added.
+
+`exec_image_prefix_backing_v1386` in the same staged module converts
+the retained PURE backing record to its canonical provider/mount
+vnode via the existing assembler unpacker, obtains immutable VFS
+file geometry, invokes the common parser, verifies text identity,
+and calls the common `PURE_PREFIX` loader. The separate v1385
+DXR parser remains **only a historical testkit fixture**; no new
+duplicate format parser exists in the DAIMOS source tree.
+
+The testkit v1386 native PDP-6 target regression executes the
+common parser and loader against controlled VFS/D6LZ providers.
+It PASSes plain DXR1/DXR2 FULL, compressed DXR2 FULL delegation,
+plain bounded PURE_PREFIX without writing any suffix word, malformed
+header/tag/text/length rejection, unsupported compressed prefix and
+short read failures. Native v1387 executes that exact shared engine
+through the real v1381 zero-copy DROP and v1384 MM rollback/RESTORE
+transaction, with the actual PURE backing unpacker, including mount
+18 and partial-read rollback. Both PASS. The first v1386 native run
+found a header-count register overwritten by VFS; the parser now
+preserves it across the VFS callback. The test fixture also corrected
+a missing deliberate malformed-length case before final acceptance.
+
+`daimos-testkit/tests/validation/exec-image-cutover-v1388` generates
+an **isolated, throwaway** version of production `exec_load.s` whose
+initial EXEC calls the same four-word DXR parser and FULL payload
+engine. The exact source-linked native PDP-6 test passes DXR1/DXR2
+plain and compressed FULL image loading, privileged RT admission,
+invalid-header refusal, VM NOMEM and rollback after short payload,
+compressed failure and failed PURE attachment. The original
+production `exec_load_process`, `proc_swap_reload_pure`, process
+policy and the Makefile remain completely unchanged.
+
+RAM-first cost gate: the original isolated `exec_load.s` is 183
+PDP-6 text words. The v1388 alternate caller is 119; the common
+v1386 parse/load core **without** the restoration adapter was
+169, a combined **288**, i.e. +105 pre-fold words versus today.
+The adapter extends the standalone shared module to 225 words,
+with zero static DATA/BSS. This is not yet a linked KCORE delta and
+no 32K swapless boot or user-level EXEC replacement has accepted it.
+The extra core text should NOT be linked into the mandatory resident
+KCORE simply because the candidate works in isolation. Continue
+shrinking the common leaf and examining fold opportunities or a
+swapless-specific build with proven net RAM reclaimed, without
+duplicating DXR parsers. The separate 78-word v1385 assembler parser
+is test-only and must not enter KCORE. No new compressed decoding
+format or permanent per-slot size word is introduced.
+
 ## 2026-11-10 v1384/v1385: in-place PURE restore and shared EXEC-loader decision
 
 The new, explicitly unlinked `system/kernel/mm/mm_pure_expand_v1384.s`

@@ -1,3 +1,34 @@
+## 2026-11-10 v1386-v1388: one shared staged DXR engine, cost-gated
+
+`exec_image_common_v1386.s` stages a common four-word DXR parser
+and FULL/PURE_PREFIX image dispatcher, replacing duplicated loader
+logic in a native PDP-6 test without adding per-process state.
+FULL supports existing DXR1/2 plain images and DXR2 compressed FULL
+decoding. PURE_PREFIX is strict about the immutable DXR2 text
+boundary and rejects compressed prefix requests before any user
+memory write. `exec_image_prefix_backing_v1386` uses the canonical
+existing mount/provider backing decoder and the same parser/reader.
+The independent v1385 DXR parser remains testkit-only historical
+evidence.
+
+Native testkit v1386 (shared parser/payload), v1387 (real PURE drop,
+MM reverse rebase and restoration via the shared loader), and v1388
+(actual EXEC caller with the shared loader in a disposable alternate
+assembly source) PASS. v1388 covers DXR1/2, compressed FULL, RT-only
+admission, errors before VM creation, VM shortage, read/decode
+failure and attachment rollback. No mandatory system EXEC source,
+production KCORE Makefile, raw-swap loader or resident C object was
+modified.
+
+Isolated size **before p10fold**: original `exec_load.s` 183 words,
+alternate EXEC caller 119, common parser/payload 169, combined 288
+or **+105 words**. The common adapter for TRUE swapless PURE also
+raises the standalone common object from 169 to 225. Do not count
+these as a production image delta or quietly accept their RAM cost.
+The current target is to consolidate and shrink that code before
+live 32K/48K acceptance. Native tests do not yet prove actual
+filesystem concurrency, hardware PI or booted EXEC/RUN behavior.
+
 ## 2026-11-10 v1384/v1385: in-place RESTORE, no second production loader
 
 The unlinked MM `mm_pure_expand_v1384.s` and transaction

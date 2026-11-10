@@ -1,3 +1,30 @@
+## 2026-11-10 v1386-v1388: shared image engine proven, link size OPEN
+
+- [x] Stage a **single** DXR1/DXR2 parsed metadata and payload engine
+  `exec_image_common_v1386.s`, with FULL and PURE_PREFIX modes,
+  unchanged plain and bounded-compressed FULL behavior, a strict
+  writable-suffix output boundary, and unsupported compressed prefix
+  fallback. No new per-process descriptor or disk swap behavior.
+- [x] Verify on PDP-6: v1386 parser/payload positive and malformed
+  negative vectors, v1387 use through actual PURE MM drop/restore and
+  mount-18 backing, v1388 disposable EXEC caller using the common
+  parser/loader with DXR1/2, compressed FULL, RT root gate,
+  pre-VM failure, no-memory and rollback. All have native PASS.
+- [ ] **Reduce text before production link.** Original EXEC loader
+  183 target words; candidate caller 119 plus common core 169 = 288
+  **(+105 isolated, pre-fold)**, with the restoration adapter adding
+  another 56 text words. Optimize common/parser call overhead,
+  consider safe fold opportunities and compare actual full-profile
+  linked sizes before accepting any permanent KCORE growth.
+  All newly staged source remains unlinked.
+- [ ] Fold existing `proc_swap_reload_pure` full-image semantics into
+  the same validated loader without regressing raw disk/drum swap,
+  including source lifetime and FULL compressed decode.
+- [ ] Complete grouped D6codec bounded compressed PURE_PREFIX,
+  native concurrency and true 32K/48K swapless tape-root boot
+  acceptance. The v1385 independent parser stays testkit-only and
+  must never become a second production loader.
+
 ## 2026-11-10 v1384/v1385: prefix-only RESTORE staged, shared loader pending
 
 - [x] Stage `mm_pure_expand_v1384.s`: claim/release/commit the
@@ -13,7 +40,8 @@
   pressure, failed/short read, unsupported compressed input,
   high mount 18 backing and subsequent full-image fallback PASS.
   The native assembler arena-high comparison defect was fixed.
-- [ ] **Merge the executable loader before any production activation**:
+- [ ] **Complete production cutover only after the v1386-v1388 code
+  size and full-system gates above pass**:
   `exec_load_process` (FULL initial image),
   `proc_swap_reload_pure` (FULL reconstruction) and the testkit-only
   `exec_prefix_fixture_v1385.s` (PURE_PREFIX) must use ONE
