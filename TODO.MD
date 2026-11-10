@@ -1,3 +1,27 @@
+## 2026-11-10 v1424: streaming decompression decision pending
+
+- [x] Benchmark the historical grouped v1367 decoder, aggressively
+  tune its literal/match/zero paths with PDP-6 BLT, and implement a
+  separate compact 36-bit block LZ/RLE alternative with a host
+  producer. Keep all experiments unlinked to production.
+- [x] Optimize the block decoder to v1424, using register-resident
+  continuation and the legacy-style refill ABI. Native PDP-6 VFS,
+  negative, stack and five full-DXR regressions PASS. Measure text,
+  temporary frame, corpus compression, simulator steps and BLT
+  transfer-adjusted approximate timing. See pdp10-doc
+  KERNEL/D6CODEC-STREAMING-OPTIMIZATION-V1424.MD.
+- [ ] Before any atomic production cutover, measure real linked/
+  folded KCORE and all MRES effects, actual nested cold-provider
+  stacks, and full 32K/48K RAM high-water. Even v1424 (164
+  standalone TEXT words) grows code by 67 versus current 97-word
+  D6LZ36, although its temporary frame is 32 words smaller.
+- [ ] Decide the canonical block-versus-grouped format and implement
+  bounded PURE prefix reconstruction. If block wins, rebuild *all*
+  Stage-1/KINIT/DXR/TSFS host and native artifacts atomically, run
+  all five boot devices, EXEC/PURE/TSFS and media-failure regression.
+  Do not install dual decoders or let the optional encoder inflate
+  mandatory KCORE RAM.
+
 ## 2026-11-10 v1384/v1385: prefix-only RESTORE staged, shared loader pending
 
 - [x] Stage `mm_pure_expand_v1384.s`: claim/release/commit the

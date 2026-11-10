@@ -1,3 +1,44 @@
+## 2026-11-10 v1420-v1424: staged streaming codec speed/RAM comparison
+
+Isolated PDP-6 native experiments and the matching versioned testkit
+have now compared untouched staged grouped D6CODEC v1367, a BLT/AC
+hot-path tuned grouped v1420, and two alternative block-LZ/RLE
+implementations v1421/v1424. No production D6LZ36 KCORE, Stage-1,
+KINIT, VFS, executable, or filesystem producer has changed.
+
+The successful v1424 alternative is a new, incompatible 36-bit
+block command format (literal run, zero run, overlapping word copy),
+with a register-resident resumable decoder and validated VFS adapter.
+Its standalone assembly is **75 engine + 89 adapter = 164 TEXT**
+words and zero DATA/BSS; the temporary adapter frame is 40 words.
+The leaf fake-provider native stack canary touched 43 words
+including CRT; the true nested filesystem/EXEC peak is not known.
+The grouped v1367 and v1420 alternatives require 317 and 364
+TEXT words respectively, both with 67-word frames. Production
+D6LZ36 remains 97 combined TEXT words, with a 72-word frame.
+These are not complete linked KCORE RAM deltas.
+
+The available 29-DXR linked corpus has 48,717 uncompressed words:
+35,704 grouped-compressed words versus 37,380 block-compressed
+words. Both formats passed all 29 host roundtrips. Five real full
+DXRs (KCORE, D6FS, MonitorFS, SWAP, tape) passed full native decode
+for v1420, v1421 and v1424, in addition to streaming/refill,
+pathological match, malformed input and stack-canary tests.
+On the 2,477-word mixed-real-DXR native benchmark, simulator
+instruction-step counts were 94,115 (v1367), 57,169 (v1420),
+3,999 (v1421) and 2,490 (v1424). BLT counts as one SIMH step even
+for many transferred words, so these are NOT CPU cycle or real
+PDP-6 time measurements. A separate, explicitly illustrative DEC
+timing-based model includes BLT word transfers.
+
+The RAM-first recommendation is to retain v1424 as the leading
+candidate, not to enable a format change yet: relative to current
+production D6LZ36 it still costs 67 more standalone TEXT words,
+and actual fold/boot/VFS/provider nested stack plus bounded PURE
+prefix loading have not been accepted. The complete benchmark,
+input format and remaining gates are documented in
+../pdp10-doc/KERNEL/D6CODEC-STREAMING-OPTIMIZATION-V1424.MD.
+
 ## 2026-11-10 v1384/v1385: in-place PURE restore and shared EXEC-loader decision
 
 The new, explicitly unlinked `system/kernel/mm/mm_pure_expand_v1384.s`
