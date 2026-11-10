@@ -157,6 +157,21 @@ its active build in this staging checkpoint.
   images before decoding; native oversized mutation tests required.
   The grouped codec must independently support bounded PURE_PREFIX
   output, including cross-boundary MATCH tokens.
+
+## v1391/v1392: bounded FULL callback accepted in native test only
+
+- [x] Introduce v1391 four-argument FULL callback carrying the real MM
+  APR capacity and reject oversize before plain/compressed payload.
+  Native exact-fit, corrupt, high-mount and oversized tests PASS.
+  The unsafe three-argument shared FULL adapter is removed.
+- [x] Resolve the independent KCC symbolic ADDI folding bug at the
+  optimizer source. The v1392 PDP-6 fixed-slot regression PASSes;
+  the full compiler matrix and a small old-failing repro remain open.
+- [ ] Before production link, reduce the v1391 common DXR and FULL
+  transaction cost: 235 TEXT in the common assembler (74 for backing
+  adapter) and 359 TEXT in its standalone C transaction. EXEC plus
+  FULL replacement is +121 pre-fold words even before that C code.
+  Test the actual folded KCORE and swapless 32K/48K RAM high-water.
 - [ ] Adapt `system/kernel/fs/tsfs_runtime.s` for restart extents and
   immutable compressed contents; verify exact consume/decoded length,
   bounded memory and seek/refill behavior.

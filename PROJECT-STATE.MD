@@ -1,3 +1,68 @@
+## 2026-11-10 v1391/v1392: MM-bounded FULL reload and KCC fold correction
+
+The staged, **not production-linked**
+`proc_pure_ram_restore_v1391.[ch]` replaces the old three-argument
+FULL loader callback with a four-argument callback that receives the
+actual, pinned MM-allocated APR extent size. The
+`exec_image_full_bounded_v1391` entry in the common DXR assembler
+validates original physical APR base alignment, 02000-octal APR size
+alignment, the physical 18-bit high bound, and
+`initialized_image_words + 020 <= allocated_APR_words` **after DXR
+header inspection but before any payload read or decompression
+write**. It still reuses the same DXR parser as EXEC and the same
+backing vnode/mount identity; only the immutable PURE prefix reader
+may touch existing suffix-owner memory in place. The obsolete
+unbounded shared FULL entry was removed; the existing *production*
+`proc_swap_reload_pure` remains unchanged and is not silently
+redirected into the staged new loader.
+
+Native PDP-6 acceptance includes successful plain and compressed FULL
+recovery with the actual v1381 retained suffix overlay, mount 1 and
+mount 18, short read/corrupt payload rollback, oversized plain and
+compressed initialized images, exactly fitting initialized image,
+zero/misaligned APR capacity, misaligned APR base and high physical
+address overflow. The oversized cases confirm **zero payload-reader
+or decompressor calls** and no writes beyond the APR boundary. The
+raw suffix stays authoritative and intact on failures. The host
+C89 syntax gate and KCC source-to-DAS assembly pass.
+
+An optimized KCC bug was independently identified in the diagnostic
+native fixture: the fixed slot `swap_slots[1]` was sometimes emitted
+as `movem 7,swap_slots(1)`, a register-indexed access whose AC1 was
+not reliably defined on the executing path. The fix belongs in
+`kcc/ccopt.c`, not DAIMOS: only when a bounded local backward scan
+proves an unskipped immediate register definition and sees no skip,
+jump, call or intervening modification, symbolic ADDI folding now
+embeds the constant directly into the symbolic address. The optimized
+release KCC built from the current source is byte-identical to the
+tested candidate and was installed in `$PDP10_PREFIX/bin/kcc`.
+The old and corrected compiler both pass the cleaned historical
+v1387 fixture; v1391-specific VFS size mutations must remain scoped
+to FULL test builds to avoid changing those older cases. A minimal
+independent KCC red-old/green-new reproducer is still OPEN.
+
+All **21** focused host/native PURE and EXEC loader regressions pass
+with the corrected installed compiler, including the v1392
+constant-slot codegen check. Five selected KCC regression categories
+also pass. The entire compiler matrix is NOT claimed. The native
+v1391 FULL transaction alone compiles to **359 TEXT, zero static
+DATA/BSS**; the common assembler is **235 TEXT, zero DATA/BSS**,
+comprising 161-word common parser/payload and 74-word
+capacity-checked backing adapter. A hypothetical replacement of
+mandatory EXEC plus the old 50-word FULL backing is **+121 TEXT
+words before folding** (119+161+74 versus 183+50), not a production
+resident benefit. The standalone v1391 C transaction would incur
+additional code if linked alongside, rather than replacing, older
+restore code. Production KCORE/Makefiles, scheduler, filesystem
+source guards and disk/drum swap remain untouched.
+
+OPEN: actual shared-loader KCORE folding and net RAM pressure at
+32K/48K, grouped compressed PURE_PREFIX without suffix clobber,
+full scheduler/PI/VFS concurrency, lifecycle/boot acceptance, and
+the minimal independent compiler reproducer. See
+`../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD` and
+`../pdp10-doc/TOOLCHAIN/KCC-SYMBOLIC-FOLD-20261110-V1392.MD`.
+
 ## 2026-11-10 v1389/v1390: shrink common DXR engine; stage FULL swap reload
 
 The **still-unlinked** shared assembler

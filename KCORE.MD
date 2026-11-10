@@ -1,3 +1,29 @@
+## 2026-11-10 v1391/v1392: bounded FULL image restoration, staged only
+
+The unlinked v1391 FULL restore transaction passes the exact pinned
+MM APR extent size to the single shared DXR backing reader. Before
+writing, the assembler rejects invalid APR size, physical alignment
+or 18-bit extent and any initialized image plus the 020-octal user
+origin larger than the allocation. This includes compressed input:
+FULL decompression starts only after the capacity gate succeeds.
+The previous unbounded staged three-argument FULL entry was removed.
+Actual production disk/drum swapping is unchanged.
+
+Native plain/compressed success, exact-fit, oversized, malformed,
+failed read/decoder, mount-18, suffix integrity and rollback PASS
+with the corrected installed KCC. The discovered
+`swap_slots[1]` symbolic-address compiler defect was corrected in
+KCC's optimizer instead of changing DAIMOS array access syntax.
+
+Cost gate: the common DXR module grows from 212 to **235 TEXT**
+words (161 common core plus 74 bounded backing adapter), zero
+DATA/BSS; the separate staged v1391 C FULL transaction is 359
+TEXT, zero DATA/BSS. A hypothetical merged EXEC/FULL pair is
+119+161+74=354 versus 183+50=233, hence **+121 pre-fold
+words** without the new C transaction. No KCORE or actual
+physical-memory savings are claimed until folded linking and
+full 32K/48K guest pressure tests are accepted.
+
 ## 2026-11-10 v1389/v1390: shared DXR code folded within its source
 
 Unlinked `exec_image_common_v1386.s` now uses BLT register frames:

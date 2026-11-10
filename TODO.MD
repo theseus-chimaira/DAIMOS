@@ -1,3 +1,38 @@
+## 2026-11-10 v1391/v1392: bounded FULL safety and compiler integrity
+
+- [x] Stage FULL restore with a four-argument, MM-owned APR capacity
+  callback in `proc_pure_ram_restore_v1391.[ch]` and the common DXR
+  assembler; remove the unsafe unbounded shared FULL entry. Reject
+  oversized initialized images *before* reading or decompressing.
+- [x] Native PDP-6 v1391 acceptance: plain/compressed oversized DXR,
+  exact-size image, zero/non-APR capacity, invalid physical base,
+  upper physical bound, mount 18, immutable suffix overlay and
+  failure rollback PASS. C89 syntax and KCC/DAS assembly PASS.
+- [x] Fix root-cause optimized KCC constant-index symbolic ADDI
+  fold in `kcc/ccopt.c`: locally proven immediate constants are
+  embedded in the address, not left as a stale AC index. Native
+  v1392 fixed-slot assembly and runtime regression PASS.
+- [x] Reconcile the historical v1387 test VFS provider with v1391:
+  the new oversized-image modes only compile in FULL tests. The
+  original and corrected compilers both PASS v1387 baseline.
+- [x] Record the v1391 isolated size gate: 161 common DXR TEXT,
+  74 bounded adapter TEXT, 359 separate restore C TEXT, zero
+  static DATA/BSS. Replacing EXEC plus old FULL loader is still
+  **+121 words before folding**, excluding the extra C transaction.
+- [ ] Minimize a compiler reproducer that fails under the original
+  KCC binary and passes with the v1392 optimizer fix without
+  relying on a long DAIMOS diagnostic fixture. The archived
+  diagnostic codegen failure is established, but today's cleaned
+  regression no longer fails on the old compiler.
+- [ ] Make FULL bounded and RAW suffix restore a single production
+  implementation only after KCORE fold/size and 32K/48K guest RAM
+  high-water acceptance. Do not link both v1381 and v1391 FULL
+  restore bodies; do not switch raw disk/drum swapping until its
+  ABI and behavioral regressions pass.
+- [ ] Complete grouped compressed PURE_PREFIX with guaranteed
+  output boundary, hardware PI and VFS concurrency, EXEC/EXIT/WAIT
+  lifecycle, and full boot acceptance.
+
 ## 2026-11-10 v1389/v1390: shared DXR size and FULL reload proof
 
 - [x] Reduce duplicate callee-save frames in the staged common

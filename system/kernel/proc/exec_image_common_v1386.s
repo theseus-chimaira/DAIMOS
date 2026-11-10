@@ -28,7 +28,7 @@
         .globl exec_image_inspect_v1386
         .globl exec_image_apply_v1386
         .globl exec_image_prefix_backing_v1386
-        .globl exec_image_full_backing_v1389
+        .globl exec_image_full_bounded_v1391
         .globl vfs_read_words
         .globl vfs_stat
         .globl d6lz36_decode_vfs
@@ -229,15 +229,18 @@ ei_apply_return_v1386:
         pop     17,010
         popj    17,
 
-; One adapter for both swapless prefix and raw-swap full restoration.
+; Shared adapter for both swapless prefix and FULL restoration.
+; The previous unbounded three-argument FULL entry was removed:
+; no caller may restore an image without its physical capacity.
 ;
-; exec_image_full_backing_v1389(backing, APRbase, stable_uarea) enters
-; the same validated path with a zero prefix (FULL mode). This is an
-; unlinked experiment: ordinary disk-swap proc_swap_reload_pure remains
-; unchanged until native compatibility and linked-size acceptance.
-exec_image_full_backing_v1389:
+; The only permitted FULL backing entry accepts the *allocated* physical
+; APR extent length from the MM transaction, NOT a DXR-derived length.
+; (AC1 backing, AC2 physical APR base, AC3 stable u-area, AC4 APR words.)
+; Reject all oversized image headers before any payload read/decoder.
+exec_image_full_bounded_v1391:
+        move    0,4                   ; save caller's trusted MM capacity
         setz    4,
-        jrst    exec_image_prefix_backing_v1386
+        jrst    ei_bridge_enter_v1391
 
 ; PURE restoration callback adapter for proc_pure_restore_v1384.
 ; (saved backing, physical APR base, stable u-area, omitted prefix).
@@ -247,8 +250,14 @@ exec_image_full_backing_v1389:
 ; The adapter never owns MM or publishes any process state. In particular,
 ; an unsupported compressed-prefix decode returns -2 without touching RAM.
 exec_image_prefix_backing_v1386:
+        setz    0,                     ; bounded by the MM prefix claim
+ei_bridge_enter_v1391:
         ; Seven AC saves and 11 scratch words in one 022-octal frame.
+        ; AC0 holds the allocated APR capacity only at this entry.
+        ; BLT requires AC0 as its pointer, so save capacity in unused
+        ; frame scratch BEFORE setting up the BLT (not after it).
         add     17,[022,,022]
+        movem   0,-012(17)
         movei   0,-021(17)
         hrli    0,010
         blt     0,-013(17)
@@ -256,6 +265,7 @@ exec_image_prefix_backing_v1386:
         move    011,2                  ; physical APR base
         move    012,3                  ; stable u-area
         move    013,4                  ; dropped sector prefix
+        move    016,-012(17)           ; FULL APR capacity, 0 for prefix
         jumpe   010,ei_bridge_bad_v1386
         jumpe   011,ei_bridge_bad_v1386
         jumpe   012,ei_bridge_bad_v1386
@@ -285,6 +295,29 @@ exec_image_prefix_backing_v1386:
         hlrz    5,-1(17)              ; DXR2 text_words
         came    5,015
         jrst    ei_bridge_bad_v1386
+        jumpn   013,ei_bridge_apply_v1391
+        ; FULL: trust only the allocation length passed by MM. An
+        ; initialized image shorter than this is valid (saved suffix
+        ; supplies later writable words), but one word beyond is not.
+        jumpe   016,ei_bridge_bad_v1386
+        tlne    016,0777777
+        jrst    ei_bridge_bad_v1386
+        trne    016,01777              ; exact allocated APR extent
+        jrst    ei_bridge_bad_v1386
+        trne    011,01777              ; aligned source APR base
+        jrst    ei_bridge_bad_v1386
+        move    5,011
+        add     5,016
+        camg    5,[01000000]           ; outside physical 18-bit core?
+        jrst    ei_bridge_capacity_v1391
+        jrst    ei_bridge_bad_v1386
+ei_bridge_capacity_v1391:
+        hrrz    5,-3(17)              ; initialized words from DXR
+        addi    5,EI_ORIGIN_V1386
+        camg    5,016                 ; needed > allocated => reject
+        jrst    ei_bridge_apply_v1391
+        jrst    ei_bridge_bad_v1386
+ei_bridge_apply_v1391:
         move    1,014
         move    2,011
         addi    2,EI_ORIGIN_V1386
