@@ -1,3 +1,66 @@
+## 2026-11-10 v1389/v1390: shrink common DXR engine; stage FULL swap reload
+
+The **still-unlinked** shared assembler
+`system/kernel/proc/exec_image_common_v1386.s` was reduced from
+225 to **212 TEXT words**, zero DATA/BSS. The seven callee-saved-register
+frames in the parser and backing bridge now use one contiguous BLT
+save/restore each, as established by the production EXEC assembler
+ABI, instead of individually pushing and popping AC10..AC16.
+This changes no parsed format, executable payload or calling convention.
+The native v1386/v1387/v1388 tests all PASS after this rewrite.
+
+`exec_image_full_backing_v1389` adds a two-instruction FULL entry
+which reuses the *same* backing-unpack, VFS stat, DXR inspector and
+payload decoder as swapless PURE_PREFIX. Unlike PURE_PREFIX, FULL
+reads/decompresses the entire initialized executable into the new
+APR destination; the existing v1381 restoration transaction then
+overlays the authoritative raw mutable suffix. The old independent
+`proc_swap_reload_pure` remains unchanged in production, as does
+disk/drum swapping. Native v1390 uses the real v1381 physical
+drop/restore transaction, existing assembly PURE vnode unpacker and
+common FULL reader, and PASSes plain DXR2, compressed DXR2, mount 18,
+short reads, corrupt compressed input and malformed TX2 rollback.
+The VFS/MM/file provider and scheduler are controlled test fixtures,
+not a booted swap guest.
+
+The combined native regression uncovered and fixed an actual
+`daimos-testkit` VFS mock bug: the simulated DXR header reader
+wrote three words even when the common inspector requested only
+two. That third write violated the VFS count contract and
+produced a stack-layout-dependent v1387 mount-18 failure with an
+unrelated broader compression-mode predicate. After restricting
+the TX2 write to three-word requests (the inspector reads TX2
+separately), the wider-predicate version and the original v1387
+tests both PASS. This was a test-provider out-of-bounds write,
+not a demonstrated production VFS, KCC or DAS regression.
+
+Reproducible size gate in
+`daimos-testkit/tests/validation/exec-image-size-v1390` PASSES:
+existing `exec_load.s` **183** words; disposable refactored caller
+**119**; common DXR parser/payload **161**; shared FULL/PREFIX
+backing adapter **51**; original standalone PURE FULL reload **50**.
+Thus EXEC-only refactor would be **+97 TEXT** words pre-fold, and
+EXEC plus replacement of the old independent FULL reload **+98 TEXT**.
+The full shared module measures 212 TEXT, zero DATA/BSS. The size
+gate fails if those isolated budgets grow, but it does not substitute
+for a real p10fold/KCORE image comparison.
+
+**Production integration remains BLOCKED** on proven net physical
+RAM savings and a native full 32K/48K tape-root guest. The existing
+three resident C translation units and actual EXEC, VFS/swap,
+BACKSTORE and scheduler linkage remain untouched. Specifically,
+the current three-argument FULL callback does not convey the
+destination extent's word capacity to the common loader: a final
+production ABI must explicitly validate
+`uncompressed_image_words + EXEC_USER_ORIGIN <= allocated_APR_words`
+*before writing memory*, not assume an immutable vnode and a matched
+text count alone suffice. Native v1390 source-linked tests use a
+well-formed controlled DXR image and do not certify hostile or
+concurrently mutated executable backing. Likewise, compressed
+PURE_PREFIX must remain refused until the grouped decoder supports
+a hard output boundary. See
+`../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`.
+
 ## 2026-11-10 v1386-v1388: shared EXEC/PURE image engine, staged
 
 The new **unlinked** `system/kernel/proc/exec_image_common_v1386.s`

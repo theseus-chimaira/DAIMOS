@@ -143,6 +143,20 @@ its active build in this staging checkpoint.
   The current isolated EXEC FULL refactor adds 105 pre-fold words:
   do not link the candidate into fixed KCORE without net RAM benefit
   and full 32K/48K guest acceptance.
+
+## v1389/v1390: ONE common FULL/PREFIX parser, reduced, still cost gated
+
+- [x] BLT register-save optimization: common DXR module 225 -> 212
+  target text words, zero static RAM. v1386-v1388 native tests PASS.
+- [x] Real native v1390 FULL callback reuses that same parser/loader:
+  plain/compressed DXR2, mount 18 and rollback PASS; disk-swap
+  production code unchanged. v1390 size regression reports candidate
+  EXEC plus FULL replacement +98 pre-fold text words.
+- [ ] Before any production cutover, add an explicit full destination
+  length to the loader contract and reject oversized initialized
+  images before decoding; native oversized mutation tests required.
+  The grouped codec must independently support bounded PURE_PREFIX
+  output, including cross-boundary MATCH tokens.
 - [ ] Adapt `system/kernel/fs/tsfs_runtime.s` for restart extents and
   immutable compressed contents; verify exact consume/decoded length,
   bounded memory and seek/refill behavior.

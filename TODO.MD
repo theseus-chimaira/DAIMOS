@@ -1,3 +1,41 @@
+## 2026-11-10 v1389/v1390: shared DXR size and FULL reload proof
+
+- [x] Reduce duplicate callee-save frames in the staged common
+  parser/backing bridge using the established PDP-6 BLT ABI.
+  Native v1386/v1387/v1388 PASS after this change; shared module
+  TEXT **225 -> 212**, without additional static data.
+- [x] Implement the staged two-instruction FULL-backing entry into
+  the existing shared DXR inspector/reader and verify it against
+  real source-linked v1381 FULL restore plus suffix overlay.
+  Native v1390 PASS for plain and compressed DXR2, mount 18,
+  corrupted/short input and safe rollback. This is *not* the
+  production disk-swap loader.
+- [x] Fix the native VFS fixture header-read contract: a two-word
+  request must never write the third TX2 word. The previous extra
+  store caused a stack-layout-dependent v1387 mount-18 failure.
+  Exact count-bounded writes pass both the earlier and broader
+  test-only compression-mode conditions. No compiler change needed.
+- [x] Add executable size regression
+  `daimos-testkit/tests/validation/exec-image-size-v1390`:
+  production EXEC=183, staged EXEC caller=119, shared core=161,
+  shared backing adapter=51, old FULL leaf=50. +97 words for
+  candidate EXEC or **+98** with independent FULL replacement,
+  isolated and pre-fold. No DATA/BSS.
+- [ ] **RAM-first gate:** measure the actual p10fold-linked
+  mandatory KCORE with all candidate modules, and the full
+  32K/48K swapless tape-root resident and high-water costs,
+  before activating. The hypothetical 98-word DXR increase
+  excludes the much larger MM/scheduler transaction implementation.
+  Evaluate released PURE sectors for real concurrent workloads.
+- [ ] **Memory safety:** final FULL ABI needs explicit available
+  destination APR extent size, and MUST reject any DXR image larger
+  than that extent *before* the file reader or decoder writes it.
+  A trusted file key plus matching TX2 text words is insufficient
+  proof of full image length. Add native oversized-header/overlap
+  mutation cases with real MM ownership before production.
+- [ ] Finish grouped compressed PURE_PREFIX decoding, physical
+  scheduler/PI/VFS source-lifetime tests and actual boot acceptance.
+
 ## 2026-11-10 v1386-v1388: shared image engine proven, link size OPEN
 
 - [x] Stage a **single** DXR1/DXR2 parsed metadata and payload engine

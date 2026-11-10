@@ -1,3 +1,38 @@
+## 2026-11-10 v1389/v1390: shared DXR code folded within its source
+
+Unlinked `exec_image_common_v1386.s` now uses BLT register frames:
+225 -> **212 PDP-6 TEXT words** including the FULL/PREFIX
+backing adapter, still zero DATA/BSS. The common parser/payload
+section is 161 TEXT words. The FULL backing entry reuses precisely
+the parser and decoder used by staged EXEC and PURE_PREFIX: no
+additional DXR header implementation. Native v1390 PASSes
+plain/compressed FULL restoration, high mount 18 and rollback
+with the actual staged v1381 restoration transaction.
+
+The v1387/v1390 test provider also required a real read-count fix:
+on a two-word header request it improperly wrote three words into
+the caller. After enforcing the exact requested count, the native
+mount-18 tests PASS even with broader test-only format selection.
+This was fixture corruption, not evidence of a KCC or production
+loader defect.
+
+The historical production `proc_swap_reload_pure` leaf is 50 TEXT
+words; the new shared FULL/PREFIX adapter is 51. The generated
+alternate EXEC caller remains 119 versus 183 words for real EXEC.
+The **combined hypothetical** linked code before p10fold is
+119 + 161 + 51 = 331 versus 183 + 50 = 233,
+or **+98 words**. This excludes other new swapless transaction
+code, required allocator/scheduler integration and any existing
+shared code folded away. Thus no claim of overall RAM improvement
+is justified without measuring the real complete kernel and
+per-process released words at 32K/48K. The v1390 testkit size gate
+pins these isolated metrics; production Makefiles stay unchanged.
+
+Before any live FULL callback cutover, pass the actual destination
+extent capacity to the loader and reject image sizes exceeding it;
+the current three-argument legacy reload callback cannot directly
+prove that bound. Compressed PURE_PREFIX is still unsupported.
+
 ## 2026-11-10 v1386-v1388: one shared staged DXR engine, cost-gated
 
 `exec_image_common_v1386.s` stages a common four-word DXR parser

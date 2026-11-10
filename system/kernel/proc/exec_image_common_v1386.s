@@ -28,6 +28,7 @@
         .globl exec_image_inspect_v1386
         .globl exec_image_apply_v1386
         .globl exec_image_prefix_backing_v1386
+        .globl exec_image_full_backing_v1389
         .globl vfs_read_words
         .globl vfs_stat
         .globl d6lz36_decode_vfs
@@ -41,14 +42,12 @@
         .equ EI_ORIGIN_V1386,020
 
 exec_image_inspect_v1386:
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
-        push    17,016
-        add     17,[03,,03]
+        ; Seven contiguous callee-saved ACs plus three DXR scratch words.
+        ; A single BLT costs less resident text than seven PUSHes.
+        add     17,[012,,012]
+        movei   0,-011(17)
+        hrli    0,010
+        blt     0,-003(17)
         move    010,1                   ; vnode
         move    011,2                   ; file size, in words
         move    012,3                   ; caller descriptor
@@ -143,14 +142,12 @@ ei_pack_v1386:
 ei_bad_v1386:
         seto    1,
 ei_inspect_return_v1386:
-        sub     17,[03,,03]
-        pop     17,016
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
+        ; Reverse the BLT from stack save words into AC10..AC16.
+        movei   0,-011(17)
+        hrl     0,0
+        hrri    0,010
+        blt     0,016
+        sub     17,[012,,012]
         popj    17,
 
 exec_image_apply_v1386:
@@ -232,6 +229,16 @@ ei_apply_return_v1386:
         pop     17,010
         popj    17,
 
+; One adapter for both swapless prefix and raw-swap full restoration.
+;
+; exec_image_full_backing_v1389(backing, APRbase, stable_uarea) enters
+; the same validated path with a zero prefix (FULL mode). This is an
+; unlinked experiment: ordinary disk-swap proc_swap_reload_pure remains
+; unchanged until native compatibility and linked-size acceptance.
+exec_image_full_backing_v1389:
+        setz    4,
+        jrst    exec_image_prefix_backing_v1386
+
 ; PURE restoration callback adapter for proc_pure_restore_v1384.
 ; (saved backing, physical APR base, stable u-area, omitted prefix).
 ; Decode the canonical mount/provider vnode with existing backing rules.
@@ -240,14 +247,11 @@ ei_apply_return_v1386:
 ; The adapter never owns MM or publishes any process state. In particular,
 ; an unsupported compressed-prefix decode returns -2 without touching RAM.
 exec_image_prefix_backing_v1386:
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
-        push    17,016
-        add     17,[013,,013]          ; 7 stat words, 4 metadata words
+        ; Seven AC saves and 11 scratch words in one 022-octal frame.
+        add     17,[022,,022]
+        movei   0,-021(17)
+        hrli    0,010
+        blt     0,-013(17)
         move    010,1                  ; immutable backing record
         move    011,2                  ; physical APR base
         move    012,3                  ; stable u-area
@@ -255,7 +259,9 @@ exec_image_prefix_backing_v1386:
         jumpe   010,ei_bridge_bad_v1386
         jumpe   011,ei_bridge_bad_v1386
         jumpe   012,ei_bridge_bad_v1386
-        jumpe   013,ei_bridge_bad_v1386
+        ; A zero prefix selects the FULL image for the raw-swap caller.
+        ; Nonzero means a bounded in-place PURE prefix. Both paths
+        ; enforce original immutable backing identity and DXR2 TX2.
         move    1,010
         move    2,012
         pushj   17,proc_swap_unpack_backing
@@ -289,12 +295,9 @@ exec_image_prefix_backing_v1386:
 ei_bridge_bad_v1386:
         seto    1,
 ei_bridge_return_v1386:
-        sub     17,[013,,013]
-        pop     17,016
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
+        movei   0,-021(17)
+        hrl     0,0
+        hrri    0,010
+        blt     0,016
+        sub     17,[022,,022]
         popj    17,
