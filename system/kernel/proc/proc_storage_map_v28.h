@@ -6,7 +6,7 @@
 
 #include "proc_packed_v1.h"
 
-#define PROC_STORAGE_MAP_SLOTS_PER_WORD_V28 18U
+#define PROC_STMAP_SLOTS_WORD_V28 18U
 #define PROC_STORAGE_MAP_WORDS_V28(slots) (((slots) + 17U) / 18U)
 
 struct proc_storage_map_v28 {

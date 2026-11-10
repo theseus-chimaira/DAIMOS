@@ -179,7 +179,7 @@ proc_packed_abort_restore_v26(unsigned int slot, kword_t restored_base)
  * until the destination is complete and the original MM extent is freed.
  */
 int
-proc_packed_evict_transaction_v32(unsigned int slot,
+proc_packed_evict_tx_v32(unsigned int slot,
     struct proc_packed_v1 *descriptor, kword_t retained_offset,
     unsigned int encoded_capacity, proc_packed_encoder_v32 encoder)
 {
@@ -246,9 +246,9 @@ proc_packed_evict_transaction_v32(unsigned int slot,
         descriptor->span = PROC_PACKED_SPAN(encoded_base, encoded_capacity);
         descriptor->layout = (retained_offset << 18U) | retained;
         VM_PDP6_SET_BASE(p, 0UL);
-        shift = (slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U;
+        shift = (slot % PROC_STMAP_SLOTS_WORD_V28) * 2U;
         mode_word = &proc_storage_runtime_v29.words[
-            slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28];
+            slot / PROC_STMAP_SLOTS_WORD_V28];
         mode_mask = (kword_t)3UL << shift;
         *mode_word = (*mode_word & ~mode_mask) |
             ((kword_t)PROC_STORAGE_PACKED << shift);
@@ -280,7 +280,7 @@ unpin_source_v32:
  * Keep BOTH source and destination pinned until all fallible I/O finishes.
  */
 int
-proc_packed_restore_transaction_v31(unsigned int slot,
+proc_packed_restore_tx_v31(unsigned int slot,
     struct proc_packed_v1 *descriptor, kword_t backing,
     proc_packed_decoder_v26 decoder,
     proc_packed_pure_reload_v31 reload_pure)
@@ -361,9 +361,9 @@ proc_packed_restore_transaction_v31(unsigned int slot,
         VM_PDP6_SET_BASE(p, base);
         /* This slot's map word was validated before the transaction and
          * cannot change while lifecycle exclusion and TRANSITION are held. */
-        shift = (slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U;
+        shift = (slot % PROC_STMAP_SLOTS_WORD_V28) * 2U;
         mode_word = &proc_storage_runtime_v29.words[
-            slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28];
+            slot / PROC_STMAP_SLOTS_WORD_V28];
         mode_mask = (kword_t)3UL << shift;
         *mode_word &= ~mode_mask;       /* PACKED -> RESIDENT (zero) */
         descriptor->span = 0UL;

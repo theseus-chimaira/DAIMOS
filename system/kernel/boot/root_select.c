@@ -167,7 +167,7 @@ root_select_mount_capacity_v22(void)
 #endif
 #if KINIT_TAPE_BOOT
         else if (root_class_selected == KINIT_ROOT_DTC)
-                inv.root_tape_members = tsfs_boot_selected_unit_mask_v22();
+                inv.root_tape_members = tsfs_boot_unit_mask_v22();
 #endif
         /* The planner validates one selected root, capacity and every unit
          * mask before MM allocation. Zero is a hard boot configuration error,
