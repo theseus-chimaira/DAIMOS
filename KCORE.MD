@@ -14,8 +14,12 @@ complete KCORE+MRES inventory **16367 -> 16381**. The strict 16K
 single-root permanent last is **16428 decimal** and still requires
 **45 words** to fit. No new codec static data or BSS; minimizing the
 merged fixed code and preserving correct storage ownership is preferred
-over a second decoder. The TSFS cold-boot and full post-cutover 256K
-swap/OOM acceptance gates remain separate from this size result.
+over a second decoder. The full isolated 256K TSFS-root LOGIN/DSH/ECHO
+and return to prompt also PASS using the new block-only format. The
+480-second command bound accommodates slow DECtape seeks (sampled PC in
+`dtc_search_wait`) while still requiring the full external EXEC return.
+The separate post-cutover 256K swap/OOM acceptance remains open until
+a new strict full-guest run finishes.
 
 ## 2026-11-10 v1462: merged branches; fixed footprint unchanged
 

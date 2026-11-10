@@ -32,7 +32,15 @@ The source-matched TSFS media validator accepted 53 files/401 extents;
 independent reconstruction matched real LOGIN (3221 words/13 extents),
 DSH (15760/62) and ECHO (1035/5) exactly. Native PDP-6 decoded the
 actual final LOGIN restart (149 words from 64 compressed words), PASS.
-The 256K TSFS-root cold boot is a separate pending acceptance check.
+An independently isolated **256K TSFS-root cold boot now also PASS**:
+ROOT LOGIN, DSH and real external ECHO returned to the `#` prompt with
+the expected output. The first run's 240-second command allowance expired
+inside the physical DECtape search path (sample PC 030775,
+`dtc_search_wait`); the same built image completed on the second run
+with a 480-second command allowance, without changing any decoder or
+kernel source. The longer bound accommodates observed tape-motion
+latency and does not bypass external EXEC/return assertions. An isolated
+SIMH trace utility `inspect-exec-v1465.py` is retained in daimos-testkit.
 
 **Footprint:** the freshly linked GCC 32K lowmem profile reports fixed
 KCORE **9701** 36-bit words versus **9687** before the cutover (+14),

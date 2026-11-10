@@ -13,8 +13,11 @@
 - [x] Source-matched TSFS: strict checker accepts 53 files/401 extents;
   independent LOGIN, DSH and ECHO reconstruction PASS. Actual LOGIN final
   restart decoded by native PDP-6 fixed core/VFS PASS.
-- [ ] Finish full 256K TSFS-root login/DSH/external EXEC cold boot; the
-  positive host/media/native checks alone do not prove guest execution.
+- [x] Full 256K TSFS-root login/DSH/external EXEC cold boot passed with
+  the actual TSFS media, completed external ECHO and returned shell
+  prompt. A first attempt exhausted 240 seconds while sampled in
+  `dtc_search_wait`; the independent rerun completed with a 480-second
+  DECtape-motion bound, with no source changes or relaxed guest checks.
 - [ ] Accept DTC/MTC real device boot, 48K runtime and 32K strict
   permanent placement; KCORE is 9701 words, current 32K placement needs
   another 45 words. Preserve checked storage ownership invariants.
