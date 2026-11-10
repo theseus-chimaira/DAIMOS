@@ -1,3 +1,30 @@
+## 2026-11-10 v1381/v1382: zero-copy drop by MM descriptor rebase
+
+The staged `proc_pure_ram_v1381.c` now retains inactive writable
+process RAM **without any second physical allocation or copy**.
+The standalone `mm_pure_rebase_v1381.s` checks an exactly-once-pinned
+owner-tagged APR extent and changes its original descriptor to start
+at the existing physical suffix address, removing PURE prefix words
+from MM ownership without moving data. Under a single short PI-off
+critical section, C publishes saved backing, nonresident VM and the
+already existing two-bit PACKED mode. Restore and terminal discard
+retain the validated registry-free lifecycle from v1379.
+
+Host and actual PDP-6 KCC/assembly MM rebase tests PASS, including
+rollback, precise type/owner/pin/18-bit range checks and exact suffix
+restoration; v1382 adds real resident PURE busy scanners through
+zero-copy DROP, restore and final discard. A corrected test allocator
+now rejects overlapping extents. KCC text: 518 transaction + 70
+MM primitive = **588 words**, zero data/BSS (v1379: 567 C words),
+not a production linked-size delta. For a 1024-word sample process,
+old DROP required 768 extra words transiently; v1381 requires zero.
+
+Neither module is linked into production, so the three resident C
+translation units, raw swap and normal boot are unchanged. Hardware
+PI/full MM concurrency, no-partner restore memory pressure, EXEC and
+teardown integration, and actual 32K/48K tape-root guest tests are
+still open. See `../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`.
+
 ## 2026-11-09 v1379/v1380: registry-free PURE-only staging
 
 `proc_pure_ram_v1379.[ch]` supersedes the standalone v1377

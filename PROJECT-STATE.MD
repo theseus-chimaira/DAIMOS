@@ -1,3 +1,74 @@
+## 2026-11-10 v1381/v1382: zero-copy PURE drop, staged MM rebasing
+
+The new, explicitly unlinked staging sources
+`system/kernel/mm/mm_pure_rebase_v1381.s` plus its header and
+`system/kernel/proc/proc_pure_ram_v1381.[ch]` replace the former
+v1379 **DROP** copy-and-allocate transaction. The process's writable
+suffix is already at the correct physical address. Under PROCESS
+TRANSITION, one MM pin and briefly disabled PI, the new assembly MM
+primitive validates exact process type, owner, allocated size, one
+pin, APR base alignment, nonempty PURE-sector prefix and 18-bit
+physical limits, then converts the original sorted MM descriptor
+from `[APR base, full words)` to
+`[APR base + PURE prefix, remaining mutable words)`, retyping it as
+MM_TYPE_PACKED_PROCESS without moving any data or allocating a new
+extent. The sorted descriptor order and all suffix contents remain
+unchanged. The C caller publishes saved backing, nonresident VM base
+and PACKED mode in the **same PI-disabled interval**, and unpins the
+new suffix address before clearing TRANSITION. On rejected validation
+no MM descriptor or physical word is changed. A committed but failed
+unpin leaves TRANSITION held for explicit owner recovery.
+
+The drop is now zero-copy and uses **zero temporary physical RAM**.
+For a 02000-octal-word process with 0400-octal PURE prefix, DROP peak
+falls from 1024+768 = 1792 decimal words in the old design to
+just 1024 words in the new design.
+The final raw inactive representation still occupies 768 words.
+RESTORE currently still allocates a full APR extent while retaining
+the source suffix, so its physical peak remains a distinct issue.
+Compressed executable reload can overwrite the full destination
+image: the implementation correctly overlays the authoritative
+mutable suffix *after* reload rather than corrupting it in place.
+
+KCC/DAS native object measurements: v1379 transaction 567 TEXT words;
+v1381 transaction 518 and staged MM rebasing primitive 70, for **588
+pre-fold TEXT words total**, 0 DATA/BSS. The +21 text-word component
+cost is exchanged for removing the 768-word allocation during DROP in
+the example above. No independent per-slot registry, disk swap record,
+compressed data dependency or permanent descriptor was added.
+These are not full linked production KCORE deltas.
+
+In `daimos-testkit`, host
+`tests/system/pure-ram-inplace-v1381` PASSES three repeated cycles,
+both historical layout formats without depending on a registry,
+actual zero allocation/free during DROP, held PI publication, precise
+MM owner/type/size checks, failure rollback, failed loader and
+terminal discard. Native KCC/PDP-6
+`tests/validation/pure-ram-inplace-v1381` links the ACTUAL assembler
+rebasing and storage-mode routines and passes the exact-word roundtrip,
+MM failure/retry, double-pin rejection, wrong type/size/owner, out-of-
+range and 18-bit upper-bound acceptance. Native
+`tests/validation/pure-ram-backing-v1382` also links the existing
+resident PURE vnode/mount protection scanners, including mount 18,
+and passes lifecycle protection through both MM release boundaries.
+The old v1376-v1380 focused regressions remain accepted.
+
+The host allocator fixture was corrected: previously it rejected only
+equal extent bases, not intersecting physical intervals. The in-place
+test exposed this false allocation acceptance on a failed-restore
+retry. The revised fixture correctly rejects overlapping ranges and
+the old v1377 test passes again.
+
+**No production Makefile, MM allocator, VFS, swap or scheduler link
+was changed.** The staged target tests employ controlled MM and
+provider fixtures (native PI controller operations are represented
+by ABI-compatible mocks). Full hardware PI concurrency, production
+KCORE size, scheduler wake/retry, EXEC/EXIT/WAIT and booted 32K/48K
+swapless tape-root acceptance remain OPEN. In-place zero-copy DROP
+is the preferred candidate; older v1377/v1379 transaction files are
+retained only as regression history. Source design details:
+`../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`.
+
 ## 2026-11-09 v1379/v1380: remove redundant inactive process registry
 
 The replacement staging source `system/kernel/proc/proc_pure_ram_v1379.[ch]`

@@ -1,4 +1,39 @@
-## 2026-11-09 v1379/v1380: registry-free PURE staging, not live
+## 2026-11-10 v1381/v1382: zero-copy PURE release staged, not live
+
+- [x] Design a **no-second-allocation** PURE drop: retain mutable words
+  in place, drop the physically lower PURE prefix from the owner-tagged
+  MM descriptor and atomically publish saved backing, inactive VM and
+  existing two-bit mode while PI is disabled. No data copy, no new
+  descriptor slot, no per-process state, no disk swap changes.
+- [x] Implement the staged `mm_pure_rebase_v1381.s` primitive with
+  original-size/base, 18-bit physical address, sector-prefix, exact
+  owner/type and one-pin preflight. Validation failure leaves
+  original data and MM descriptor unchanged. An unpin failure after
+  commit preserves TRANSITION for explicit recovery.
+- [x] Host C89 regression and native PDP-6 KCC/DAS v1381 PASS:
+  repeated drop/restore, zero allocations/frees during drop, fail
+  injection, owner/pin/type/size/range checks and terminal cleanup.
+  Native v1382 also PASSes existing vnode/mount PURE guards, including
+  fifth-bit mount-id 18. The old v1377 host MM mock now rejects
+  overlapping physical extents; previous tests continue to pass.
+- [x] Measure isolated code/physical-RAM effects: v1379 567 C words
+  versus v1381 518 C + 70 ASM = **588** pre-fold text words, zero
+  static data/BSS. For sample 02000-octal process/0400-octal PURE
+  prefix, peak RAM during DROP falls from 1792 to 1024 decimal words,
+  while final inactive suffix remains 768. This is NOT a production
+  linked-KCORE measurement.
+- [ ] Integrate only after verifying actual hardware PI/allocator and
+  VFS serialization, process selection/wake/teardown, and full
+  swapless no-partner boot. The restore transaction still needs a full
+  destination while holding its source suffix, so RESTORE pressure,
+  recovery and peak RAM remain a separate priority. Prevent publishing
+  any invalid runnable state if an MM unpin fails after commitment.
+- [ ] Native 32K/48K tape-root regression under concurrent full MM,
+  EXEC/RUN, STOP/SLEEP/WAIT/EXIT and constrained memory pressure;
+  measure overall linked KCORE size, total RAM high-water and CPU
+  before enabling the new path.
+
+## 2026-11-09 v1379/v1380: registry-free PURE staging (superseded drop)
 
 - [x] Remove redundant dense/sparse inactive process registry from the
   **raw PURE-only** transaction. The owner/type/size of one
@@ -14,13 +49,10 @@
   text words, zero DATA/BSS. The staged C registry dependencies
   (121+310+273 = 704 words) are removed from the new test link.
   This is not a full linked KCORE size/CPU/RAM improvement claim.
-- [ ] **Critical RAM-first follow-up:** replace the transient second
-  full mutable-suffix allocation if a safe in-place PURE drop
-  can be implemented. Current `mm_process_shrink_pinned` only permits
-  02000-octal process extents; add an atomic MM conversion/copy
-  primitive only with full allocator/PI serialization and a
-  no-fallible-step-after-overwrite proof. Never release the original
-  suffix tail before its copy is complete.
+The previous transient-second-suffix DROP issue was solved by v1381
+using an in-place **MM descriptor rebase**, with no data copying.
+The existing `mm_process_shrink_pinned` retains its APR alignment
+contract. The new primitive is still separate and not live.
 - [ ] Finish the actual minimal swapless build and process lifecycle:
   KINIT registry-free mode selection, VFS/provider serialization,
   real MM compaction, process scheduling/reload, EXEC/EXIT/WAIT
