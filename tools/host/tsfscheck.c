@@ -231,8 +231,12 @@ validate_extent_data(const struct table_info *t, const uint64_t *extents,
                 unsigned int ei;
 
                 fr = files + (size_t)fi * TSFS_FILE_WORDS;
+                /* The RH also carries the 12-bit mode.  A raw equality
+                 * comparison against REG incorrectly skips every ordinary
+                 * executable (0555) and data (0644) file.  We must verify
+                 * *all* regular-file extents, including compressed data. */
                 flags = (unsigned int)(fr[TSFS_FILE_PARENT_FLAGS] &
-                    TSFS_HALF_MASK);
+                    TSFS_FILE_FLAG_MASK);
                 if (flags != TSFS_FILE_FLAG_REG)
                         continue;
                 size = (unsigned int)fr[TSFS_FILE_SIZE_WORDS];

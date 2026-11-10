@@ -33,7 +33,9 @@ MKD6FS ?= mkd6fs
 MKAUXSTORE ?= mkauxstore
 MKDT ?= mkdt
 MKDTFS ?= mkdtfs
-MKTSFS ?= mktsfs
+MKTSFS ?= $(BUILD)/mktsfs-v1461
+TSFSCHECK ?= $(BUILD)/tsfscheck-v1461
+HOST_CC ?= cc
 MKTAP ?= mktap
 WORDS2PT ?= words2pt
 S6FILTER ?= s6filter
@@ -629,6 +631,20 @@ DTC3_IMAGE = $(MEDIA_DIR)/$(if $(filter 1,$(TSFS_INPLACE_BOOT)),dtc3-home-v22.ta
 TSFS_ROOT_MANIFEST = $(BUILD)/tsfs-root.manifest
 TSFS_ROOT_PREFIX = $(MEDIA_DIR)/tsfs-root
 TSFS_ROOT_IMAGE = $(TSFS_ROOT_PREFIX)0.dta
+TSFS_HOST_SRCS = $(PROJECT_ROOT)/tools/host/tsfs-format.c \
+	$(PROJECT_ROOT)/tools/host/tsfs-format.h \
+	$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c \
+	$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.h
+$(BUILD)/mktsfs-v1461: $(PROJECT_ROOT)/tools/host/mktsfs.c $(TSFS_HOST_SRCS) | $(BUILD)
+	$(HOST_CC) -O2 -std=c99 -Wall -Wextra -Werror -o $@ \
+		$(PROJECT_ROOT)/tools/host/mktsfs.c \
+		$(PROJECT_ROOT)/tools/host/tsfs-format.c \
+		$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c
+$(BUILD)/tsfscheck-v1461: $(PROJECT_ROOT)/tools/host/tsfscheck.c $(TSFS_HOST_SRCS) | $(BUILD)
+	$(HOST_CC) -O2 -std=c99 -Wall -Wextra -Werror -o $@ \
+		$(PROJECT_ROOT)/tools/host/tsfscheck.c \
+		$(PROJECT_ROOT)/tools/host/tsfs-format.c \
+		$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c
 TSFS_ROOT_MEMBERS ?= 1
 TSFS_INPLACE_BOOT ?= 0
 ifneq ($(filter $(TSFS_ROOT_MEMBERS),1 2 3),$(TSFS_ROOT_MEMBERS))
@@ -1288,7 +1304,7 @@ $(TSFS_INPLACE_MODE_STAMP): | $(BUILD)
 	@touch $@
 
 $(TSFS_ROOT_IMAGE): $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFS_ROOT_COMMAND_DXRS) $(DTFSPROBE_DXR) \
-	$(SYSTEM_CONFIG_S6REC) $(TSFS_ROOT_MODE_STAMP) $(TSFS_INPLACE_MODE_STAMP) $(if $(filter 1,$(TSFS_INPLACE_BOOT)),$(IMAGE_LOWMEM_WORDS)) | $(MEDIA_DIR)
+	$(SYSTEM_CONFIG_S6REC) $(TSFS_ROOT_MODE_STAMP) $(TSFS_INPLACE_MODE_STAMP) $(if $(filter 1,$(TSFS_INPLACE_BOOT)),$(IMAGE_LOWMEM_WORDS)) $(BUILD)/mktsfs-v1461 $(BUILD)/tsfscheck-v1461 | $(MEDIA_DIR)
 	@set -eu; \
 	tmp='$(TSFS_ROOT_MANIFEST).tmp.$$$$'; \
 	trap 'rm -f "$$tmp"' 0 1 2 3 15; \
@@ -1316,6 +1332,9 @@ $(TSFS_ROOT_IMAGE): $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH
 	trap - 0 1 2 3 15
 	$(MKTSFS) -n $(TSFS_ROOT_MEMBERS) -i 1:1 -g 1 -m '$(TSFS_ROOT_MANIFEST)' $(if $(filter 1,$(TSFS_INPLACE_BOOT)),-b '$(IMAGE_LOWMEM_WORDS)') \
 	    -o '$(TSFS_ROOT_PREFIX)'
+	@set -eu; set --; i=0; while [ "$$i" -lt '$(TSFS_ROOT_MEMBERS)' ]; do \
+	    set -- "$$@" '$(TSFS_ROOT_PREFIX)'"$$i".dta; i=$$((i + 1)); done; \
+	    $(TSFSCHECK) "$$@"
 
 $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGES) $(DRUM_IMAGES) \
 	$(STAGE1_TAPE) $(ROOT_MEDIA_DEPS) | $(BUILD)
