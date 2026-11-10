@@ -351,7 +351,7 @@ tsfs_readdir_pop:
 ; before return.
         .globl  mm_alloc
         .globl  mm_free
-        .globl  d6codec_decode_buffer_v1452
+        .globl  d6codec_decode_buffer_v1458
         .equ    TSFS_EXT_STORED,0
         .equ    TSFS_EXT_BLOCK,1
         .equ    TSFS_RESTART_WORDS,0400
@@ -487,7 +487,7 @@ tsfs_read_block:
         move    3,fs_block_workspace+1
         move    4,(17)
         hrl     4,fs_block_workspace
-        pushj   17,d6codec_decode_buffer_v1452
+        pushj   17,d6codec_decode_buffer_v1458
         jumpn   1,tsfs_read_block_free
         move    5,011
         andi    5,0377

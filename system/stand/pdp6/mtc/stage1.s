@@ -96,21 +96,21 @@ read_wait:
 read_error:
         jrst bad_tape
 daimon_magic: .word 0444151555756
-        .include "../common/block_decompressor_v1452.inc"
+        .include "../common/block_decompressor_v1458.inc"
 
 ; Execute the decoder installation from above its low-core destination.
 stage1_handoff:
-        movei 01,d6b_image_start_v1452
+        movei 01,d6b_image_start_v1458
         hrl 01,01
-        hrri 01,d6b_low_base_v1452
-        blt 01,d6b_low_base_v1452+(d6b_image_end_v1452-d6b_image_start_v1452)-1
+        hrri 01,d6b_low_base_v1458
+        blt 01,d6b_low_base_v1458+(d6b_image_end_v1458-d6b_image_start_v1458)-1
 
         movei 012,030000
         move 03,012
         add 03,013
         move 014,012
         setz 011,
-        pushj 017,d6b_low_base_v1452
+        pushj 017,d6b_low_base_v1458
         jumpn 00,bad_tape
         jumpn 04,bad_tape
         move 017,012                  ; KINIT stack starts at image end

@@ -10,7 +10,7 @@
         .globl proc_swap_unpack_backing
         .globl proc_swap_reload_pure
         .globl vfs_read_words
-        .globl d6codec_decode_vfs_v1452
+        .globl d6codec_decode_vfs_v1458
         .globl proc_table
         .globl proc_high_slot
         .globl proc_swap_records
@@ -126,7 +126,7 @@ proc_swap_reload_compressed:
         move    1,12
         movei   2,3
         setz    3,                      ; trusted immutable backing
-        pushj   17,d6codec_decode_vfs_v1452
+        pushj   17,d6codec_decode_vfs_v1458
         jumpn   1,proc_swap_reload_fail
 proc_swap_reload_ok:
         setz    1,

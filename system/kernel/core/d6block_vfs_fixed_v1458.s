@@ -1,5 +1,5 @@
 /* Experimental fixed-low-core block LZ/RLE VFS adapter v1458.
- * NOT production-linked. Calls the unique low-core decoder at 000060;
+ * Production v1459: calls the unique low-core decoder at 000060;
  * never installs or maintains a second decoder image.
  * Based on the existing compact legacy VFS refill calling convention:
  * AC11 is literal words pending, AC12 destination, AC13 remaining

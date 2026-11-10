@@ -1,3 +1,27 @@
+## 2026-11-10 v1459 integration checkpoint
+
+- [x] Switch all five Stage-1 sources and the actual KCORE build
+  lists to the 53-word fixed v1458 decoder; select the 58-word
+  VFS adapter and migrate EXEC/PURE/TSFS callers.
+- [x] Build and link the real KCORE, KINIT and 256K disk images;
+  verify only one decoder is linked, with exact 53-word identity
+  across KCORE and five Stage-1 read-in images.
+- [x] Compare like-for-like KCORE links: 022627 to 022617 octal
+  initialized words, saving eight physical words; BSS unchanged.
+- [x] Full 256K cold-boot acceptance for DSK, DRM and PTR
+  Stage-1: ROOT login, DSH and ECHO passed on isolated media.
+- [ ] Obtain full 256K DTC and MTC Stage-1 cold-boot acceptance;
+  their standalone assemblies and exact core-image checks pass,
+  but slow or stalled device boot must not be counted as success.
+- [ ] Diagnose TSFS-root INIT RUN failure independently from
+  v1459: the v1452 control has the same failure. Verify TSFS
+  compressed restart-extent decode with a dedicated booted test.
+- [ ] Complete strict 32K and 48K memory gates: the 32K
+  KINIT/KCORE size checks still fail and both v1452 and v1459
+  48K GCC lowmem boots stall after INIT V1.
+- [ ] Finish the full boot matrix and final documentation before
+  declaring the v1459 cutover production-accepted.
+
 ## 2026-11-10 v1458 fixed-low-core block decoder acceptance
 
 - [x] Assemble the v1458 block decoder at 000060: 53 words including

@@ -1,3 +1,38 @@
+## 2026-11-10 v1459: actual Stage-1/KCORE 53-word decoder integration
+
+The v1458 53-word fixed-low-core block decoder is now selected by
+both Stage-1 and KCORE build rules in the versioned v1459 branch.
+All five Stage-1 device sources use the same low-core decoder at
+octal 000060. KCORE links exactly one 53-word fixed image and one
+58-word VFS/direct-buffer adapter, and the EXEC, PURE backing and
+TSFS direct-buffer callers use the v1458 entry symbols. The
+unchanged host encoder remains d6block-v1452 (same v1421 wire
+format). No D6LZ36 decoder was reintroduced.
+
+An independently rebuilt v1452 control KCORE has 022627 octal
+initialized words and 000415 BSS words. v1459 has 022617 octal
+initialized words and the same 000415 BSS words: **8 physical
+words saved**, without changing linked BSS or relocations. The
+fixed core has zero static DATA/BSS and zero DOBJ relocations.
+All five native Stage-1 images contain an **identical 53-word
+sequence** to the first 53 linked KCORE words, including the
+inline byte pointer. Actual 256K full-profile DSK, DRM and PTR
+cold boots passed through ROOT login, DSH startup and a guest
+ECHO command using isolated media.
+
+Limitations are recorded explicitly, not accepted as success:
+the 32K lowmem build fails the pre-existing KINIT stack-safe
+image ceiling and the strict 32K KCORE residency gate;
+48K GCC lowmem builds for both v1452 control and v1459 reach
+INIT V1 but fail to reach LOGIN within 180 seconds. DSK Stage-1
+with TSFS root (full profile) reaches INIT but reports
+`INIT: RUN FAILED` on **both** v1452 control and v1459.
+DTC/MTC source assemblies and shared-image checks passed,
+but their real-device cold boots remain unaccepted.
+The branch is an integrated **checkpoint**, not a completed
+all-device, all-memory production release. Tests are in
+daimos-testkit tests/validation/d6codec-v1459-integration/.
+
 ## 2026-11-10 v1458: tested 53-word fixed-low-core block decoder
 
 The v1452 D6LZ36-free block-only cutover branch now has a validated,

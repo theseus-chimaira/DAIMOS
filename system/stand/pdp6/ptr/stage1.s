@@ -129,15 +129,15 @@ daimon_magic:.word 0444151555756
 bootstrap_sixbit_image:
         .include "../common/sixbit-fixed.inc"
 
-        .include "../common/block_decompressor_v1452.inc"
+        .include "../common/block_decompressor_v1458.inc"
 
 ; Production Stage0 loads PTR Stage1 at 000060.  Keep the decoder-copy and
 ; post-copy instructions above the installed 000060 decoder image.
 stage1_handoff:
-        movei 01,d6b_image_start_v1452
+        movei 01,d6b_image_start_v1458
         hrl 01,01
-        hrri 01,d6b_low_base_v1452
-        blt 01,d6b_low_base_v1452+(d6b_image_end_v1452-d6b_image_start_v1452)-1
+        hrri 01,d6b_low_base_v1458
+        blt 01,d6b_low_base_v1458+(d6b_image_end_v1458-d6b_image_start_v1458)-1
 
         movei 012,030000
         move 013,image_words
@@ -146,7 +146,7 @@ stage1_handoff:
         move 04,compressed_words
         move 014,012
         setz 011,
-        pushj 017,d6b_low_base_v1452
+        pushj 017,d6b_low_base_v1458
         jumpn 00,bad_tape
         jumpn 04,bad_tape
         move 017,012                  ; KINIT stack starts at image end
