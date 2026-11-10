@@ -1,3 +1,21 @@
+## 2026-11-10 v1425: DSH mutable-suffix compression experiment
+
+- [x] Simulate the actual DSH DXR2 text/data/BSS/startup geometry
+  using real compiled BSS symbol sizes and modeled SIXBIT state,
+  environment, heap, stack, jobs and function allocations. Compare
+  raw sector-aligned suffix and strictly writable-only sizes with
+  grouped v1420 and block v1424. All ten host roundtrips and ten
+  full native PDP-6 suffix decompressions PASS.
+- [ ] Capture a real running DSH's process memory in the PDP-6
+  simulator at idle and after command/function activity; repeat
+  the native exact-compression comparison to validate this
+  simulated sparsity against measured guest data.
+- [ ] For any swapless mutable-RAM compression admission, count
+  codec/code/frame/metadata/temporary-buffer overhead, reject
+  incompressible blocks before MM commit, preserve raw fallback
+  and immutable backing, and prove in-place compressed ownership
+  and error rollback. Do not activate it from v1425 alone.
+
 ## 2026-11-10 v1424: streaming decompression decision pending
 
 - [x] Benchmark the historical grouped v1367 decoder, aggressively

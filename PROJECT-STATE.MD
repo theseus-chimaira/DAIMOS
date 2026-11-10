@@ -1,3 +1,38 @@
+## 2026-11-10 v1425: modeled DSH mutable-memory compression sizes
+
+The versioned daimos-testkit simulation now models five DSH runtime
+snapshots using real uncompressed DSH DXR2 image geometry and
+compiler-generated BSS declarations, with seeded synthetic
+environment, heap, stack, command, and function-node contents.
+This is explicitly **not** a captured guest-process memory dump.
+The real DSH image has 15,331 initialized words, 15,330 TEXT,
+one initialized DATA word, 1,011 BSS and an initial rounded
+17,408-word physical VM. DSH has no PURE flag; a potential
+sector-aligned PURE drop could omit 15,232 words, leaving a
+2,176-word suffix containing 114 words of trailing immutable TEXT.
+
+The modeled idle prompt grows its process VM to 18,432 words after
+28 heap words, leaving a 3,200-word hypothetical retained suffix.
+The compressed payload occupies 280 words under grouped D6CODEC
+v1420 or 358 under compact block v1424 (raw: 3,200). For a running
+command the same raw length compresses to 463/618; with function
+nodes and two further APR allocations, 4,224 raw words compress
+to 646/868. Deliberately random 2,176-word suffix expands to
+2,249/2,193, proving the need for an admission threshold/raw
+fallback. Separate strict writable-only figures omit the 114
+word text tail; see the report.
+
+The two independent host codec references pass exact roundtrip
+for all five profiles and both source ranges. The actual staged
+native PDP-6 v1420/v1424 decoders each passed all five complete
+physical-suffix decompressions (ten full native tests). No real
+shell or kernel was modified. No actual compressed-process MM
+transaction, measured RAM peak, codec overhead or real shell
+snapshot acceptance is claimed.
+
+Full details: ../pdp10-doc/KERNEL/D6CODEC-DSH-MUTABLE-SIMULATION-V1425.MD.
+Tests: daimos-testkit/tests/validation/d6codec-shell-mutable-v1425/.
+
 ## 2026-11-10 v1420-v1424: staged streaming codec speed/RAM comparison
 
 Isolated PDP-6 native experiments and the matching versioned testkit
