@@ -1,3 +1,48 @@
+## 2026-11-10 v1401-v1404: MEMFS MM owners, duplicate releases, build closure
+
+After the checked BACKSTORE/MEMFS release work of v1398-v1400, native PDP-6
+fault injection uncovered a second owner-loss bug: `memfs_data_free` cleared
+the final chunk descriptor **before** `mm_free` confirmed its release.
+The production assembler now returns 0/-1, leaves the descriptor and
+resident vnode data intact on MM refusal, and checks the exact owned bitmap
+sector mask before clearing bits. An already freed sector, or an extent
+outside every owned chunk, is refused rather than silently released twice.
+The callers propagate failure: TRUNCATE can return -1 while keeping the
+existing file, and speculative extent cleanup which cannot complete routes
+to the existing KCORE fatal MM/ownership invariant. No owner registry added.
+
+A failed MEMFS eviction BACKSTORE write has no published owner for the
+temporary disk run. The rollback now checks `backstore_free`: if release
+also refuses, returning to the scheduler would leak an untracked allocation.
+It therefore invokes the established fatal storage invariant. A separate
+PDP-6 fault image records that the invariant was reached before HALT.
+
+Native PDP-6 red/green acceptance: octal 0260 for the previously ignored
+MM-free refusal, octal 0262 for a double-free against a shared live chunk,
+and the v1403 eviction write/free double-fault (invariant marker 0 before
+the fix, 1 after). Normal MEMFS, fatal-invariant and v216 SIMH/AAP user-XIP
+lifecycle all PASS. `daimos-testkit` exposes the private allocator free
+leaf ONLY in its source-concatenated test build, not as a production export.
+
+The boot Makefile also omitted `memfs_data_pdp6.s` and
+`memfs_snapshot_pdp6.s` from its `KERNEL_INPUTS` dependency list. A direct
+MEMFS MRES target could consequently relink stale generated assembler and
+report false size measurements. Both missing source dependencies are now
+included; running the MRES target actually triggers the kernel generator
+after a source change. The freshly regenerated/linked package is **1771
+resident words = 1758 initialized + 13 BSS**, versus 1752 at v1400
+(+19 words, zero BSS growth). No fixed KCORE source was modified; this is
+the final measured MRES size for the v1401-v1404 code, not a stale rebuild.
+The refreshed GCC 32K lowmem permanent-size report confirms **9687 fixed
+KCORE words**, 16362 KCORE+MRES inventory words and **26 words beyond** the
+strict single-root permanent placement limit; none changed in v1401-v1404.
+The old v202 AAP provider and v209 APR behavior fixtures also PASS.
+
+Full boot/pressure MM fault injection, scheduler-level MEMFS+BACKSTORE
+concurrency, privileged XIP RUN/EXEC and swapless PURE rollout are NOT
+complete. D6 codec debate remains explicitly DEFERRED; existing D6LZ36
+stays in production.
+
 ## 2026-11-10 v1399/v1400: MEMFS backing-release and unmount ownership
 
 The production movable MEMFS data provider now treats BACKSTORE free as a

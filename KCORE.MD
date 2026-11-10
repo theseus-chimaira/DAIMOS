@@ -1,3 +1,23 @@
+## 2026-11-10 v1401-v1404: MEMFS provider safety +19 resident words
+
+MEMFS's private sector allocator now refuses an already-freed sector and
+does not clear its final chunk descriptor until MM confirms free success.
+The provider checks MM release results before discarding the last resident
+file owner. A failed eviction backing WRITE followed by failed cleanup
+BACKSTORE free now triggers the existing fatal ownership invariant instead
+of leaving newly allocated backing blocks orphaned. Native PDP-6 red/green
+tests v1401-v1403 and non-writing XIP SIMH/AAP v216 PASS.
+
+After fixing the boot Makefile's missing MEMFS data/snapshot assembler
+dependencies, a fresh direct MRES build measures **1771 resident words**
+(1758 initialized, 13 BSS), up from 1752 at v1400, with NO fixed KCORE
+code changes. Build dependency correctness was required to avoid misleading
+stale linker measurements. The refreshed lowmem profile still has **9687
+fixed KCORE words** and a strict single-root 26-word overage; this is not
+an accepted 32K placement. Legacy v202 AAP and v209 APR tests also PASS.
+Full physical pressure/guest lifecycle remains
+an open item; grouped D6 codec is deferred.
+
 ## 2026-11-10 v1399/v1400: MEMFS failure-atomic backing owner
 
 Production MEMFS now checks `backstore_free` results before losing its last

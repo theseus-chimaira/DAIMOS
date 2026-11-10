@@ -253,9 +253,9 @@ memfs_data_alloc_done:
         pop     17,010
         popj    17,
 
-; Free AC1 base / AC2 logical words back to its containing chunk.  Large
-; chunks are dedicated allocations; ordinary chunks clear sector bitmap bits.
-; A completely free chunk returns immediately to MM.
+; Free AC1 base / AC2 logical words back to its containing chunk. Return 0
+; on complete release, -1 if the descriptor/MM owner could not be released.
+; A final chunk must keep its descriptor until mm_free confirms success.
 memfs_data_free:
         move    7,1                    ; base
         move    1,2
@@ -279,6 +279,7 @@ memfs_data_free_find:
 memfs_data_free_find_next:
         addi    4,1
         sojg    0,memfs_data_free_find
+        seto    1,                      ; no owning chunk
         popj    17,
 
 memfs_data_free_found:
@@ -292,12 +293,20 @@ memfs_data_free_found:
         subi    5,1                    ; low NEED-sector mask
         lsh     5,0(7)
         andi    3,MEMFS_CHUNK_BITMAP
+        ; The sector must still belong to this allocation. Without this
+        ; check a duplicate free could silently succeed and potentially
+        ; release a chunk still owned by another file.
+        move    2,3
+        and     2,5
+        came    2,5
+        jrst    memfs_data_free_fail_v1401
         andcm   3,5                    ; bitmap &= ~released mask
         jumpe   3,memfs_data_free_release
         hlrz    5,(4)
         andi    5,0777400              ; retain sector-count field
         ior     5,3
         hrlm    5,(4)
+        setz    1,                      ; other sectors remain allocated
         popj    17,
 
 memfs_data_free_release:
@@ -305,11 +314,18 @@ memfs_data_free_release:
         move    1,4
         pushj   17,memfs_chunk_bounds
         move    7,2                    ; chunk words
-        setzm   (4)
+        push    17,4                    ; mm_free may overwrite AC4
         move    1,6
         movei   2,MM_TYPE_KERNEL_DYNAMIC
         movei   3,MEMFS_MM_OWNER
         pushj   17,mm_free
+        pop     17,4
+        jumpn   1,memfs_data_free_fail_v1401
+        setzm   (4)                     ; release committed
+        setz    1,
+        popj    17,
+memfs_data_free_fail_v1401:
+        seto    1,
         popj    17,
 
 ; Drop slot AC1's existing backing allocation, if any. Return 0 on success
@@ -711,6 +727,7 @@ memfs_data_ensure:
         move    1,010
         move    2,013
         pushj   17,memfs_data_free
+        jumpn   1,memfs_data_destroy_invariant_v1400
         jrst    memfs_data_ensure_fail
 memfs_data_ensure_publish:
         hrlz    1,010
@@ -777,6 +794,7 @@ memfs_resize_change:
         move    1,015
         move    2,014
         pushj   17,memfs_data_free
+        jumpn   1,memfs_resize_fail     ; original data owner still live
 memfs_resize_zero_drop:
         setzm   MEMFS_NODE_DATA(013)
         movn    1,014
@@ -884,6 +902,7 @@ memfs_resize_spill_bad_new:
         move    1,016
         move    2,012
         pushj   17,memfs_data_free
+        jumpn   1,memfs_data_destroy_invariant_v1400
         jrst    memfs_resize_fail
 memfs_resize_spill_next:
         addi    4,1
@@ -915,6 +934,7 @@ memfs_resize_drop_backing:
         move    1,015
         move    2,014
         pushj   17,memfs_data_free
+        jumpn   1,memfs_resize_drop_failed_v1399
 memfs_resize_commit_new_v1399:
         hrlz    1,016
         ior     1,012
@@ -928,6 +948,7 @@ memfs_resize_drop_failed_v1399:
         move    1,016                   ; discard uncommitted destination
         move    2,012
         pushj   17,memfs_data_free
+        jumpn   1,memfs_data_destroy_invariant_v1400
         jrst    memfs_resize_fail
 memfs_resize_fail:
         seto    1,
@@ -997,6 +1018,10 @@ memfs_evict_back_loop:
         move    1,(17)
         move    2,016
         pushj   17,backstore_free
+        ; This is a newly allocated span with no published vnode owner.
+        ; If its cleanup release fails after a write error, returning to
+        ; eviction would leak the only reference to allocated disk blocks.
+        jumpn   1,proc_swap_storage_invariant_v30
 memfs_evict_back_fail:
         sub     17,[1,,1]
         jrst    memfs_evict_zero

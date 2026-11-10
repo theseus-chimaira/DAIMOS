@@ -1,3 +1,26 @@
+## 2026-11-10 v1401-v1404: MEMFS owner and build regressions closed
+
+- [x] Fix the internal final-chunk MM free: do not delete the only chunk
+  descriptor until `mm_free` returns zero. A refusal leaves the resident
+  node intact and returns -1 to TRUNCATE; speculative cleanup refuses to
+  resume with an untracked candidate extent.
+- [x] Verify all sector bitmap owner bits before clearing any. Reject a
+  duplicate sector release while another file still shares its chunk and
+  reject a second free of an already reclaimed MM chunk.
+- [x] Check BACKSTORE rollback free after failed MEMFS eviction write.
+  A refused free of an unpublished allocation must hit the established
+  fatal storage invariant, not silently leak the reservation.
+- [x] Native PDP-6 red/green v1401-v1403 and existing SIMH/AAP v216
+  non-writing XIP lifecycle PASS. Final MEMFS MRES 1752 -> 1771 resident
+  words (+19), BSS stays 13; KCORE is unaffected by these movable changes.
+- [x] Correct stale direct-MRES build dependencies: track both raw MEMFS
+  data and snapshot assembler sources in boot `KERNEL_INPUTS`. Verified
+  `make ... memfs-mres.dobj` reruns the kernel generator and relinks fresh.
+- [ ] Live low-core spill/reclaim and complete unmount MM fault/rollback
+  acceptance at 32K/48K/256K; audit remaining SWAP-MRES free consumers.
+- [ ] Finish production restricted MEMFS XIP RUN/EXEC and swapless PURE RAM
+  scheduler integration. Grouped D6 codec remains deferred.
+
 ## 2026-11-10 v1399/v1400: checked MEMFS backing owner transitions
 
 - [x] Keep the backing descriptor until a verified `backstore_free` returns
