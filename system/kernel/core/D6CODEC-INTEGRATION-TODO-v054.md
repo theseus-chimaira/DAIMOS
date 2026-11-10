@@ -1,5 +1,14 @@
 # D6 codec v054 — complete integration TODO
 
+**2026-11-10 v1395 scheduling supersession:** The grouped D6 codec format
+is under discussion. Defer its production cutover until AUXSTORE/BACKSTORE,
+restricted raw MEMFS XIP and swapless PURE RAM reclamation are all finished
+and accepted. This is a sequencing change, not abandonment of the codec or
+permission to mix formats. Existing D6LZ36 producers/loaders stay unchanged;
+plain PURE_PREFIX and bounded legacy FULL restoration may be developed in
+the meantime, without adding a second permanent decoder. Compressed
+PURE_PREFIX remains unsupported pending a selected bounded codec.
+
 **Status:** integration specification, NOT implemented. The v053 encoder and
  decoder are already staged as inactive DAIMOS assembler sources. Execute the
 cutover in a **new isolated workspace**. Do not modify production KCORE or

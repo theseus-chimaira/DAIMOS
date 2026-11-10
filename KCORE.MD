@@ -1,3 +1,35 @@
+## 2026-11-10 v1393-v1395: prioritized feature work, D6 codec deferred
+
+The current implementation order is AUXSTORE/BACKSTORE, restricted raw
+MEMFS XIP and swapless PURE RAM. The proposed grouped D6 codec is deferred
+until those features are finished; production D6LZ36 remains unchanged.
+
+BACKSTORE's existing verifier is reused on free without its new-allocation
+enable gate, preserving cleanup of existing owners after STORAGECTL disable.
+Partial, duplicate and out-of-range frees cannot mutate the bitmap or count.
+Native v1393/v777/v795 and AUXSTORE v657/gateway v815/publication v665
+tests PASS. BACKSTORE remains a SWAP MRES implementation rather than new
+fixed KCORE code. Complete physical swap/OOM retesting is still open.
+
+The staged root/trusted raw XIP instruction policy v1394 passes host and
+native PDP-6 tests at 80 TEXT / 0 DATA / 0 BSS. It intentionally accepts
+only a stackless MOVEI AC2,immediate plus EXIT; no normal EXEC/RUN linkage
+or scheduled user-lifecycle acceptance is claimed. The existing APR gives
+no write protection to arbitrary shared XIP instructions.
+
+The unlinked PURE FULL transaction now verifies all MM release failures
+and retains TRANSITION on incomplete rollback. v1395 four-case native fault
+tests and v1390 common FULL regression PASS. The standalone C transaction
+grows 359 -> 368 target TEXT words, zero static DATA/BSS, for explicit
+rollback safety. No new codec dependency or production scheduler change.
+Linked size and real total-RAM acceptance must still precede cutover.
+
+Rebuilt GCC lowmem 32K disk-root linked report: fixed KCORE **9870 words**,
+SWAP MRES **1757 words**, complete package inventory **16651 words** and
+PERMANENT_LAST **16698 decimal**. All are unchanged from the previous linked
+checkpoint. The standard report still fails the strict single-root 16K
+permanent-address limit by 315 words; no boot/DSH acceptance is inferred.
+
 ## 2026-11-10 v1391/v1392: bounded FULL image restoration, staged only
 
 The unlinked v1391 FULL restore transaction passes the exact pinned

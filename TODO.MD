@@ -1,3 +1,39 @@
+## 2026-11-10 v1393-v1395: active integration order and D6 deferral
+
+**Current priority decision:** Continue AUXSTORE/BACKSTORE, privileged raw
+MEMFS XIP, and swapless PURE RAM reclamation. The grouped D6 codec format is
+still under discussion and its atomic production cutover is **DEFERRED until
+all three preceding feature tracks are finished and accepted**. This
+supersedes the earlier ordering that made the v053/v055 codec a precondition
+for the other tracks; it does not cancel the eventual codec replacement.
+Keep production D6LZ36 unchanged. Plain DXR2 PURE prefix restoration and
+the existing safe full-image fallback can progress independently; compressed
+PURE_PREFIX remains unsupported until a selected format has a bounded
+decoder. Do not add another permanent decoder or a mixed-format fallback.
+
+- [x] v1393: BACKSTORE free first checks every bitmap owner bit before
+  releasing any blocks or decrementing usage; a disabled allocation policy
+  still permits release of existing valid owners. Native PDP-6 ownership,
+  boundary and bitmap-verifier tests PASS. No additional BSS.
+- [x] v1394: stage an exact, root-only, trusted raw-XIP instruction policy:
+  one stackless MOVEI AC2,immediate then UUO 040 EXIT, no other nonzero
+  image words, no argv/env and no user stores. Host and PDP-6 tests PASS;
+  isolated 80 TEXT, zero DATA/BSS. It is NOT linked into production.
+- [ ] Connect XIP only after real pinned-vnode source trust, immutable
+  provenance, atomic RUN/EXEC transaction, APR/scheduler, BRK/swap exclusion
+  and native booted lifetime acceptance. Keep ordinary EXEC/RUN unchanged.
+- [x] v1395: staged PURE FULL restoration now refuses failed target/source
+  unpin or target free on rollback, retaining TRANSITION. Native PDP-6
+  four-fault rollback/commit test and existing shared FULL image test PASS.
+  Separate C transaction 359 -> 368 TEXT, zero DATA/BSS; NOT linked.
+- [ ] Complete real scheduler/PI/VFS and 32K/48K guest acceptance for PURE
+  reclamation, compare total net RAM (not just dropped PURE text), and only
+  then replace old resident transaction code without duplication.
+- [ ] Complete remaining AUXSTORE/BACKSTORE consumer and media/recovery
+  integration, preserving exact owner accounting and no-disabled-allocation
+  assumption during cleanup; rerun the full 256K swap/OOM matrix after the
+  production MRES release-path change.
+
 ## 2026-11-10 v1391/v1392: bounded FULL safety and compiler integrity
 
 - [x] Stage FULL restore with a four-argument, MM-owned APR capacity

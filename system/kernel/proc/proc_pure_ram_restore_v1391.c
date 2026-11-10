@@ -198,11 +198,19 @@ proc_pure_ram_restore_v1391(unsigned int slot,
         return MM_OK;
 
 fail_target:
-        if (target_pinned)
-                (void)mm_unpin(target);
-        (void)mm_free(target, MM_TYPE_PROCESS, slot);
+        /* A failed rollback is not an ordinary loader failure. Keep the
+         * process TRANSITION-owned so its still-live MM extent cannot be
+         * mistaken for an available VM or reclaimed by another process.
+         * Never discard an MM error or release the source on uncertain
+         * target ownership. No new persistent state is necessary.
+         */
+        if (target_pinned && mm_unpin(target) != MM_OK)
+                return MM_ERR_BUSY;
+        if (mm_free(target, MM_TYPE_PROCESS, slot) != MM_OK)
+                return MM_ERR_BUSY;
 fail_source:
-        if (source_pinned && !source_uncertain)
-                (void)mm_unpin(source);
+        if (source_pinned && !source_uncertain &&
+            mm_unpin(source) != MM_OK)
+                return MM_ERR_BUSY;
         return rc;
 }

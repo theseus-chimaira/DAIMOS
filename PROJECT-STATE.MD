@@ -1,3 +1,48 @@
+## 2026-11-10 v1393-v1395: storage ownership, XIP safety and PURE rollback
+
+Feature-order policy: finish AUXSTORE/BACKSTORE, privileged raw MEMFS XIP and
+swapless PURE RAM reclamation before revisiting the still-undecided grouped
+D6 codec. Active boot, EXEC, swap and TSFS consumers remain on D6LZ36;
+the deferred codec does not block plain PURE prefix work. Production disk/drum
+swap and the ordinary RUN/EXEC process path remain unchanged.
+
+The actual SWAP MRES BACKSTORE allocator now refuses any incomplete or
+duplicate bitmap release before decrementing usage. The ownership scan reuses
+the existing allocation verifier but bypasses its enable-for-new-allocation
+gate for cleanup: STORAGECTL can turn off swap while old allocated backing
+still has to be freed. Source-linked PDP-6 v1393, v777 and v795 PASS;
+AUXSTORE region v657, BACKSTORE gateway v815 and publication v665 PASS.
+No additional resident bitmap or per-owner metadata. Existing legacy v805
+integrated swap fixture reaches an invariant HALT even against unchanged
+v1392 BACKSTORE, so its failure is not attributed to this change; its old
+testkit modifications were restored. Full production swap pressure/OOM
+regression after this code change is still outstanding.
+
+The unlinked `proc_xip_policy_v1394.[ch]` verifies only a pinned-source,
+root-authorized, stack-free, no-argument, no-environment raw XIP image with
+an exact MOVEI AC2,immediate and EXIT instruction pair, and zero elsewhere.
+Host C89 and native PDP-6 acceptance PASS. Standalone code is **80 TEXT,
+zero static DATA/BSS**. Caller trust/pin lifetime and actual root-only
+production RUN/EXEC/scheduler integration remain OPEN; this verifier cannot
+be used as a general-purpose XIP security policy.
+
+The staged `proc_pure_ram_restore_v1391.c` no longer ignores failed MM
+release/rollback operations: source/target unpin and target free failures
+return MM_ERR_BUSY and retain the process TRANSITION lock for recovery. Native
+v1395 tests inject four MM failures, including post-success publication;
+shared v1390 native FULL loader regression remains PASS. The isolated C
+transaction is **368 TEXT** (previously 359), zero DATA/BSS. It is unlinked
+and adds no actual KCORE or RAM until an explicit production cutover. Final
+physical no-partner/scheduler tests and measured 32K/48K net RAM savings
+remain OPEN.
+
+The full GCC 32K lowmem disk-root link was refreshed: fixed KCORE **9870
+words**, SWAP MRES **1757 words**, linked package inventory **16651 words**,
+last permanent address **16698 decimal**. These values are unchanged from
+the pre-v1393 checkpoint. The standard report's strict 16K single-root
+placement check remains FAIL (315 words beyond its limit); this is not a new
+complete 32K DSH result.
+
 ## 2026-11-10 v1391/v1392: MM-bounded FULL reload and KCC fold correction
 
 The staged, **not production-linked**

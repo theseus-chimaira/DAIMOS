@@ -126,6 +126,10 @@ backstore_alloc_fail_fast:
 backstore_verify_allocated_v795:
         skipn   backstore_enabled
         jrst    backstore_verify_fail_v795
+; Cleanup must still be possible after STORAGECTL disables new swap
+; allocations: previously allocated blocks retain their owner records.
+; This entry shares the complete bitmap check but not the allocation gate.
+backstore_verify_release_v1393:
         skipn   backstore_bitmap
         jrst    backstore_verify_fail_v795
         jumpl   1,backstore_verify_fail_v795
@@ -229,16 +233,23 @@ backstore_extend_fail:
         popj    17,
 
 ; void backstore_free(kword_t first, kword_t blocks)
+; Refuse unowned, partially free, or invalid runs BEFORE modifying
+; the shared bitmap or used-block count.  A duplicate/partial release must not
+; corrupt accounting and make another process's blocks appear available.
+; Disabling new allocations does not invalidate existing outstanding owners.
+; Reuse the same complete ownership verifier as the other BACKSTORE services;
+; this needs no additional persistent RAM or duplicate bitmap traversal code.
 backstore_free:
-        jumpe   2,backstore_free_return
-        jumpl   1,backstore_free_return
-        jumpl   2,backstore_free_return
-        caml    1,backstore_blocks      ; first >= total blocks
-        jrst    backstore_free_return
-        move    3,backstore_blocks
-        sub     3,2                     ; last legal starting block
-        camle   1,3                     ; first + count <= total
-        jrst    backstore_free_return
+        push    17,1
+        push    17,2
+        pushj   17,backstore_verify_release_v1393
+        jumpe   1,backstore_free_owned_v1393
+        pop     17,2
+        pop     17,1
+        popj    17,
+backstore_free_owned_v1393:
+        pop     17,2
+        pop     17,1
 
         push    17,010
         push    17,011
