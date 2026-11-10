@@ -119,6 +119,17 @@ its active build in this staging checkpoint.
   protection of pure/text regions, publication only after success.
 - [ ] Adapt `system/kernel/proc/proc_pure_backing_pdp6.s` and verify lazy
   PURE-page rereads and failure handling with new compressed backing.
+- [ ] For swapless PURE in-place RESTORE, support rebuilding only the
+  omitted immutable prefix without writing the retained mutable RAM.
+  A single geometry word can encode uncompressed text size (LH18) and
+  live mutable suffix size (RH18), but these are already derivable from
+  DXR2 TX2, PURE backing and process VM length. The old D6LZ core
+  rejects partial MATCH tokens crossing a requested output limit, and
+  ordinary compressed reload overwrites all initialized DATA. Choose a
+  bounded-prefix grouped decoder or independently framed text segment,
+  with native boundary-crossing tests, as part of the atomic cutover.
+  Do not add a permanent size word or retain legacy codec support
+  solely to solve this problem.
 - [ ] Adapt `system/kernel/fs/tsfs_runtime.s` for restart extents and
   immutable compressed contents; verify exact consume/decoded length,
   bounded memory and seek/refill behavior.

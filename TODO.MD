@@ -1,3 +1,31 @@
+## 2026-11-10 v1383: one-word size geometry and prefix-only RESTORE
+
+- [x] Confirm the sizing model from actual DXR2/EXEC and VM code:
+  36-bit `TEXT_WORDS,,LIVE_MUTABLE_SUFFIX_WORDS` fits both 18-bit
+  counts. DXR2 already records uncompressed initialized-image and TX2
+  text lengths; `vm_state` holds current allocated size. The existing
+  PURE backing uses a 14-bit text field. A further permanent word
+  is NOT needed solely for inactive raw-PURE size recovery.
+- [ ] Implement an **atomic reverse MM rebase** only if the released
+  prefix gap remains wholly free. Require original APR alignment,
+  exact suffix ownership/type/size and one pin, plus safe PI/scheduler
+  serialization. Never change mutable suffix bytes during prefix
+  reconstruction; on failure restore the inactive representation.
+- [ ] Add a plain DXR prefix-only load and an independently validated
+  **bounded compressed prefix decode** for the selected grouped codec
+  format. The currently linked D6LZ core rejects a token whose match
+  overlaps the requested output boundary; the existing compressed
+  PURE reload writes the full initialized image. Size metadata alone
+  does not make either operation safe. Avoid a permanent legacy
+  decoder or scratch-buffer requirement.
+- [ ] If the low prefix has been reused, fall back to the existing
+  tested full-extent restore under memory-pressure rules, with
+  correct deferral when no contiguous region exists. Native
+  daimos-testkit cases must cover exact size, boundary-crossing
+  compressed matches, occupied gaps, plain/grouped DXR, EOF and
+  rollback. The v1383 note is a design reconciliation, NOT a
+  production implementation or regression pass.
+
 ## 2026-11-10 v1381/v1382: zero-copy PURE release staged, not live
 
 - [x] Design a **no-second-allocation** PURE drop: retain mutable words

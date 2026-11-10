@@ -1,3 +1,28 @@
+## 2026-11-10 v1383: ONE WORD of sizes, not an extra permanent record
+
+Potential swapless RESTORE geometry fits one 36-bit word:
+`LH = uncompressed PURE text words`,
+`RH = current mutable suffix words`. Compute the truly released
+prefix as complete 0200-octal-word sectors of
+`text_words + EXEC_USER_ORIGIN`; then `VM_WORDS = prefix + suffix`.
+The current DXR2 TX2 text count, existing one-word PURE backing
+and the process `vm_state` LH already supply this information, so
+there is no justification for allocating a second permanent size
+word today. Beware DXR2's 18-bit text field versus the currently
+enforced 14-bit in-core PURE backing count.
+
+If the low prefix gap remains free, RESTORE can potentially reverse
+the in-place MM rebase and refill only the missing prefix, leaving
+all mutable words undisturbed. Existing plain DXR reads would need
+to stop at the exact released prefix. Existing compressed DXR
+reload **cannot** be used unchanged: it writes the entire initialized
+image and the old D6LZ core may reject a match crossing the smaller
+text output limit. Require a bounded-prefix decoder or independently
+framed text segment at the future atomic grouped-codec cutover,
+and validate in native PDP-6 tests. If the prefix gap is occupied,
+retain the full-extent safe restore/fallback and handle pressure.
+No source/Makefile behavior changed by this v1383 design decision.
+
 ## 2026-11-10 v1381/v1382: zero-copy drop by MM descriptor rebase
 
 The staged `proc_pure_ram_v1381.c` now retains inactive writable

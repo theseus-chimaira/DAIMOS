@@ -1,3 +1,55 @@
+## 2026-11-10 v1383: derive one-word PURE/WRITABLE geometry for restore
+
+The v1381 RESTORE design is refined without changing source or runtime
+linking. A 36-bit PDP-6 word can describe two unsigned 18-bit sizes:
+LH = original uncompressed PURE TEXT words, RH = **current mutable RAM
+suffix words**. These are NOT compressed lengths. With
+`skip = floor((text_words + EXEC_USER_ORIGIN) / 0200) * 0200`, the
+full APR VM size is `skip + suffix_words`. The first 020 user AC
+words are recovered from the stable u-area, not from the executable.
+The suffix includes all writable initialized data, BSS, runtime heap,
+stack and APR padding, not merely the executable's initial DATA size.
+
+**Do not allocate a new permanent word yet:** DXR2 already carries
+18-bit uncompressed initialized image length and TX2 text length.
+The current process's `vm_state` LH records its full live allocated
+extent (18 bits), and the existing resident/PURE backing record
+contains a 14-bit validated text count. Thus the proposed geometry
+can be derived when a process is quiesced, without an independent
+resident per-process size word. A future transient packed word is
+possible if necessary for a compressed inactive representation. Do
+not confuse the present backing record's 14-bit text capacity with
+the 18-bit TX2 executable-header field; changing that capacity is a
+separate compatibility/ABI decision.
+
+The preferred RESTORE fast path is to reclaim the *same* dropped
+low-address prefix only if the entire gap is still free and the
+combined extent preserves original APR alignment, then decode/copy
+**only** `skip - EXEC_USER_ORIGIN` initial text words into that gap.
+Never call the existing full-image compressed DXR decoder with the
+old saved suffix present: it writes the initialized writable DATA
+region too. The existing trusted D6LZ VFS decoder can terminate on
+an exact requested output count but the fixed token core rejects a
+match extending beyond that count. Consequently an arbitrary old
+compressed DXR stream cannot safely or reliably stop at the PURE
+boundary without a bounded-prefix decoder or a producer-enforced
+independent segment boundary. Plan this during the atomic grouped
+D6codec format cutover, not by leaving a second legacy decoder or
+adding an unconditional KCORE buffer.
+
+When another process has reused the low prefix gap, the saved suffix
+may not be immediately restorable in place. The previously tested
+full-image allocation-and-copy path must remain a *safe fallback*
+under no-partner RAM pressure; absent enough physical space, leave
+the process inactive and retry through the scheduler. One packed
+geometry word cannot guarantee contiguous space. In-place restore
+also requires an atomic MM reverse-rebase, a pinned transition state,
+an immutable executable guard, and a lossless rollback on file or
+decoder failure. There is no v1383 production implementation or new
+acceptance claim: the implementation candidates remain unlinked
+v1381/v1382, and those native test results are unchanged. See
+`../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`.
+
 ## 2026-11-10 v1381/v1382: zero-copy PURE drop, staged MM rebasing
 
 The new, explicitly unlinked staging sources
