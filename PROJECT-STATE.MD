@@ -30,6 +30,11 @@ with TSFS root (full profile) reaches INIT but reports
 DTC/MTC source assemblies and shared-image checks passed,
 but their real-device cold boots remain unaccepted: DTC timed
 out before the boot banner at 180 seconds, MTC at 240 seconds.
+Control boots using the original v1452 DTC and MTC Stage-1
+read-in tapes with otherwise identical v1459 media also produced
+no boot banner in 75 seconds. This does not prove identical
+long-run behavior, but the early read-in stall is not unique
+to the optimized decoder.
 The branch is an integrated **checkpoint**, not a completed
 all-device, all-memory production release. Tests are in
 daimos-testkit tests/validation/d6codec-v1459-integration/.

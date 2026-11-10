@@ -14,7 +14,9 @@
   their standalone assemblies and exact core-image checks pass,
   but both timed out before the boot banner (180s DTC, 240s
   MTC). Investigate the controller/read-in path against v1452
-  before blaming the decoder.
+  before blaming the decoder. Original v1452 Stage-1 control
+  tapes also failed to produce a banner within 75 seconds
+  against the same media, for both controllers.
 - [ ] Diagnose TSFS-root INIT RUN failure independently from
   v1459: the v1452 control has the same failure. Verify TSFS
   compressed restart-extent decode with a dedicated booted test.
