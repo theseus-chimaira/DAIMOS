@@ -122,14 +122,10 @@ backstore_alloc_fail_fast:
 ; int backstore_extend(first,old_blocks,new_blocks)
 ; int backstore_verify_allocated_v795(first,blocks)
 ; Read-only validation of a complete allocated run. AC4..AC7 scratch.
-; Reject invalid ranges before examining any bitmap word.
+; Reject invalid ranges before examining any bitmap word. Verifying an
+; EXISTING owner must work even when new swap allocations are disabled:
+; swap-in, exchange and teardown must still be able to finish.
 backstore_verify_allocated_v795:
-        skipn   backstore_enabled
-        jrst    backstore_verify_fail_v795
-; Cleanup must still be possible after STORAGECTL disables new swap
-; allocations: previously allocated blocks retain their owner records.
-; This entry shares the complete bitmap check but not the allocation gate.
-backstore_verify_release_v1393:
         skipn   backstore_bitmap
         jrst    backstore_verify_fail_v795
         jumpl   1,backstore_verify_fail_v795
@@ -233,6 +229,8 @@ backstore_extend_fail:
         popj    17,
 
 ; void backstore_free(kword_t first, kword_t blocks)
+; Historical void ABI is extended to return AC1=0 on release and -1 on
+; refusal. Old callers that discard the return remain binary-compatible.
 ; Refuse unowned, partially free, or invalid runs BEFORE modifying
 ; the shared bitmap or used-block count.  A duplicate/partial release must not
 ; corrupt accounting and make another process's blocks appear available.
@@ -242,10 +240,11 @@ backstore_extend_fail:
 backstore_free:
         push    17,1
         push    17,2
-        pushj   17,backstore_verify_release_v1393
+        pushj   17,backstore_verify_allocated_v795
         jumpe   1,backstore_free_owned_v1393
         pop     17,2
         pop     17,1
+        seto    1,                      ; keep owner for retry on refusal
         popj    17,
 backstore_free_owned_v1393:
         pop     17,2
@@ -276,6 +275,7 @@ backstore_free_count:
         pop     17,012
         pop     17,011
         pop     17,010
+        setz    1,                      ; successful release, no owner left
 backstore_free_return:
         popj    17,
 

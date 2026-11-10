@@ -1,3 +1,28 @@
+## 2026-11-10 v1398: checked BACKSTORE free and existing-owner lifecycle
+
+- [x] Change the historic `backstore_free` void result to 0/-1 while
+  preserving old PDP-6 call ABI, and reuse the original validated bitmap
+  scan for verification and release; no new persistent metadata.
+- [x] Make existing-run verification independent of the flag that disables
+  *new* BACKSTORE allocations. This permits swap-in/exchange and legal
+  teardown after STORAGECTL disables new swapping.
+- [x] Make production `proc_swap_detach` check the release result before
+  publishing RESIDENT or decrementing used blocks. v1393/v795/v777 native,
+  v880/v957 host and v959/v1083/v1086/v1087/v921 source gates PASS.
+- [x] Correct the native swap-PURE verifier fixture to link the real
+  0200-word SWAP-owned scratch buffer (not the filesystem DMA workspace).
+  Normal and verifier-enabled PDP-6 tests PASS.
+- [x] Controlled, matching full 32K GCC disk-root baseline comparison:
+  fixed KCORE 9694 -> 9687 (-7 words); permanent-address overage 33 -> 26.
+- [ ] Propagate checked BACKSTORE release results through MEMFS write,
+  resize, reclaim and unmount: do not drop the sole vnode/backing owner on
+  a refused free, and do not mutate resident data before a fallible cleanup.
+- [ ] Check the remaining swap-transaction MRES callers that historically
+  discard void BACKSTORE return; retain disk and MM ownership if refusal is
+  possible, and validate the full 256K live swap/OOM pressure matrix.
+- [ ] The grouped D6 codec is still deferred. Continue safe restricted raw
+  MEMFS XIP and swapless PURE production lifecycle work independently.
+
 ## 2026-11-10 v1396/v1397: verified correctness increments
 
 - [x] MEMFS XIP: freeze CHMOD, CHOWN and UTIME while a raw image pin is

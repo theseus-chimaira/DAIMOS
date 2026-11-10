@@ -1,3 +1,25 @@
+## 2026-11-10 v1398: checked BACKSTORE lifecycle saves 7 fixed words
+
+BACKSTORE free now returns 0 success / -1 refusal and verifies complete
+ownership before changing bitmap/counters. A disable-for-new-allocation flag
+cannot prevent existing disk owners from verifying or releasing their runs.
+Resident swap detach uses that one checked release rather than an enable-
+gated preverification followed by a void free; failed releases keep the
+process's disk record and storage accounting intact. Native PDP-6 and host
+release checks PASS. This uses no new persistent data or extra MRES table.
+
+Controlled full GCC 32K lowmem disk-root A/B: committed v1397 (`170c7f02`)
+**KCORE 9694 words** versus v1398 **9687**; **7 fixed words saved**.
+Both have SWAP MRES=1757 and softclock MRES=292. Total KCORE+MRES inventory
+16369 -> 16362, permanent last address 16416 -> 16409. Single-root strict
+16K placement overage improves 33 -> 26 words but is NOT yet within limit.
+Earlier comparison to a stale build was invalid for attribution.
+
+Unfinished: MEMFS's backing-drop consumer still lacks failure-atomic
+propagation, remaining swap MRES free callers need acceptance under rejected
+release, and full physical pressure / XIP / PURE scheduling tests remain open.
+Grouped D6 codec is deferred until those feature tracks are finished.
+
 ## 2026-11-10 v1396/v1397: XIP provider +7, no fixed-core growth
 
 The movable MEMFS provider now freezes mode, owner and timestamp metadata

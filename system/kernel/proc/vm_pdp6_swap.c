@@ -52,13 +52,15 @@ proc_swap_detach(int slot)
         if (VM_PDP6_BASE(p) == 0UL && state != 0UL) {
                 first = (state >> 18U) & MM_HALF_MASK;
                 blocks = state & MM_HALF_MASK;
+                /* The same checked release handles both ownership and
+                 * validity, including after swap allocations are disabled.
+                 * Unlike the allocation verifier, a legitimate release
+                 * must not depend on backstore_enabled. An absent MRES or
+                 * a refused free retains the exact DISK record for retry.
+                 * Do not decrement used blocks before release succeeds. */
                 if (blocks == 0UL || proc_swap_blocks_used < blocks ||
-                    backstore_verify_allocated_v795(first, blocks) != 0)
+                    backstore_free(first, blocks) != 0)
                         return -1;
-                /* A checked MRES export verifies the whole bitmap run.
-                 * An unloaded SWAP module returns -1 from its resident
-                 * entry instead of discarding ownership state. */
-                backstore_free(first, blocks);
                 proc_swap_blocks_used -= blocks;
                 /* The discarded slot must not retain the DISK mode. */
                 if (proc_storage_publish_v30((unsigned int)slot,

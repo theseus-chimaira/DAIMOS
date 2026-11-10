@@ -1,3 +1,35 @@
+## 2026-11-10 v1398: one checked BACKSTORE release, swap-owner retry
+
+The production SWAP MRES BACKSTORE allocator now returns **AC1=0 on
+complete release, -1 on refusal** from its historic void `backstore_free`
+entry. Existing machine-code callers ignoring the return remain ABI-compatible.
+The sole allocation verifier checks the complete bitmap run without gating
+on `backstore_enabled`: disabling new allocations must not strand a resident
+process's existing disk image or prevent swap-in, exchange or teardown.
+Only `backstore_alloc` and `backstore_extend` retain the enable gate.
+
+The resident `proc_swap_detach()` now calls the checked free directly rather
+than first using an enable-gated verifier and then an unchecked free. If
+the allocator refuses, the original disk record, storage mode and block
+accounting remain intact for retry. The `vm_space_destroy` caller can then
+retain the stable u-area. Native PDP-6 bitmap v1393/v795/v777 and host
+production-source swap-detach v880/v957 tests PASS, including owner release
+after disabled new allocations. Native raw/compressed PURE swap and verifier
+target PASS after restoring its omitted production scratch-sector BSS leaf;
+static source gates v959/v1083/v1086/v1087 (OOM enabled) and v921 PASS.
+
+**Controlled size comparison:** Two complete 32K GCC lowmem disk-root builds
+with the same flags and installed tools, one from committed v1397
+`170c7f02` and one from v1398 source, produce fixed KCORE **9694 -> 9687
+words (-7)**, identical SWAP MRES 1757 and softclock MRES 292. Complete
+KCORE+MRES inventory **16369 -> 16362**; last permanent address **16416 ->
+16409**. This is a matched 7-word improvement, NOT the spurious 183-word
+difference against the older partially stale v1397 build. The 16K strict
+single-root placement gate still FAILS by 26 words (previous matched baseline
+33). No additional static bitmap state. The next release consumer to audit
+is MEMFS's `memfs_backing_drop`, which still clears its owner before checking
+allocator refusal; full 256K pressure/OOM acceptance is still outstanding.
+
 ## 2026-11-10 v1396/v1397: XIP metadata, AUXSTORE v1 media, PURE DROP cleanup
 
 Completed correctness increments in the continuing AUXSTORE/BACKSTORE,
