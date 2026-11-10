@@ -34,8 +34,10 @@
         .globl  backstore_blocks
         .globl  backstore_alloc
         .globl  backstore_free
+        .globl  backstore_verify_allocated_v795
         .globl  backstore_read
         .globl  backstore_write
+        .globl  proc_swap_storage_invariant_v30
         .globl  fs_copy_words
         .globl  fs_zero_words
         .globl  memfs_mres_fs
@@ -310,21 +312,31 @@ memfs_data_free_release:
         pushj   17,mm_free
         popj    17,
 
-; Drop slot AC1's existing backing allocation, if any.  memfs_data_dirty has
-; the same target ABI; all target callers already hold a validated slot.
+; Drop slot AC1's existing backing allocation, if any. Return 0 on success
+; (also if there is no backing), -1 on a refused release. The descriptor is
+; authoritative: do not clear it until BACKSTORE confirms that every owned
+; block was released. memfs_data_dirty shares this ABI.
         .globl  memfs_data_dirty
 memfs_data_dirty:
 memfs_backing_drop:
         movei   3,memfs_mres_fs
         skipn   4,MEMFS_NODES(3)
-        popj    17,
+        jrst    memfs_backing_drop_ok_v1399
         add     4,1
         skipn   2,0700(4)
-        popj    17,
-        setzm   0700(4)
+        jrst    memfs_backing_drop_ok_v1399
+        push    17,4                   ; allocator may clobber AC4
         hlrz    1,2
         hrrz    2,2
         pushj   17,backstore_free
+        pop     17,4
+        jumpn   1,memfs_backing_drop_fail_v1399
+        setzm   0700(4)
+memfs_backing_drop_ok_v1399:
+        setz    1,
+        popj    17,
+memfs_backing_drop_fail_v1399:
+        seto    1,
         popj    17,
 
 ; void memfs_data_init(struct memfs *fs, kword_t limit)
@@ -755,13 +767,17 @@ memfs_resize_resident:
 
 memfs_resize_change:
         jumpn   012,memfs_resize_grow
+        ; A refused backing release must leave both the resident file and
+        ; its logical size intact. Releasing RAM first would make the disk
+        ; copy the only owner, which cannot then be forgotten safely.
+        move    1,011
+        pushj   17,memfs_backing_drop
+        jumpn   1,memfs_resize_fail
         jumpe   015,memfs_resize_zero_drop
         move    1,015
         move    2,014
         pushj   17,memfs_data_free
 memfs_resize_zero_drop:
-        move    1,011
-        pushj   17,memfs_backing_drop
         setzm   MEMFS_NODE_DATA(013)
         movn    1,014
         addm    1,MEMFS_USED_WORDS(010)
@@ -791,13 +807,16 @@ memfs_resize_grow:
         pushj   17,memfs_alloc_words
         came    1,016
         jrst    memfs_resize_relocate
+        ; Before zeroing newly exposed user words, discard the stale
+        ; backing owner. A release refusal leaves the old file untouched.
+        move    1,011
+        pushj   17,memfs_backing_drop
+        jumpn   1,memfs_resize_fail
         move    2,012
         sub     2,014                  ; newly exposed logical words
         move    1,015
         add     1,014
         pushj   17,fs_zero_words
-        move    1,011
-        pushj   17,memfs_backing_drop
         hrlz    1,015
         ior     1,012
         movem   1,MEMFS_NODE_DATA(013)
@@ -854,6 +873,11 @@ memfs_resize_spill_find:
         move    1,016
         add     1,014
         pushj   17,fs_zero_words
+        ; The low-core spill has ALREADY freed the old containing chunk.
+        ; Do not pass its stale physical base to memfs_data_free again at
+        ; the shared commit label: that path also handles normal relocation
+        ; where the old extent is still live and must be freed exactly once.
+        setz    015,
         jrst    memfs_resize_drop_backing
 
 memfs_resize_spill_bad_new:
@@ -881,13 +905,17 @@ memfs_resize_have_new:
         move    1,016
         add     1,3
         pushj   17,fs_zero_words
-        jumpe   015,memfs_resize_drop_backing
+memfs_resize_drop_backing:
+        ; Hold the original resident/swap owner until checked release.
+        ; A new extent is merely a candidate and can still be discarded.
+        move    1,011
+        pushj   17,memfs_backing_drop
+        jumpn   1,memfs_resize_drop_failed_v1399
+        jumpe   015,memfs_resize_commit_new_v1399
         move    1,015
         move    2,014
         pushj   17,memfs_data_free
-memfs_resize_drop_backing:
-        move    1,011
-        pushj   17,memfs_backing_drop
+memfs_resize_commit_new_v1399:
         hrlz    1,016
         ior     1,012
         movem   1,MEMFS_NODE_DATA(013)
@@ -896,6 +924,11 @@ memfs_resize_drop_backing:
         addm    1,MEMFS_USED_WORDS(010)
         setz    1,
         jrst    memfs_resize_return
+memfs_resize_drop_failed_v1399:
+        move    1,016                   ; discard uncommitted destination
+        move    2,012
+        pushj   17,memfs_data_free
+        jrst    memfs_resize_fail
 memfs_resize_fail:
         seto    1,
 memfs_resize_return:
@@ -1032,7 +1065,12 @@ memfs_data_reclaim_return:
         pop     17,010
         popj    17,
 
-; void memfs_data_destroy(void)
+; int memfs_data_destroy(void)
+; Unmount is an all-owner teardown: reject a missing BACKSTORE bitmap run
+; BEFORE releasing any earlier vnode's sole on-disk copy. No new registry
+; is needed: the existing per-node backing table is authoritative. Once
+; release begins, an unexpected MM/bitmap refusal is an invariant failure,
+; since returning a partially dismantled filesystem to VFS is not safe.
 memfs_data_destroy:
         push    17,010
         push    17,011
@@ -1040,11 +1078,27 @@ memfs_data_destroy:
         skipn   MEMFS_NODES(010)
         jrst    memfs_data_destroy_chunks
         setz    011,
+memfs_data_destroy_verify_v1400:
+        caile   011,077
+        jrst    memfs_data_destroy_begin_release_v1400
+        move    1,MEMFS_NODES(010)
+        add     1,011
+        skipn   2,0700(1)
+        jrst    memfs_data_destroy_verify_next_v1400
+        hlrz    1,2
+        hrrz    2,2
+        pushj   17,backstore_verify_allocated_v795
+        jumpn   1,memfs_data_destroy_fail_v1400
+memfs_data_destroy_verify_next_v1400:
+        aoja    011,memfs_data_destroy_verify_v1400
+memfs_data_destroy_begin_release_v1400:
+        setz    011,
 memfs_data_destroy_backing:
         caile   011,077
         jrst    memfs_data_destroy_chunks
         move    1,011
         pushj   17,memfs_backing_drop
+        jumpn   1,memfs_data_destroy_invariant_v1400
         aoja    011,memfs_data_destroy_backing
 
 memfs_data_destroy_chunks:
@@ -1057,15 +1111,25 @@ memfs_data_destroy_chunk_loop:
         movei   2,MM_TYPE_KERNEL_DYNAMIC
         movei   3,MEMFS_MM_OWNER
         pushj   17,mm_free
+        jumpn   1,memfs_data_destroy_invariant_v1400
 memfs_data_destroy_chunk_next:
         addi    010,1
         sojg    011,memfs_data_destroy_chunk_loop
         setz    1,
         setz    2,
         pushj   17,memfs_data_init
+        setz    1,
+        jrst    memfs_data_destroy_return_v1400
+memfs_data_destroy_fail_v1400:
+        seto    1,                      ; preflight refusal, no ownership lost
+memfs_data_destroy_return_v1400:
         pop     17,011
         pop     17,010
         popj    17,
+memfs_data_destroy_invariant_v1400:
+        ; Some earlier owners may already have been freed. Never return
+        ; a partially destroyed filesystem to a runnable VFS mount.
+        jrst    proc_swap_storage_invariant_v30
 
         .bss
 ; Four packed state,,base chunk descriptors plus singleton allocator state.

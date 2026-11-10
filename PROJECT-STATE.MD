@@ -1,3 +1,43 @@
+## 2026-11-10 v1399/v1400: MEMFS backing-release and unmount ownership
+
+The production movable MEMFS data provider now treats BACKSTORE free as a
+checked ownership transaction. `memfs_backing_drop` returns 0/-1 and clears
+the vnode's authoritative first,,block-count word **only after** the entire
+BACKSTORE allocation was released. The write path checks `memfs_data_dirty`
+before copying user bytes; an allocator refusal preserves the backing owner
+and old file content. TRUNCATE to zero now releases backing before freeing
+the resident extent. Same-sector growth checks the release before zeroing
+newly exposed data. Relocation growth holds the old RAM owner until the
+checked release completes; on refusal it discards only the uncommitted new
+extent. The tight-core spill route also avoids freeing the already-evicted
+old chunk twice at the shared relocation-commit label.
+
+Unmount teardown now preflights **all 64 vnode backing descriptors** with
+the existing `backstore_verify_allocated_v795` before releasing any owner.
+An invalid later vnode cannot make an earlier evicted file lose its sole
+copy. `memfs_data_destroy` returns -1 without mutating backing on preflight
+failure, and the MRES PREPARE_UNMOUNT dispatcher propagates the refusal to
+VFS. An unexpected release or MM failure **after** the irreversible teardown
+begins is a fatal ownership invariant, not a recoverable partial unmount.
+No new tables, DATA or BSS are introduced.
+
+The real source-linked PDP-6 MEMFS regression failed at octal 0240 against
+v1398 (a refused free was ignored) and at 0251 against the pre-v1400 destroy
+(unmount discarded a backing owner). It now passes failed WRITE, same-sector
+and relocating growth, TRUNCATE-to-zero, preflight failure at the first and
+a later backing vnode, direct destroy, dispatched PREPARE_UNMOUNT, and
+success/retry. Full v216 non-writing XIP guest lifecycle PASS on both SIMH
+and AAP. The rebuilt MEMFS MRES grows **1719 -> 1752 resident words (+33)**
+against v1398, still 13 BSS words, with no fixed KCORE change. This is a
+correctness cost rather than a RAM optimization.
+
+Still OPEN: fault-injection coverage of the tight-core spill and the
+post-preflight fatal invariant, error propagation when the MEMFS sector-
+bitmap/MM free primitive itself refuses, BACKSTORE rollback after a failed
+eviction write, and full booted/256K pressure acceptance. Production XIP
+RUN/EXEC and staged PURE scheduler integration remain open; grouped D6 codec
+is still DEFERRED.
+
 ## 2026-11-10 v1398: one checked BACKSTORE release, swap-owner retry
 
 The production SWAP MRES BACKSTORE allocator now returns **AC1=0 on

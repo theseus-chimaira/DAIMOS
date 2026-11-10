@@ -1,3 +1,25 @@
+## 2026-11-10 v1399/v1400: checked MEMFS backing owner transitions
+
+- [x] Keep the backing descriptor until a verified `backstore_free` returns
+  success; WRITE must propagate failure before overwriting file data.
+- [x] Fail-atomic backing owner release during zero truncate, same-sector
+  growth and relocation. Only the new tentative extent is freed on a
+  refused release; already-evicted tight-core spill extents are not freed
+  a second time by the common success path.
+- [x] Scan all 64 vnode backing owners before unmount releases the first
+  one. Reject invalid first/later owner references without discarding
+  resident/backed state. Return failure through the real MEMFS MRES VFS
+  prepare-unmount dispatch. Fail closed on unexpected late MM/bitmap errors.
+- [x] Source-linked PDP-6 red/green v1399/v1400 tests and existing SIMH/AAP
+  v216 raw-XIP VM lifecycle PASS. MEMFS MRES 1719 -> 1752 words (+33),
+  no extra static BSS or fixed KCORE instructions.
+- [ ] Verify/propagate failures of `memfs_data_free` and failed eviction-
+  write BACKSTORE cleanup, plus low-core spill/reclaim and unmount MM fault
+  injection. Do not treat an owner-invalidating partial release as success.
+- [ ] Full 32K/48K/256K multi-owner boot and pressure acceptance, trusted
+  production XIP EXEC/RUN, swapless PURE scheduler integration remain open.
+  Keep the grouped D6 codec deferred.
+
 ## 2026-11-10 v1398: checked BACKSTORE free and existing-owner lifecycle
 
 - [x] Change the historic `backstore_free` void result to 0/-1 while

@@ -97,9 +97,11 @@ int memfs_write_words(struct memfs *fs, vnode_t node,
     unsigned int off, const kword_t *buf, unsigned int nwords);
 
 void memfs_data_init(struct memfs *fs, kword_t limit);
-void memfs_data_destroy(void);
+/* Zero when all backing/chunks were released; -1 keeps mounted state. */
+int memfs_data_destroy(void);
 int memfs_data_ensure(struct memfs *fs, unsigned int slot);
-void memfs_data_dirty(unsigned int slot);
+/* Zero if obsolete backing was released (or absent); -1 retains the owner. */
+int memfs_data_dirty(unsigned int slot);
 kword_t memfs_data_reclaim(kword_t wanted);
 
 

@@ -1,3 +1,23 @@
+## 2026-11-10 v1399/v1400: MEMFS failure-atomic backing owner
+
+Production MEMFS now checks `backstore_free` results before losing its last
+disk owner, overwriting user words, releasing resident file extents, or
+publishing resized vnode data. Tentative relocation extents are discarded
+on refused release, not committed. The low-core spill path avoids double-
+freeing the already-evicted original chunk. Before unmount, the provider
+verifies every existing vnode BACKSTORE owner; PREPARE_UNMOUNT returns -1
+with mounted state unchanged if preflight fails. Unexpected errors after
+partial teardown route to KCORE's existing fatal ownership invariant.
+
+The test first failed against v1398 in the actual PDP-6 provider, then
+passes after the production fixes, including first/later invalid backing,
+write, resize, truncate and PREPARE_UNMOUNT refusal. v216 SIMH/AAP user
+XIP and VM teardown also PASS. MEMFS MRES **1719 -> 1752 resident words**
+(+33 code, unchanged 13 BSS); fixed KCORE size is unchanged by these MOVABLE
+changes. Partial MM release and eviction-write cleanup failures and full
+swap pressure still need separate acceptance; the grouped D6 codec remains
+deferred.
+
 ## 2026-11-10 v1398: checked BACKSTORE lifecycle saves 7 fixed words
 
 BACKSTORE free now returns 0 success / -1 refusal and verifies complete

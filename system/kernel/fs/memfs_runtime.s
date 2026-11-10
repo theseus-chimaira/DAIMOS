@@ -135,6 +135,7 @@ memfs_write_ready:
         jumpn   1,memfs_write_fail
         move    1,011
         pushj   17,memfs_data_dirty
+        jumpn   1,memfs_write_fail     ; backing record still owned on error
         move    5,011
         imuli   5,7
         add     5,(010)         ; np
@@ -840,6 +841,7 @@ memfs_mres_prepare_unmount:
         pop     17,1
         push    17,1                    ; struct memfs * context
         pushj   17,memfs_data_destroy   ; release demand-allocated data chunks
+        jumpn   1,memfs_mres_unmount_bad ; preflight refused; VFS still owns it
         move    1,(17)
         move    1,(1)                   ; namespace allocation base
         jumpe   1,memfs_mres_unmount_bad
