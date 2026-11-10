@@ -1,3 +1,45 @@
+## 2026-11-10 v1406: strict 256K full-guest SWAP ownership acceptance PASS
+
+Following the committed/pushed v1405 checked-release transaction changes,
+the original strict v1349 physical F07 runner completed a **fresh, disposable
+256K PDP-6 KCC DSK/D6FS boot**, simulator HALT and EXIT, original after-HALT
+F07 verifier, independent no-partner v1303 and physical owner-lifetime
+v1349 verifier. All returned PASS. This is a new whole-guest acceptance of
+the v1405 production source, not a reinterpretation of older v1351 evidence
+or a native-test extrapolation.
+
+The linked guest reports **34 successful swap-ins, 1 genuine MM_ERR_NOMEM
+allocation failure, 1 no-partner cooldown, 0 exchanges, and zero remaining
+process-swap/BACKSTORE blocks at HALT**. Source-linked samples prove four
+real 8K-word dynamic MM extents held with a process pin at sample 1,
+independently released after the OOM/cooldown at sample 13, and at HALT
+`prepared=4, freed=4, remaining=0, error=0`; all six invalid-owner evidence
+mutants are rejected. The F07 suite additionally checks the original
+requester-only BRK OOM, blocked witness, 18-child RUN/TERM/WAIT obligations,
+3 held-provider fatal BUSY retries, one normal holder return, and 8 genuine
+spinner progress events. 24 live user process slots and 8 resident
+process extents were measured at the OOM checkpoint. No original F07 test
+predicate or final field was suppressed or relaxed.
+
+Reproduction and source-linked evidence are archived at
+`$TMPDIR/daimos-swap-checked-release-v1406-evidence-r1.tar.gz`, SHA256
+`536c5069aec9fadffcad6381db3f530ded3d2fbd819a754c7b6788c52f626dc7`.
+The archive includes the runner, guest `addresses`, `kcore.map`, SIMH
+transcript, physical sampler, individual after-HALT F07/owner checks,
+host tool and per-file SHA256 manifests, and exact DAIMOS/testkit/document
+Git revisions. The archive manifest was independently checked before
+packing. No production change was required in v1406: v1405 fixed KCORE
+remains **9687 words**, movable SWAP MRES **1762**; the strict lowmem
+single-root permanent-placement gate remains **31 words over**.
+
+**Acceptance boundary:** This completes the tested 256K physical raw
+swap/no-partner/OOM/held-provider lifecycle, including the new v1405 normal
+checked-release paths. It does not prove the abnormal bitmap-free refusal
+through the slot-0 `SYS_EVENT_TERM` branch, a passing historical v812
+exchange fixture, a native 32K permanent placement, privileged general
+MEMFS XIP RUN/EXEC or swapless PURE scheduling. The grouped D6 codec
+remains explicitly DEFERRED; production D6LZ36 is unchanged.
+
 ## 2026-11-10 v1405: checked SWAP-MRES releases and swap-in rollback
 
 The seven production `backstore_free` call sites in
@@ -8,6 +50,12 @@ mode**. A refused bitmap release after successful disk read and MM unpin
 uses the existing post-unpin `mm_free` rollback and leaves the original
 DISK record, `PROC_SWAP_BACKING_OFFSET`, mode, bitmap and counters intact.
 The same backed process can be retried once its bitmap ownership is valid.
+This is a **direct transaction** property exercised by the native fixture:
+the production `proc_swap_mres_service_v481` still classifies a negative
+swap-in result as fatal and invokes `SYS_EVENT_TERM`. It does not
+automatically retry abnormal backing-free refusals. That scheduler/event
+cleanup boundary requires its own refusal-injection acceptance and must
+not be conflated with recoverable `MM_ERR_NOMEM` pressure/cooldown.
 
 Exchange accounting, failed reservation preparation, reservation cancel,
 swap-out rollback, and both optional PURE verifier cleanup paths treat

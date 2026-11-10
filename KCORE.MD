@@ -1,3 +1,20 @@
+## 2026-11-10 v1406: full 256K owner/OOM acceptance; no code growth
+
+The committed v1405 SWAP-MRES checked-free implementation now passed the
+fresh strict v1349 physical 256K PDP-6 KCC DSK/D6FS guest to HALT/EXIT,
+including original F07/held-provider and 18-child postflight, real
+MM_ERR_NOMEM and cooldown, 34 successful swap-ins, zero leaked disk blocks,
+and all four independent dynamic MM extents reclaimed. The six owner-evidence
+negative mutants also fail validation. This is a genuine new full-guest
+acceptance rather than the older v1351 result or a partial boot preflight.
+
+No v1406 production code changes. Fixed KCORE remains **9687 words**;
+movable SWAP MRES **1762 words**, KCORE+MRES inventory **16367**,
+strict single-root permanent placement **31 words over**. Full 32K
+admission and other configurations still require separate validation.
+Raw XIP RUN/EXEC, swapless PURE scheduler and unusual BACKSTORE bitmap
+refusal through `SYS_EVENT_TERM` remain open; D6 codec stays deferred.
+
 ## 2026-11-10 v1405: SWAP MRES release safety, +5 movable words
 
 The production SWAP-MRES `proc_swap_in` path now checks the real BACKSTORE

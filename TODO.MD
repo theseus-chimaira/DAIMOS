@@ -1,3 +1,22 @@
+## 2026-11-10 v1406: current physical swap acceptance and remaining scope
+
+- [x] Fresh strict 256K PDP-6 KCC DSK/D6FS F07 full guest on committed
+  v1405 checked-release code: HALT/EXIT, original F07 postflight, real
+  no-partner recovery, independent MM owner lifetime PASS. 34 swap-ins,
+  MM pressure/cooldown 1/1, all 4 independent MM extents freed, no leaked
+  process or BACKSTORE blocks. Versioned, SHA256-verified evidence archive
+  `$TMPDIR/daimos-swap-checked-release-v1406-evidence-r1.tar.gz`.
+- [ ] Exercise refused BACKSTORE release through actual slot-0 scheduler
+  and TERM event cleanup; the native v1405 test checks a direct-call retry,
+  not automatic scheduler retry. Abnormal bitmap corruption remains a
+  separate fault-injection acceptance criterion.
+- [ ] Diagnose/fix historical v812 integrated exchange test's pre-existing
+  runtime assertion, also reproduced against unchanged v1404 source.
+- [ ] Strict 32K single-root permanent-placement gate is **31 words over**;
+  remove the remaining excess without losing checked ownership behavior.
+- [ ] Complete privileged raw MEMFS XIP RUN/EXEC and swapless PURE physical
+  RAM reclamation/scheduler integration. Grouped D6 codec stays deferred.
+
 ## 2026-11-10 v1405: verified checked SWAP-MRES release paths
 
 - [x] Move `backstore_free` before disk->resident publication/accounting
@@ -16,12 +35,19 @@
 - [ ] v812 historical integrated fixture still fails on committed v1404
   as well as v1405 (not a new regression); independently diagnose the
   fixture and establish a passing integrated exchange acceptance.
+- [ ] Verify the slot-0 scheduler/event response to BACKSTORE bitmap
+  release refusal: the direct v1405 transaction can roll back and retry,
+  but `proc_swap_mres_service_v481` currently sends a negative result to
+  `SYS_EVENT_TERM`, not the allocator-pressure cooldown. Confirm exact
+  disk owner retention through fatal cleanup or fail closed as needed.
 - [ ] Historical v1316 user-modified fixture does not link the real v795
   verifier. Leave existing uncommitted user edits untouched. Add an exact
   source-linked verifier to that runner only with explicit ownership of it.
-- [ ] Run strict v1349/v1351-equivalent 256K guest postflight on the new
-  source, verify physical no-partner and owner lifetime after HALT; do not
-  equate native PASS or guest preflight with full 256K acceptance.
+- [x] Rerun strict v1349/v1351-equivalent 256K guest postflight on v1405:
+  genuine physical no-partner MM pressure, 34 swap-ins, one cooldown, all
+  four dynamic MM owners released at sample 13, zero swap/backstore owners
+  at HALT, original F07/held-provider/18-child cleanup and six negative
+  owner-evidence controls PASS. Archive evidence as v1406/r1.
 - [ ] Continue trusted raw-XIP RUN/EXEC and swapless PURE scheduler work.
   Grouped D6 codec remains deferred until those tracks are accepted.
 
