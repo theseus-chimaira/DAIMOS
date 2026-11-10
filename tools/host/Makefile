@@ -9,14 +9,14 @@ PKG_CONFIG ?= pkg-config
 MAGICKWAND_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags MagickWand)
 MAGICKWAND_LIBS ?= $(shell $(PKG_CONFIG) --libs MagickWand)
 
-TOOLS = d6lz mkdsk mkd6fs mkauxstore d6fsck packfs d6bad logstore d6swap \
+TOOLS = d6block-v1452 mkdsk mkd6fs mkauxstore d6fsck packfs d6bad logstore d6swap \
 	mkdt mkdtfs dta2dtr mktsfs tsfscheck mkstream mktap words2pt dlink darc \
 	p10run p10job pdp10-objdump p10fold p10super mkinitfs0 mkbootbanner \
 	sixmd-check csix img2dpic
 PROGRAMS = $(addprefix $(BUILD)/,$(TOOLS))
 ALIASES = pdp10-dec-none-darc pdp10-dec-none-objdump mkinitfs
 STALE_TOOLS = pdp10-dec-none-ar pdp10-dec-none-ranlib dxr2rim mkrim mkrim.py \
-	p10bare p10bare.py
+	p10bare p10bare.py d6lz
 INSTALL_ROOT = $(DESTDIR)$(PDP10_PREFIX)
 
 .DEFAULT_GOAL := build
@@ -28,8 +28,8 @@ build: $(PROGRAMS)
 $(BUILD):
 	mkdir -p $@
 
-$(BUILD)/d6lz: d6lz.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ d6lz.c
+$(BUILD)/d6block-v1452: d6block-v1452.c d6block-codec-v1452.c d6block-codec-v1452.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ d6block-v1452.c d6block-codec-v1452.c
 
 $(BUILD)/mkdsk: mkdsk.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkdsk.c
@@ -61,14 +61,14 @@ $(BUILD)/mkdt: mkdt.c | $(BUILD)
 $(BUILD)/dta2dtr: dta2dtr.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ dta2dtr.c
 
-$(BUILD)/mktsfs: mktsfs.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktsfs.c tsfs-format.c d6lz-codec.c
+$(BUILD)/mktsfs: mktsfs.c tsfs-format.c tsfs-format.h d6block-codec-v1452.c d6block-codec-v1452.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktsfs.c tsfs-format.c d6block-codec-v1452.c
 
 $(BUILD)/mkdtfs: mkdtfs.c tsfs-format.h | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkdtfs.c
 
-$(BUILD)/tsfscheck: tsfscheck.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ tsfscheck.c tsfs-format.c d6lz-codec.c
+$(BUILD)/tsfscheck: tsfscheck.c tsfs-format.c tsfs-format.h d6block-codec-v1452.c d6block-codec-v1452.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ tsfscheck.c tsfs-format.c d6block-codec-v1452.c
 
 $(BUILD)/mkstream: mkstream.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkstream.c

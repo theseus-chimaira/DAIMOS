@@ -1,3 +1,47 @@
+## 2026-11-10 v1464: production D6LZ36 removed, block codec selected
+
+The explicit v1464 format decision supersedes the earlier v1395/v1462
+deferral: DAIMOS now selects the canonical v1421 block LZ/RLE format
+through the v1458 **53-word fixed-low-core decoder** and its **58-word
+VFS adapter**. All five Stage-1 loaders install the same low-core image;
+KCORE uses it directly at 000060. The executable loader, PURE backing
+reload and TSFS direct-buffer path use the block VFS interface. The host
+program `d6block-v1452` encodes all new KINIT and compressed DXR images.
+The boot Makefile additionally builds a versioned **source-matched
+`d6block-v1464`** executable by default; the TSFS producer and checker
+are the source-matched v1461 variants, with strict regular-file extent
+validation. No mixed-format detection or D6LZ36 fallback remains.
+
+Removed the old low-core `decompressor.inc`, KCORE `d6lz_pdp6.s` and
+`d6lz.h`, host `d6lz.c`/`d6lz-codec.[ch]`, and the userland `d6lz`
+utility and manual entry. Production build recipes and manifests no
+longer create or install D6LZ36 executables. The host installation rule
+also removes an older installed `d6lz` binary. Versioned experimental
+codec histories and historical documentation remain in Git; the active
+code is block-only. The newer v1393-v1405 allocator, MEMFS and PURE
+failure-atomic corrections were preserved, rather than adopting the
+older copies of those files from the v1461 experiment branch.
+
+**Acceptance to date:** all five Stage-1 v1458 assemblies PASS, reducing
+read-in sizes 8-9 words against v1452. Linked KCORE's first 53 words
+match all five embedded Stage-1 images byte-for-byte. The complete
+native PDP-6 v1458 fixed-core and VFS/refill/malformed-stream/stack
+regression PASS. Fresh 256K KCC DSK/D6FS block-only image built and
+cold-booted to ROOT LOGIN, DSH and external compressed ECHO (PASS).
+The source-matched TSFS media validator accepted 53 files/401 extents;
+independent reconstruction matched real LOGIN (3221 words/13 extents),
+DSH (15760/62) and ECHO (1035/5) exactly. Native PDP-6 decoded the
+actual final LOGIN restart (149 words from 64 compressed words), PASS.
+The 256K TSFS-root cold boot is a separate pending acceptance check.
+
+**Footprint:** the freshly linked GCC 32K lowmem profile reports fixed
+KCORE **9701** 36-bit words versus **9687** before the cutover (+14),
+SWAP MRES **1762** unchanged, and combined KCORE+MRES inventory **16381**.
+Permanent last is decimal **16428**, so the strict single-root 16K
+placement gate still fails (45 words needed). No new codec static DATA
+or BSS. DTC/MTC actual cold boots and the full 256K swap/OOM pressure
+matrix with new compressed code also remain to be accepted.
+
 ## 2026-11-10 v1462: branch convergence without premature D6 codec cutover
 
 All fetched local/remote feature-branch histories in the DAIMOS,

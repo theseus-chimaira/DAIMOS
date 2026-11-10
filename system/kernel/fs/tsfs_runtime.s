@@ -345,15 +345,15 @@ tsfs_readdir_pop:
 ;     unsigned int nwords)
 ; TSFS V1 regular data uses fixed 0400-word restart extents. The transient
 ; validator guarantees exact logical coverage. Each extent is either STORED
-; (flag 0, one/two physical blocks) or D6LZ (flag 1, exactly one physical
+; (flag 0, one/two physical blocks) or BLOCK (flag 1, exactly one physical
 ; block with a two-word restart header). Direct restart indexing avoids a
-; resident extent walk. D6LZ output is transient managed core and is freed
+; resident extent walk. BLOCK output is transient managed core and is freed
 ; before return.
         .globl  mm_alloc
         .globl  mm_free
-        .globl  d6lz36_decode_buffer
+        .globl  d6codec_decode_buffer_v1458
         .equ    TSFS_EXT_STORED,0
-        .equ    TSFS_EXT_D6LZ,1
+        .equ    TSFS_EXT_BLOCK,1
         .equ    TSFS_RESTART_WORDS,0400
         .equ    TSFS_DECODE_OWNER,011
 
@@ -414,8 +414,8 @@ tsfs_read_restart:
         hrr     7,6
         move    6,2(1)
         hlrz    5,6
-        cain    5,TSFS_EXT_D6LZ
-        jrst    tsfs_read_d6lz
+        cain    5,TSFS_EXT_BLOCK
+        jrst    tsfs_read_block
         jumpn   5,tsfs_read_words_fail
 
 tsfs_read_stored:
@@ -453,7 +453,7 @@ tsfs_read_stored:
         jumpn   012,tsfs_read_restart
         jrst    tsfs_read_words_done
 
-tsfs_read_d6lz:
+tsfs_read_block:
         hrrz    6,6
         caie    6,1
         jrst    tsfs_read_words_fail
@@ -479,7 +479,7 @@ tsfs_read_d6lz:
         setz    4,
         pushj   17,mm_alloc
         sub     17,kconst_1_1
-        jumpn   1,tsfs_read_d6lz_drop
+        jumpn   1,tsfs_read_block_drop
         ; The common runtime frontend owns decoder-state save/restore and exact
         ; compressed-buffer consumption.  The allocation result lives in our
         ; current stack word; pack its address with the decoded restart length.
@@ -487,8 +487,8 @@ tsfs_read_d6lz:
         move    3,fs_block_workspace+1
         move    4,(17)
         hrl     4,fs_block_workspace
-        pushj   17,d6lz36_decode_buffer
-        jumpn   1,tsfs_read_d6lz_free
+        pushj   17,d6codec_decode_buffer_v1458
+        jumpn   1,tsfs_read_block_free
         move    5,011
         andi    5,0377
         move    6,fs_block_workspace
@@ -512,12 +512,12 @@ tsfs_read_d6lz:
         jumpn   012,tsfs_read_restart
         jrst    tsfs_read_words_done
 
-tsfs_read_d6lz_free:
+tsfs_read_block_free:
         move    1,(17)
         movei   2,3
         movei   3,TSFS_DECODE_OWNER
         pushj   17,mm_free
-tsfs_read_d6lz_drop:
+tsfs_read_block_drop:
         sub     17,kconst_1_1
         jrst    tsfs_read_words_fail
 

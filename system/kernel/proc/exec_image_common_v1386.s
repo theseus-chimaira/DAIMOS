@@ -21,7 +21,7 @@
 ;   prefix>0: PURE_PREFIX, in logical user words including origin 020.
 ;             Only [dest,dest+(prefix-020)) may be written.
 ;   AC1=0 success, -1 invalid/read error, -2 compressed PREFIX unsupported.
-;   FULL compressed retains the existing D6LZ36 decoder semantics.
+;   FULL compressed uses the bounded block LZ/RLE decoder semantics.
 ;   The prefix is already MM-reserved and immutable source protected.
 ;   There is no implicit relocation pass in the original EXEC loader.
         .text
@@ -31,7 +31,7 @@
         .globl exec_image_full_bounded_v1391
         .globl vfs_read_words
         .globl vfs_stat
-        .globl d6lz36_decode_vfs
+        .globl d6codec_decode_vfs_v1458
         .globl proc_swap_unpack_backing
 
         .equ EI_DXR_MAGIC_V1386,0447062
@@ -215,7 +215,7 @@ ei_apply_compressed_v1386:
         hrrz    4,(012)                ; unpacked initialized words
         hrl     4,4
         hrr     4,011
-        pushj   17,d6lz36_decode_vfs
+        pushj   17,d6codec_decode_vfs_v1458
         jrst    ei_apply_return_v1386
 ei_apply_unsupported_v1386:
         movni   1,2

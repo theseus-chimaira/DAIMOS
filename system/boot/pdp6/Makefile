@@ -26,14 +26,16 @@ P10FOLD ?= p10fold
 P10FOLD_DEP != command -v "$(P10FOLD)" 2>/dev/null || echo "$(P10FOLD)"
 DXRCONVERT ?= dxrconvert
 MKSTREAM ?= mkstream
-D6LZ_HOST ?= d6lz
+D6BLOCK_HOST ?= $(BUILD)/d6block-v1464
 DXRCHECK ?= dxrcheck
 MKDSK ?= mkdsk
 MKD6FS ?= mkd6fs
 MKAUXSTORE ?= mkauxstore
 MKDT ?= mkdt
 MKDTFS ?= mkdtfs
-MKTSFS ?= mktsfs
+MKTSFS ?= $(BUILD)/mktsfs-v1461
+TSFSCHECK ?= $(BUILD)/tsfscheck-v1461
+HOST_CC ?= cc
 MKTAP ?= mktap
 WORDS2PT ?= words2pt
 S6FILTER ?= s6filter
@@ -136,7 +138,7 @@ KCORE_STAMP = $(BUILD)/.kcore-built
 KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/proc/proc_swap_entry_v481.s \
 	$(KERNEL_DIR)/storage/backstore_entry_v484.s \
-	$(PROJECT_ROOT)/system/stand/pdp6/common/decompressor.inc \
+	$(PROJECT_ROOT)/system/stand/pdp6/common/block_decompressor_v1458.inc \
 	$(KERNEL_DIR)/boot/kinit.c \
 	$(KERNEL_DIR)/boot/kinit.h \
 	$(KERNEL_DIR)/boot/kinit_boot.c \
@@ -147,8 +149,8 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/boot/kinit_late_end.s \
 	$(KERNEL_DIR)/boot/root_select.c \
 	$(KERNEL_DIR)/boot/root_select.h \
-	$(KERNEL_DIR)/core/d6lz.h \
-	$(KERNEL_DIR)/core/d6lz_pdp6.s \
+	$(KERNEL_DIR)/core/d6block_v1458.h \
+	$(KERNEL_DIR)/core/d6block_vfs_fixed_v1458.s \
 	$(KERNEL_DIR)/core/kcore.h \
 	$(KERNEL_DIR)/core/kcore_end.s \
 	$(KERNEL_DIR)/core/kcore_pi_pdp6.s \
@@ -292,13 +294,13 @@ KINIT_OBJS = $(BUILD)/kinit.dobj $(BUILD)/vfs_mount_slab_v4.dobj $(BUILD)/vfs_mo
 KINIT_OBJS += $(BUILD)/pclk.dobj
 KINIT_LATE_OBJS = $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj
 
-KCORE_C_NAMES = exec d6lz vfs mm proc vm_backend proc_swap file wall_clock
+KCORE_C_NAMES = exec d6block_v1458 vfs mm proc vm_backend proc_swap file wall_clock
 KCORE_FIXED_NAMES = $(KCORE_C_NAMES) backstore ret \
 	dsk270 drm236 kfmt_pdp6 s6rec vfs fs_mres file_runtime monitorfs_runtime proc_pdp6 proc_run \
 	device_state syscall_info pclk \
 	syscall_dispatch_pdp6 mach_user_pdp6 vm_backend_pdp6 kcore_pi_pdp6 bcache_pdp6 storage_router kcore_end
-KCORE_FIXED_ASM = $(KCORE_BUILD)/d6lz_fixed.s $(KCORE_BUILD)/exec.s $(KCORE_BUILD)/d6lz.s $(KCORE_BUILD)/mm.s $(KCORE_BUILD)/proc.s $(KCORE_BUILD)/backstore.s $(KCORE_BUILD)/vm_backend.s $(KCORE_BUILD)/proc_swap.s $(KCORE_BUILD)/file.s $(KCORE_BUILD)/wall_clock.s $(KCORE_BUILD)/ret.s $(KCORE_BUILD)/dsk270.s $(KCORE_BUILD)/drm236.s $(KCORE_BUILD)/kfmt_pdp6.s $(KCORE_BUILD)/s6rec.s $(KCORE_BUILD)/vfs.s $(KCORE_BUILD)/fs_mres.s $(KCORE_BUILD)/file_runtime.s $(KCORE_BUILD)/pipe.s $(KCORE_BUILD)/monitorfs_runtime.s $(KCORE_BUILD)/proc_pdp6.s $(KCORE_BUILD)/proc_run.s $(KCORE_BUILD)/device_state.s $(KCORE_BUILD)/syscall_info.s $(KCORE_BUILD)/pclk.s $(KCORE_BUILD)/syscall_dispatch_pdp6.s $(KCORE_BUILD)/mach_user_pdp6.s $(KCORE_BUILD)/vm_backend_pdp6.s $(KCORE_BUILD)/kcore_pi_pdp6.s $(KCORE_BUILD)/bcache_pdp6.s $(KCORE_BUILD)/storage_router.s $(KCORE_BUILD)/kcore_end.s
-KCORE_FIXED_OBJS = $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/wall_clock.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
+KCORE_FIXED_ASM = $(KCORE_BUILD)/d6block_fixed_v1458.s $(KCORE_BUILD)/exec.s $(KCORE_BUILD)/d6block_v1458.s $(KCORE_BUILD)/mm.s $(KCORE_BUILD)/proc.s $(KCORE_BUILD)/backstore.s $(KCORE_BUILD)/vm_backend.s $(KCORE_BUILD)/proc_swap.s $(KCORE_BUILD)/file.s $(KCORE_BUILD)/wall_clock.s $(KCORE_BUILD)/ret.s $(KCORE_BUILD)/dsk270.s $(KCORE_BUILD)/drm236.s $(KCORE_BUILD)/kfmt_pdp6.s $(KCORE_BUILD)/s6rec.s $(KCORE_BUILD)/vfs.s $(KCORE_BUILD)/fs_mres.s $(KCORE_BUILD)/file_runtime.s $(KCORE_BUILD)/pipe.s $(KCORE_BUILD)/monitorfs_runtime.s $(KCORE_BUILD)/proc_pdp6.s $(KCORE_BUILD)/proc_run.s $(KCORE_BUILD)/device_state.s $(KCORE_BUILD)/syscall_info.s $(KCORE_BUILD)/pclk.s $(KCORE_BUILD)/syscall_dispatch_pdp6.s $(KCORE_BUILD)/mach_user_pdp6.s $(KCORE_BUILD)/vm_backend_pdp6.s $(KCORE_BUILD)/kcore_pi_pdp6.s $(KCORE_BUILD)/bcache_pdp6.s $(KCORE_BUILD)/storage_router.s $(KCORE_BUILD)/kcore_end.s
+KCORE_FIXED_OBJS = $(BUILD)/d6block_fixed_v1458.dobj $(BUILD)/exec.dobj $(BUILD)/d6block_v1458.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/wall_clock.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
 KCORE_FIXED_OBJS += $(BUILD)/proc_swap_entry_v481.dobj
 KCORE_FIXED_OBJS := $(filter-out $(BUILD)/backstore.dobj,$(KCORE_FIXED_OBJS)) $(BUILD)/backstore_entry_v484.dobj
 KCORE_FIXED_OBJS := $(filter-out $(BUILD)/wall_clock.dobj $(BUILD)/pclk.dobj,$(KCORE_FIXED_OBJS)) $(BUILD)/pclk_gateway.dobj
@@ -388,7 +390,7 @@ IMAGE_RIM = $(BUILD)/kinit.rim
 IMAGE_RAW = $(BUILD)/kinit.raw.words
 IMAGE_WORDS = $(BUILD)/kinit.words
 IMAGE_LOWMEM_WORDS = $(BUILD)/kinit.lowmem.words
-IMAGE_COMPRESSED_WORDS = $(BUILD)/kinit.d6lz.words
+IMAGE_COMPRESSED_WORDS = $(BUILD)/kinit.block.words
 ifeq ($(BOOT_PROFILE),lowmem)
 IMAGE_BOOT_WORDS = $(IMAGE_LOWMEM_WORDS)
 else
@@ -418,30 +420,28 @@ SYSTEM_UTILITY_DOC_NAMES = MAN HELP APROPOS TREE FIND DU
 SYSTEM_LIBRARY_COMMAND_NAMES = $(SYSTEM_COMMAND_NAMES) $(SYSTEM_UTILITY_MISC_NAMES) \
 	$(SYSTEM_UTILITY_TEXT_NAMES) $(SYSTEM_UTILITY_DOC_NAMES) LOGD LOGDUMP
 SYSTEM_LIBRARY_COMMAND_DXRS = $(addprefix $(USERLAND_BUILD_ROOT)/userland/program/,$(addsuffix .dxr,$(SYSTEM_LIBRARY_COMMAND_NAMES)))
-SYSTEM_LIBRARY_COMMAND_D6LZ_DXRS = $(addprefix $(USERLAND_BUILD_ROOT)/userland/program/,$(addsuffix .d6lz.dxr,$(SYSTEM_LIBRARY_COMMAND_NAMES)))
-SYSTEM_LIBRARY_COMMAND_ARGS = $(foreach n,$(SYSTEM_LIBRARY_COMMAND_NAMES),-f "/SYSTEM/EXEC/$(n):$(USERLAND_BUILD_ROOT)/userland/program/$(n).d6lz.dxr:555:dxr") \
-	-f "/SYSTEM/EXEC/[:$(USERLAND_BUILD_ROOT)/userland/program/BRACKET.d6lz.dxr:555:dxr"
-XARGS_D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/xargs.d6lz.dxr
-SED_D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/sed.d6lz.dxr
-CONFIGCTL_D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/configctl.d6lz.dxr
-MAKE_D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/make.d6lz.dxr
-LOGIN_D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/login.d6lz.dxr
-DSH_D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.d6lz.dxr
+SYSTEM_LIBRARY_COMMAND_BLOCK_DXRS = $(addprefix $(USERLAND_BUILD_ROOT)/userland/program/,$(addsuffix .block.dxr,$(SYSTEM_LIBRARY_COMMAND_NAMES)))
+SYSTEM_LIBRARY_COMMAND_ARGS = $(foreach n,$(SYSTEM_LIBRARY_COMMAND_NAMES),-f "/SYSTEM/EXEC/$(n):$(USERLAND_BUILD_ROOT)/userland/program/$(n).block.dxr:555:dxr") \
+	-f "/SYSTEM/EXEC/[:$(USERLAND_BUILD_ROOT)/userland/program/BRACKET.block.dxr:555:dxr"
+XARGS_BLOCK_DXR = $(USERLAND_BUILD_ROOT)/userland/xargs.block.dxr
+SED_BLOCK_DXR = $(USERLAND_BUILD_ROOT)/userland/sed.block.dxr
+CONFIGCTL_BLOCK_DXR = $(USERLAND_BUILD_ROOT)/userland/configctl.block.dxr
+MAKE_BLOCK_DXR = $(USERLAND_BUILD_ROOT)/userland/make.block.dxr
+LOGIN_BLOCK_DXR = $(USERLAND_BUILD_ROOT)/userland/login.block.dxr
+DSH_BLOCK_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.block.dxr
 TSFSPROBE_DXR = $(USERLAND_BUILD_ROOT)/userland/tsfsprobe.dxr
 DTFSPROBE_DXR = $(USERLAND_BUILD_ROOT)/userland/dtfsprobe.dxr
-D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/d6lz.dxr
 LOGDRAIN_DXR = $(USERLAND_BUILD_ROOT)/userland/logdrain.dxr
 SYSTEM_INIT_DXR ?= $(INIT_DXR)
 SYSTEM_MOUNTALL_DXR ?= $(MOUNTALL_DXR)
-SYSTEM_LOGIN_DXR ?= $(LOGIN_D6LZ_DXR)
-SYSTEM_DSH_DXR ?= $(DSH_D6LZ_DXR)
-SYSTEM_XARGS_DXR ?= $(XARGS_D6LZ_DXR)
-SYSTEM_SED_DXR ?= $(SED_D6LZ_DXR)
-SYSTEM_CONFIGCTL_DXR ?= $(CONFIGCTL_D6LZ_DXR)
-SYSTEM_MAKE_DXR ?= $(MAKE_D6LZ_DXR)
+SYSTEM_LOGIN_DXR ?= $(LOGIN_BLOCK_DXR)
+SYSTEM_DSH_DXR ?= $(DSH_BLOCK_DXR)
+SYSTEM_XARGS_DXR ?= $(XARGS_BLOCK_DXR)
+SYSTEM_SED_DXR ?= $(SED_BLOCK_DXR)
+SYSTEM_CONFIGCTL_DXR ?= $(CONFIGCTL_BLOCK_DXR)
+SYSTEM_MAKE_DXR ?= $(MAKE_BLOCK_DXR)
 SYSTEM_TSFSPROBE_DXR ?= $(TSFSPROBE_DXR)
 SYSTEM_DTFSPROBE_DXR ?= $(DTFSPROBE_DXR)
-SYSTEM_D6LZ_DXR ?= $(D6LZ_DXR)
 SYSTEM_LOGDRAIN_DXR ?= $(LOGDRAIN_DXR)
 DAS_NATIVE_BUILD ?= $(BUILD)/external/das
 DAS_NATIVE_DRIVER = $(DAS_NATIVE_BUILD)/das.dxr
@@ -581,8 +581,7 @@ USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/dsh/dsh_parse.h \
 	$(PROJECT_ROOT)/userland/dsh/dsh_s6.c \
 	$(PROJECT_ROOT)/userland/dsh/dsh_var_pdp6.s \
-	$(PROJECT_ROOT)/userland/d6lz/d6lz.c \
-	$(PROJECT_ROOT)/userland/init/init.c \
+		$(PROJECT_ROOT)/userland/init/init.c \
 	$(PROJECT_ROOT)/userland/login/login.c \
 	$(PROJECT_ROOT)/userland/tsfs/tsfs_scan.h \
 	$(PROJECT_ROOT)/userland/tsfs/tsfs_scan.c \
@@ -612,7 +611,7 @@ ifneq ($(filter $(STAGE1_DEVICE),dsk drm dtc mtc ptr),$(STAGE1_DEVICE))
 $(error unsupported BOOT=$(BOOT); expected auto, dsk, drm, dtc, mtc, or ptr)
 endif
 STAGE1_SRC = $(PROJECT_ROOT)/system/stand/pdp6/$(STAGE1_DEVICE)/stage1.s
-STAGE1_COMMON = $(PROJECT_ROOT)/system/stand/pdp6/common/decompressor.inc \
+STAGE1_COMMON = $(PROJECT_ROOT)/system/stand/pdp6/common/block_decompressor_v1458.inc \
 	$(PROJECT_ROOT)/system/stand/pdp6/common/stage1-error.inc \
 	$(PROJECT_ROOT)/system/stand/pdp6/common/sixbit-fixed.inc
 STAGE1_DXR = $(BUILD)/stage1-$(STAGE1_DEVICE).dxr
@@ -634,6 +633,27 @@ DTC3_IMAGE = $(MEDIA_DIR)/$(if $(filter 1,$(TSFS_INPLACE_BOOT)),dtc3-home-v22.ta
 TSFS_ROOT_MANIFEST = $(BUILD)/tsfs-root.manifest
 TSFS_ROOT_PREFIX = $(MEDIA_DIR)/tsfs-root
 TSFS_ROOT_IMAGE = $(TSFS_ROOT_PREFIX)0.dta
+TSFS_HOST_SRCS = $(PROJECT_ROOT)/tools/host/tsfs-format.c \
+	$(PROJECT_ROOT)/tools/host/tsfs-format.h \
+	$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c \
+	$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.h
+BLOCK_HOST_SRCS = $(PROJECT_ROOT)/tools/host/d6block-v1452.c \
+	$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c \
+	$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.h
+$(BUILD)/d6block-v1464: $(BLOCK_HOST_SRCS) | $(BUILD)
+	$(HOST_CC) -O2 -std=c99 -Wall -Wextra -Werror -o $@ \
+		$(PROJECT_ROOT)/tools/host/d6block-v1452.c \
+		$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c
+$(BUILD)/mktsfs-v1461: $(PROJECT_ROOT)/tools/host/mktsfs.c $(TSFS_HOST_SRCS) | $(BUILD)
+	$(HOST_CC) -O2 -std=c99 -Wall -Wextra -Werror -o $@ \
+		$(PROJECT_ROOT)/tools/host/mktsfs.c \
+		$(PROJECT_ROOT)/tools/host/tsfs-format.c \
+		$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c
+$(BUILD)/tsfscheck-v1461: $(PROJECT_ROOT)/tools/host/tsfscheck.c $(TSFS_HOST_SRCS) | $(BUILD)
+	$(HOST_CC) -O2 -std=c99 -Wall -Wextra -Werror -o $@ \
+		$(PROJECT_ROOT)/tools/host/tsfscheck.c \
+		$(PROJECT_ROOT)/tools/host/tsfs-format.c \
+		$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c
 TSFS_ROOT_MEMBERS ?= 1
 TSFS_INPLACE_BOOT ?= 0
 ifneq ($(filter $(TSFS_ROOT_MEMBERS),1 2 3),$(TSFS_ROOT_MEMBERS))
@@ -718,7 +738,7 @@ $(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
 $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
 	@test -f $@
 
-KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/vfs_mount_slab_v4.dobj $(BUILD)/vfs_mount_capacity_v1.dobj $(BUILD)/vfs_mount_layout_v3.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/auxstore_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/wall_clock.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj
+KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/vfs_mount_slab_v4.dobj $(BUILD)/vfs_mount_capacity_v1.dobj $(BUILD)/vfs_mount_layout_v3.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/auxstore_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6block_fixed_v1458.dobj $(BUILD)/exec.dobj $(BUILD)/d6block_v1458.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/wall_clock.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj
 KERNEL_ASM_OBJS += $(BUILD)/proc_swap_entry_v481.dobj $(BUILD)/proc_swap_mres_v481.dobj
 KERNEL_ASM_OBJS += $(BUILD)/backstore_entry_v484.dobj $(BUILD)/backstore_mres_v484.dobj
 
@@ -1083,7 +1103,7 @@ $(DAS_NATIVE_DRIVER) $(DAS_NATIVE_PHASE1) $(DAS_NATIVE_PHASE2) &: \
 	    PDP10_PREFIX='$(PDP10_PREFIX)' DAIMOS_REPO='$(PROJECT_ROOT)' \
 	    NATIVE_BUILD_DIR='$(DAS_NATIVE_BUILD)'
 
-$(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DSHCOMP_DXR) $(SYSTEM_LIBRARY_COMMAND_DXRS) $(XARGS_DXR) $(SED_DXR) $(CONFIGCTL_DXR) $(MAKE_DXR) $(TSFSPROBE_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR) $(DAIMOS_NATIVE_DARC) $(DAIMOS_NATIVE_DLINK) $(DAIMOS_NATIVE_OBJDUMP) &: $(USERLAND_INPUTS) $(PDP10_TARGET_CC_DEP)
+$(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DSHCOMP_DXR) $(SYSTEM_LIBRARY_COMMAND_DXRS) $(XARGS_DXR) $(SED_DXR) $(CONFIGCTL_DXR) $(MAKE_DXR) $(TSFSPROBE_DXR) $(DTFSPROBE_DXR) $(LOGDRAIN_DXR) $(DAIMOS_NATIVE_DARC) $(DAIMOS_NATIVE_DLINK) $(DAIMOS_NATIVE_OBJDUMP) &: $(USERLAND_INPUTS) $(PDP10_TARGET_CC_DEP)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build COMPILER='$(COMPILER)' BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)' DLINK='$(DLINK)' \
 	    DARC='darc' P10FOLD='$(P10FOLD)' \
@@ -1097,26 +1117,30 @@ $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DSHCOMP_DXR) $(SYSTEM_LIBR
 	        exit 1; \
 	    }
 
-$(LOGIN_D6LZ_DXR): $(LOGIN_DXR)
-	$(D6LZ_HOST) -x $< $@
+$(LOGIN_BLOCK_DXR): $(LOGIN_DXR)
+	$(D6BLOCK_HOST) -x $< $@
 
-$(DSH_D6LZ_DXR): $(DSH_DXR)
-	$(D6LZ_HOST) -x $< $@
+$(DSH_BLOCK_DXR): $(DSH_DXR)
+	$(D6BLOCK_HOST) -x $< $@
 
-$(USERLAND_BUILD_ROOT)/userland/program/%.d6lz.dxr: $(USERLAND_BUILD_ROOT)/userland/program/%.dxr
-	$(D6LZ_HOST) -x $< $@
+$(USERLAND_BUILD_ROOT)/userland/program/%.block.dxr: $(USERLAND_BUILD_ROOT)/userland/program/%.dxr
+	$(D6BLOCK_HOST) -x $< $@
 
-$(XARGS_D6LZ_DXR): $(XARGS_DXR)
-	$(D6LZ_HOST) -x $< $@
+$(XARGS_BLOCK_DXR): $(XARGS_DXR)
+	$(D6BLOCK_HOST) -x $< $@
 
-$(SED_D6LZ_DXR): $(SED_DXR)
-	$(D6LZ_HOST) -x $< $@
+$(SED_BLOCK_DXR): $(SED_DXR)
+	$(D6BLOCK_HOST) -x $< $@
 
-$(CONFIGCTL_D6LZ_DXR): $(CONFIGCTL_DXR)
-	$(D6LZ_HOST) -x $< $@
+$(CONFIGCTL_BLOCK_DXR): $(CONFIGCTL_DXR)
+	$(D6BLOCK_HOST) -x $< $@
 
-$(MAKE_D6LZ_DXR): $(MAKE_DXR)
-	$(D6LZ_HOST) -x $< $@
+$(MAKE_BLOCK_DXR): $(MAKE_DXR)
+	$(D6BLOCK_HOST) -x $< $@
+
+$(LOGIN_BLOCK_DXR) $(DSH_BLOCK_DXR) $(SYSTEM_LIBRARY_COMMAND_BLOCK_DXRS) \
+    $(XARGS_BLOCK_DXR) $(SED_BLOCK_DXR) $(CONFIGCTL_BLOCK_DXR) \
+    $(MAKE_BLOCK_DXR): $(BUILD)/d6block-v1464
 
 $(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
     $(MRES_PACKAGE_OBJS) $(KINIT_LATE_OBJS) $(END_OBJ) $(KCORE_MAP)
@@ -1155,12 +1179,12 @@ $(IMAGE_LOWMEM_WORDS): $(IMAGE_WORDS)
 	mv "$$tmp" $@; \
 	trap - 0 1 2 3 15
 
-$(IMAGE_COMPRESSED_WORDS): $(IMAGE_WORDS)
+$(IMAGE_COMPRESSED_WORDS): $(IMAGE_WORDS) $(BUILD)/d6block-v1464
 	@set -eu; \
 	tmp_raw='$@.raw.$$$$'; tmp_comp='$@.comp.$$$$'; tmp_out='$@.tmp.$$$$'; \
 	trap 'rm -f "$$tmp_raw" "$$tmp_comp" "$$tmp_out"' 0 1 2 3 15; \
 	tail -n +3 $(IMAGE_WORDS) > "$$tmp_raw"; \
-	$(D6LZ_HOST) -t "$$tmp_raw" "$$tmp_comp"; \
+	$(D6BLOCK_HOST) -t "$$tmp_raw" "$$tmp_comp"; \
 	cwords=$$(wc -l < "$$tmp_comp" | tr -d ' '); \
 	desc=$$(sed -n '2p' $(IMAGE_WORDS)); \
 	uwords=$$((0$${desc%??????})); \
@@ -1182,10 +1206,10 @@ $(STAGE1_TAPE): $(STAGE1_DXR)
 	printf '\252' >> $@
 
 D6FS_ROOT_DEPS = $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) \
-	$(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(DSHCOMP_DXR) $(SYSTEM_LIBRARY_COMMAND_D6LZ_DXRS) \
+	$(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(DSHCOMP_DXR) $(SYSTEM_LIBRARY_COMMAND_BLOCK_DXRS) \
 	$(SYSTEM_XARGS_DXR) $(SYSTEM_SED_DXR) \
 	$(SYSTEM_CONFIGCTL_DXR) $(SYSTEM_MAKE_DXR) $(SYSTEM_TSFSPROBE_DXR) \
-	$(SYSTEM_DTFSPROBE_DXR) $(SYSTEM_D6LZ_DXR) \
+	$(SYSTEM_DTFSPROBE_DXR) \
 	$(SYSTEM_LOGDRAIN_DXR) $(DAS_NATIVE_DRIVER) $(DAS_NATIVE_PHASE1) \
 	$(DAS_NATIVE_PHASE2) $(DAIMOS_NATIVE_DARC) $(DAIMOS_NATIVE_DLINK) \
 	$(DAIMOS_NATIVE_OBJDUMP) $(SYSTEM_CONFIG_S6REC) \
@@ -1218,7 +1242,6 @@ define D6FS_ROOT_ARGS
 	-f "/SYSTEM/EXEC/MAKE:$(SYSTEM_MAKE_DXR):555:dxr" \
 	-f "/SYSTEM/EXEC/TSFSPROBE:$(SYSTEM_TSFSPROBE_DXR):555:dxr" \
 	-f "/SYSTEM/EXEC/DTFSPROBE:$(SYSTEM_DTFSPROBE_DXR):555:dxr" \
-	-f "/SYSTEM/EXEC/D6LZ:$(SYSTEM_D6LZ_DXR):555:dxr" \
 	-f "/SYSTEM/EXEC/LOGDRAIN:$(SYSTEM_LOGDRAIN_DXR):555:dxr" \
 	-f "/OPTION/BASE/EXEC/DAS:$(DAS_NATIVE_DRIVER):555:dxr" \
 	-f "/OPTION/BASE/LIBEXEC/DAS/DAS1:$(DAS_NATIVE_PHASE1):555:dxr" \
@@ -1283,7 +1306,7 @@ endif
 TSFS_ROOT_COMMAND_NAMES = ECHO CAT LS MKDIR RM PWD STAT TOUCH CP MV HEXDUMP PS \
 	DEVS FREE MEMSTAT DATE RMDIR CHOWN CHMOD MKFS.DTFS FSCK.DTFS MOUNT \
 	MOUNT.DTFS UNMOUNT DF TTYOUT HALT
-TSFS_ROOT_COMMAND_DXRS = $(addprefix $(USERLAND_BUILD_ROOT)/userland/program/,$(addsuffix .d6lz.dxr,$(TSFS_ROOT_COMMAND_NAMES)))
+TSFS_ROOT_COMMAND_DXRS = $(addprefix $(USERLAND_BUILD_ROOT)/userland/program/,$(addsuffix .block.dxr,$(TSFS_ROOT_COMMAND_NAMES)))
 
 $(TSFS_ROOT_MODE_STAMP): | $(BUILD)
 	@rm -f $(BUILD)/.tsfs-root-members-v21-1 $(BUILD)/.tsfs-root-members-v21-2 $(BUILD)/.tsfs-root-members-v21-3
@@ -1294,7 +1317,7 @@ $(TSFS_INPLACE_MODE_STAMP): | $(BUILD)
 	@touch $@
 
 $(TSFS_ROOT_IMAGE): $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFS_ROOT_COMMAND_DXRS) $(DTFSPROBE_DXR) \
-	$(SYSTEM_CONFIG_S6REC) $(TSFS_ROOT_MODE_STAMP) $(TSFS_INPLACE_MODE_STAMP) $(if $(filter 1,$(TSFS_INPLACE_BOOT)),$(IMAGE_LOWMEM_WORDS)) | $(MEDIA_DIR)
+	$(SYSTEM_CONFIG_S6REC) $(TSFS_ROOT_MODE_STAMP) $(TSFS_INPLACE_MODE_STAMP) $(if $(filter 1,$(TSFS_INPLACE_BOOT)),$(IMAGE_LOWMEM_WORDS)) $(BUILD)/mktsfs-v1461 $(BUILD)/tsfscheck-v1461 | $(MEDIA_DIR)
 	@set -eu; \
 	tmp='$(TSFS_ROOT_MANIFEST).tmp.$$$$'; \
 	trap 'rm -f "$$tmp"' 0 1 2 3 15; \
@@ -1314,7 +1337,7 @@ $(TSFS_ROOT_IMAGE): $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH
 	  printf 'F /CONFIG/SYSTEM %s 0644 0 0\n' '$(SYSTEM_SYSTEM_S6REC)'; \
 	  printf 'F /SYSTEM/EXEC/DSH %s 0555 0 0\n' '$(DSH_DXR)'; \
 	  for cmd in $(TSFS_ROOT_COMMAND_NAMES); do \
-	    printf 'F /SYSTEM/EXEC/%s %s 0555 0 0\n' "$$cmd" "$(USERLAND_BUILD_ROOT)/userland/program/$$cmd.d6lz.dxr"; \
+	    printf 'F /SYSTEM/EXEC/%s %s 0555 0 0\n' "$$cmd" "$(USERLAND_BUILD_ROOT)/userland/program/$$cmd.block.dxr"; \
 	  done; \
 	  printf 'F /SYSTEM/EXEC/DTFSPROBE %s 0555 0 0\n' '$(DTFSPROBE_DXR)'; \
 	} > "$$tmp"; \
@@ -1322,6 +1345,9 @@ $(TSFS_ROOT_IMAGE): $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH
 	trap - 0 1 2 3 15
 	$(MKTSFS) -n $(TSFS_ROOT_MEMBERS) -i 1:1 -g 1 -m '$(TSFS_ROOT_MANIFEST)' $(if $(filter 1,$(TSFS_INPLACE_BOOT)),-b '$(IMAGE_LOWMEM_WORDS)') \
 	    -o '$(TSFS_ROOT_PREFIX)'
+	@set -eu; set --; i=0; while [ "$$i" -lt '$(TSFS_ROOT_MEMBERS)' ]; do \
+	    set -- "$$@" '$(TSFS_ROOT_PREFIX)'"$$i".dta; i=$$((i + 1)); done; \
+	    $(TSFSCHECK) "$$@"
 
 $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGES) $(DRUM_IMAGES) \
 	$(STAGE1_TAPE) $(ROOT_MEDIA_DEPS) | $(BUILD)

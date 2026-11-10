@@ -1,7 +1,7 @@
 /* tsfscheck.c - validate a TSFS DECtape set. */
 
 #include "tsfs-format.h"
-#include "d6lz-codec.h"
+#include "d6block-codec-v1452.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -231,8 +231,12 @@ validate_extent_data(const struct table_info *t, const uint64_t *extents,
                 unsigned int ei;
 
                 fr = files + (size_t)fi * TSFS_FILE_WORDS;
+                /* The RH also carries the 12-bit mode.  A raw equality
+                 * comparison against REG incorrectly skips every ordinary
+                 * executable (0555) and data (0644) file.  We must verify
+                 * *all* regular-file extents, including compressed data. */
                 flags = (unsigned int)(fr[TSFS_FILE_PARENT_FLAGS] &
-                    TSFS_HALF_MASK);
+                    TSFS_FILE_FLAG_MASK);
                 if (flags != TSFS_FILE_FLAG_REG)
                         continue;
                 size = (unsigned int)fr[TSFS_FILE_SIZE_WORDS];
@@ -290,7 +294,7 @@ validate_extent_data(const struct table_info *t, const uint64_t *extents,
                             (size_t)blocks * TSFS_BLOCK_WORDS, (size_t)-1) !=
                             er[TSFS_EXTENT_CHECKSUM])
                                 return -1;
-                        if (eflags == TSFS_EXTENT_FLAG_D6LZ) {
+                        if (eflags == TSFS_EXTENT_FLAG_BLOCK) {
                                 unsigned int decoded;
                                 unsigned int compressed;
                                 uint64_t out[TSFS_RESTART_WORDS];
@@ -299,7 +303,7 @@ validate_extent_data(const struct table_info *t, const uint64_t *extents,
                                 compressed = (unsigned int)media[1];
                                 if (decoded != logical_words || compressed == 0U ||
                                     compressed > TSFS_BLOCK_WORDS - 2U ||
-                                    d6lz_codec_decompress(media + 2U, compressed,
+                                    d6block_decompress_v1452(media + 2U, compressed,
                                     out, decoded) != 0)
                                         return -1;
                         } else {

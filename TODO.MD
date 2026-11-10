@@ -1,3 +1,26 @@
+## 2026-11-10 v1464: requested single-format block codec cutover
+
+- [x] Supersede the previous D6 format deferral by explicit decision.
+  Replace production D6LZ36 with the v1421 block LZ/RLE wire format,
+  the 53-word v1458 Stage-1/KCORE decoder and one 58-word VFS frontend.
+- [x] Delete old D6LZ36 source and header implementations, host encoder,
+  userland utility and manual; no legacy decoder or format detection.
+- [x] Convert boot/KINIT compressed images, all D6FS userland compressed
+  DXRs, EXEC, PURE reload and TSFS restart extents to the block format.
+  Use source-matched versioned host block encoder and strict TSFS checker.
+- [x] v1458 native core/VFS, five Stage-1 assemblies and 53-word KCORE
+  identity PASS. Fresh 256K KCC DSK/D6FS cold boot to ROOT/DSH/ECHO PASS.
+- [x] Source-matched TSFS: strict checker accepts 53 files/401 extents;
+  independent LOGIN, DSH and ECHO reconstruction PASS. Actual LOGIN final
+  restart decoded by native PDP-6 fixed core/VFS PASS.
+- [ ] Finish full 256K TSFS-root login/DSH/external EXEC cold boot; the
+  positive host/media/native checks alone do not prove guest execution.
+- [ ] Accept DTC/MTC real device boot, 48K runtime and 32K strict
+  permanent placement; KCORE is 9701 words, current 32K placement needs
+  another 45 words. Preserve checked storage ownership invariants.
+- [ ] Rerun full 256K swap/OOM/recovery guest with block-only executables
+  before carrying over the earlier v1406 full-guest acceptance to v1464.
+
 ## 2026-11-10 v1462: merge complete, production D6LZ36 retained
 
 - [x] Integrate all fetched feature-branch tips and their common ancestors

@@ -1,3 +1,22 @@
+## 2026-11-10 v1464: block-only low core, +14 fixed words
+
+Removed D6LZ36 KCORE/Stage-1 code and replaced it with the versioned
+v1458 fixed block decoder (53 TEXT words, zero DATA/BSS) and 58-word
+VFS/direct-buffer frontend. There is no second decoder or compatibility
+fallback. All five Stage-1 images contain the exact KCORE 53-word image,
+verified by native object comparison. EXEC/PURE/TSFS call the new API.
+Native PDP-6 decoder tests and a fresh 256K KCC DSK/D6FS boot through
+ROOT LOGIN, DSH and external ECHO PASS.
+
+Against the matched previous lowmem GCC 32K build, fixed KCORE is
+**9687 -> 9701 words (+14)**; movable SWAP MRES remains **1762**, and
+complete KCORE+MRES inventory **16367 -> 16381**. The strict 16K
+single-root permanent last is **16428 decimal** and still requires
+**45 words** to fit. No new codec static data or BSS; minimizing the
+merged fixed code and preserving correct storage ownership is preferred
+over a second decoder. The TSFS cold-boot and full post-cutover 256K
+swap/OOM acceptance gates remain separate from this size result.
+
 ## 2026-11-10 v1462: merged branches; fixed footprint unchanged
 
 Merged native-toolchain and v1420-v1461 block-codec experiment histories

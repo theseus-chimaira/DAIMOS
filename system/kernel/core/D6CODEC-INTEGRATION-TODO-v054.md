@@ -1,3 +1,16 @@
+# v1464 production decision (2026-11-10)
+
+The explicit request to delete D6LZ36 supersedes the historical v1395
+deferral below. The canonical v1421 block codec now replaces D6LZ36 in
+Stage-1, KCORE, EXEC/PURE, TSFS and all host executable producers.
+The obsolete decoder, encoder and userland utility have been removed;
+there is no mixed-format runtime fallback. The new source-matched v1464
+host build and v1461 TSFS producer/checker are selected. The native
+fixed-core/VFS tests, five Stage-1 assemblies, and 256K DSK/D6FS ROOT,
+DSH and compressed external ECHO have passed; TSFS cold boot, complete
+physical pressure and 32K/48K memory gates remain pending. The older
+design and deferral notes below are preserved as historical context.
+
 ## 2026-11-08 v1371 full normal D6FS distribution checkpoint
 
 The full normal D6FS Makefile manifest is now booted in an isolated
