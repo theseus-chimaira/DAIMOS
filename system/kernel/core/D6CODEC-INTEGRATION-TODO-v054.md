@@ -1,3 +1,48 @@
+## 2026-11-08 v1371 full normal D6FS distribution checkpoint
+
+The full normal D6FS Makefile manifest is now booted in an isolated
+native grouped KCORE/KINIT environment: 237 files, 29 directories,
+89 executable inputs, with all 71 prior `.d6lz.dxr` programs
+converted and independently decoded as grouped DXR2. The resulting
+336-FCB CLEAN D6FS root boots to INIT, grouped LOGIN/DSH and native
+guest ECHO/LS/CAT/GREP/WC/STAT; EXIT respawns LOGIN. This is true
+real-provider boot testing, not a small three-executable test root.
+Installed native toolchains have not yet run, and the included
+uncompressed D6LZ tool still *writes* obsolete D6LZ36; it must be
+replaced or removed as part of the synchronized format cutover.
+Physical PURE/swap, TSFS root, nested stack, media fault/recovery and
+atomic production switchover remain unaccepted. There is no change
+to production D6LZ36 or the existing KCORE memory budget.
+See `design/d6codec-full-distribution-v1371.md`.
+
+## 2026-11-08 v1370 complete grouped minimal-system native boot
+
+The full testkit `d6codec-fullboot-v1370` runs grouped Stage-1 and
+an actually grouped KCORE (using non-executable legacy low-core
+reservation), all 27 re-linked MRES packages, an actual DSK270/D6FS
+root and real INIT -> grouped LOGIN -> grouped DSH -> grouped ECHO.
+The ECHO output and LOGIN respawn are verified interactively under
+PDP-6 SIMH. The negative control uses old D6LZ36 KCORE and fails
+to RUN grouped LOGIN as expected. Each boot uses independent pristine
+media; the normal D6FS newer DIRTY superblock is never suppressed.
+Only a small 15-node root is exercised; full distribution and all
+runtime TSFS/PURE/swap/stack/failure gates remain to be completed.
+The compiled production DAIMOS KCORE/host producers/media are still
+unchanged. See `design/d6codec-fullboot-v1370.md`.
+
+## 2026-11-08 v1369 functional grouped runtime checkpoint
+
+Versioned test-only grouped DXR2 writer now preserves original
+executable metadata and relocation bitmaps. Native PDP-6 actual
+EXEC and PURE-reload code links to the staged grouped VFS adapter;
+compiled marker execution, 390-word linked DXR short refills,
+corrupt streams and provider-failure rollback PASS. Actual TSFS
+read/copy/free integration decodes a one-block grouped restart
+and frees transient memory on valid and invalid input. These tests
+use deterministic VFS/VM stubs, not real boot-media providers.
+Full grouped KCORE/KINIT/root filesystem cold boot and synchronous
+host/runtime production cutover remain OPEN. No D6LZ36 changes.
+
 # D6 codec v054 — complete integration TODO
 
 **2026-11-10 v1395 scheduling supersession:** The grouped D6 codec format
@@ -92,6 +137,61 @@ its active build in this staging checkpoint.
   partially reconstructed image.
 
 ## Phase C — Stage-1, low-core and boot-image migration
+
+**v1363 design correction:** Every current Stage-1 loader already
+stages the entire compressed KINIT payload. A resumable grouped
+decoder is therefore not required *inside Stage-1*. Test-only v1363
+variants build and exercise the smaller direct-linked full-buffer
+v053 decoder without BLT copying it into the old `000060` slot.
+Runtime VFS still needs resumable refill handling. No production
+Stage-1 or KINIT format cutover has occurred.
+
+**v1364 staging geometry gate:** A dedicated PDP-6 assembler helper
+and test-only Stage-1 alternatives now validate decoded KINIT plus
+stack reserve and decoded KINIT plus compressed staging input against
+the configured physical core limit, before the first payload store.
+Twelve native header-guard tests and the independent helper tests
+PASS; PTR also rejects an overlong first-tape segment before copying.
+No production image or decoder selection has been changed. Physical
+device boot and synchronized runtime cutover are still OPEN.
+
+**v1365 actual staged boot acceptance:** All five media paths now
+run the staged guarded direct-linked grouped decoder on a complete
+real KINIT: DSK270, DRM236, DTC, MTC and two-volume PTR (5/5
+KINIT-entry PASS). Two corrupt DECtape image cases halt before KINIT
+without writing 030000. These proofs stop at KINIT entry and do not
+activate grouped runtime consumers. The original D6LZ36 production
+images, callers and KCORE residence remain unchanged.
+
+**v1366 staged VFS runtime:** Versioned PDP-6 grouped VFS/buffer
+entries now handle exact input and trusted immutable AC3=0 backing.
+The 32-word VFS input window plus 26-word state gives a 68-word
+temporary frame. Native fake-provider and leaf-provider stack tests
+PASS, but real nested provider stack remains unmeasured. New decoder
+and frontend are 237+96=333 text words, compared with legacy 40+57=97.
+The resulting +236 resident text words are a RAM-first cutover blocker
+until reduced or justified by full linked KCORE measurements. No
+production D6LZ36 interface, boot image, producer or consumer changes.
+
+**v1367 bounded native RAM optimization:** The staged grouped engine
+and VFS adapter now total 225+92=317 text words, reducing v1366 by
+16 words, with 25 continuation state words and a 67-word temporary
+VFS frame. The native fake-provider, max-descriptor, refill corpus
+and leaf-stack canary acceptance use the versioned v1367 testkit.
+The codec still costs +220 resident text words against legacy; full
+KCORE link/cold-provider stack and synchronized format cutover remain
+OPEN. No production format or resident memory has changed.
+
+**v1368 temporary full-KCORE link:** The exact production link
+rebuild (9,601 text/269 BSS) matches byte-for-byte. Replacing the
+legacy VFS frontend with staged grouped v1367 yields 9,817 text
+(+216) when the fixed-lowcore slot is reclaimed, 9,857 (+256) with
+its old physical range reserved. Five real MRES packages relocate
+cleanly against either test map with unchanged resident sizes. RIM
+and initialized KCORE stream generation PASS; the resulting image
+has NOT been run through KINIT or native cold VFS. The low-core
+relocation and nested provider stack remain release blockers.
+
 
 - [ ] Replace `system/stand/pdp6/common/decompressor.inc` and its fixed
   low-core installation contract (000060) with a **new-format** decoder.

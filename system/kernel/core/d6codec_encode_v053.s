@@ -2,6 +2,38 @@
 .text
 .globl d6codec_v053_encode_literals
 d6codec_v053_encode_literals:
+        ; Validate full source and maximum destination geometry before
+        ; reserving a group header. Physical PDP-6 addresses are 18 bit.
+        move    0,1
+        lsh     0,-022
+        jumpn   0,d6codec_v053_invalid_input
+        move    0,2
+        lsh     0,-022
+        jumpn   0,d6codec_v053_invalid_input
+        move    0,3
+        lsh     0,-022
+        jumpn   0,d6codec_v053_invalid_input
+        move    0,4
+        lsh     0,-022
+        jumpn   0,d6codec_v053_invalid_input
+        move    0,1
+        add     0,2
+        camle   0,[01000000]
+        jrst    d6codec_v053_invalid_input
+        move    6,3
+        add     6,4
+        camle   6,[01000000]
+        jrst    d6codec_v053_invalid_input
+        ; An empty source or zero capacity cannot alias through a write.
+        jumpe   2,d6codec_v053_geometry_ok
+        jumpe   4,d6codec_v053_geometry_ok
+        camge   1,6
+        jrst    d6codec_v053_overlap_check
+        jrst    d6codec_v053_geometry_ok
+d6codec_v053_overlap_check:
+        camge   3,0
+        jrst    d6codec_v053_invalid_input
+d6codec_v053_geometry_ok:
         move    5,3
         push    17,5
         move    16,1
@@ -109,6 +141,39 @@ d6codec_v053_encode_literals:
         popj    17,
  d6codec_v053_fail:
         pop     17,5
+        seto    1,
+        popj    17,
+
+d6codec_v053_invalid_input:
+        ; Geometry failure occurs before installing the saved frame.
+        seto    1,
+        popj    17,
+
+/* Compute a conservative encoded-buffer requirement without allocation.
+ * Input AC1: original 36-bit word count.
+ * Return AC1: words required, or -1 if not representable in one 18-bit
+ * physical address space. Clobbers AC0, AC2 and AC3; no stack/BSS.
+ *
+ * Every nonfinal group has 30 tokens, so there can be no more than
+ * ceil(N/30) control words. Each descriptor covers at least one input
+ * token and two descriptors fit in one word. Literal and descriptor
+ * payload together never exceed N words. N=0 has no header.
+ * The bound is safe, not an assertion that every input needs this much.
+ */
+        .globl d6codec_v053_max_encoded_words
+d6codec_v053_max_encoded_words:
+        jumpl   1,d6codec_v053_max_bad
+        move    0,1
+        lsh     0,-022
+        jumpn   0,d6codec_v053_max_bad
+        move    2,1
+        addi    2,035
+        idivi   2,036
+        add     1,2
+        camle   1,[01000000]
+        jrst    d6codec_v053_max_bad
+        popj    17,
+d6codec_v053_max_bad:
         seto    1,
         popj    17,
 

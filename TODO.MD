@@ -5702,3 +5702,437 @@ KERNEL ABIS.
   MAINTENANCE TOOLS; DO NOT ADD AN INITFS ROOT.
 - SLAVE REVERSE INTERRUPTS AND PCLK INTERRUPT DELIVERY.
 - A HARDWARE-PAGER VM BACKEND FOR LATER PDP-10 MACHINES.
+
+## 2026-11-09 v1410: native compiler ABI correction and assembler groundwork
+
+- [x] Correct KCC's outgoing stack-only argument lifetime across
+  nested argument evaluation.  Preserve VREG spills and use the
+  current SP displacement, not a fixed slot relative to transient
+  pushes.  No added heap allocations or ABI changes.
+- [x] Execute old/optimized/non-optimized C89 five-/six-argument
+  test on PDP-6: old exits 5, both corrected variants exit 7.
+  The frontend `-n`, not omission of `-O`, disables optimization.
+- [x] Rebuild all five native KCC phases and pass v1401 16/16 tests.
+- [x] Share native DAS spill-backed symbol hash/record operations;
+  pass v1405 5/5 and v1402 17/17; reduce linked DAS1 image by
+  octal 056 words versus v1405 with the same corrected KCC.
+- [ ] Complete native DOBJ1 relocation serialization, DAS -A -C,
+  native DLINK and C89 RUN.  The versioned v1403 link test still
+  imports its DOBJ from the host; it is not full self-hosting.
+- [ ] Run independent unoptimized host/native compiler equality,
+  native 96K working-set and full self-hosting acceptance before
+  installing new production binaries.
+
+Final KCORE size-only optimization remains LAST, per v1379.
+## 2026-11-09 v1405: native DOBJ1 phase metadata accepted
+
+- [x] Introduce spill-backed native global symbol indices, preserving
+  `.globl`, `.extern`, `.entry` and public common symbols without
+  allocating a permanent array of names.
+- [x] Extend private DASIR2 state with global count and entry ID and
+  validate every symbol marker and index after phase import.
+- [x] Validate 5/5 native PDP-6 testkit v1405 cases with real KCC
+  output, duplicate declarations, external names and an entry.
+- [ ] Finish native DOBJ1 relocation records and writer, including
+  section-relative addends, left/right-half relocations, symbol
+  definitions and undefined references.  Preserve low resident RAM;
+  no host transcode or fake DXR object output.
+- [ ] Native KCC -> DAS -A -C -> DLINK -> RUN, then 96K and full
+  self-hosting acceptance, followed by functional KCORE completion.
+
+Size-only KCORE work is LAST, per v1379.
+## 2026-11-09 v1403: native relocatable DOBJ1 output remaining
+
+- [x] Prove native DLINK links DOBJ1 C89 main/CRT0/syscall objects
+  into a byte-identical host/native DXR that runs and exits 7.
+  daimos-testkit v1403: 5/5 strict PDP-6 guest checks PASS.
+- [ ] Implement native DAS1/DAS2 `-C` output with bounded symbol and
+  relocation metadata, correct DASIR2 phase transport and DOBJ1
+  serialization; do not substitute a host conversion workaround.
+- [ ] Re-test native KCC -> DAS -A -C -> DLINK -> RUN with all
+  relocatable objects produced on target, then independent -N output
+  equality, 96K peak memory and native self-hosting coverage.
+
+The final KCORE size-only sweep stays LAST per v1379.
+## 2026-11-09 v1402: native DAS packed ASCII7 path
+
+- [x] Add explicit native DAS `-A` reader for KCC packed ASCII7
+  without a conversion file or a second resident word-input buffer.
+- [x] Accept mixed-case mnemonics/directives, preserve symbol spelling
+  and quoted data, and reject invalid spare bits/NUL/trailing words.
+- [x] Rebuild all three native DAS images and the five v1401 compiler
+  phases in a full grouped D6FS test root; 17/17 strict PDP-6 probes
+  PASS, including compiled C assembly word identity and direct DAS RUN.
+- [ ] Complete native `DAS -C` relocatable DOBJ and execute C89
+  built entirely through native tools.  Native DLINK with the host
+  DOBJ1 input is accepted by v1403; object generation remains OPEN.
+  Measure 96K memory and release correctness before installation.
+
+Size-only KCORE optimization remains LAST after all functional and
+integration acceptance per v1379.
+## 2026-11-09 v1401: native compiler KIR1 and KGEN correctness
+
+- [x] Correct host KCC's call-unsafe induction-pointer optimization
+  which had corrupted native KGEN local symbol classes (KCC v1395).
+- [x] Correct nested KIR1 record stack lifetime; native KGEN -N and
+  optimized modes now return zero on minimal/multi-function inputs.
+- [x] Rebuild corrected host KCC and all five native phases; pass the
+  strict 16/16 PDP-6 KCC/KIR1/KGEN/KOPT and host assembly comparison.
+- [ ] Prove independently generated unoptimized -N host/native output
+  equality.  v1402 now proves native packed ASCII7 KCC -> DAS DXR
+  output and direct DAS RUN; native DOBJ -> DLINK -> compiled C RUN
+  remains OPEN.
+- [ ] Complete native 96K peak heap/stack acceptance, compiler source
+  coverage and full self-hosting release gates before installing KCC.
+
+The KCORE size-only sweep remains the final KCORE stage after all
+feature and functional/integration acceptance, per v1379.
+## 2026-11-09 v1379: KCORE work order (size optimization LAST)
+
+The final KCORE memory/code-size sweep is **the last KCORE development
+stage**, not a parallel activity and not a prerequisite for completing
+any remaining functionality.  First fix compiler/assembler/kernel defects;
+finish grouped D6CODEC, BSTORE/BCACHE/LOGSTORE, privileged non-writing
+XIP EXEC/RUN and opt-in compressed process swap; then complete their
+integrated native boot, media, pressure and failure/rollback acceptance.
+Only after all required KCORE functionality and correctness gates have
+passed may the final KCORE size sweep, EXEC/RUN consolidation, p10fold
+selection and strict size measurements begin.  Maintain the current RAM
+budgets and avoid unnecessary growth meanwhile, but do not start new
+size-only optimizations.  Keep strict 32K DSH separate; TSFS v1.2 is
+post-KCORE and must not block this order.
+
+The v1378 native diagnostic reproduces the still-open multi-function
+KIR1 global-symbol Sclass 0 and standalone KGEN UUO/126 faults.  Its
+original five probes match command transcripts rather than requiring
+successful compiler exit status; they are diagnostic, not acceptance.
+## v1373: correct KCC nested-call ABI register lifetime
+
+- [x] Find bad KGEN opcode origin: the wrong opcode was already an
+  incoming argument to NEWCODE, not a KPCODE2 writer/KOPT defect.
+- [x] Fix KCC GCC-ABI side-effecting call argument evaluation, so
+  incoming register arguments survive nested calls.
+- [x] Rebuild a patched host KCC and all five native KCC phases in
+  isolation, then verify real grouped-root PDP-6 KCC/KGEN/KOPT
+  output equality and nested-call executable (9/9 PASS).
+- [x] Fix native split KIR symbol with Sclass 0 (host compiler v1395).
+- [x] Fix standalone native KGEN -N UUO/exit 126 (v1401).
+- [ ] Independently verify -N host/native assembly identity.
+- [ ] Verify native compiler -> canonical SIXBIT assembler -> native
+  DAS/DLINK -> executable end-to-end before native self-hosting.
+## v1372 native CSIX conversion and new KCC compiler blocker
+
+- [x] Reuse the documented reversible C-SIX/S6REC source format,
+  including case escapes and punctuation; no silent semantic casefold.
+- [x] Extend host CSIX to read packed native KCC ASCII7 words using
+  the existing C-SIX encoding rules; test exact byte identity.
+- [x] Validate test-only native CSIX converter on grouped PDP-6:
+  canonical S6REC equality against host, normal text readability,
+  KCC input, malformed-input rejection and cleanup.
+- [x] **Resolved in v1373:** native KCC's minimal `return 012345`
+  output corruption was caused by cross-host KCC losing incoming
+  register arguments across nested calls. The fixed host rebuilds
+  native KGEN, yielding the expected `MOVEI` and matching host bytes.
+  The later v1395/v1401 fixes resolve the separate multi-function
+  KIR and standalone KGEN failure paths; see the current v1401 record.
+- [ ] Complete full native KCC -> ordinary SIXBIT assembler source
+  -> native DAS/DLINK -> execution validation; C-SIX is for C input,
+  while DAS expects uppercase SIXBIT S6REC assembly.
+- [ ] Integrate native CSIX into normal Makefile/root only after
+  compiler correctness and userland toolchain regression gates PASS.
+## v1371: full distribution grouped cold boot
+
+- [x] Expand the actual Makefile D6FS root manifest, stage its
+  native DAS, KCC-source, manual, configuration and tooling inputs.
+- [x] Generate and roundtrip all 71 normally legacy-compressed
+  DXR programs as grouped DXR2, without mixed codec payloads.
+- [x] Boot actual 237-file/29-directory, 336-FCB CLEAN D6FS root
+  with grouped KCORE/KINIT and 27 MRES packages under PDP-6 SIMH.
+- [x] Verify grouped LOGIN/DSH, ECHO/LS/CAT/GREP/WC/STAT output,
+  native-tool directory entries and LOGIN respawn after shell exit.
+- [ ] Replace legacy-producing `D6LZ` user utility in final format
+  conversion; it remains present as an uncompressed executable.
+- [ ] Execute native KCC/DAS toolchains, TSFS root/restart media,
+  physical PURE/swap reload and device/provider failure regression.
+- [ ] Measure nested runtime stack and do atomic production
+  host/media/kernel switchover only after all release gates pass.
+## v1370: actual complete grouped PDP-6 minimal-system cold boot
+
+- [x] Rebuild full grouped KCORE/KINIT and all **27** MRES packages
+  against the same map, with byte-identical original-map controls.
+- [x] Install grouped KCORE into resized KINIT stream word-for-word;
+  guarded Stage-1/Stage-0 boot to new KINIT entry.
+- [x] Create native KCC userland and a CLEAN 15-node D6FS test root
+  containing plain INIT/MOUNTALL and grouped LOGIN/DSH/ECHO.
+- [x] Native Type-136 DECtape Stage-1 -> full grouped KCORE/MRES ->
+  DSK270/D6FS -> INIT/LOGIN -> interactive DSH -> grouped ECHO output
+  -> DSH exit/LOGIN respawn; independent D6LZ36 failure control PASS.
+- [ ] Rebuild the entire standard distribution's compressed commands
+  and full filesystem/boot media as a single grouped-format set.
+- [ ] Test actual grouped TSFS-root restarts, PURE eviction/swap and
+  real nested-provider kernel-stack watermark and injected I/O errors.
+- [ ] Commit a validated atomic host/media/runtime production switch
+  only after all cold-boot/EXEC/failure acceptance gates PASS; never
+  install a permanent old/new codec fallback.
+## v1369: functional grouped EXEC/PURE/TSFS integration
+
+- [x] Generate versioned grouped DXR2 test executables without
+  changing header metadata or relocation bitmaps.
+- [x] Native actual `exec_load_process`: compiled C89 program runs
+  after grouped load; larger linked image, short VFS refills and
+  malformed/provider-error staged VM rollback all PASS.
+- [x] Native actual `proc_swap_reload_pure` decodes evicted immutable
+  grouped backing, rejects corrupt compressed input.
+- [x] Native actual `tsfs_read_words` decodes grouped restart extent
+  and releases the transient buffer on success or error.
+- [ ] Build an isolated complete grouped KCORE, KINIT, MRES, D6FS
+  root and userland image and cold boot through INIT/LOGIN/RUN.
+- [ ] Test real VFS/VM provider call stack, swap backing identity,
+  media failure recovery, and atomic host/runtime format switch.
+## v1368: real grouped KCORE residency and MRES relocation
+
+- [x] Reproduce the production complete KCORE DXR/RIM/stream
+  byte-for-byte and link the v1367 grouped runtime against actual
+  KCORE objects with both original and regenerated p10fold plans.
+- [x] Measure +216 text words with a reclaimed low-core decoder
+  slot or +256 with a 40-word reservation; verify unchanged BSS.
+- [x] Relink five current MRES packages against both grouped maps,
+  retaining unchanged resident sizes and export resolution.
+- [ ] Verify that Stage-1/KINIT can reclaim `000060..000127`
+  without breaking early EXEC or PI low-core ownership; full
+  grouped runtime boot still untested.
+- [ ] Reduce remaining +216 linked resident words; measure actual
+  provider-nested stack and group decoded EXEC/PURE/TSFS payloads
+  before synchronized production cutover.
+## v1367: RAM-minimize grouped runtime decoder
+
+- [x] Reduce native grouped engine + adapter from 333 to 317 text
+  words without changing the format. Reuse descriptor counters to
+  shrink continuation state 26 -> 25 and VFS frame 68 -> 67 words.
+- [x] Verify PDP-6 VFS ABI, exact/trusted mode, maximum descriptors,
+  1/7/64-word DXR refills, stack canary and no static data/BSS.
+- [ ] Eliminate or justify remaining +220 resident text words versus
+  the legacy 97-word D6LZ36 runtime on a complete staged KCORE link.
+- [ ] Measure true cold-provider/EXEC/PURE/TSFS nested kernel-stack
+  usage, plus failure rollback and caller ownership, before cutover.
+## v1366: grouped runtime VFS continuation and RAM accounting
+
+- [x] Implement staged PDP-6 VFS and buffer decoder entries with
+  exact framing, trusted AC3=0 immutable backing, 32-word refill
+  windows, 26-word decode state, and AC10..AC16 preservation.
+- [x] Native fake-provider and stack-canary tests PASS; verify
+  68-word frame and 0110-octal test stack high-water. No production
+  linkage or format change.
+- [ ] Address measured +236-word text growth (333 grouped vs 97
+  legacy) under the RAM-first KCORE budget. Analyze code sharing,
+  instruction reduction and full linked KCORE size before cutover.
+- [ ] Test actual nested VFS/FS-provider stack watermark, PURE/EXEC
+  trusted backing failures, TSFS restarts and all caller paths.
+- [ ] Apply final grouped runtime and host/media formats only as a
+  single atomic conversion, without a long-lived dual-codec mode.
+## v1365: grouped KINIT full-image boot devices
+
+- [x] Rebuild the real linked full-profile KINIT, encode and verify
+  all 32,670 words through the independent host grouped reference.
+- [x] Boot isolated staged grouped KINIT through actual Stage-0 and
+  all five simulator media controllers to KINIT entry (5/5 PASS).
+- [x] Reject oversized header and zero-token grouped corruption on
+  actual DECtape controller media before KINIT or output writes.
+- [ ] Extend negative media/EOF checks to all devices; verify wider
+  reconstructed KINIT image coverage and post-entry boot behavior.
+- [ ] Complete synchronized grouped host producer, KCORE resident,
+  VFS, EXEC/PURE, swap and TSFS integration; no mixed-format fallback.
+## v1364: Stage-1 physical geometry before first payload copy
+
+- [x] Implement staged PDP-6 word-accurate image/stack and
+  image/compressed-staging admission checks, parameterized by physical
+  memory size and KINIT stack reserve. Native geometry and 12
+  generated-loader header-guard tests PASS (32K, 256K, 64K/custom
+  reserve). PTR also validates first tape segment count pre-write.
+- [ ] Wire the accepted geometry helper into real Stage-1 only as
+  part of atomic grouped producer/runtime format conversion; boot
+  all five devices and exercise media errors and rollback.
+## v1363: direct-linked full-buffer grouped Stage-1 prototype
+
+- [x] Audit DSK/DRM/DTC/MTC/PTR: all already buffer the complete
+  compressed KINIT before decode. Generate smaller linked v053
+  Stage-1 alternatives and measure read-in text/BSS geometry.
+- [x] Native PDP-6 test generated handoffs with one-literal valid
+  grouped input and malformed-control rejection at load base 000060.
+- [x] Validate output+compressed staging geometry *before* payload
+  writes in staged v1364 variants (native tests only).
+- [ ] Boot all five real loader variants with rebuilt grouped KINIT
+  images as part of an atomic producer/runtime format cutover.
+- [ ] Runtime VFS streaming remains separate; no double-decoder
+  production KCORE footprint accepted without quantified net savings.
+## v1362: grouped native streaming representative corpus
+
+- [x] Verify staged native grouped NEED_INPUT with current KCORE,
+  D6FS, MonitorFS, SWAP and tape host-golden 128-word prefixes under
+  1/7/64-word refill windows (15/15 PDP-6 PASS).
+- [ ] Reduce/relocate the native decoder, prove kernel caller ABI
+  and provider failure semantics, and migrate all five Stage-1
+  loaders and runtime consumers in a synchronized format cutover.
+## v1361: staged native PDP-6 grouped resumable engine
+
+- [x] Implement separate assembler-only grouped NEED_INPUT decoder:
+  26-word state, 15 packed descriptors, native split-word/control
+  and KCORE host-golden prefix PASS. No production linkage.
+- [ ] Reduce/restructure measured 230-word text to satisfy an actual
+  Stage-1 low-core placement/relocation contract; measure caller
+  state, stack, provider refill and native invalid-stream cases.
+- [ ] Atomically migrate all Stage-1, KCORE and host producers only
+  after a complete boot/runtime acceptance gate.
+## v1360: grouped decoder resumable interface staging
+
+- [x] Test a bounded descriptor-only resumable grouped-format host
+  state machine at all refill positions: 27 current DXRs x 6 windows
+  (162 successes), ten malformed examples x 6, and a maximum
+  15-descriptor group. Host reference PASS only.
+- [ ] Implement and measure the native PDP-6 low-core continuation,
+  including VFS/Stage-1 state preservation, stack and relocation.
+  No production decoder/format change is accepted yet.
+## v1359: source-authentic grouped codec DXR parity
+
+- [x] Host reference roundtrip all 27 currently linked kernel/MRES
+  DXRs, and verify five representative 128-word prefixes bit-exactly
+  on PDP-6 against the host golden streams.
+- [ ] Rebuild the full userland DXR corpus with current paths; extend
+  complete native/host compatibility and production format consumers.
+## v1358: grouped codec host/native source parity
+
+- [x] Verify three independent host-golden 128-word real-DXR streams
+  against the staged native PDP-6 encoder and decoder (3/3 PASS).
+- [ ] Reconstruct the current full host DXR corpus with real paths,
+  compare native/host format over representative complete programs,
+  and complete atomic boot/runtime/producer format migration.
+## v1357: staged codec malformed/capacity stack
+
+- [x] Native PDP-6 test staged decoder malformed/invalid-address
+  returns and encoder short-capacity literal, zero-run and match-search
+  failures with a 512-word canary stack: 016 octal / 14 decimal words.
+- [ ] Prove native stack upper bounds under real nested VFS/EXEC/TSFS
+  consumers and wider malformed-input coverage before codec cutover.
+## v1356: staged native codec stack baseline
+
+- [x] Record 512-word-canary full-DXR v055 wrapper-inclusive stack:
+  016 octal = 14 decimal words, native PDP-6 v1356 PASS.
+- [ ] Check malformed-input/insufficient-capacity stack and real nested
+  VFS/EXEC/TSFS call peaks before claiming a production maximum.
+## v1355: staged grouped compressor output-capacity guarantee
+
+- [x] Prove the bound N + ceil(N/30) words for N input words (zero for
+  empty), implement an allocation-free native staged bound helper and
+  reject unrepresentable physical output counts. Testkit v1355 native
+  exact/short 30/31-token and zero-run cases plus edge counts PASS.
+- [ ] Measure worst-case codec stack/high-water, host/native parity,
+  and complete coordinated boot/consumer cutover. No production switch.
+## v1354: staged grouped encoder physical bounds
+
+- [x] Validate source/capacity 18-bit geometry and reject source/output
+  overlaps before writing a control word. Native PDP-6 v1354 negative
+  suite and v055 full-DXR ABI test PASS; original encoder fails the
+  expected negative witness.
+- [ ] Continue codec producer format/capacity contract and native stack
+  proof, then the indivisible Stage-1/KINIT/VFS/EXEC/PURE/TSFS consumer
+  cutover and full image/rollback acceptance. No production activation.
+## v1353: staged D6CODEC geometry/canonicality validation
+
+- [x] Native staged decoder rejects buffer pointer/length overflow,
+  aliasing, unused control bits and unused descriptor-half padding.
+  Staged native v055 full-DXR roundtrip and new v1353 negative tests
+  PASS; original v1351 decoder fails the negative witness as expected.
+- [ ] Continue D6CODEC production cutover: bounded encoder, native stack
+  peak, full producer parity, stage-1 streaming interface, KCORE/VFS,
+  EXEC/PURE and TSFS integration, atomic artifacts and boot tests.
+  Existing bootable D6LZ36 remains unchanged until all gates pass.
+## Deferred: executable opt-in for compressed process swap (2026-10-15)
+
+### v763: variable-sized in-place swap exchange (critical correctness)
+
+- [ ] Establish the bounded, lossless sector-transfer order for unequal
+  resident/swap sizes and unequal PURE boundaries; see
+  `design/swap-exchange-v763.md`. RAM capacity, disk extent capacity,
+  contiguous allocation, and workspace lifetime are distinct invariants.
+  No persistent journal/crash recovery is required for volatile swap.
+- [ ] Implement and test exchange as a new transaction only when source
+  preservation, MM ownership, BACKSTORE bitmap accounting, and process
+  descriptor publication are proven. Keep the current disk format unless
+  variable-sized exchange demonstrably requires a replacement. Accept only
+  after native writer WAIT/EXIT and failure-injection regression pass.
+
+### v761: optional link-time compression of PURE executable backing
+
+
+- [ ] Evaluate opting PURE DXR2 executables into the already-supported
+  compressed executable-payload format at link time. Measure raw versus
+  encoded storage blocks and estimate PDP-6 decode time for disk and DECtape;
+  select compressed backing only when it pays off. Reuse existing executable
+  size/PURE-boundary metadata and swap-in reload; do not confuse executable
+  payload compression with runtime process-state compression.
+- [ ] Validate original-image reconstruction and repeated PURE eviction /
+  reload for compressed and raw DXR2, without storing another compressed
+  text copy in RAM by default. Keep this strictly deferred and independent
+  from the currently failing native raw-swap pressure regression.
+
+
+### v760 design separation: capacity recovery first; compression later
+
+- [ ] Treat RESIDENT, PACKED-in-RAM, and DISK as *alternative storage
+  representations*, not a mandatory RESIDENT -> PACKED -> DISK sequence.
+  A disk-backed image may be raw or compressed. The reclaim policy must
+  select a representation using measured RAM savings, BACKSTORE blocks,
+  compression CPU cost, restore latency, and scratch/rollback headroom.
+  On a PDP-6, do not assume compressing before each disk swap is faster.
+- [ ] Preserve the original *logical process image size* in the stable
+  process descriptor across every storage transition, independently of
+  the encoded payload length. For PACKED, also retain the omitted PURE
+  boundary and decoded writable extent; for compressed DISK, retain the
+  encoded block count and exact decoded word count, including any padding.
+  First audit the existing three-word process descriptor, one-word
+  overloaded disk record, stable u-area, and two-bit storage mode map;
+  do not allocate another per-slot word or steal an encoding bit without
+  proving non-overlap. Reject mismatching sizes on restore.
+- [ ] Before activation, benchmark PURE prefix omission alone against
+  raw disk swap, compressed disk swap, and PACKED-in-RAM using actual
+  process data and PDP-6 timing; record worst-case incompressible images
+  and temporary peak RAM, not only compression ratios. Reuse lossless
+  codec primitives where safe, not disk/RAM transaction semantics.
+- [ ] Keep the native v758/v759 writer deadlock as a separate critical
+  correctness problem. Fix resource-pressure admission/forward progress
+  without making either compressed swap or PACKED a prerequisite. First
+  establish which eligible victims require 208 blocks after PURE omission;
+  then specify an admission/headroom invariant covering the case with no
+  runnable resident producer of free RAM or swap space. Preserve valid
+  swapped processes on retryable pressure and require passing native
+  writer WAIT/EXIT acceptance. A cooldown is not a capacity guarantee.
+
+- [ ] Reserve an unused, backwards-compatible DXR executable-header flag
+  (`COMPRESSIBLE` or equivalent) after auditing existing DXR flag allocations.
+  This flag describes the expected compressibility of *runtime process memory*;
+  it is distinct from the existing DXR `COMPRESSED` executable-payload flag.
+- [ ] On `exec`, initialize the process compressibility bit from the executable;
+  inherit it across `fork`, and replace it on a subsequent `exec`. Keep the
+  default uncompressed for unmarked executables; no adaptive statistics,
+  heuristics, size-only prepass, or runtime policy controls initially.
+- [ ] Swap-out: bypass the codec entirely for unmarked processes. For marked
+  processes, attempt the native compressor; if it cannot encode safely or
+  produces no useful reduction, retain the existing raw swap transaction.
+  Preserve atomic allocation/write/rollback semantics on any failure.
+- [ ] Keep a separate *swap-record* `COMPRESSED` bit to describe the actual
+  stored representation, independent of the process opt-in bit. Swap-in must
+  decode according to the record and validate the exact restored word count.
+- [ ] Before activation, benchmark representative non-text 36-bit process
+  images with AAP logical ticks for encode/decode, compressed block count,
+  temporary stack/RAM, and I/O tradeoffs. Test roundtrip, incompressible
+  fallback, allocation failure, rollback, `fork`/`exec` inheritance and
+  mixed compressed/raw swap records in daimos-testkit. Do not modify the
+  running parallel kernel implementation as part of this TODO entry.
+
+- [x] v618 mutually exclusive PCLK/SCLK MRES: KINIT boot selection,
+  shared APR scheduler, target GETTIME/SETTIME acceptance, and measured
+  linked low-memory occupancy. Both calendar providers are optional.
+
+- [x] v618 native exclusive-provider gate: testkit
+  `daimos-clock-mres-v618` PASS at 50 and 60 Hz, with PCLK enabled
+  and disabled in separate clean boots. Lowmem GCC links PASS at both rates.

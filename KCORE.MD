@@ -8212,3 +8212,231 @@ of the v233 bulk-device argument consolidation without changing any kernel
 source, persistent data, or the 036000 DSH image limit. KCORE remains
 025075 octal (10813 decimal), KCORE+MRES=13676, based on the prior
 full lowmem link. Continue proposal B on file/VFS structural savings.
+
+## 2026-11-09 v1379: final KCORE work order
+
+KCORE optimization is the LAST KCORE development stage.  Resolve all
+compiler/assembler/kernel correctness blockers first, complete grouped
+D6CODEC cutover, BSTORE/BCACHE/LOGSTORE, privileged XIP EXEC/RUN, and
+opt-in compressed swap, then pass full integrated and failure acceptance.
+Only afterward revisit resident-word reduction, EXEC/RUN consolidation,
+JRST folding and final low-memory size gates.  RAM budgets remain active
+during functional work, but no new size-only sweeps run concurrently.
+TSFS v1.2 sharded metadata is separate, post-KCORE work before 0.9.
+## 2026-11-08 v1371: full normal grouped distribution acceptance
+
+The actual normal boot Makefile root manifest (237 files, 29 dirs,
+89 DXRs) now packs and boots with the v1367 grouped KCORE and all
+27 coherently linked MRES packages. All 71 D6LZ36-compressed
+program inputs are converted and independently roundtripped as
+grouped DXR2, preserving entry/text/relocation metadata; 18 stay
+uncompressed. The complete D6FS volume is CLEAN with 336 FCBs.
+Interactive PDP-6 SIMH RUN of grouped ECHO, LS, CAT, GREP, WC and
+STAT, grouped LOGIN/DSH, and LOGIN respawn PASS. Native toolchain
+files are present but not yet execution-tested. KCORE remains the
+same +256-text reserved-slot grouped candidate; production D6LZ36
+is untouched. `design/d6codec-full-distribution-v1371.md`.
+## 2026-11-08 v1370: grouped KCORE actually boots and runs programs
+
+The isolated grouped KCORE with a non-executable 40-word legacy
+low-core reservation, plus all 27 grouped-map MRES packages,
+**boots to INIT, LOGIN and DSH and executes grouped ECHO** on a
+real D6FS/DSK270 root under native PDP-6 SIMH. Grouped compression
+also drives the Stage-1 KINIT boot stream. Complete KINIT embeds the
+grouped KCORE word-for-word at `030037..053240`. An independent
+original D6LZ36 KCORE control fails to RUN grouped LOGIN, proving
+real codec selection on the same root content. No resident codec
+size was changed in v1370: +256 linked text words over production
+remain for the fixed-layout grouped candidate. Full distribution,
+runtime PURE/swap, TSFS media, VFS fault and nested kernel stack
+tests remain required. Details `design/d6codec-fullboot-v1370.md`.
+## 2026-11-08 v1369: grouped EXEC/PURE/TSFS functionality
+
+The grouped DXR2 test writer preserves entry, TX2 metadata and
+relocations. Native PDP-6 tests execute the real `exec_load_process`
+and `proc_swap_reload_pure` body using a compiled program that runs
+after grouped VM loading, a larger current linked DXR with short
+VFS refills, and malformed/provider-error VM rollback. Native
+`tsfs_read_words` decodes and copies a grouped 0400-word restart,
+freeing temporary memory on success and error. All v1369 test
+cases PASS with controlled VFS/VM providers. Real cold boot, file
+providers and runtime media migration remain OPEN. The v1368
++216/+256-word linked KCORE increase is unchanged.
+## 2026-11-08 v1368: full KCORE and MRES grouped link measurement
+
+The complete KCORE linker reproduces production output byte-for-byte
+at 9,601 text/269 BSS. Replacing the runtime frontend with grouped
+v1367 and regenerating p10fold yields **9,817 text (+216)** when
+the old low-core 40-word image is removed, or **9,857 (+256)** with
+its physical range reserved to preserve early EXEC addresses. BSS
+is unchanged. Re-linking SWAP, DTFS/TSFS, D6FS, MonitorFS and tape
+MRES packages against either grouped map PASSes with unchanged
+resident sizes; KCORE RIM and initialized-stream conversion PASS.
+The grouped layout still has a substantial RAM penalty and has NOT
+been booted as a complete KINIT or used by real VFS/EXEC/TSFS.
+See `design/d6codec-kcore-link-v1368.md`. Production is unchanged.
+## 2026-11-08 v1367: grouped VFS memory reduction, still staged
+
+Grouped decoder/adapter text drops from v1366 333 to v1367 **317**
+words (225 engine + 92 VFS frontend). No static BSS is added.
+Reusing the descriptor cursor during ingestion reduces state to 25
+words and the temporary VFS frame to 67 words; the leaf-provider
+stack canary reaches `0107` octal words. Full native VFS, maximum
+descriptor and current-build KCORE/MRES streaming tests are staged.
+The remaining **+220 resident words over legacy D6LZ36** are not
+accepted under the RAM-first KCORE target. No production codec,
+image or permanent memory has changed. See
+`design/d6codec-vfs-ram-v1367.md`.
+## 2026-11-08 v1366: staged grouped VFS decode and residency budget
+
+The grouped streaming PDP-6 engine and VFS/buffer ABI now PASS
+native fake-provider bounded/short-read/trusted backing and error
+tests, preserving AC10..AC16. The 32-word refill window plus 26-word
+continuation state yields a 68-word temporary frame (legacy 72).
+The leaf-provider canary reaches 0110 octal stack words, not a real
+provider-nested worst case. **New code totals 333 text words vs
+97 old; +236 resident words before folding**. Do not link or
+activate the grouped runtime until RAM cost and nested cold-read
+stack safety are accepted. Production D6LZ36 remains unchanged.
+## 2026-11-08 v1365: staged grouped media boots to KINIT entry
+
+Actual linked 32,670-word KINIT, grouped into 29,023 compressed words,
+now reaches KINIT entry 053524 from all five simulated PDP-6 Stage-1
+device loaders: DSK, DRM, DTC, MTC, two-volume PTR. The tests boot
+through real Stage-0 paper tape and each corresponding virtual
+controller. Both oversized-image and malformed-compressed-control
+DECtape negatives halt before KINIT with unchanged output guard.
+These are test-only staged boot images; permanent KCORE RAM and the
+production D6LZ36 runtime/host format are unchanged. Actual
+post-entry KINIT and VFS/EXEC/PURE/TSFS grouped cutover remain OPEN.
+## 2026-11-08 v1364: staged KINIT loader physical-geometry guard
+
+The generated grouped Stage-1 alternatives now test that the decoded
+KINIT plus reserved stack and its separately staged compressed payload
+both fit the configured PDP-6 memory profile before loading payload
+words. All five loaders pass native guard tests under 32K and 256K;
+DTC/PTR additionally pass 64K with custom stack reserve (12/12 native
+tests, independent helper boundary suite PASS). PTR rejects first-tape
+segment overflow before copying. The new staged helper adds no BSS
+and no permanent KCORE RAM; production D6LZ36 is unchanged. See
+`design/d6codec-stage1-geometry-v1364.md`.
+## 2026-11-08 v1363: direct-linked grouped Stage-1 decoding
+
+Stage-1 never uses NEED_INPUT while decoding KINIT: every loader
+already buffers its complete compressed input. Test-only direct-
+linked v053 decoder alternatives assemble for all five boot modes
+without the fixed-low-core BLT; staged text sizes DSK 432, DRM 424,
+DTC 229, MTC 195, PTR 224 words, with zero new BSS. Native PDP-6
+tests exercise direct KINIT handoffs at load base 000060 with valid
+and invalid grouped streams. This eliminates the need for the
+230-word streaming v1361 *inside Stage-1 only*. Runtime VFS still
+requires a resumable solution; production D6LZ36 and permanent
+KCORE RAM remain unchanged.
+## 2026-11-08 v1362: native streamed grouped codec corpus
+
+The staged v1361 assembler decoder now passes 15 representative
+native PDP-6 host-golden DXR prefix tests (KCORE, D6FS, MonitorFS,
+SWAP, tape at refill widths 1, 7, 64). All reconstructed 128-word
+prefixes compare exactly. Fixed-low-core relocation and full
+boot/runtime integration remain OPEN; production D6LZ36 is unchanged.
+## 2026-11-08 v1361: first native grouped resumable decoder
+
+A staged, nonproduction PDP-6 assembler decoder now implements +1
+NEED_INPUT across word-size refill windows with a 26-word caller
+state (15 descriptors). Its native literal, split zero descriptor,
+30-match stress, malformed/geometry and host-golden KCORE prefix
+tests PASS. Object size is 230 text, zero data/BSS, 82 relocations.
+It is not fixed-low-core relocatable/installed, C ABI safe or booted.
+Production D6LZ36 remains unchanged; see
+`design/d6codec-stage1-resume-v1360.md`.
+## 2026-11-08 v1360: grouped low-core continuation host reference
+
+An executable host reference demonstrates a grouped-stream continuation
+that retains at most 15 descriptor words instead of buffering an entire
+group. Six input-window sizes including a one-word refill pass against
+27 present-build DXRs (162 successful runs) plus malformed streams.
+Native low-core assembler, measured relocation/stack and all production
+format migration are **not yet implemented**. See
+`design/d6codec-stage1-resume-v1360.md`.
+## 2026-11-08 v1359: current linked DXR codec host/native parity
+
+The staged codec now has 27/27 present-build kernel/MRES DXR host
+complete-stream roundtrips (19,270 input; 17,899 encoded 36-bit
+words). Five native PDP-6 current-image prefix fixtures reproduce
+the independent host streams exactly and decode them successfully:
+KCORE, D6FS, MonitorFS, SWAP and tape (5/5 PASS). No claim is made
+for the old unavailable 81-userland-DXR corpus or full 27-stream
+native parity. Production D6LZ36 and resident memory remain unchanged.
+## 2026-11-08 v1358: staged grouped-codec host golden parity
+
+Native PDP-6 staged v053/v055 codec tests now reproduce the host
+reference's bit-exact 128-word compressed output and decoded input
+for configctl, darc and d6lz (3/3 PASS). The older 81-DXR host
+manifest has stale absolute paths and cannot be counted as current
+corpus acceptance. No production KCORE, boot or format change.
+## 2026-11-08 v1357: staged codec error-path stack acceptance
+
+The native v1357 failure-path suite covers malformed decoder input,
+physical input wrap and encoder literal, zero-run and repeated-word
+match-search capacity failures through the v055 wrapper. It verifies
+the error return and the 512-word CRT canary depth of 016 octal
+(14 decimal words). This agrees with the v1356 full-DXR stack
+measurement but does not establish worst-case nested kernel stack.
+No production KCORE source, D6LZ36 boot format or resident RAM changed.
+## 2026-11-08 v1356: measured staged codec wrapper stack
+
+The native PDP-6 full-DXR v1356 fixture confirms 14 decimal stack
+words (`016` octal) with the v055 saved-register adapter, including
+the CRT's initial call. This is not a worst-case KCORE nested-call
+bound. Production D6LZ36 boot and KCORE remain unchanged; additional
+failure-path and consumer stack tests are still necessary. See
+`design/d6codec-cutover-entry-v1352.md`.
+## 2026-11-08 v1355: staged D6CODEC worst-case output bound
+
+An optional no-stack staged native helper computes a conservative
+maximum encoded word count, N+ceil(N/30) (zero for N=0), rejecting
+unrepresentable 18-bit physical buffer capacity. Native PDP-6
+v1355 tests pass exact-capacity and one-word-short 30/31-token and
+zero-run inputs, full roundtrips and boundary count checks. Earlier
+v1353/v1354 bounds and the full-DXR v055 ABI corpus also PASS.
+Active D6LZ36 KCORE/boot and permanent RAM remain unchanged.
+See `design/d6codec-cutover-entry-v1352.md`.
+## 2026-11-08 v1354: staged D6CODEC encoder geometry
+
+The grouped v053 encoder now rejects 18-bit physical source and output
+extent overflow and overlapping buffers before output stores. Native
+PDP-6 testkit v1354 and existing complete v055 corpus pass, including
+the expected negative witness on the previous staged encoder. Active
+D6LZ36/KCORE boot and resident code remain unchanged. See
+`design/d6codec-cutover-entry-v1352.md` for scope and outstanding
+production cutover gates.
+## 2026-11-08 v1353: staged D6CODEC decoder bound checks
+
+The isolated v1352 D6CODEC integration branch now has a v1353 native
+PDP-6 decoder-bounds and canonical-padding regression PASS, plus the
+existing full-DXR v055 ABI/corpus PASS. The unchanged v1351 decoder
+fails the new native negative witness. This is staged source only;
+production boot/KCORE still uses D6LZ36. New source details and linked
+pre-cutover size baseline are in
+`design/d6codec-cutover-entry-v1352.md`. Production consumer migration,
+stack measurement and exact image acceptance remain OPEN.
+## P1: packed-process lifecycle and compression
+
+The v33-v45 packed registry/layout and transaction sources are staged
+experiments, not active production packed processes; retain ordinary swap.
+
+- [ ] Choose a compact dense or bounded sparse packed registry using measured
+  whole-KCORE code + dynamic data + MM extent cost, not isolated v33-v45
+  prototype sizes; preserve MM-authoritative extent ownership.
+- [ ] Connect KINIT registry allocation, boot abort, process exit, VM destroy,
+  packed publication and teardown; validate exclusion and failure rollback.
+- [ ] Complete packed restore against the selected registry, rather than its
+  private descriptor, then integrate packed eviction/restoration with the
+  scheduler; do not remove disk swap before full native acceptance.
+- [ ] Integrate the production D6 codec with the resident KCORE encoder and
+  streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
+  KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan
+  in system/kernel/core/D6CODEC-INTEGRATION-TODO-v054.md.
+- [ ] Measure combined resident codec text, stack, workspace and peak MM
+  descriptors; test direct ABI, malformed input, resumptions, packed
+  transaction failures and real PDP-6 execution before activating it.

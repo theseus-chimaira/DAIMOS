@@ -15,6 +15,18 @@ struct linebuf {
     size_t cap;
 };
 
+/* Native KCC writes five ASCII7 characters per 36-bit word.  This
+ * input view feeds the existing C-SIX source encoder verbatim, so the
+ * C-SIX escaping rules stay defined in exactly one place.
+ */
+struct csix_input {
+    FILE *file;
+    uint64_t word;
+    unsigned int slot;
+    int packed7;
+    int padded;
+};
+
 static void
 die(const char *msg)
 {
@@ -101,6 +113,32 @@ read_word(FILE *in, uint64_t *wp)
         w |= (uint64_t)b[i] << (8U * i);
     *wp = w & CSIX_WORD_MASK;
     return 1;
+}
+
+static int
+source_char(struct csix_input *input)
+{
+    unsigned int ch;
+
+    if (!input->packed7)
+        return getc(input->file);
+    for (;;) {
+        if (input->slot >= 5U) {
+            if (!read_word(input->file, &input->word))
+                return EOF;
+            input->slot = 0U;
+        }
+        ch = (unsigned int)((input->word >>
+            (29U - input->slot * 7U)) & UINT64_C(0177));
+        ++input->slot;
+        if (ch == 0U) {
+            input->padded = 1;
+            continue;
+        }
+        if (input->padded)
+            die("nonzero data after packed ASCII7 padding");
+        return (int)ch;
+    }
 }
 
 static void
@@ -193,24 +231,29 @@ emit_record(FILE *out, const struct linebuf *line)
 }
 
 static void
-encode(FILE *in, FILE *out)
+encode(FILE *in, FILE *out, int packed7)
 {
     struct linebuf line;
+    struct csix_input source;
     unsigned int column;
     int c;
     int saw_any;
     int at_bol;
 
     memset(&line, 0, sizeof(line));
+    memset(&source, 0, sizeof(source));
+    source.file = in;
+    source.packed7 = packed7;
+    source.slot = 5U;
     column = 0U;
     saw_any = 0;
     at_bol = 1;
-    while ((c = getc(in)) != EOF) {
+    while ((c = source_char(&source)) != EOF) {
         saw_any = 1;
         if (c == '\r') {
             int next;
 
-            next = getc(in);
+            next = source_char(&source);
             if (next != '\n')
                 die("bare carriage return in source");
             c = '\n';
@@ -328,6 +371,7 @@ static void
 usage(void)
 {
     fprintf(stderr, "usage: csix -e input output\n");
+    fprintf(stderr, "       csix -e -p input.packed7 output.s6rec\n");
     fprintf(stderr, "       csix -d input output\n");
     exit(2);
 }
@@ -338,19 +382,26 @@ main(int argc, char **argv)
     FILE *in;
     FILE *out;
     int encode_mode;
+    int packed7;
+    int start;
 
-    if (argc != 4 || (strcmp(argv[1], "-e") != 0 && strcmp(argv[1], "-d") != 0))
+    if (argc < 4 || argc > 5 ||
+        (strcmp(argv[1], "-e") != 0 && strcmp(argv[1], "-d") != 0))
         usage();
     encode_mode = strcmp(argv[1], "-e") == 0;
-    in = open_input(argv[2]);
-    out = open_output(argv[3]);
+    packed7 = argc == 5;
+    if (packed7 && (!encode_mode || strcmp(argv[2], "-p") != 0))
+        usage();
+    start = packed7 ? 3 : 2;
+    in = open_input(argv[start]);
+    out = open_output(argv[start + 1]);
     if (encode_mode)
-        encode(in, out);
+        encode(in, out, packed7);
     else
         decode(in, out);
     if (fflush(out) != 0)
         die("write error");
-    close_file(in, argv[2]);
-    close_file(out, argv[3]);
+    close_file(in, argv[start]);
+    close_file(out, argv[start + 1]);
     return 0;
 }
