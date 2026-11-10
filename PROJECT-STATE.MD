@@ -1,3 +1,50 @@
+## 2026-11-10 v1426: real PDP-6 DSH RAM capture and three-codec validation
+
+The v1425 synthetic shell benchmark has now been followed by
+**actual read-only process-memory captures from a running PDP-6
+SIMH guest**. The host booted isolated copies of existing DSK-root
+media, logged into ROOT DSH, and used linked KCORE process table
+symbols plus five DSH DXR/linker-map opcode signatures to identify
+the unique resident DSH in process slot 2. No production guest,
+kernel source, original disk, or executable was modified.
+
+Actual 36-bit user VM words and prospective sector-aligned PURE
+suffixes were: idle prompt 18,432/3,200 (225 nonzero);
+after six SET assignments 18,432/3,200 (435 nonzero);
+after defining and executing FOO 20,480/5,248 (531 nonzero).
+214 suffix words changed between first and second snapshots.
+The function allocation moved the resident DSH physical base
+from 662000 to 656000 octal; the live DSH signature was
+revalidated at the relocated address. DSH has no current PURE
+flag, so these suffixes are prospective, not an actual eviction.
+
+Exact native codec payload lengths (grouped v1420 /
+register-block v1424 / existing RAM RLE v1376) were:
+
+- idle raw 3,200 -> 246 / 280 / 263 words;
+- variables raw 3,200 -> 439 / 532 / 537 words;
+- function raw 5,248 -> 524 / 656 / 677 words.
+
+Removing the trailing 114 immutable TEXT words produces strict
+writable-only sizes of 3,086 -> 128 / 166 / 149,
+3,086 -> 324 / 418 / 423, and 5,134 -> 408 / 542 / 563.
+18 host codec roundtrips PASS. Nine real PDP-6 native codec
+tests PASS: six grouped/block exact decodes and three real
+v1376 native measure/encode/decode/host-stream comparisons.
+The 36-bit process memory captures and hashes remain in private
+TMPDIR; raw guest memory is deliberately not committed to Git.
+
+This proves strong *data compressibility* and confirms that
+v1425's modeled payload sizes were conservative, but **no net
+production RAM increase or code-cost-inclusive savings has been
+accepted**. Unlike native v1376 RLE, v1420/v1424 currently have
+no kernel-resident encoder. Their decoder-only sizes cannot be
+compared with RLE's complete encode+decode footprint. Real
+MM/PI/immutable backing/restore safety and compression CPU
+cost are still open. Full reproducible results:
+../pdp10-doc/KERNEL/D6CODEC-DSH-LIVE-CAPTURE-V1426.MD;
+testkit: tests/validation/d6codec-shell-live-v1426/.
+
 ## 2026-11-10 v1425: modeled DSH mutable-memory compression sizes
 
 The versioned daimos-testkit simulation now models five DSH runtime

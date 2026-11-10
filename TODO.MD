@@ -1,3 +1,28 @@
+## 2026-11-10 v1426: actual DSH RAM snapshot acceptance
+
+- [x] Boot a real PDP-6 DAIMOS DSK-root guest from copied writable
+  media, log into DSH, examine real process descriptors and confirm
+  five relocated instruction signatures against the linked DSH DXR.
+  Capture complete physical suffixes at idle, after six SET
+  commands and after defining/executing a function; inspect
+  source/stack/VM bounds after process relocation.
+- [x] Exact grouped v1420, block v1424 and actual native/host
+  kpack_ram_rle_v1376 compression comparison on all three real
+  process snapshots. 18 host roundtrips and 9 native PDP-6
+  decode/encode checks PASS. Preserve guest memory only in TMPDIR,
+  commit reproducible scripts/results/documentation.
+- [ ] Implement and benchmark a **native** compact block encoder
+  if its full encode+decode RAM footprint can beat the existing
+  449-word standalone v1376 RLE codec. Alternatively choose
+  v1376 if adding another kernel codec is not cost-effective.
+  Include encoder CPU time, peak transient RAM, and all required
+  code/metadata/stack in the comparison.
+- [ ] Under a real PURE-eligible DSH, test per-process MM admission,
+  exact packed extent ownership, atomic restore and rollback,
+  32K/48K resident pressure and net physical RAM high-water.
+  Present v1426 only as read-only capacity evidence, not an
+  enabled process compression feature.
+
 ## 2026-11-10 v1425: DSH mutable-suffix compression experiment
 
 - [x] Simulate the actual DSH DXR2 text/data/BSS/startup geometry
