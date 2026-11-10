@@ -6174,3 +6174,243 @@ development stage, after functional and integration acceptance.
   followed by exact 96K stack/heap and self-hosting qualification.
 
 The KCORE size sweep remains LAST, after functional acceptance.
+
+## 2026-11-10 v1461 TSFS producer and executable acceptance
+
+- [x] Identify old host `mktsfs` generating an incompatible
+  LOGIN compressed restart extent, despite valid v1458
+  decoder and source-compatible block encoder.
+- [x] Fix `tsfscheck` REG filtering: PARENT_FLAGS low half
+  includes mode; mask file-type bits before verifying extents.
+- [x] Make boot-image generation build versioned host TSFS
+  producer/checker from checked-out sources, then strictly
+  verify generated TSFS media before boot.
+- [x] Reject the old corrupt TSFS image; verify the fresh
+  53-file/401-extent image and native PDP-6 decoding of
+  LOGIN's actual 149-word final compressed restart.
+- [x] Cold boot 256K TSFS-root to ROOT LOGIN and DSH V1.
+- [x] Execute external ECHO from the real TSFS root and
+  return to DSH prompt. The 240-second guest-command
+  allowance passes; the earlier 70-second allowance timed out.
+- [x] Reconstruct complete LOGIN, DSH and ECHO executables
+  directly from the real TSFS restart extents; compare every
+  decoded/stored word against the linked source DXRs.
+- [x] Complete guest ECHO execution and compressed LOGIN
+  restart-file acceptance in the full 256K TSFS-root image.
+- [ ] Expand TSFS guest acceptance to additional external
+  executables and low-memory profiles. Preserve bounded
+  simulator timeouts and never treat timeout as success.
+- [ ] Retain strict 32K/48K memory gates as open.
+## 2026-11-10 v1460 five-device Stage-1 completion
+
+- [x] Identify DTC/MTC boot failure after data loading: KINIT
+  entry retained in AC5 was overwritten by the block decoder's
+  match-source calculation. A captured header entry of octal
+  053537 became octal 120366 before the bad entry jump.
+- [x] Preserve the entry in unused AC16 through both tape Stage-1
+  decoder calls (also for DTC raw/hybrid); no extra instructions.
+- [x] Native-assemble v1459 and v1460 loaders and prove identical
+  physical sizes: DTC 160 words, MTC 125 words; only the intended
+  five/four register-reference instruction words differ.
+- [x] Run real full 256K DTC and MTC cold boots through KINIT,
+  ROOT login, DSH and ECHO with isolated media. All five Stage-1
+  devices now pass disk-root cold-boot tests.
+- [ ] Continue independent TSFS-root compressed-file and executable
+  restore acceptance. v1452/v1459 both reported INIT RUN FAILED
+  despite booting INIT; investigate rather than changing codec checks.
+- [ ] Retain strict 32K/48K lowmem acceptance as open, with measured
+  KINIT/KCORE gates and baseline comparisons; no arbitrary reserve
+  or memory-size bypass.
+## 2026-11-10 v1459 integration checkpoint
+
+- [x] Switch all five Stage-1 sources and the actual KCORE build
+  lists to the 53-word fixed v1458 decoder; select the 58-word
+  VFS adapter and migrate EXEC/PURE/TSFS callers.
+- [x] Build and link the real KCORE, KINIT and 256K disk images;
+  verify only one decoder is linked, with exact 53-word identity
+  across KCORE and five Stage-1 read-in images.
+- [x] Compare like-for-like KCORE links: 022627 to 022617 octal
+  initialized words, saving eight physical words; BSS unchanged.
+- [x] Full 256K cold-boot acceptance for DSK, DRM and PTR
+  Stage-1: ROOT login, DSH and ECHO passed on isolated media.
+- [ ] Obtain full 256K DTC and MTC Stage-1 cold-boot acceptance;
+  their standalone assemblies and exact core-image checks pass,
+  but both timed out before the boot banner (180s DTC, 240s
+  MTC). Investigate the controller/read-in path against v1452
+  before blaming the decoder. Original v1452 Stage-1 control
+  tapes also failed to produce a banner within 75 seconds
+  against the same media, for both controllers.
+- [ ] Diagnose TSFS-root INIT RUN failure independently from
+  v1459: the v1452 control has the same failure. Verify TSFS
+  compressed restart-extent decode with a dedicated booted test.
+- [ ] Complete strict 32K and 48K memory gates: the 32K
+  KINIT/KCORE size checks still fail and both v1452 and v1459
+  48K GCC lowmem boots stall after INIT V1.
+- [ ] Finish the full boot matrix and final documentation before
+  declaring the v1459 cutover production-accepted.
+## 2026-11-10 v1458 fixed-low-core block decoder acceptance
+
+- [x] Assemble the v1458 block decoder at 000060: 53 words including
+  one in-image byte pointer; zero static DATA/BSS/relocations.
+- [x] Native test the single copied low-core decoder with six valid
+  and five malformed/streaming controls; verify eight VFS refill/direct
+  tests, nine malformed input tests, five complete real DXRs, and one
+  stack-canary; all 34 tests pass.
+- [x] Assemble all five Stage-1 device sources against the v1458
+  decoder; measure exact read-in sizes versus v1452 (8/9 words less).
+- [ ] Select the v1458 code and 58-word VFS adapter in the actual
+  Stage-1/KCORE build, preserving ONE shared fixed decoder; verify
+  full link and ABI, then perform real cold boot on all supported
+  devices, bounded TSFS image and EXEC/PURE restores, and 32K/48K
+  low-memory regression acceptance. This is a separate integration
+  phase, not completed by native unit tests.
+- [ ] Continue the existing D6LZ36-free replacement validation;
+  never reintroduce the old format or ship two permanent file
+  decoders for compatibility.
+## 2026-11-10 v1451: swapless TSFS bitmap MRES
+
+- [x] Reduce the native RAM-only bitmap encoder+decoder from
+  55 to **30 total PDP-6 TEXT words**, zero DATA/BSS;
+  preserve the 36-bit presence bitmap representation and exact
+  314/524/677-word DSH payloads. Validate eight native
+  roundtrips and register preservation on AC10..AC15.
+- [x] Prove native 30-word image / 36-word transient two-export
+  MRES package, and perform bidirectional p10fold analysis
+  against the block v1441 decoder. No safe >=2-word
+  cross-MRES folds; reject the one-word POPJ dependency.
+  Record native encode+decode instruction counts.
+- [ ] Integrate optional bitmap MRES into the MINIT table
+  **only** when a swapless TSFS-root boot profile is selected
+  and independently verified at activation. Keep it permanently
+  resident while packed processes can exist; never read
+  the decoder from tape during OOM.
+- [ ] Finish the PURE-only reclaim/restore path, then implement
+  exact bitmap preflight and allocation, stable process
+  ownership, atomic pack/restore, APR/fragmentation headroom,
+  cold-inactive-victim admission, and full 32K/48K pressure
+  acceptance. Do not pack on every SLEEP.
+- [ ] File/executable compression remains the distinct
+  block-v1441 format; replace and delete D6LZ36 after a
+  complete Stage-1/TSFS/EXEC/PURE boot migration. Never
+  use bitmap to decode TSFS files.
+## 2026-11-10 v1441: complete single-file-decoder cutover
+
+- [x] Minimize experimental block v1424 core/VFS adapter to
+  v1441: 75+89 -> **60+58 = 118** total native TEXT,
+  39-word temporary VFS frame and zero DATA/BSS.
+  Preserve v1421 block format, resumable refills, malformed
+  stream rejection and exact compressed-payload bounds.
+  Native 8 positive, 9 malformed, stack, 5 full-DXR = 23
+  PASS; measure mixed DXR/DSH/KCORE decoder steps.
+- [x] Remove repeated validation of **kernel-owned** physical
+  destination/source extent, caller-provided buffer
+  disjointness, and decoder stack overlap. Record those as
+  explicit trusted KCORE/MM caller contracts. Keep validation
+  of untrusted format fields and externally supplied counts.
+- [ ] Install a **single block decoder** in place of D6LZ36,
+  including shared bounded TSFS/EXEC/PURE_PREFIX decode,
+  block-format producers, and all Stage-1 device loaders.
+  Prove fixed low-core and memory placement without
+  increasing Stage-1 hardware limits or bypassing any
+  compiler/assembler bug. Measure exact linked/folded KCORE,
+  real nested VFS stacks, 32K/48K boot, fault/restart and
+  compressed-file integrity. Do not leave parallel file decoders.
+- [ ] After complete block-only acceptance, **delete D6LZ36**
+  decoder core, runtime adapter, userland/host encoders,
+  old Stage-1 includes and now-unused format paths; search
+  every build rule, kernel file, doc and boot fixture for stale
+  references. Do not harden or optimize the old decoder.
+- [ ] Keep bitmap RAM encoder+decoder a separate optional MRES
+  strictly for the verified swapless TSFS-root profile,
+  pending full PURE-only restore and process MM transactions.
+  No per-SLEEP compression or bitmap TSFS executable files.
+## 2026-11-10 v1427-v1429: balanced native process codec decision
+
+- [x] Decode three real DSH memory snapshots with unmodified
+  D6LZ36 and compare compressed lengths against grouped, block,
+  and RAM RLE. Measure native PDP-6 decoder instruction counts.
+- [x] Replace the common D6LZ36 match-copy loop with forward
+  BLT. 40 -> 39 core words; 9601 -> 9600 linked KCORE words,
+  no BSS change. 23 native tests PASS; independent full image
+  boots to DSH and executes ECHO. No new bitstream format.
+- [x] Prototype three native C89 encoders in daimos-testkit,
+  matching the independent existing host encoders exactly,
+  without static DATA/BSS. Measure code size and three real
+  DSH full encode/decode cycle instruction costs, including
+  real RAM RLE exact-size pass and separate native decode.
+  RAM RLE is fastest complete cycle in all three samples.
+- [ ] Optimize existing RAM RLE decoder with PDP-6 BLT and
+  measure code, stack, CPU and peak buffers before choosing
+  any integrated process-memory compression format.
+- [ ] Measure final native encoding+decoding, exact-size
+  admission, linked/folded KCORE cost and complete restore
+  transaction under memory pressure. Do not compare test-only
+  encoder core sizes with production whole-image costs as
+  though they were directly interchangeable.
+- [ ] Investigate the older DTC Stage-1 106-word regression
+  cap separately; its original unoptimized image is already
+  140 words and the BLT variant is 139.
+## 2026-11-10 v1426: actual DSH RAM snapshot acceptance
+
+- [x] Boot a real PDP-6 DAIMOS DSK-root guest from copied writable
+  media, log into DSH, examine real process descriptors and confirm
+  five relocated instruction signatures against the linked DSH DXR.
+  Capture complete physical suffixes at idle, after six SET
+  commands and after defining/executing a function; inspect
+  source/stack/VM bounds after process relocation.
+- [x] Exact grouped v1420, block v1424 and actual native/host
+  kpack_ram_rle_v1376 compression comparison on all three real
+  process snapshots. 18 host roundtrips and 9 native PDP-6
+  decode/encode checks PASS. Preserve guest memory only in TMPDIR,
+  commit reproducible scripts/results/documentation.
+- [ ] Implement and benchmark a **native** compact block encoder
+  if its full encode+decode RAM footprint can beat the existing
+  449-word standalone v1376 RLE codec. Alternatively choose
+  v1376 if adding another kernel codec is not cost-effective.
+  Include encoder CPU time, peak transient RAM, and all required
+  code/metadata/stack in the comparison.
+- [ ] Under a real PURE-eligible DSH, test per-process MM admission,
+  exact packed extent ownership, atomic restore and rollback,
+  32K/48K resident pressure and net physical RAM high-water.
+  Present v1426 only as read-only capacity evidence, not an
+  enabled process compression feature.
+## 2026-11-10 v1425: DSH mutable-suffix compression experiment
+
+- [x] Simulate the actual DSH DXR2 text/data/BSS/startup geometry
+  using real compiled BSS symbol sizes and modeled SIXBIT state,
+  environment, heap, stack, jobs and function allocations. Compare
+  raw sector-aligned suffix and strictly writable-only sizes with
+  grouped v1420 and block v1424. All ten host roundtrips and ten
+  full native PDP-6 suffix decompressions PASS.
+- [ ] Capture a real running DSH's process memory in the PDP-6
+  simulator at idle and after command/function activity; repeat
+  the native exact-compression comparison to validate this
+  simulated sparsity against measured guest data.
+- [ ] For any swapless mutable-RAM compression admission, count
+  codec/code/frame/metadata/temporary-buffer overhead, reject
+  incompressible blocks before MM commit, preserve raw fallback
+  and immutable backing, and prove in-place compressed ownership
+  and error rollback. Do not activate it from v1425 alone.
+## 2026-11-10 v1424: streaming decompression decision pending
+
+- [x] Benchmark the historical grouped v1367 decoder, aggressively
+  tune its literal/match/zero paths with PDP-6 BLT, and implement a
+  separate compact 36-bit block LZ/RLE alternative with a host
+  producer. Keep all experiments unlinked to production.
+- [x] Optimize the block decoder to v1424, using register-resident
+  continuation and the legacy-style refill ABI. Native PDP-6 VFS,
+  negative, stack and five full-DXR regressions PASS. Measure text,
+  temporary frame, corpus compression, simulator steps and BLT
+  transfer-adjusted approximate timing. See pdp10-doc
+  KERNEL/D6CODEC-STREAMING-OPTIMIZATION-V1424.MD.
+- [ ] Before any atomic production cutover, measure real linked/
+  folded KCORE and all MRES effects, actual nested cold-provider
+  stacks, and full 32K/48K RAM high-water. Even v1424 (164
+  standalone TEXT words) grows code by 67 versus current 97-word
+  D6LZ36, although its temporary frame is 32 words smaller.
+- [ ] Decide the canonical block-versus-grouped format and implement
+  bounded PURE prefix reconstruction. If block wins, rebuild *all*
+  Stage-1/KINIT/DXR/TSFS host and native artifacts atomically, run
+  all five boot devices, EXEC/PURE/TSFS and media-failure regression.
+  Do not install dual decoders or let the optional encoder inflate
+  mandatory KCORE RAM.

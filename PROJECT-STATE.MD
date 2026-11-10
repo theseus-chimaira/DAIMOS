@@ -16444,3 +16444,419 @@ relocatable DOBJ1 emission, preserving symbols and relocations in
 bounded file-backed state through the native DAS1/DAS2 phase split.
 Exact 96K memory qualification and self-hosting remain open.  KCORE
 size optimization stays LAST per v1379.
+
+## 2026-11-10 v1461: TSFS host producer/validator compatibility
+
+The TSFS-root INIT RUN failure was traced to stale installed
+host binaries, not to the 53-word fixed PDP-6 block decoder.
+The `mktsfs` and `tsfscheck` executables in `$PDP10_PREFIX/bin`
+were from 2026-10-16, whereas the v1452 block codec sources
+had been updated on 2026-11-10. The old `mktsfs` produced an
+incompatible compressed final restart extent for the actual
+LOGIN DXR. The installed `tsfscheck` incorrectly reported
+the image as valid, because it compared PARENT_FLAGS' entire
+low half (including file mode) to REG and therefore skipped
+ordinary regular-file extents.
+
+v1461 fixes the checker to mask `TSFS_FILE_FLAG_MASK` before
+testing REG. The boot Makefile now builds `mktsfs-v1461` and
+`tsfscheck-v1461` from the checked-out host sources and runs
+strict TSFS set validation on every generated root image.
+The old image fails the corrected checker; the regenerated
+one passes with **53 files and 401 extents**. The real final
+LOGIN compressed restart (149 decoded words, 64 compressed)
+passes the independent host decoder and native PDP-6 v1458
+fixed-core/VFS test. A real 256K TSFS-root cold boot with
+isolated media reaches INIT, ROOT LOGIN and DSH V1. The
+external guest ECHO execution also **PASSES** with the
+DECtape guest-command timeout extended to 240 seconds.
+The original 70-second allowance was insufficient for this
+media access pattern; no kernel or codec changes were needed.
+An additional independent reconstruction of all TSFS restart
+extents against their source DXRs passes for LOGIN (3221 words,
+13 extents), DSH (15760 words, 62 extents), and ECHO (1035
+words, 5 extents). Thus the ECHO execution delay is not caused
+by a mismatch between the media payload and its linked DXR.
+
+No KCORE words, persistent memory, low-core decoder bytes,
+on-disk format or runtime decoder stack size were changed.
+Tests: daimos-testkit/tests/validation/d6codec-v1461-tsfs-exec/.
+## 2026-11-10 v1460: fix DTC/MTC Stage-1 KINIT handoff, zero growth
+
+The 53-word block decoder in low core at 000060 is correct, but both
+the DTC and MTC Stage-1 tape loaders retained the parsed KINIT entry
+address in AC5 while calling it. The block decoder legitimately
+overwrites AC5 to calculate back-reference source addresses. Their
+old `JRST 0(05)` therefore jumped into the expanded image at the
+last match address rather than to KINIT's entry. A failed boot
+snapshot showed the header entry **053537 octal** overwritten with
+**120366 octal**. DTC and MTC v1452 controls shared the same defect.
+
+v1460 retains the validated KINIT entry address in **AC16**, which
+the fixed block decoder never uses. The same register is used in
+the DTC raw/hybrid handoff. This is a true register-lifetime fix,
+not a retry or a device/simulator workaround. Native PDP-6 DAS
+comparison against v1459 proves the DTC read-in remains **160
+physical words** (five instruction words altered) and MTC remains
+**125 words** (four altered); **zero growth** for both. No KCORE,
+wire format, loader buffer, decoder or persistent RAM changes.
+
+Real 256K PDP-6 cold boots using isolated media now PASS for
+**DTC and MTC**, including banner, ROOT login, DSH startup and
+guest ECHO. Together with earlier v1459 DSK/DRM/PTR acceptance,
+all **five** Stage-1 devices have passed independent cold boots
+with ROOT=disk. Non-disk root, TSFS compressed restart extents,
+48K GCC lowmem and strict 32K acceptance remain separate open
+gates. Versioned native and full-boot regression lives in
+daimos-testkit/tests/validation/d6codec-v1460-stage1/.
+## 2026-11-10 v1459: actual Stage-1/KCORE 53-word decoder integration
+
+The v1458 53-word fixed-low-core block decoder is now selected by
+both Stage-1 and KCORE build rules in the versioned v1459 branch.
+All five Stage-1 device sources use the same low-core decoder at
+octal 000060. KCORE links exactly one 53-word fixed image and one
+58-word VFS/direct-buffer adapter, and the EXEC, PURE backing and
+TSFS direct-buffer callers use the v1458 entry symbols. The
+unchanged host encoder remains d6block-v1452 (same v1421 wire
+format). No D6LZ36 decoder was reintroduced.
+
+An independently rebuilt v1452 control KCORE has 022627 octal
+initialized words and 000415 BSS words. v1459 has 022617 octal
+initialized words and the same 000415 BSS words: **8 physical
+words saved**, without changing linked BSS or relocations. The
+fixed core has zero static DATA/BSS and zero DOBJ relocations.
+All five native Stage-1 images contain an **identical 53-word
+sequence** to the first 53 linked KCORE words, including the
+inline byte pointer. Actual 256K full-profile DSK, DRM and PTR
+cold boots passed through ROOT login, DSH startup and a guest
+ECHO command using isolated media.
+
+Limitations are recorded explicitly, not accepted as success:
+the 32K lowmem build fails the pre-existing KINIT stack-safe
+image ceiling and the strict 32K KCORE residency gate;
+48K GCC lowmem builds for both v1452 control and v1459 reach
+INIT V1 but fail to reach LOGIN within 180 seconds. DSK Stage-1
+with TSFS root (full profile) reaches INIT but reports
+`INIT: RUN FAILED` on **both** v1452 control and v1459.
+DTC/MTC source assemblies and shared-image checks passed,
+but their real-device cold boots remain unaccepted: DTC timed
+out before the boot banner at 180 seconds, MTC at 240 seconds.
+Control boots using the original v1452 DTC and MTC Stage-1
+read-in tapes with otherwise identical v1459 media also produced
+no boot banner in 75 seconds. This does not prove identical
+long-run behavior, but the early read-in stall is not unique
+to the optimized decoder.
+The branch is an integrated **checkpoint**, not a completed
+all-device, all-memory production release. Tests are in
+daimos-testkit tests/validation/d6codec-v1459-integration/.
+## 2026-11-10 v1458: tested 53-word fixed-low-core block decoder
+
+The v1452 D6LZ36-free block-only cutover branch now has a validated,
+independently staged **v1458 fixed-low-core block decoder** at address
+000060. The installed image is **53 physical 36-bit words** (52
+instructions plus one relocated inline LDB byte-pointer word), with
+zero DATA/BSS and zero DOBJ relocations, compared with 61 words in
+the v1452 fixed core. The v1458 experimental VFS/direct-buffer
+adapter uses **58 TEXT words**, a 39-word temporary VFS frame and
+one shared decoder at 000060; no second decoder copy is used.
+
+Native PDP-6 component acceptance: six successful low-core BLT-copy
+tests and five malformed/need-input controls, plus eight direct/VFS
+streaming and refill tests, nine malformed-input VFS tests, five
+complete real DXR reconstructions (KCORE, D6FS, MonitorFS, SWAP,
+Tape MRES) and one stack-canary test: **34 PASS**. All five Stage-1
+source files assemble for v1458, producing read-in sizes of 376
+(DSK), 367 (DRM), 160 (DTC), 125 (MTC), and 159 (PTR) words;
+each is 8 words smaller than v1452 except DRM (9 words smaller).
+
+These are **component/unit and Stage-1 assembly tests only**. The
+v1458 source and adapter are committed as versioned, test-only
+cutover candidates, NOT selected by the existing kernel/boot build
+rules. Full block-only Stage-1 cold boot, boot media reading, KINIT,
+EXEC/PURE restore and 32K/48K acceptance remain open. The current
+selected v1452 code path is unchanged by this isolated result.
+The v1458 unit test suite is in daimos-testkit
+tests/validation/d6codec-fixed-v1458/ and finished documentation
+in pdp10-doc KERNEL/D6CODEC-FIXED-LOW-CORE-V1458.MD.
+## 2026-11-10 v1451: final 30-word trusted-RAM bitmap pair
+
+Test-only swapless TSFS process-memory codec now optimized through
+v1451: **30 PDP-6 TEXT words total, zero DATA/BSS**, down from
+55 words in v1432 (45.5% reduction). Its encoder/decoder preserve
+AC10..AC15 without any saved-register frame by using only caller-
+volatile ACs. It accepts positive decoded word counts and exclusively
+MM-owned, disjoint buffers; validation of compressed input and
+caller-owned physical bounds is deliberately omitted. The MM caller
+must preflight the precise packed word count, allocate both extents,
+preserve ownership and provide unfragmented restore headroom. This is
+NOT a userland, filesystem or TSFS file format.
+
+All eight native PDP-6 encode/decode exact-word fixtures pass,
+including three original live DSH RAM captures, plus the native
+callee-saved-register ABI fixture. Actual source sizes remain
+3200 -> 314 (idle), 3200 -> 524 (variables), 5248 -> 677
+(function). Native v1451 instruction counts for encode/decode:
+20335/23219 idle, 20965/23639 variables, 33826/38395 function.
+At a nominal 250k instructions/s the combined codec-only time
+is approximately 0.174/0.178/0.289 s (not actual PDP-6 cycles
+or measured elapsed time; MM/TSFS costs excluded).
+
+DLINK produces a normal **36-word transient MRES package**
+containing a **30-word resident image** with two exports; no
+package has been installed at boot. Cross-domain p10fold analysis
+against the v1441 block decoder and VFS adapter finds **zero
+eligible shared runs >=2 words**, and only a potential
+one-word POPJ fold that is not worth coupling independently
+selectable MRES modules. Combined standalone block decoder
+and optional bitmap image = **118 + 30 = 148 words**, excluding
+MM entrypoints and other integration.
+
+The bitmap MRES must remain absent by default, eligible only
+for an explicitly configured and verified **swapless TSFS root**;
+it must not run on every SLEEP. PURE-only reclaim, cold victim
+selection, process MM ownership, 32K/48K resume, real pressure
+tests and safe MRES runtime activation remain unfinished.
+Historical v1432/v1434 measurements are retained as explicitly
+superseded prototypes. Canonical finished component docs:
+pdp10-doc/KERNEL/D6CODEC-BITMAP-TRUSTED-OPTIMIZATION-V1451.MD.
+Tests and native assembler live only in daimos-testkit.
+## 2026-11-10 v1441: block decoder 118-word complete native result
+
+The general-purpose TSFS/executable compressed format will be the
+register-resident block LZ/RLE format (v1421 bitstream). D6LZ36 is
+**scheduled for complete replacement and deletion**, including its
+Stage-1 fixed decoder, KCORE runtime frontend and host producer.
+There will NOT be two permanently resident executable decoders,
+and no further work should be spent hardening D6LZ36. Deletion
+must follow, not precede, an atomic, fully tested block-only boot,
+EXEC, TSFS, DXR and PURE-prefix migration.
+
+The experimental PDP-6 decoder/adapter were optimized from
+v1424 (75 + 89 = 164 TEXT) through v1435..v1440, reaching
+**v1441: 60 core + 58 VFS/direct-buffer adapter = 118 TEXT**
+(46 words, 28.05%, below v1424), with **0 DATA/BSS** and
+an unchanged **39-word VFS stack frame**. The actual block
+bitstream, exact-length/streaming contract and error semantics
+are unchanged. The core saves 15 words by sharing zero and
+match BLT paths, using cursor-derived BLT end points, and
+reusing PDP-6 halfword instructions. The adapter saves 31
+words by simplifying refill/AC saves and dropping redundant
+physical-address, stack-overlap and input-buffer-overlap
+checks that defend *trusted kernel callers*, not malformed
+compressed data. Such geometry and disjointness are now
+explicit KCORE/MM caller invariants, not decoder responsibilities.
+The compressed-data checks for bad opcodes, reserved fields,
+zero/illegal distances, truncated streams, decoded-length
+overflow and trailing words remain in place. Bounded compressed
+input lengths from external file metadata remain checked.
+
+Native PDP-6 acceptance: 8 positive streaming/direct cases,
+9 malformed compressed-stream cases, one stack-canary, and
+five complete real DXRs (KCORE, D6FS, MonitorFS, SWAP and
+Tape MRES): **23/23 PASS**. The direct compressed-source/
+destination alias fixture is explicitly excluded because
+source/destination disjointness is a caller invariant rather
+than a property of the compressed bitstream. On real compiled
+code, v1441 decoder step counts are mixed 29-DXR prefix
+2,003, DSH first 2,048 4,054, KCORE first 2,048 2,382.
+All are 16 instructions fewer than v1440. Compared with the
+earlier unoptimized v1424 native measurements
+(2,490/5,039/2,961), the v1441 decoder is smaller and
+executes fewer simulator instructions. BLT is counted as
+one instruction regardless of transfer length, so these
+numbers are not measured PDP-6 elapsed times.
+
+With v1441 the prospective file decoder costs only **22 more
+standalone code words** than the current 96-word D6LZ36-BLT
+decoder+adapter, while using a 39-word rather than 72-word
+VFS frame. Neither linked/folded KCORE nor all five Stage-1
+loader sizes have yet been accepted with block in place.
+The 60-word block core exceeds the 39-word D6LZ36 boot
+core by 21 words before any Stage-1 adaptation. Work remains
+**unlinked and experimental**, not a production cutover.
+
+The independent bitmap encode/decode pair (now 30 words in v1451) remains a
+possible permanently resident **optional MRES only on verified
+swapless TSFS root**, installed only after its separate MM
+restore and 32K/48K acceptance gates. It is not a file decoder.
+See pdp10-doc KERNEL/D6CODEC-BLOCK-OPTIMIZATION-V1441.MD
+and KERNEL/TSFS-FILE-CODEC-AND-BITMAP-MRES-V1434.MD;
+tests: daimos-testkit/tests/validation/d6codec-block-opt-v1441/.
+## 2026-11-10 v1427-v1429: D6LZ36 BLT and complete RAM codec cycle
+
+The live 36-bit DSH process-memory snapshots from v1426 were
+recompressed with unmodified host D6LZ36. Physical retained
+suffixes, raw -> D6LZ36 payload: idle 3200 -> 277 words,
+six-variable prompt 3200 -> 508, defined function 5248 -> 614.
+All three native PDP-6 baseline decodes and six host roundtrips
+passed. The original native decoder ran in 17928/19377/30637
+SIMH instructions on these snapshots.
+
+The fixed low-core D6LZ36 decoder match-copy loop was replaced
+with forward BLT in the existing common source (no second
+decoder). The bitstream and resumable ABI are unchanged. The
+native core shrinks 40 -> 39 words; combined with the unchanged
+57-word runtime adapter it is 97 -> 96. An independent full KCC
+build linked KCORE at 9600 initialized words instead of the
+unchanged 9601 baseline, identical BSS and relocation map.
+All 5 PDP-6 Stage-1 images assemble one word smaller. On the
+three real DSH suffixes, BLT decoder instruction counts were
+3238/5791/7291, reductions of 81.9/70.1/76.2 percent.
+23 native acceptance cases pass, including overlap, refills,
+invalid streams and all three live snapshots. Real DSK Stage-1
+and freshly built KCORE boot to ROOT DSH with successful ECHO.
+The historical DTC stage1 size test cap was already violated
+before optimization (140 words vs 106 cap; now 139); investigate
+separately, do not conflate this with the decoder.
+
+Native C89 bounded in-memory encoder prototypes were then built
+only in daimos-testkit for existing D6LZ36, grouped v1420 and
+block v1424 formats. Their exact outputs match the independent
+reference host compressors on three live DSH snapshots and four
+controls, including native PDP-6 stream-by-stream verification.
+KCC encoder-only TEXT: D6LZ36 174, block 227, grouped 264;
+all zero static DATA/BSS. Actual existing RAM RLE v1376
+measure+encode+decode has 448 TEXT words in this build.
+Native PDP-6 encoder instruction counts (idle/variables/function):
+RAM RLE 116k/129k/202k; grouped 611k/1301k/1586k;
+block 686k/1480k/1836k; D6LZ36 1961k/2930k/3641k.
+The extra exact-size RLE measurement pass costs
+112k/122k/192k instructions. Native RLE decode alone costs
+38.7k/42.7k/67.5k instructions. Full approximate cycles
+including encoding, decoding and RLE measurement are therefore:
+RLE 265k/293k/460k; grouped 620k/1319k/1609k;
+block 687k/1484k/1841k; D6LZ36+BLT 1964k/2936k/3648k.
+Other encoder pairs are NOT charged for a future exact-size pass.
+
+**Decision gate:** RAM RLE is the leading baseline when both
+packing and restoration speed matter. It is not yet selected
+for production KCORE: optimize its decoder with PDP-6 BLT
+and reduce its combined 448-word native code before measuring
+total linked RAM, scratch, allocator admission and fault-safe
+restore. Grouped compressed payload is 17/98/153 words smaller
+than RLE in the three states, but current grouped encoder
+is significantly slower and its code larger. Consider only
+measured tiny fixed-cost match caches as optional future
+experiments; no format compatibility requirement constrains
+future changes. Documentation:
+../pdp10-doc/KERNEL/D6CODEC-END-TO-END-ENCODER-DECODER-V1429.MD.
+## 2026-11-10 v1426: real PDP-6 DSH RAM capture and three-codec validation
+
+The v1425 synthetic shell benchmark has now been followed by
+**actual read-only process-memory captures from a running PDP-6
+SIMH guest**. The host booted isolated copies of existing DSK-root
+media, logged into ROOT DSH, and used linked KCORE process table
+symbols plus five DSH DXR/linker-map opcode signatures to identify
+the unique resident DSH in process slot 2. No production guest,
+kernel source, original disk, or executable was modified.
+
+Actual 36-bit user VM words and prospective sector-aligned PURE
+suffixes were: idle prompt 18,432/3,200 (225 nonzero);
+after six SET assignments 18,432/3,200 (435 nonzero);
+after defining and executing FOO 20,480/5,248 (531 nonzero).
+214 suffix words changed between first and second snapshots.
+The function allocation moved the resident DSH physical base
+from 662000 to 656000 octal; the live DSH signature was
+revalidated at the relocated address. DSH has no current PURE
+flag, so these suffixes are prospective, not an actual eviction.
+
+Exact native codec payload lengths (grouped v1420 /
+register-block v1424 / existing RAM RLE v1376) were:
+
+- idle raw 3,200 -> 246 / 280 / 263 words;
+- variables raw 3,200 -> 439 / 532 / 537 words;
+- function raw 5,248 -> 524 / 656 / 677 words.
+
+Removing the trailing 114 immutable TEXT words produces strict
+writable-only sizes of 3,086 -> 128 / 166 / 149,
+3,086 -> 324 / 418 / 423, and 5,134 -> 408 / 542 / 563.
+18 host codec roundtrips PASS. Nine real PDP-6 native codec
+tests PASS: six grouped/block exact decodes and three real
+v1376 native measure/encode/decode/host-stream comparisons.
+The 36-bit process memory captures and hashes remain in private
+TMPDIR; raw guest memory is deliberately not committed to Git.
+
+This proves strong *data compressibility* and confirms that
+v1425's modeled payload sizes were conservative, but **no net
+production RAM increase or code-cost-inclusive savings has been
+accepted**. Unlike native v1376 RLE, v1420/v1424 currently have
+no kernel-resident encoder. Their decoder-only sizes cannot be
+compared with RLE's complete encode+decode footprint. Real
+MM/PI/immutable backing/restore safety and compression CPU
+cost are still open. Full reproducible results:
+../pdp10-doc/KERNEL/D6CODEC-DSH-LIVE-CAPTURE-V1426.MD;
+testkit: tests/validation/d6codec-shell-live-v1426/.
+## 2026-11-10 v1425: modeled DSH mutable-memory compression sizes
+
+The versioned daimos-testkit simulation now models five DSH runtime
+snapshots using real uncompressed DSH DXR2 image geometry and
+compiler-generated BSS declarations, with seeded synthetic
+environment, heap, stack, command, and function-node contents.
+This is explicitly **not** a captured guest-process memory dump.
+The real DSH image has 15,331 initialized words, 15,330 TEXT,
+one initialized DATA word, 1,011 BSS and an initial rounded
+17,408-word physical VM. DSH has no PURE flag; a potential
+sector-aligned PURE drop could omit 15,232 words, leaving a
+2,176-word suffix containing 114 words of trailing immutable TEXT.
+
+The modeled idle prompt grows its process VM to 18,432 words after
+28 heap words, leaving a 3,200-word hypothetical retained suffix.
+The compressed payload occupies 280 words under grouped D6CODEC
+v1420 or 358 under compact block v1424 (raw: 3,200). For a running
+command the same raw length compresses to 463/618; with function
+nodes and two further APR allocations, 4,224 raw words compress
+to 646/868. Deliberately random 2,176-word suffix expands to
+2,249/2,193, proving the need for an admission threshold/raw
+fallback. Separate strict writable-only figures omit the 114
+word text tail; see the report.
+
+The two independent host codec references pass exact roundtrip
+for all five profiles and both source ranges. The actual staged
+native PDP-6 v1420/v1424 decoders each passed all five complete
+physical-suffix decompressions (ten full native tests). No real
+shell or kernel was modified. No actual compressed-process MM
+transaction, measured RAM peak, codec overhead or real shell
+snapshot acceptance is claimed.
+
+Full details: ../pdp10-doc/KERNEL/D6CODEC-DSH-MUTABLE-SIMULATION-V1425.MD.
+Tests: daimos-testkit/tests/validation/d6codec-shell-mutable-v1425/.
+## 2026-11-10 v1420-v1424: staged streaming codec speed/RAM comparison
+
+Isolated PDP-6 native experiments and the matching versioned testkit
+have now compared untouched staged grouped D6CODEC v1367, a BLT/AC
+hot-path tuned grouped v1420, and two alternative block-LZ/RLE
+implementations v1421/v1424. No production D6LZ36 KCORE, Stage-1,
+KINIT, VFS, executable, or filesystem producer has changed.
+
+The successful v1424 alternative is a new, incompatible 36-bit
+block command format (literal run, zero run, overlapping word copy),
+with a register-resident resumable decoder and validated VFS adapter.
+Its standalone assembly is **75 engine + 89 adapter = 164 TEXT**
+words and zero DATA/BSS; the temporary adapter frame is 40 words.
+The leaf fake-provider native stack canary touched 43 words
+including CRT; the true nested filesystem/EXEC peak is not known.
+The grouped v1367 and v1420 alternatives require 317 and 364
+TEXT words respectively, both with 67-word frames. Production
+D6LZ36 remains 97 combined TEXT words, with a 72-word frame.
+These are not complete linked KCORE RAM deltas.
+
+The available 29-DXR linked corpus has 48,717 uncompressed words:
+35,704 grouped-compressed words versus 37,380 block-compressed
+words. Both formats passed all 29 host roundtrips. Five real full
+DXRs (KCORE, D6FS, MonitorFS, SWAP, tape) passed full native decode
+for v1420, v1421 and v1424, in addition to streaming/refill,
+pathological match, malformed input and stack-canary tests.
+On the 2,477-word mixed-real-DXR native benchmark, simulator
+instruction-step counts were 94,115 (v1367), 57,169 (v1420),
+3,999 (v1421) and 2,490 (v1424). BLT counts as one SIMH step even
+for many transferred words, so these are NOT CPU cycle or real
+PDP-6 time measurements. A separate, explicitly illustrative DEC
+timing-based model includes BLT word transfers.
+
+The RAM-first recommendation is to retain v1424 as the leading
+candidate, not to enable a format change yet: relative to current
+production D6LZ36 it still costs 67 more standalone TEXT words,
+and actual fold/boot/VFS/provider nested stack plus bounded PURE
+prefix loading have not been accepted. The complete benchmark,
+input format and remaining gates are documented in
+../pdp10-doc/KERNEL/D6CODEC-STREAMING-OPTIMIZATION-V1424.MD.
