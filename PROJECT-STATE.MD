@@ -1,3 +1,80 @@
+## 2026-11-10 v1384/v1385: in-place PURE restore and shared EXEC-loader decision
+
+The new, explicitly unlinked `system/kernel/mm/mm_pure_expand_v1384.s`
+provides three PI-serialized exact MM operations: claim the freed
+prefix beside the original pinned raw suffix, release the claim after a
+failed load, and commit the completed extent to MM_TYPE_PROCESS.
+Claim checks the 02000-octal APR base alignment, nonzero 0200-sector
+prefix, exact owner/type/sizes/one pin, sorted predecessor's free gap,
+and that the complete span is inside a managed MM arena. No second
+user-memory extent or MM descriptor is allocated. A claimed full span
+remains MM_TYPE_PACKED_PROCESS during VFS I/O, so it cannot be run or
+reused. No physical suffix word is ever moved.
+
+`system/kernel/proc/proc_pure_restore_v1384.[ch]` checks the quiesced
+process, saved PURE vnode backing and exact original VM geometry,
+claims under PI exclusion, restores PI for the read, and rolls back
+to the original packed suffix on loader failure. Only after the prefix
+is completely reloaded does it atomically retype to PROCESS, publish
+the complete VM base and resident mode, then release the last pin and
+TRANSITION. Occupied/unmanaged prefix gaps and explicitly unsupported
+codec formats return +1 for the already tested full-image restore
+fallback; I/O/format corruption returns an error without losing the
+inactive image. Any ambiguous post-commit unpin state retains
+TRANSITION for explicit owner recovery.
+
+`daimos-testkit/tests/validation/pure-ram-prefix-v1385/exec_prefix_fixture_v1385.s`
+is an **isolated assembler test fixture**, NOT a second production
+loader or a DAIMOS kernel source. It reconstructs the
+canonical vnode through the existing backing unpacker, checks the
+uncompressed DXR2 header and text size, and reads exactly the missing
+`prefix - 020` user words. A compressed DXR returns unsupported
+without calling the full decoder. These tests prove the bounded
+plain-text operation but do NOT authorize linking a duplicate DXR
+parser/decoder into permanent KCORE.
+
+Architectural decision: **EXEC and RESTORE must share the same DXR
+header validation and image loading engine**. EXEC creates/initializes
+a new process, while PURE restoration supplies an already-owned
+destination and requires the `PURE_PREFIX` loading mode to stop before
+the writable suffix. The common loader should support FULL and
+PURE_PREFIX, with one plain DXR reader and one chosen grouped compressed
+decoder. Leave MM claim/rollback/publication in the restore transaction;
+do not combine process lifecycle with file parsing. Existing
+`exec_load_process` and `proc_swap_reload_pure` currently differ in
+their loading contracts and must be reconciled at the grouped-D6codec
+production cutover. The new v1385 fixture lives only in daimos-testkit:
+its separate header parser must not be shipped in parallel.
+
+Host testkit `tests/system/pure-ram-prefix-v1384` PASSes in-place
+restore, zero new allocations, bit-identical writable suffix,
+partial-read rollback, unsupported codec and occupied/unmanaged gap
+fallback. Native KCC/PDP-6 `pure-ram-prefix-v1384` executes the
+actual assembler MM claim/release/commit plus the C restore
+transaction; `pure-ram-prefix-v1385` exercises actual plain DXR
+prefix loading, canonical mount-1/mount-18 backing, short reads and
+header/codec rejection. Both PASS. Native testing found an inverted
+CAMG/CAMLE in the new arena-high check, corrected before acceptance.
+The old v1381 tests and pre-existing swap/OOM behavior are unchanged.
+
+Isolated target sizes (not a linked KCORE delta): v1384 process
+transaction 323 TEXT words, MM claim/release/commit 130, and the
+v1385 **test-only** plain loader 78; total 531 standalone words and
+zero static DATA/BSS. Do NOT sum all of those as necessary permanent
+production code: the last 78 are test-only and must be replaced by the
+existing EXEC loader's shared core. With an entirely free prefix, a
+1024-word example process
+can restore using its 768-word retained suffix plus the original
+256-word prefix rather than temporarily needing another 1024-word
+process image. Full restore fallback still needs sufficient separate
+APR-aligned memory. A grouped compressed-prefix decoder remains OPEN.
+
+No current KCORE/Makefile/scheduler/VFS production link or active
+filesystem policy was changed. Real MM/PI concurrency, loader
+consolidation, EXEC/EXIT/WAIT, 32K/48K swapless guest and RAM
+high-water remain OPEN. See
+`../pdp10-doc/KERNEL/SWAPLESS-MEMORY.MD`.
+
 ## 2026-11-10 v1383: derive one-word PURE/WRITABLE geometry for restore
 
 The v1381 RESTORE design is refined without changing source or runtime

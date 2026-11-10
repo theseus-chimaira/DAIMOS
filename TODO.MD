@@ -1,3 +1,37 @@
+## 2026-11-10 v1384/v1385: prefix-only RESTORE staged, shared loader pending
+
+- [x] Stage `mm_pure_expand_v1384.s`: claim/release/commit the
+  original PURE prefix without another allocation, retaining pinned
+  PACKED_PROCESS ownership during reads. Fail atomically if the
+  original gap is occupied/unmanaged, owner/type/size/pins disagree,
+  or original APR alignment is invalid.
+- [x] Stage `proc_pure_restore_v1384.c`: safe in-place prefix recovery,
+  rollback of a partial/unsupported loader, PI-atomic resident
+  publication, and explicit retry/fallback for occupied gaps.
+- [x] Host v1384 and PDP-6 native v1384/v1385 testkit acceptance:
+  exact suffix integrity, no new RAM allocation, MM preflight and
+  pressure, failed/short read, unsupported compressed input,
+  high mount 18 backing and subsequent full-image fallback PASS.
+  The native assembler arena-high comparison defect was fixed.
+- [ ] **Merge the executable loader before any production activation**:
+  `exec_load_process` (FULL initial image),
+  `proc_swap_reload_pure` (FULL reconstruction) and the testkit-only
+  `exec_prefix_fixture_v1385.s` (PURE_PREFIX) must use ONE
+  validated DXR header/payload engine. Keep the v1385 loader as an
+  unlinked native test fixture only; it must not become a permanent
+  second DXR parser. The restore transaction alone handles MM claims,
+  error rollback and process publication.
+- [ ] For compressed DXR, add a bounded prefix decoder or independent
+  text-frame encoding as part of the atomic grouped D6codec cutover.
+  A truncated output limit alone currently fails on MATCH tokens
+  crossing the text boundary. Until accepted, use the already
+  validated full-image restore fallback and memory-pressure retry.
+- [ ] Prove the integrated full 32K/48K swapless guest, hardware PI,
+  immutable filesystem source, EXEC/EXIT/WAIT and true linked KCORE/
+  RAM high-water acceptance. Isolated native object sizes are 323
+  transaction + 130 MM + 78 test-only plain loader TEXT words; no
+  linked production size increase has been measured or accepted.
+
 ## 2026-11-10 v1383: one-word size geometry and prefix-only RESTORE
 
 - [x] Confirm the sizing model from actual DXR2/EXEC and VM code:

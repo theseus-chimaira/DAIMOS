@@ -1,3 +1,31 @@
+## 2026-11-10 v1384/v1385: in-place RESTORE, no second production loader
+
+The unlinked MM `mm_pure_expand_v1384.s` and transaction
+`proc_pure_restore_v1384.c` can reclaim an entirely free original
+PURE prefix *without allocating or copying another process image*.
+Owner/type/size/pin/physical arena gates precede the descriptor
+claim. The full address range remains owned by an inactive
+PACKED_PROCESS extent during all filesystem I/O. On failure, the MM
+descriptor rolls back to the original raw suffix; on success, the
+complete PROCESS extent, physical VM base and resident storage mode
+are published atomically under PI exclusion.
+
+The testkit-only `pure-ram-prefix-v1385/exec_prefix_fixture_v1385.s`
+validates native plain-DXR2 prefix reading for both low and high mount
+IDs. Production must **merge EXEC full-image
+loading and PURE_PREFIX restoration into one executable-loading
+engine**. Only the MM reserve/commit and process lifecycle orchestration
+remain independent. The existing compressed DXR decoder is not yet
+bounded at the PURE boundary; compressed images select the safe
+full-image fallback instead of overwriting the retained suffix.
+
+Host and native PDP-6 tests PASS the MM preflight, original prefix
+claim, rollback on short reads, unchanged writable words, blocked
+prefix, mount 18 and plain DXR header checks. Isolated text: 323
+transaction + 130 MM + 78 test-only plain loader = 531 words,
+zero DATA/BSS, **not** projected production resident growth.
+Production remains at three fixed C translation units, unchanged.
+
 ## 2026-11-10 v1383: ONE WORD of sizes, not an extra permanent record
 
 Potential swapless RESTORE geometry fits one 36-bit word:
