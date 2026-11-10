@@ -29,6 +29,13 @@ integration, and v787/v781/v782 exchange cleanup tests PASS against the
 integrated source. More complete raw-XIP RUN/EXEC, swapless PURE, 32K
 placement and compiler/assembler release acceptance remain open.
 
+The isolated v1458 native block-decoder core and VFS tests also PASS,
+including malformed inputs and stack-canary checks. Its combined
+historical runner stops at the final Stage-1 assertion: the test expects
+the new decoder selected, whereas release Stage-1 deliberately keeps
+D6LZ36. A separate testkit v1462 regression verifies the production
+selection and preservation of the versioned experimental implementations.
+
 ## 2026-11-10 v1406: strict 256K full-guest SWAP ownership acceptance PASS
 
 Following the committed/pushed v1405 checked-release transaction changes,
