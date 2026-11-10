@@ -1,3 +1,25 @@
+## 2026-11-10 v1396/v1397: verified correctness increments
+
+- [x] MEMFS XIP: freeze CHMOD, CHOWN and UTIME while a raw image pin is
+  active; preserve the existing vnode mode/owner/timestamp and allow those
+  operations after final unpin. Source-linked native PDP-6 PASS; SIMH and
+  AAP restricted user lifecycle PASS. MRES resident +7, KCORE +0.
+- [x] Fix MEMFS native test helper ABI (swap detach success is zero, wall
+  clock service available); fixture now validates real VM teardown rather
+  than a stale success convention. No production VM behavior changed.
+- [x] AUXSTORE: canonical zero,zero output for newly formatted absent
+  regions, preserving v1 reader compatibility with preexisting zero-length
+  regions whose start is nonzero. Host v636/v507/v492/v657 PASS. Do not
+  reject legacy media or create a redundant v2 descriptor parser.
+- [x] PURE DROP: after MM rebase refusal, fail closed if cleanup unpin fails
+  (MM_ERR_BUSY, TRANSITION retained). Native v1397 fault injection and
+  v1381/v1384 regressions PASS. Unlinked 518->521 TEXT, DATA/BSS zero.
+- [ ] Continue full AUXSTORE/BACKSTORE physical media and swap/OOM recovery
+  matrix; restricted trusted XIP vnode admission and RUN/EXEC scheduling;
+  and measurable 32K/48K PURE RAM reclamation under process pressure.
+- [ ] Grouped D6 codec stays deferred until all three feature tracks are
+  complete and accepted. No format cutover or duplicate decoder now.
+
 ## 2026-11-10 v1393-v1395: active integration order and D6 deferral
 
 **Current priority decision:** Continue AUXSTORE/BACKSTORE, privileged raw

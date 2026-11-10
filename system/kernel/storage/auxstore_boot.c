@@ -78,6 +78,9 @@ auxstore_try(unsigned int kind, unsigned int unit)
         super_a = (block[AUXSTORE_DESC_D6SUPER] >> 18U) &
             AUXSTORE_HALF_MASK;
         super_b = block[AUXSTORE_DESC_D6SUPER] & AUXSTORE_HALF_MASK;
+        /* Version 1 media may encode a zero-length region with its unused
+         * would-be start position. Keep reading old descriptors: no consumer
+         * may use that address when the corresponding block count is zero. */
         if ((sn != 0UL && (s == 0UL || s >= limit || sn > limit - s)) ||
             (ln != 0UL && (l == 0UL || l >= limit || ln > limit - l)) ||
             (cn != 0UL && (c == 0UL || c >= limit || cn > limit - c)) ||

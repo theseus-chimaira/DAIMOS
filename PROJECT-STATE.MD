@@ -1,3 +1,42 @@
+## 2026-11-10 v1396/v1397: XIP metadata, AUXSTORE v1 media, PURE DROP cleanup
+
+Completed correctness increments in the continuing AUXSTORE/BACKSTORE,
+restricted raw MEMFS XIP and swapless PURE RAM tracks. The grouped D6 codec
+is still explicitly DEFERRED and production D6LZ36 remains unchanged.
+
+**MEMFS XIP:** The production movable MEMFS provider now refuses all
+`memfs_chmod` operations on pinned XIP nodes, including mode changes and the
+same entry's CHOWN/UTIME branches. Existing VM pin references remain the sole
+ownership table; no additional static DATA/BSS or KCORE instructions.
+Production-source PDP-6 MEMFS native test PASS, including blocked changes
+while pinned and normal changes after final release. Corrected the native
+test's outdated `proc_swap_detach` success stub (zero means success) and
+missing wall-clock helper, not production VM teardown. The existing SIMH
+and AAP PDP-6 non-writing XIP user lifecycle v216 PASS; full trusted RUN/
+EXEC admission and scheduling are still NOT wired. The MEMFS MRES resident
+size grows **1712 -> 1719 words (+7)**, with no new BSS; isolated runtime
+object TEXT grows **686 -> 693** with DATA=8/BSS=3 unchanged.
+
+**AUXSTORE v1:** The first strict-descriptor experiment was rejected after
+discovering the original `mkauxstore` formatter deliberately encoded the
+would-be nonzero start of absent (zero-length) partitions. Rejecting this
+encoding in KINIT would have broken existing v1 media. KINIT continues to
+accept both legacy and canonical empty regions; the host formatter now
+generates canonical zero,zero entries for absent pools without changing the
+on-disk version or active partitions. Native producer/reader regressions
+v636, v507, v492 and v657 PASS. The change is in transient KINIT commentary
+and the host tool, with no production fixed-core RAM cost.
+
+**PURE DROP:** `proc_pure_ram_drop_v1381` now propagates a failed cleanup
+`mm_unpin()` after a rejected zero-copy MM rebase as MM_ERR_BUSY, preserving
+TRANSITION and the original MM descriptor for safe recovery rather than
+returning the earlier geometry error while leaving an unresolved pin. Native
+v1395/v1397 failure injection PASS (two new DROP cases plus four FULL cases),
+as do v1381 in-place and v1384 prefix regressions. The isolated KCC
+transaction grows **518 -> 521 TEXT (+3)** with zero DATA/BSS; it remains
+UNLINKED from production, with real scheduler/VFS/PI and physical-memory
+acceptance still open. No full 256K OOM matrix was rerun.
+
 ## 2026-11-10 v1393-v1395: storage ownership, XIP safety and PURE rollback
 
 Feature-order policy: finish AUXSTORE/BACKSTORE, privileged raw MEMFS XIP and

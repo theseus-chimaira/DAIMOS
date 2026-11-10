@@ -170,8 +170,12 @@ proc_pure_ram_drop_v1381(unsigned int slot)
         }
         mach_pi_restore(pi_state);
         if (rc != MM_OK) {
-                /* A failed conversion does not move or retag the extent. */
-                (void)mm_unpin(source);
+                /* A rejected rebase leaves the original MM owner intact.
+                 * If its cleanup unpin also fails, report BUSY rather than
+                 * the earlier geometry error: the original VM remains
+                 * TRANSITION-held and must not resume with an unknown pin. */
+                if (mm_unpin(source) != MM_OK)
+                        return MM_ERR_BUSY;
                 return rc;
         }
 

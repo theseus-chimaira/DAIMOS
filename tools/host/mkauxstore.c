@@ -284,9 +284,15 @@ format_auxstore(const char *path, unsigned back_blocks, unsigned log_blocks,
         memset(desc, 0, sizeof(desc));
         desc[AUXSTORE_DESC_MAGIC] = AUXSTORE_MAGIC;
         desc[AUXSTORE_DESC_VERSION] = AUXSTORE_VERSION;
-        desc[AUXSTORE_DESC_BACK] = pair(back_start, back_blocks);
-        desc[AUXSTORE_DESC_LOG] = pair(log_start, log_blocks);
-        desc[AUXSTORE_DESC_CACHE] = pair(cache_start, cache_blocks);
+        /* Canonicalize absent partitions for new descriptors while KINIT
+         * continues to accept the older v1 encoding with a vestigial start.
+         * The length always controls whether a region exists. */
+        desc[AUXSTORE_DESC_BACK] = pair(back_blocks ? back_start : 0U,
+            back_blocks);
+        desc[AUXSTORE_DESC_LOG] = pair(log_blocks ? log_start : 0U,
+            log_blocks);
+        desc[AUXSTORE_DESC_CACHE] = pair(cache_blocks ? cache_start : 0U,
+            cache_blocks);
         desc[AUXSTORE_DESC_D6FS] = pair(d6fs_base, d6fs_blocks);
         desc[AUXSTORE_DESC_D6SUPER] = pair(d6fs_super_a, d6fs_super_b);
         write_block(fp, 0U, desc);

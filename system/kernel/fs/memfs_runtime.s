@@ -549,6 +549,19 @@ memfs_chmod:
         jumpl   1,kret_neg1
         trnn    6,4
         jrst    kret_neg1
+        ; A pinned raw XIP extent has stable code bytes but must also have
+        ; stable executable metadata.  CHMOD, CHOWN and UTIME share this
+        ; entry: changing any of them would invalidate the provenance that
+        ; was certified when the XIP pin was acquired. Preserve both the
+        ; validated slot (AC1, needed by CHOWN/UTIME) and command (AC3)
+        ; across the existing four-entry pin probe. No new state is needed.
+        push    17,1
+        push    17,3
+        pushj   17,memfs_xip_is_pinned
+        move    4,1                     ; probe result, AC4 no longer needed
+        pop     17,3
+        pop     17,1
+        jumpn   4,kret_neg1
         caile   3,07777
         jrst    memfs_setattr
         dpb     3,[POINT 12,5(5),32]

@@ -1,3 +1,22 @@
+## 2026-11-10 v1396/v1397: XIP provider +7, no fixed-core growth
+
+The movable MEMFS provider now freezes mode, owner and timestamp metadata
+for pinned raw-XIP nodes (CHMOD/CHOWN/UTIME through one dispatch function).
+Exact source-linked MEMFS native and SIMH/AAP user lifecycle tests PASS.
+The MEMFS MRES resident package grows **1712 -> 1719 words** (+7 TEXT),
+no new DATA/BSS; fixed KCORE remains **9870** GCC lowmem words. This does
+not imply that the restricted v1394 policy is wired into RUN/EXEC.
+
+The AUXSTORE v1 on-disk reader keeps legacy zero-length pool compatibility.
+New `mkauxstore` outputs zero,zero for absent partitions. Formatter and
+discovery/region tests PASS; no permanent KCORE growth.
+
+The still-unlinked PURE DROP transaction now refuses failed rebase cleanup
+unpins and keeps TRANSITION held (MM_ERR_BUSY). Native failure-injection
+tests PASS; the KCC standalone body grows **518 -> 521 TEXT** (+3), zero
+DATA/BSS. Actual production PURE scheduler activation and net 32K/48K RAM
+measurement remain open. D6 codec discussion remains deferred.
+
 ## 2026-11-10 v1393-v1395: prioritized feature work, D6 codec deferred
 
 The current implementation order is AUXSTORE/BACKSTORE, restricted raw
