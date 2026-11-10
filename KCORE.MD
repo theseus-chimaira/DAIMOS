@@ -1,3 +1,20 @@
+## 2026-11-10 v1405: SWAP MRES release safety, +5 movable words
+
+The production SWAP-MRES `proc_swap_in` path now checks the real BACKSTORE
+free **before** publishing the restored RAM image or changing the process
+swap accounting. An incomplete bitmap forces the existing MM allocation
+rollback, retaining the original DISK record for retry. Exchange/prepare/
+cancel/swap-out/PURE scratch cleanup routes unexpected release refusals to
+the existing fatal storage invariant. New 36-bit PDP-6 v1405 red/green
+and mutation tests PASS; selected existing exchange and PURE tests PASS.
+
+The 32K GCC lowmem disk-root build reports fixed KCORE unchanged at
+**9687 words**; SWAP MRES increases **1757 -> 1762** (+5 code words),
+KCORE+MRES inventory **16362 -> 16367**, permanent last address
+**16409 -> 16414**. The strict single-root placement still FAILS by
+**31 words**, versus 26 at v1404. No new static RAM words are allocated.
+The full physical 256K F07 postflight is separate from these native checks.
+
 ## 2026-11-10 v1401-v1404: MEMFS provider safety +19 resident words
 
 MEMFS's private sector allocator now refuses an already-freed sector and

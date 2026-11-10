@@ -1,3 +1,30 @@
+## 2026-11-10 v1405: verified checked SWAP-MRES release paths
+
+- [x] Move `backstore_free` before disk->resident publication/accounting
+  in production `proc_swap_in`. A release refusal rolls back its new MM
+  owner without changing disk record, backing identity, bitmap or counters.
+- [x] Fail closed on refused BACKSTORE cleanup after exchange account
+  commit, extension prepare/cancel, failed swap-out, and optional PURE
+  verifier scratch release. Never return as if an unpublished run was freed.
+- [x] Source-linked native PDP-6 v1405 refusal/retry with actual allocator
+  and a successful retry, plus executable ignored-result mutation negative.
+  v787/v781/v782 success and refusal branches, native swap-PURE/verifier,
+  v958/v803/v1241/v666/v667/v1393 all PASS.
+- [x] Measured exact 32K GCC lowmem footprint: fixed KCORE still 9687;
+  movable SWAP MRES 1757 -> 1762 (+5), KCORE+MRES 16362 -> 16367,
+  strict single-root placement overage 26 -> 31 words.
+- [ ] v812 historical integrated fixture still fails on committed v1404
+  as well as v1405 (not a new regression); independently diagnose the
+  fixture and establish a passing integrated exchange acceptance.
+- [ ] Historical v1316 user-modified fixture does not link the real v795
+  verifier. Leave existing uncommitted user edits untouched. Add an exact
+  source-linked verifier to that runner only with explicit ownership of it.
+- [ ] Run strict v1349/v1351-equivalent 256K guest postflight on the new
+  source, verify physical no-partner and owner lifetime after HALT; do not
+  equate native PASS or guest preflight with full 256K acceptance.
+- [ ] Continue trusted raw-XIP RUN/EXEC and swapless PURE scheduler work.
+  Grouped D6 codec remains deferred until those tracks are accepted.
+
 ## 2026-11-10 v1401-v1404: MEMFS owner and build regressions closed
 
 - [x] Fix the internal final-chunk MM free: do not delete the only chunk

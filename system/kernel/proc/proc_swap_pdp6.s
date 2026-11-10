@@ -996,6 +996,10 @@ proc_swap_exchange_account_v787:
         movn    2,3
         push    17,3
         pushj   17,backstore_free
+        ; The pair's process and MM records have already changed owners.
+        ; A refused tail release cannot be rolled back into B's old run;
+        ; never publish an apparently completed exchange with leaked disk.
+        jumpn   1,proc_swap_storage_invariant_v30
         pop     17,3
 proc_swap_account_add_v787:
         addm    3,proc_swap_blocks_used
@@ -1447,6 +1451,9 @@ proc_swap_prepare_ram_v781:
         move    2,012
         sub     2,011
         pushj   17,backstore_free
+        ; Newly extended blocks are not part of B's original saved run.
+        ; Failed rollback would orphan the extension if we returned.
+        jumpn   1,proc_swap_storage_invariant_v30
         setzm   010(010)
 proc_swap_prepare_fail_v781:
         seto    1,
@@ -1484,6 +1491,7 @@ proc_swap_cancel_disk_v782:
         move    2,7(010)
         sub     2,6(010)
         pushj   17,backstore_free
+        jumpn   1,proc_swap_storage_invariant_v30
         setzm   010(010)
 proc_swap_cancel_ok_v782:
         setz    1,
@@ -1595,6 +1603,7 @@ proc_swap_verify_restore:
         move    1,(17)
         move    2,14
         pushj   17,backstore_free
+        jumpn   1,proc_swap_storage_invariant_v30
         skipn   -1(17)
         jrst    proc_swap_verify_ok
 proc_swap_pure_contract_violation:
@@ -1611,6 +1620,7 @@ proc_swap_verify_free_fail:
         jrst    proc_swap_verify_fail
         move    2,14
         pushj   17,backstore_free
+        jumpn   1,proc_swap_storage_invariant_v30
 proc_swap_verify_fail:
         seto    1,
         jrst    proc_swap_verify_return
@@ -1763,6 +1773,9 @@ proc_swap_out_record_fail:
         jrst    proc_swap_out_no_free
         move    2,15
         pushj   17,backstore_free
+        ; This run was allocated for the failed swap-out and has never
+        ; been published. A refused rollback must not discard its owner.
+        jumpn   1,proc_swap_storage_invariant_v30
 proc_swap_out_no_free:
         hlrz    1,(11)
         setzm   PROC_SWAP_BACKING_OFFSET(1)
@@ -1887,13 +1900,18 @@ proc_swap_in_read_offset:
         pushj   17,mm_unpin
         jumpn   1,proc_swap_in_free_fail
 
+        ; The disk record and DISK storage mode are still authoritative.
+        ; Free the existing backing run before publishing any RAM owner or
+        ; subtracting from proc_swap_blocks_used. On refusal the ordinary
+        ; post-unpin MM rollback leaves the disk record intact for retry.
+        move    1,15
+        move    2,16
+        pushj   17,backstore_free
+        jumpn   1,proc_swap_in_free_fail
         move    1,(17)
         hrrm    1,1(11)
         movn    1,16
         addm    1,proc_swap_blocks_used
-        move    1,15
-        move    2,16
-        pushj   17,backstore_free
         movem   14,(12)
         hlrz    1,(11)
         setzm   PROC_SWAP_BACKING_OFFSET(1)

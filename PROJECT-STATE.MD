@@ -1,3 +1,50 @@
+## 2026-11-10 v1405: checked SWAP-MRES releases and swap-in rollback
+
+The seven production `backstore_free` call sites in
+`system/kernel/proc/proc_swap_pdp6.s` now honor the v1398 0/-1 release
+contract. In particular, **swap-in releases the disk run before it publishes
+the new VM base, decrements process swap accounting, or changes storage
+mode**. A refused bitmap release after successful disk read and MM unpin
+uses the existing post-unpin `mm_free` rollback and leaves the original
+DISK record, `PROC_SWAP_BACKING_OFFSET`, mode, bitmap and counters intact.
+The same backed process can be retried once its bitmap ownership is valid.
+
+Exchange accounting, failed reservation preparation, reservation cancel,
+swap-out rollback, and both optional PURE verifier cleanup paths treat
+an unexpected refused free as a fatal ownership invariant. Their disk
+allocations have already been transferred or are not represented by a
+published stable owner; returning recoverably would leak/corrupt a run.
+No additional persistent state or new recovery mode was introduced.
+
+The v1405 native PDP-6 test source-links the actual swap-in transaction,
+BACKSTORE bitmap verifier and BACKSTORE free. A deliberately incomplete
+bitmap is rejected after the physical read, the fresh MM allocation is
+freed, and the original disk owner remains intact. The same process then
+restores successfully after repairing the bitmap. A deliberately unchecked
+release mutation is rejected by the native test. Extended native v787,
+v781 and v782 check both successful cleanup and refused-release fatal
+invariants; older test stubs were adjusted to the checked free result.
+Swap-PURE (normal and verifier), v958 MM rollback, v803 metadata integration,
+v1241 backing/data, v666/v667 and v1393 native tests PASS.
+
+The 32K GCC lowmem disk-root size gate reports unchanged fixed KCORE
+**9687 words**, SWAP MRES **1757 -> 1762 words (+5)**, full linked
+KCORE+MRES inventory **16362 -> 16367 words**, and permanent last address
+**16409 -> 16414 decimal**. The single-root strict 16K permanent-placement
+overage increases from 26 to **31 words**. The increase is movable SWAP
+code only, with no new RAM metadata. The v812 integrated historical fixture
+fails its own `__test_exit` assertion against **both** committed v1404 and
+the v1405 candidate after its previously missing constants are supplied;
+this is not evidence of a new runtime regression. Its acceptance remains
+open, as does the unmodified pre-existing v1316 fixture's missing direct
+bitmap-verifier linkage.
+
+The strict v1349 source-linked 256K F07/physical owner full guest was
+re-preflighted against v1405; do not infer final postflight acceptance
+until that independently booted guest has completed. Restricted MEMFS XIP
+RUN/EXEC and swapless PURE RAM remain unlinked. Grouped D6 codec is still
+DEFERRED and the existing D6LZ36 codec is unchanged.
+
 ## 2026-11-10 v1401-v1404: MEMFS MM owners, duplicate releases, build closure
 
 After the checked BACKSTORE/MEMFS release work of v1398-v1400, native PDP-6
