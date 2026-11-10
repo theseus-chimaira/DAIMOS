@@ -1,3 +1,37 @@
+## 2026-11-10 v1461: TSFS host producer/validator compatibility
+
+The TSFS-root INIT RUN failure was traced to stale installed
+host binaries, not to the 53-word fixed PDP-6 block decoder.
+The `mktsfs` and `tsfscheck` executables in `$PDP10_PREFIX/bin`
+were from 2026-10-16, whereas the v1452 block codec sources
+had been updated on 2026-11-10. The old `mktsfs` produced an
+incompatible compressed final restart extent for the actual
+LOGIN DXR. The installed `tsfscheck` incorrectly reported
+the image as valid, because it compared PARENT_FLAGS' entire
+low half (including file mode) to REG and therefore skipped
+ordinary regular-file extents.
+
+v1461 fixes the checker to mask `TSFS_FILE_FLAG_MASK` before
+testing REG. The boot Makefile now builds `mktsfs-v1461` and
+`tsfscheck-v1461` from the checked-out host sources and runs
+strict TSFS set validation on every generated root image.
+The old image fails the corrected checker; the regenerated
+one passes with **53 files and 401 extents**. The real final
+LOGIN compressed restart (149 decoded words, 64 compressed)
+passes the independent host decoder and native PDP-6 v1458
+fixed-core/VFS test. A real 256K TSFS-root cold boot with
+isolated media reaches INIT, ROOT LOGIN and DSH V1. The
+guest ECHO completion is still under independent acceptance.
+An additional independent reconstruction of all TSFS restart
+extents against their source DXRs passes for LOGIN (3221 words,
+13 extents), DSH (15760 words, 62 extents), and ECHO (1035
+words, 5 extents). Thus the ECHO execution delay is not caused
+by a mismatch between the media payload and its linked DXR.
+
+No KCORE words, persistent memory, low-core decoder bytes,
+on-disk format or runtime decoder stack size were changed.
+Tests: daimos-testkit/tests/validation/d6codec-v1461-tsfs-exec/.
+
 ## 2026-11-10 v1460: fix DTC/MTC Stage-1 KINIT handoff, zero growth
 
 The 53-word block decoder in low core at 000060 is correct, but both

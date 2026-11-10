@@ -1,3 +1,25 @@
+## 2026-11-10 v1461 TSFS producer and executable acceptance
+
+- [x] Identify old host `mktsfs` generating an incompatible
+  LOGIN compressed restart extent, despite valid v1458
+  decoder and source-compatible block encoder.
+- [x] Fix `tsfscheck` REG filtering: PARENT_FLAGS low half
+  includes mode; mask file-type bits before verifying extents.
+- [x] Make boot-image generation build versioned host TSFS
+  producer/checker from checked-out sources, then strictly
+  verify generated TSFS media before boot.
+- [x] Reject the old corrupt TSFS image; verify the fresh
+  53-file/401-extent image and native PDP-6 decoding of
+  LOGIN's actual 149-word final compressed restart.
+- [x] Cold boot 256K TSFS-root to ROOT LOGIN and DSH V1.
+- [x] Reconstruct complete LOGIN, DSH and ECHO executables
+  directly from the real TSFS restart extents; compare every
+  decoded/stored word against the linked source DXRs.
+- [ ] Complete guest ECHO execution and full compressed
+  restart-file regression; distinguish long DECtape seeks
+  from EXEC/TSFS failures with bounded simulator traces.
+- [ ] Retain strict 32K/48K memory gates as open.
+
 ## 2026-11-10 v1460 five-device Stage-1 completion
 
 - [x] Identify DTC/MTC boot failure after data loading: KINIT
