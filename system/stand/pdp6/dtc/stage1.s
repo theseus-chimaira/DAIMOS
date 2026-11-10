@@ -19,7 +19,7 @@
 ;       word 0      SIXBIT DAIMON
 ;       word 1      uncompressed_words,,entry_offset
 ;       word 2      compressed_words,,mode
-;       remainder   D6LZ36 payload or raw image words
+;       remainder   block LZ/RLE payload or raw image words
 ;
 ; Mode 0 is the original contiguous stream. Mode 1 (compressed_words=0)
 ; embeds the stream within an ordinary TSFS V1.1 member: word 3 gives the
@@ -145,23 +145,23 @@ read_wait:
         jrst read_word
 
 daimon_magic: .word 0444151555756
-        .include "../common/decompressor.inc"
+        .include "../common/block_decompressor_v1452.inc"
 
 ; Keep the handoff above the installed decoder destination (000060..000127).
 ; Production Stage0 loads this Stage1 at 000060, so executing the handoff from
 ; the early part of the loader would be overwritten by the BLT itself.
 stage1_handoff:
-        movei 01,d6lz_image_start
+        movei 01,d6b_image_start_v1452
         hrl 01,01
-        hrri 01,d6lz_fixed_base
-        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
+        hrri 01,d6b_low_base_v1452
+        blt 01,d6b_low_base_v1452+(d6b_image_end_v1452-d6b_image_start_v1452)-1
 
         movei 012,030000
         move 03,012
         add 03,013
         move 014,012
         setz 011,
-        pushj 017,d6lz_fixed_base
+        pushj 017,d6b_low_base_v1452
         jumpn 00,bad_tape
         jumpn 04,bad_tape
         ; Match DSK/DRM handoff semantics: KINIT's bootstrap pushdown list

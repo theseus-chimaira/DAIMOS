@@ -19,7 +19,7 @@
 ;       word 0      SIXBIT DAIMON
 ;       word 1      uncompressed_words,,entry_offset
 ;       word 2      compressed_words,,0
-;       remainder   D6LZ36 payload
+;       remainder   block LZ/RLE payload
 ;
 ; Compressed input is staged immediately after the final image range, expanded
 ; at 030000 by the shared fixed low-core decoder, and entered at the relative
@@ -96,21 +96,21 @@ read_wait:
 read_error:
         jrst bad_tape
 daimon_magic: .word 0444151555756
-        .include "../common/decompressor.inc"
+        .include "../common/block_decompressor_v1452.inc"
 
 ; Execute the decoder installation from above its low-core destination.
 stage1_handoff:
-        movei 01,d6lz_image_start
+        movei 01,d6b_image_start_v1452
         hrl 01,01
-        hrri 01,d6lz_fixed_base
-        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
+        hrri 01,d6b_low_base_v1452
+        blt 01,d6b_low_base_v1452+(d6b_image_end_v1452-d6b_image_start_v1452)-1
 
         movei 012,030000
         move 03,012
         add 03,013
         move 014,012
         setz 011,
-        pushj 017,d6lz_fixed_base
+        pushj 017,d6b_low_base_v1452
         jumpn 00,bad_tape
         jumpn 04,bad_tape
         move 017,012                  ; KINIT stack starts at image end

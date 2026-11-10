@@ -1,8 +1,8 @@
 /**
- * @file d6lz.h
- * @brief PDP-6 kernel interface to the resident D6LZ36 stream decoder.
+ * @file d6block_v1452.h
+ * @brief PDP-6 kernel interface to the resident block LZ/RLE stream decoder.
  *
- * D6LZ36 is the compact 36-bit word-stream format shared by compressed boot
+ * block LZ/RLE is the compact 36-bit word-stream format shared by compressed boot
  * images, compressed executable images, and TSFS data extents.  The PDP-6
  * kernel exposes only the VFS streaming frontend here; token decoding itself
  * is implemented by the fixed low-core decoder shared with Stage1.
@@ -13,17 +13,17 @@
  * while the already-produced destination words form the LZ history.
  *
  * Format details belong to the decoder implementation; kernel C callers need
- * only the packed destination ABI documented on d6lz36_decode_vfs().
+ * only the packed destination ABI documented on d6codec_decode_vfs_v1452().
  */
-#ifndef DAIMON_D6LZ_H
-#define DAIMON_D6LZ_H
+#ifndef DAIMON_D6BLOCK_H
+#define DAIMON_D6BLOCK_H
 
 #include "kcore.h"
 
 /**
- * @brief Stream a D6LZ36 payload from VFS directly into PDP-6 memory.
+ * @brief Stream a block LZ/RLE payload from VFS directly into PDP-6 memory.
  * @param node VFS vnode containing the compressed payload.
- * @param file_offset Word offset of the first compressed D6LZ36 word.
+ * @param file_offset Word offset of the first compressed block LZ/RLE word.
  * @param src_words Exact compressed payload length in 36-bit words, or zero
  *        only for already-validated immutable backing where decode may stop
  *        as soon as the requested output image is complete.
@@ -40,7 +40,7 @@
  * valid for the entire call because previously produced words are also the
  * match history.
  */
-int d6lz36_decode_vfs(kword_t node, kword_t file_offset,
+int d6codec_decode_vfs_v1452(kword_t node, kword_t file_offset,
     unsigned int src_words, kword_t dst_words_addr);
 
 #endif
