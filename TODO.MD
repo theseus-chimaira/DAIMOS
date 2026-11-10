@@ -6136,3 +6136,27 @@ successful compiler exit status; they are diagnostic, not acceptance.
 - [x] v618 native exclusive-provider gate: testkit
   `daimos-clock-mres-v618` PASS at 50 and 60 Hz, with PCLK enabled
   and disabled in separate clean boots. Lowmem GCC links PASS at both rates.
+
+## 2026-11-09 v1405: native DAS relocatable DOBJ1 staged
+
+- [x] Implement native DAS1/DAS2 `-A -C` DOBJ1 output using
+  scratch-backed globals and relocation records with object-only
+  DASIR2 transport; preserve the default S6REC/DXR format.
+- [x] Native KCC -> DAS `-A -C` -> DLINK -> RUN passed 29/29
+  strict PDP-6 tests for external function, data and local-data
+  C89 fixtures.  Each native DOBJ/DXR matched its host golden.
+- [x] Pass full v1402 compatibility suite (17/17) with final
+  native DAS source, including literal equality and malformed input.
+- [ ] P0: Investigate intermittent native KCC stall under sustained
+  sequential compile stress: final-source full-run retry passed
+  16 probes then hung at local-data compile; the isolated identical
+  fixture passed 7/7.  Test guest swap/proc/FS resource lifetimes;
+  diagnose root cause, do not mask by splitting/rebooting tests.
+- [ ] Verify relocatable `.set` alias semantics and uncommon LH/RH
+  relocation expressions; correct any metadata-lifetime defect.
+- [ ] Complete 96K peak RAM/stack and broader self-hosting, media
+  fault-recovery and negative-object input regressions before
+  replacing production compiler/assembler binaries.
+
+All size-only KCORE optimization is deferred until the final KCORE
+development stage, after functional and integration acceptance.

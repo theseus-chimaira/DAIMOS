@@ -16391,3 +16391,36 @@ it does not implicate the inactive grouped codec. No production format,
 boot image, decoder, KCORE linkage or permanent RAM was altered.
 Atomic producer/boot/EXEC/VFS/TSFS migration and full acceptance remain
 OPEN.
+
+## 2026-11-09 v1405: native DAS DOBJ1 production path staged
+
+The DAIMOS-resident DAS1/DAS2 now supports `-A -C` relocatable
+DOBJ1 output, using an object-only DASIR2 globals record and
+scratch-backed global-symbol and relocation streams.  The normal
+DXR DASIR2 format and bounded native output queue are unchanged.
+This eliminates the earlier host-produced C object from the native
+KCC -> DAS -> DLINK -> RUN test path.
+
+In a full CLEAN 237-file grouped D6FS guest, daimos-testkit v1405
+passed **29/29 strict native PDP-6 probes**: five C89 modules
+compiled by native KCC, five native DOBJ1 objects byte-identical
+to host goldens, native linking of external function calls,
+external data and local data, and three DXRs byte-identical to
+host goldens that each returned 7 on execution.  A separate 6/6
+single-module native end-to-end run also passed; the local-data
+case passed 7/7 in an isolated clean-boot rerun.  A rebuild from
+the final source passed the existing **17/17 v1402** native DAS
+ASCII7/S6REC/DXR regression and both host DAS C89 executables
+compile/link without warnings.
+
+**Open reliability gate:** A repeat of the full 29-probe sequence
+with final-source native phases passed 16 probes, then hung in
+native KCC while compiling the local-data C89 module.  The changed
+native assembler output differs only in generated line-number
+diagnostic constants, but full sustained-compile acceptance is
+NOT established.  Investigate accumulated guest MM/swap, D6FS
+scratch and process cleanup before toolchain installation.
+Unusual relocatable `.set` expressions, 96K peak-memory and broad
+self-hosting/invalid-media coverage also remain unaccepted.
+KCORE code-size optimization remains the LAST KCORE development
+stage (v1379); this compiler correctness work is not a size sweep.
