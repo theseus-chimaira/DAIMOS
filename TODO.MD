@@ -1,3 +1,30 @@
+## 2026-11-10 v1427-v1429: balanced native process codec decision
+
+- [x] Decode three real DSH memory snapshots with unmodified
+  D6LZ36 and compare compressed lengths against grouped, block,
+  and RAM RLE. Measure native PDP-6 decoder instruction counts.
+- [x] Replace the common D6LZ36 match-copy loop with forward
+  BLT. 40 -> 39 core words; 9601 -> 9600 linked KCORE words,
+  no BSS change. 23 native tests PASS; independent full image
+  boots to DSH and executes ECHO. No new bitstream format.
+- [x] Prototype three native C89 encoders in daimos-testkit,
+  matching the independent existing host encoders exactly,
+  without static DATA/BSS. Measure code size and three real
+  DSH full encode/decode cycle instruction costs, including
+  real RAM RLE exact-size pass and separate native decode.
+  RAM RLE is fastest complete cycle in all three samples.
+- [ ] Optimize existing RAM RLE decoder with PDP-6 BLT and
+  measure code, stack, CPU and peak buffers before choosing
+  any integrated process-memory compression format.
+- [ ] Measure final native encoding+decoding, exact-size
+  admission, linked/folded KCORE cost and complete restore
+  transaction under memory pressure. Do not compare test-only
+  encoder core sizes with production whole-image costs as
+  though they were directly interchangeable.
+- [ ] Investigate the older DTC Stage-1 106-word regression
+  cap separately; its original unoptimized image is already
+  140 words and the BLT variant is 139.
+
 ## 2026-11-10 v1426: actual DSH RAM snapshot acceptance
 
 - [x] Boot a real PDP-6 DAIMOS DSK-root guest from copied writable

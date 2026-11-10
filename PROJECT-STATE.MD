@@ -1,3 +1,62 @@
+## 2026-11-10 v1427-v1429: D6LZ36 BLT and complete RAM codec cycle
+
+The live 36-bit DSH process-memory snapshots from v1426 were
+recompressed with unmodified host D6LZ36. Physical retained
+suffixes, raw -> D6LZ36 payload: idle 3200 -> 277 words,
+six-variable prompt 3200 -> 508, defined function 5248 -> 614.
+All three native PDP-6 baseline decodes and six host roundtrips
+passed. The original native decoder ran in 17928/19377/30637
+SIMH instructions on these snapshots.
+
+The fixed low-core D6LZ36 decoder match-copy loop was replaced
+with forward BLT in the existing common source (no second
+decoder). The bitstream and resumable ABI are unchanged. The
+native core shrinks 40 -> 39 words; combined with the unchanged
+57-word runtime adapter it is 97 -> 96. An independent full KCC
+build linked KCORE at 9600 initialized words instead of the
+unchanged 9601 baseline, identical BSS and relocation map.
+All 5 PDP-6 Stage-1 images assemble one word smaller. On the
+three real DSH suffixes, BLT decoder instruction counts were
+3238/5791/7291, reductions of 81.9/70.1/76.2 percent.
+23 native acceptance cases pass, including overlap, refills,
+invalid streams and all three live snapshots. Real DSK Stage-1
+and freshly built KCORE boot to ROOT DSH with successful ECHO.
+The historical DTC stage1 size test cap was already violated
+before optimization (140 words vs 106 cap; now 139); investigate
+separately, do not conflate this with the decoder.
+
+Native C89 bounded in-memory encoder prototypes were then built
+only in daimos-testkit for existing D6LZ36, grouped v1420 and
+block v1424 formats. Their exact outputs match the independent
+reference host compressors on three live DSH snapshots and four
+controls, including native PDP-6 stream-by-stream verification.
+KCC encoder-only TEXT: D6LZ36 174, block 227, grouped 264;
+all zero static DATA/BSS. Actual existing RAM RLE v1376
+measure+encode+decode has 448 TEXT words in this build.
+Native PDP-6 encoder instruction counts (idle/variables/function):
+RAM RLE 116k/129k/202k; grouped 611k/1301k/1586k;
+block 686k/1480k/1836k; D6LZ36 1961k/2930k/3641k.
+The extra exact-size RLE measurement pass costs
+112k/122k/192k instructions. Native RLE decode alone costs
+38.7k/42.7k/67.5k instructions. Full approximate cycles
+including encoding, decoding and RLE measurement are therefore:
+RLE 265k/293k/460k; grouped 620k/1319k/1609k;
+block 687k/1484k/1841k; D6LZ36+BLT 1964k/2936k/3648k.
+Other encoder pairs are NOT charged for a future exact-size pass.
+
+**Decision gate:** RAM RLE is the leading baseline when both
+packing and restoration speed matter. It is not yet selected
+for production KCORE: optimize its decoder with PDP-6 BLT
+and reduce its combined 448-word native code before measuring
+total linked RAM, scratch, allocator admission and fault-safe
+restore. Grouped compressed payload is 17/98/153 words smaller
+than RLE in the three states, but current grouped encoder
+is significantly slower and its code larger. Consider only
+measured tiny fixed-cost match caches as optional future
+experiments; no format compatibility requirement constrains
+future changes. Documentation:
+../pdp10-doc/KERNEL/D6CODEC-END-TO-END-ENCODER-DECODER-V1429.MD.
+
 ## 2026-11-10 v1426: real PDP-6 DSH RAM capture and three-codec validation
 
 The v1425 synthetic shell benchmark has now been followed by

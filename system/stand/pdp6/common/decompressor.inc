@@ -11,6 +11,12 @@
  * source cursor, AC4 input words remaining, AC14 output base, AC10 control
  * word, AC11 control tokens remaining. AC6/AC7 are scratch. AC0 returns 0 on
  * completion, +1 for another source window, or -1 for malformed input.
+ *
+ * v1428: matched words are propagated by an overlapping PDP-6 BLT instead
+ * of a five-instruction-per-word copy loop. The four-instruction BLT setup
+ * and transfer reduces the shared fixed decoder from 40 to 39 words.
+ * Match source, available output and reserved descriptor bits are validated
+ * exactly as before; the D6LZ36 bitstream and resumable ABI are unchanged.
  */
 ; Compact D6LZ36 resumable token core at fixed low core 000060.
 ;
@@ -81,11 +87,13 @@ d6lz_match:
         jumpl   13,d6lz_fixed_base+(d6lz_core_error-d6lz_image_start)
 
 d6lz_match_loop:
-        move    7,0(6)
-        movem   7,0(12)
-        aoj     6,
-        aoj     12,
-        sojg    0,d6lz_fixed_base+(d6lz_match_loop-d6lz_image_start)
+        ; Both source and destination move forward with BLT.  For a
+        ; backward reference, including distance 1, the overlapping
+        ; source reads the already-copied earlier destination words.
+        hrl     6,6                     ; AC6 LH = validated source
+        hrr     6,12                    ; AC6 RH = destination cursor
+        add     12,0                    ; advance cursor by match length
+        blt     6,-1(12)                ; copy through final destination
 
 d6lz_token_done:
         lsh     10,1
