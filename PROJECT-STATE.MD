@@ -1,3 +1,33 @@
+## 2026-11-10 v1458: tested 53-word fixed-low-core block decoder
+
+The v1452 D6LZ36-free block-only cutover branch now has a validated,
+independently staged **v1458 fixed-low-core block decoder** at address
+000060. The installed image is **53 physical 36-bit words** (52
+instructions plus one relocated inline LDB byte-pointer word), with
+zero DATA/BSS and zero DOBJ relocations, compared with 61 words in
+the v1452 fixed core. The v1458 experimental VFS/direct-buffer
+adapter uses **58 TEXT words**, a 39-word temporary VFS frame and
+one shared decoder at 000060; no second decoder copy is used.
+
+Native PDP-6 component acceptance: six successful low-core BLT-copy
+tests and five malformed/need-input controls, plus eight direct/VFS
+streaming and refill tests, nine malformed-input VFS tests, five
+complete real DXR reconstructions (KCORE, D6FS, MonitorFS, SWAP,
+Tape MRES) and one stack-canary test: **34 PASS**. All five Stage-1
+source files assemble for v1458, producing read-in sizes of 376
+(DSK), 367 (DRM), 160 (DTC), 125 (MTC), and 159 (PTR) words;
+each is 8 words smaller than v1452 except DRM (9 words smaller).
+
+These are **component/unit and Stage-1 assembly tests only**. The
+v1458 source and adapter are committed as versioned, test-only
+cutover candidates, NOT selected by the existing kernel/boot build
+rules. Full block-only Stage-1 cold boot, boot media reading, KINIT,
+EXEC/PURE restore and 32K/48K acceptance remain open. The current
+selected v1452 code path is unchanged by this isolated result.
+The v1458 unit test suite is in daimos-testkit
+tests/validation/d6codec-fixed-v1458/ and finished documentation
+in pdp10-doc KERNEL/D6CODEC-FIXED-LOW-CORE-V1458.MD.
+
 ## 2026-11-10 v1451: final 30-word trusted-RAM bitmap pair
 
 Test-only swapless TSFS process-memory codec now optimized through

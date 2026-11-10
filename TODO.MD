@@ -1,3 +1,23 @@
+## 2026-11-10 v1458 fixed-low-core block decoder acceptance
+
+- [x] Assemble the v1458 block decoder at 000060: 53 words including
+  one in-image byte pointer; zero static DATA/BSS/relocations.
+- [x] Native test the single copied low-core decoder with six valid
+  and five malformed/streaming controls; verify eight VFS refill/direct
+  tests, nine malformed input tests, five complete real DXRs, and one
+  stack-canary; all 34 tests pass.
+- [x] Assemble all five Stage-1 device sources against the v1458
+  decoder; measure exact read-in sizes versus v1452 (8/9 words less).
+- [ ] Select the v1458 code and 58-word VFS adapter in the actual
+  Stage-1/KCORE build, preserving ONE shared fixed decoder; verify
+  full link and ABI, then perform real cold boot on all supported
+  devices, bounded TSFS image and EXEC/PURE restores, and 32K/48K
+  low-memory regression acceptance. This is a separate integration
+  phase, not completed by native unit tests.
+- [ ] Continue the existing D6LZ36-free replacement validation;
+  never reintroduce the old format or ship two permanent file
+  decoders for compatibility.
+
 ## 2026-11-10 v1451: swapless TSFS bitmap MRES
 
 - [x] Reduce the native RAM-only bitmap encoder+decoder from
