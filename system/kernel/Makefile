@@ -207,9 +207,9 @@ KCORE_FIXED_SRCS = core/ret.s \
 	storage/storage_router.s \
 	core/kcore_end.s
 
-KCORE_FIXED_ASM = $(BUILD)/d6block_fixed_v1452.s \
+KCORE_FIXED_ASM = $(BUILD)/d6block_fixed_v1458.s \
 	$(BUILD)/exec.s \
-	$(BUILD)/d6block_v1452.s \
+	$(BUILD)/d6block_v1458.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/proc.s \
 	$(BUILD)/backstore.s \
@@ -345,7 +345,7 @@ ${BUILD}/mm.s: mm/mm_pdp6.s ${KERNEL_HEADERS}
 	cp mm/mm_pdp6.s $@
 
 
-${BUILD}/d6block_fixed_v1452.s: ../stand/pdp6/common/block_decompressor_v1452.inc
+${BUILD}/d6block_fixed_v1458.s: ../stand/pdp6/common/block_decompressor_v1458.inc
 	@mkdir -p ${BUILD}
 	cp $< $@
 
@@ -353,9 +353,9 @@ ${BUILD}/exec.s: proc/exec_lowmem_pdp6.s proc/exec_load.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	cat proc/exec_lowmem_pdp6.s proc/exec_load.s > $@
 
-${BUILD}/d6block_v1452.s: core/d6block_pdp6_v1452.s
+${BUILD}/d6block_v1458.s: core/d6block_vfs_fixed_v1458.s
 	@mkdir -p ${BUILD}
-	cp core/d6block_pdp6_v1452.s $@
+	cp core/d6block_vfs_fixed_v1458.s $@
 
 ${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

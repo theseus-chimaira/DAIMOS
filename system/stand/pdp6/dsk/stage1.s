@@ -409,10 +409,10 @@ fail_decompress:
         jrst stage1_fail_b1
 
 stage1_handoff:
-        movei 01,d6b_image_start_v1452
+        movei 01,d6b_image_start_v1458
         hrl 01,01
-        hrri 01,d6b_low_base_v1452
-        blt 01,d6b_low_base_v1452+(d6b_image_end_v1452-d6b_image_start_v1452)-1
+        hrri 01,d6b_low_base_v1458
+        blt 01,d6b_low_base_v1458+(d6b_image_end_v1458-d6b_image_start_v1458)-1
 
         ; Expand the opaque boot image into its normal KINIT load address.
         movei 012,030000
@@ -422,7 +422,7 @@ stage1_handoff:
         move 04,compressed_words
         move 014,012                  ; output base for match validation
         setz 011,                      ; force first control-word load
-        pushj 017,d6b_low_base_v1452      ; execute installed low-core core
+        pushj 017,d6b_low_base_v1458      ; execute installed low-core core
         jumpn 00,fail_decompress
         jumpn 04,fail_decompress        ; exact compressed payload required
 
@@ -435,7 +435,7 @@ stage1_enter_kinit:
 
 daimon_magic: .word 0444151555756
         .include "../common/stage1-error.inc"
-        .include "../common/block_decompressor_v1452.inc"
+        .include "../common/block_decompressor_v1458.inc"
         .bss
 any_read_ok: .block 01
 current_unit: .block 01

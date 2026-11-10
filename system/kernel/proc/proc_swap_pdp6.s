@@ -79,7 +79,7 @@
         .globl  backstore_blocks
         .globl  proc_swap_blocks_used
         .globl  vfs_read_words
-        .globl  d6codec_decode_vfs_v1452
+        .globl  d6codec_decode_vfs_v1458
         .globl  fs_zero_words
         .globl  proc_storage_expect_v30
         .globl  proc_storage_publish_v30

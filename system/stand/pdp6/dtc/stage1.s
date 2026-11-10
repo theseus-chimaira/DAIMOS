@@ -145,23 +145,23 @@ read_wait:
         jrst read_word
 
 daimon_magic: .word 0444151555756
-        .include "../common/block_decompressor_v1452.inc"
+        .include "../common/block_decompressor_v1458.inc"
 
 ; Keep the handoff above the installed decoder destination (000060..000127).
 ; Production Stage0 loads this Stage1 at 000060, so executing the handoff from
 ; the early part of the loader would be overwritten by the BLT itself.
 stage1_handoff:
-        movei 01,d6b_image_start_v1452
+        movei 01,d6b_image_start_v1458
         hrl 01,01
-        hrri 01,d6b_low_base_v1452
-        blt 01,d6b_low_base_v1452+(d6b_image_end_v1452-d6b_image_start_v1452)-1
+        hrri 01,d6b_low_base_v1458
+        blt 01,d6b_low_base_v1458+(d6b_image_end_v1458-d6b_image_start_v1458)-1
 
         movei 012,030000
         move 03,012
         add 03,013
         move 014,012
         setz 011,
-        pushj 017,d6b_low_base_v1452
+        pushj 017,d6b_low_base_v1458
         jumpn 00,bad_tape
         jumpn 04,bad_tape
         ; Match DSK/DRM handoff semantics: KINIT's bootstrap pushdown list

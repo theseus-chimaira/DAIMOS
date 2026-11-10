@@ -38,7 +38,7 @@
         .globl  vm_space_load_file
         .globl  vm_space_destroy
         .globl  proc_swap_attach
-        .globl  d6codec_decode_vfs_v1452
+        .globl  d6codec_decode_vfs_v1458
         .globl  proc_rt_owner
 
         .equ    EXEC_DXR_MAGIC,0447062      ; SIXBIT /DXR/
@@ -227,7 +227,7 @@ exec_load_create_vm:
         move    1,12
         move    2,-007(17)
         move    3,-004(17)
-        pushj   17,d6codec_decode_vfs_v1452
+        pushj   17,d6codec_decode_vfs_v1458
         jumpn   1,exec_load_vm_fail
         jrst    exec_load_image_ok
 
