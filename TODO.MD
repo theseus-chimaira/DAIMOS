@@ -6160,3 +6160,17 @@ successful compiler exit status; they are diagnostic, not acceptance.
 
 All size-only KCORE optimization is deferred until the final KCORE
 development stage, after functional and integration acceptance.
+
+## 2026-11-09 v1403: native DOBJ1 link acceptance
+
+- [x] Independently verify native KCC C89 compiler output against
+  host KCC and native DLINK of known-good DOBJ1 CRT0/MAIN/SYSCALL.
+  Native DLINK produces an exact host DXR and executed C89 returns 7;
+  5/5 strict testkit probes pass on the grouped 237-file PDP-6 root.
+- [ ] Implement native DAS `-A -C` with complete relocatable DOBJ1
+  symbol and relocation semantics through its split phases, using
+  file-backed metadata instead of large resident relocation arrays.
+- [ ] Pass full native C89 -> DAS `-A -C` -> native DLINK -> RUN,
+  followed by exact 96K stack/heap and self-hosting qualification.
+
+The KCORE size sweep remains LAST, after functional acceptance.

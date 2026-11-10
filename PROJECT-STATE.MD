@@ -16424,3 +16424,23 @@ Unusual relocatable `.set` expressions, 96K peak-memory and broad
 self-hosting/invalid-media coverage also remain unaccepted.
 KCORE code-size optimization remains the LAST KCORE development
 stage (v1379); this compiler correctness work is not a size sweep.
+
+## 2026-11-09 v1403: native DLINK accepts real C89 DOBJ1 inputs
+
+The versioned `daimos-testkit/tests/validation/native-dlink-c-v1403`
+suite isolated the still-open native DAS `-C` problem from resident
+DLINK correctness.  A real C89 `main()` was independently compiled
+on host and PDP-6 native KCC, producing byte-identical assembly.
+Host DAS generated a reference DOBJ1.  Native DLINK linked that DOBJ
+with standard CRT0 and syscall DOBJ files on the complete grouped
+237-file DAIMOS test root, produced a DXR identical to host DLINK,
+and executed the program with the expected exit status 7.  **All
+five strict native probes pass.**  This proves the native linker
+with known-good DOBJ input, *not* native DAS `-C` support.  No
+production executable, kernel or media was modified or installed.
+
+The remaining full native C89 acceptance boundary is DAS `-A -C`
+relocatable DOBJ1 emission, preserving symbols and relocations in
+bounded file-backed state through the native DAS1/DAS2 phase split.
+Exact 96K memory qualification and self-hosting remain open.  KCORE
+size optimization stays LAST per v1379.
