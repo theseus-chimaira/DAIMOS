@@ -1,3 +1,109 @@
+## 2026-11-10 v1451: final 30-word trusted-RAM bitmap pair
+
+Test-only swapless TSFS process-memory codec now optimized through
+v1451: **30 PDP-6 TEXT words total, zero DATA/BSS**, down from
+55 words in v1432 (45.5% reduction). Its encoder/decoder preserve
+AC10..AC15 without any saved-register frame by using only caller-
+volatile ACs. It accepts positive decoded word counts and exclusively
+MM-owned, disjoint buffers; validation of compressed input and
+caller-owned physical bounds is deliberately omitted. The MM caller
+must preflight the precise packed word count, allocate both extents,
+preserve ownership and provide unfragmented restore headroom. This is
+NOT a userland, filesystem or TSFS file format.
+
+All eight native PDP-6 encode/decode exact-word fixtures pass,
+including three original live DSH RAM captures, plus the native
+callee-saved-register ABI fixture. Actual source sizes remain
+3200 -> 314 (idle), 3200 -> 524 (variables), 5248 -> 677
+(function). Native v1451 instruction counts for encode/decode:
+20335/23219 idle, 20965/23639 variables, 33826/38395 function.
+At a nominal 250k instructions/s the combined codec-only time
+is approximately 0.174/0.178/0.289 s (not actual PDP-6 cycles
+or measured elapsed time; MM/TSFS costs excluded).
+
+DLINK produces a normal **36-word transient MRES package**
+containing a **30-word resident image** with two exports; no
+package has been installed at boot. Cross-domain p10fold analysis
+against the v1441 block decoder and VFS adapter finds **zero
+eligible shared runs >=2 words**, and only a potential
+one-word POPJ fold that is not worth coupling independently
+selectable MRES modules. Combined standalone block decoder
+and optional bitmap image = **118 + 30 = 148 words**, excluding
+MM entrypoints and other integration.
+
+The bitmap MRES must remain absent by default, eligible only
+for an explicitly configured and verified **swapless TSFS root**;
+it must not run on every SLEEP. PURE-only reclaim, cold victim
+selection, process MM ownership, 32K/48K resume, real pressure
+tests and safe MRES runtime activation remain unfinished.
+Historical v1432/v1434 measurements are retained as explicitly
+superseded prototypes. Canonical finished component docs:
+pdp10-doc/KERNEL/D6CODEC-BITMAP-TRUSTED-OPTIMIZATION-V1451.MD.
+Tests and native assembler live only in daimos-testkit.
+
+## 2026-11-10 v1441: block decoder 118-word complete native result
+
+The general-purpose TSFS/executable compressed format will be the
+register-resident block LZ/RLE format (v1421 bitstream). D6LZ36 is
+**scheduled for complete replacement and deletion**, including its
+Stage-1 fixed decoder, KCORE runtime frontend and host producer.
+There will NOT be two permanently resident executable decoders,
+and no further work should be spent hardening D6LZ36. Deletion
+must follow, not precede, an atomic, fully tested block-only boot,
+EXEC, TSFS, DXR and PURE-prefix migration.
+
+The experimental PDP-6 decoder/adapter were optimized from
+v1424 (75 + 89 = 164 TEXT) through v1435..v1440, reaching
+**v1441: 60 core + 58 VFS/direct-buffer adapter = 118 TEXT**
+(46 words, 28.05%, below v1424), with **0 DATA/BSS** and
+an unchanged **39-word VFS stack frame**. The actual block
+bitstream, exact-length/streaming contract and error semantics
+are unchanged. The core saves 15 words by sharing zero and
+match BLT paths, using cursor-derived BLT end points, and
+reusing PDP-6 halfword instructions. The adapter saves 31
+words by simplifying refill/AC saves and dropping redundant
+physical-address, stack-overlap and input-buffer-overlap
+checks that defend *trusted kernel callers*, not malformed
+compressed data. Such geometry and disjointness are now
+explicit KCORE/MM caller invariants, not decoder responsibilities.
+The compressed-data checks for bad opcodes, reserved fields,
+zero/illegal distances, truncated streams, decoded-length
+overflow and trailing words remain in place. Bounded compressed
+input lengths from external file metadata remain checked.
+
+Native PDP-6 acceptance: 8 positive streaming/direct cases,
+9 malformed compressed-stream cases, one stack-canary, and
+five complete real DXRs (KCORE, D6FS, MonitorFS, SWAP and
+Tape MRES): **23/23 PASS**. The direct compressed-source/
+destination alias fixture is explicitly excluded because
+source/destination disjointness is a caller invariant rather
+than a property of the compressed bitstream. On real compiled
+code, v1441 decoder step counts are mixed 29-DXR prefix
+2,003, DSH first 2,048 4,054, KCORE first 2,048 2,382.
+All are 16 instructions fewer than v1440. Compared with the
+earlier unoptimized v1424 native measurements
+(2,490/5,039/2,961), the v1441 decoder is smaller and
+executes fewer simulator instructions. BLT is counted as
+one instruction regardless of transfer length, so these
+numbers are not measured PDP-6 elapsed times.
+
+With v1441 the prospective file decoder costs only **22 more
+standalone code words** than the current 96-word D6LZ36-BLT
+decoder+adapter, while using a 39-word rather than 72-word
+VFS frame. Neither linked/folded KCORE nor all five Stage-1
+loader sizes have yet been accepted with block in place.
+The 60-word block core exceeds the 39-word D6LZ36 boot
+core by 21 words before any Stage-1 adaptation. Work remains
+**unlinked and experimental**, not a production cutover.
+
+The independent bitmap encode/decode pair (now 30 words in v1451) remains a
+possible permanently resident **optional MRES only on verified
+swapless TSFS root**, installed only after its separate MM
+restore and 32K/48K acceptance gates. It is not a file decoder.
+See pdp10-doc KERNEL/D6CODEC-BLOCK-OPTIMIZATION-V1441.MD
+and KERNEL/TSFS-FILE-CODEC-AND-BITMAP-MRES-V1434.MD;
+tests: daimos-testkit/tests/validation/d6codec-block-opt-v1441/.
+
 ## 2026-11-10 v1427-v1429: D6LZ36 BLT and complete RAM codec cycle
 
 The live 36-bit DSH process-memory snapshots from v1426 were

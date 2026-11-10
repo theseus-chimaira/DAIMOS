@@ -1,3 +1,62 @@
+## 2026-11-10 v1451: swapless TSFS bitmap MRES
+
+- [x] Reduce the native RAM-only bitmap encoder+decoder from
+  55 to **30 total PDP-6 TEXT words**, zero DATA/BSS;
+  preserve the 36-bit presence bitmap representation and exact
+  314/524/677-word DSH payloads. Validate eight native
+  roundtrips and register preservation on AC10..AC15.
+- [x] Prove native 30-word image / 36-word transient two-export
+  MRES package, and perform bidirectional p10fold analysis
+  against the block v1441 decoder. No safe >=2-word
+  cross-MRES folds; reject the one-word POPJ dependency.
+  Record native encode+decode instruction counts.
+- [ ] Integrate optional bitmap MRES into the MINIT table
+  **only** when a swapless TSFS-root boot profile is selected
+  and independently verified at activation. Keep it permanently
+  resident while packed processes can exist; never read
+  the decoder from tape during OOM.
+- [ ] Finish the PURE-only reclaim/restore path, then implement
+  exact bitmap preflight and allocation, stable process
+  ownership, atomic pack/restore, APR/fragmentation headroom,
+  cold-inactive-victim admission, and full 32K/48K pressure
+  acceptance. Do not pack on every SLEEP.
+- [ ] File/executable compression remains the distinct
+  block-v1441 format; replace and delete D6LZ36 after a
+  complete Stage-1/TSFS/EXEC/PURE boot migration. Never
+  use bitmap to decode TSFS files.
+
+## 2026-11-10 v1441: complete single-file-decoder cutover
+
+- [x] Minimize experimental block v1424 core/VFS adapter to
+  v1441: 75+89 -> **60+58 = 118** total native TEXT,
+  39-word temporary VFS frame and zero DATA/BSS.
+  Preserve v1421 block format, resumable refills, malformed
+  stream rejection and exact compressed-payload bounds.
+  Native 8 positive, 9 malformed, stack, 5 full-DXR = 23
+  PASS; measure mixed DXR/DSH/KCORE decoder steps.
+- [x] Remove repeated validation of **kernel-owned** physical
+  destination/source extent, caller-provided buffer
+  disjointness, and decoder stack overlap. Record those as
+  explicit trusted KCORE/MM caller contracts. Keep validation
+  of untrusted format fields and externally supplied counts.
+- [ ] Install a **single block decoder** in place of D6LZ36,
+  including shared bounded TSFS/EXEC/PURE_PREFIX decode,
+  block-format producers, and all Stage-1 device loaders.
+  Prove fixed low-core and memory placement without
+  increasing Stage-1 hardware limits or bypassing any
+  compiler/assembler bug. Measure exact linked/folded KCORE,
+  real nested VFS stacks, 32K/48K boot, fault/restart and
+  compressed-file integrity. Do not leave parallel file decoders.
+- [ ] After complete block-only acceptance, **delete D6LZ36**
+  decoder core, runtime adapter, userland/host encoders,
+  old Stage-1 includes and now-unused format paths; search
+  every build rule, kernel file, doc and boot fixture for stale
+  references. Do not harden or optimize the old decoder.
+- [ ] Keep bitmap RAM encoder+decoder a separate optional MRES
+  strictly for the verified swapless TSFS-root profile,
+  pending full PURE-only restore and process MM transactions.
+  No per-SLEEP compression or bitmap TSFS executable files.
+
 ## 2026-11-10 v1427-v1429: balanced native process codec decision
 
 - [x] Decode three real DSH memory snapshots with unmodified
