@@ -1,3 +1,24 @@
+## 2026-11-10 v1460 five-device Stage-1 completion
+
+- [x] Identify DTC/MTC boot failure after data loading: KINIT
+  entry retained in AC5 was overwritten by the block decoder's
+  match-source calculation. A captured header entry of octal
+  053537 became octal 120366 before the bad entry jump.
+- [x] Preserve the entry in unused AC16 through both tape Stage-1
+  decoder calls (also for DTC raw/hybrid); no extra instructions.
+- [x] Native-assemble v1459 and v1460 loaders and prove identical
+  physical sizes: DTC 160 words, MTC 125 words; only the intended
+  five/four register-reference instruction words differ.
+- [x] Run real full 256K DTC and MTC cold boots through KINIT,
+  ROOT login, DSH and ECHO with isolated media. All five Stage-1
+  devices now pass disk-root cold-boot tests.
+- [ ] Continue independent TSFS-root compressed-file and executable
+  restore acceptance. v1452/v1459 both reported INIT RUN FAILED
+  despite booting INIT; investigate rather than changing codec checks.
+- [ ] Retain strict 32K/48K lowmem acceptance as open, with measured
+  KINIT/KCORE gates and baseline comparisons; no arbitrary reserve
+  or memory-size bypass.
+
 ## 2026-11-10 v1459 integration checkpoint
 
 - [x] Switch all five Stage-1 sources and the actual KCORE build

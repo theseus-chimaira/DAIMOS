@@ -53,10 +53,13 @@ start:
         pushj 017,read_word
         hlrz 013,03
         jumpe 013,bad_tape
-        hrrz 05,03
-        caml 05,013
+        ; v1460: AC5 is the fixed decoder's back-reference source register.
+        ; Hold the entry address in otherwise-unused AC16 across decoding.
+        ; No new instruction or static storage is necessary.
+        hrrz 016,03
+        caml 016,013
         jrst bad_tape
-        addi 05,030000
+        addi 016,030000
         pushj 017,read_word
         hlrz 04,03
         jumpe 04,bad_tape
@@ -114,7 +117,7 @@ stage1_handoff:
         jumpn 00,bad_tape
         jumpn 04,bad_tape
         move 017,012                  ; KINIT stack starts at image end
-        jrst 0(05)
+        jrst 0(016)
 
 bad_tape:
         .include "../common/stage1-error.inc"

@@ -1,3 +1,32 @@
+## 2026-11-10 v1460: fix DTC/MTC Stage-1 KINIT handoff, zero growth
+
+The 53-word block decoder in low core at 000060 is correct, but both
+the DTC and MTC Stage-1 tape loaders retained the parsed KINIT entry
+address in AC5 while calling it. The block decoder legitimately
+overwrites AC5 to calculate back-reference source addresses. Their
+old `JRST 0(05)` therefore jumped into the expanded image at the
+last match address rather than to KINIT's entry. A failed boot
+snapshot showed the header entry **053537 octal** overwritten with
+**120366 octal**. DTC and MTC v1452 controls shared the same defect.
+
+v1460 retains the validated KINIT entry address in **AC16**, which
+the fixed block decoder never uses. The same register is used in
+the DTC raw/hybrid handoff. This is a true register-lifetime fix,
+not a retry or a device/simulator workaround. Native PDP-6 DAS
+comparison against v1459 proves the DTC read-in remains **160
+physical words** (five instruction words altered) and MTC remains
+**125 words** (four altered); **zero growth** for both. No KCORE,
+wire format, loader buffer, decoder or persistent RAM changes.
+
+Real 256K PDP-6 cold boots using isolated media now PASS for
+**DTC and MTC**, including banner, ROOT login, DSH startup and
+guest ECHO. Together with earlier v1459 DSK/DRM/PTR acceptance,
+all **five** Stage-1 devices have passed independent cold boots
+with ROOT=disk. Non-disk root, TSFS compressed restart extents,
+48K GCC lowmem and strict 32K acceptance remain separate open
+gates. Versioned native and full-boot regression lives in
+daimos-testkit/tests/validation/d6codec-v1460-stage1/.
+
 ## 2026-11-10 v1459: actual Stage-1/KCORE 53-word decoder integration
 
 The v1458 53-word fixed-low-core block decoder is now selected by

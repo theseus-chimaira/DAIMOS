@@ -62,10 +62,14 @@ start:
         pushj 017,read_word
         hlrz 013,03
         jumpe 013,bad_tape
-        hrrz 05,03
-        caml 05,013
+        ; v1460: the shared decoder uses AC5 for match-source addresses.
+        ; Keep the entry offset in AC16, which the fixed core never touches.
+        ; This also preserves the entry for the raw and hybrid paths without
+        ; adding instructions or a permanent low-core scratch word.
+        hrrz 016,03
+        caml 016,013
         jrst bad_tape
-        addi 05,030000
+        addi 016,030000
         pushj 017,read_word
         hlrz 04,03
         hrrz 06,03
@@ -147,7 +151,7 @@ read_wait:
 daimon_magic: .word 0444151555756
         .include "../common/block_decompressor_v1458.inc"
 
-; Keep the handoff above the installed decoder destination (000060..000127).
+; Keep the handoff above the installed decoder destination (000060..000144).
 ; Production Stage0 loads this Stage1 at 000060, so executing the handoff from
 ; the early part of the loader would be overwritten by the BLT itself.
 stage1_handoff:
@@ -170,7 +174,7 @@ stage1_handoff:
         move 017,012
         setz 01,
         setz 02,
-        jrst 0(05)
+        jrst 0(016)
 
 ; The raw stream is already resident at 030000.  Enter without installing
 ; the decompressor or maintaining a compressed image beyond 32K.
@@ -179,10 +183,10 @@ stage1_raw_handoff:
         add 017,013
         setz 01,
         setz 02,
-        jrst 0(05)
+        jrst 0(016)
 
 ; This diagnostic must remain above the decoder destination.  Decoder failure
-; is detected only after 000060..000127 has been overwritten by the installed
+; is detected only after 000060..000144 has been overwritten by the installed
 ; low-core image.
 bad_tape:
         jrst stage1_fail_b1
