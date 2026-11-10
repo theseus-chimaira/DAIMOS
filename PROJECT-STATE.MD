@@ -28,7 +28,8 @@ INIT V1 but fail to reach LOGIN within 180 seconds. DSK Stage-1
 with TSFS root (full profile) reaches INIT but reports
 `INIT: RUN FAILED` on **both** v1452 control and v1459.
 DTC/MTC source assemblies and shared-image checks passed,
-but their real-device cold boots remain unaccepted.
+but their real-device cold boots remain unaccepted: DTC timed
+out before the boot banner at 180 seconds, MTC at 240 seconds.
 The branch is an integrated **checkpoint**, not a completed
 all-device, all-memory production release. Tests are in
 daimos-testkit tests/validation/d6codec-v1459-integration/.

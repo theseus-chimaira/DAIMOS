@@ -12,7 +12,9 @@
   Stage-1: ROOT login, DSH and ECHO passed on isolated media.
 - [ ] Obtain full 256K DTC and MTC Stage-1 cold-boot acceptance;
   their standalone assemblies and exact core-image checks pass,
-  but slow or stalled device boot must not be counted as success.
+  but both timed out before the boot banner (180s DTC, 240s
+  MTC). Investigate the controller/read-in path against v1452
+  before blaming the decoder.
 - [ ] Diagnose TSFS-root INIT RUN failure independently from
   v1459: the v1452 control has the same failure. Verify TSFS
   compressed restart-extent decode with a dedicated booted test.
