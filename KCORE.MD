@@ -1,3 +1,17 @@
+## 2026-11-11 v1493: source-linked checked BACKSTORE scheduler refusal
+
+Testkit v1493 runs the production `proc_swap_in` and
+`proc_swap_mres_service_v481` with real bitmap ownership validation.
+On a deliberately incomplete bitmap the slot-0 service requests exactly
+one TERM rather than READY_ONCE, exchange or cooldown; failed release
+retains the original DISK record/bitmap/count and rolls back new MM.
+Two negative executable mutations (unchecked free, false READY_ONCE)
+are rejected. Existing v1405 rollback-and-retry native test also PASSes.
+No DAIMOS production code or resident RAM changes. This is a native
+source-linked service gate, not a real full-guest TERM/finalizer or
+physical-device acceptance. The corrupt-bitmap full 256K guest remains
+OPEN. See `design/kcore-backstore-scheduler-refusal-v1493.md`.
+
 ## 2026-11-11 v1490: BCACHE/DTC write correctness, feature phase
 
 Production `dtfs_dtc_write` formerly called `bcache_reclaim` before

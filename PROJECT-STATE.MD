@@ -1,3 +1,19 @@
+## 2026-11-11 v1493: KCORE slot-0 checked BACKSTORE refusal
+
+The genuine `proc_swap_in` checked BACKSTORE free and production
+`proc_swap_mres_service_v481` service path now have one new native
+source-linked testkit acceptance. An incomplete bitmap fails free;
+MM rollback succeeds; the original DISK owner, bitmap and usage counts
+remain authoritative. The service requests exactly one TERM for slot 2
+and does not publish READY_ONCE, swap exchange, or MM cooldown.
+Both executable false-success and false-ready mutations fail, as
+required. Prior v1405 native checked-release rollback/retry and its
+negative control also PASS. No KCORE source/ABI/RAM change was needed.
+The actual full-guest TERM/finalizer and corrupted physical backing
+cleanup are still untested and remain OPEN. Source and limitation:
+`design/kcore-backstore-scheduler-refusal-v1493.md`; testkit commit
+`f1fcaa5`.
+
 ## 2026-11-11 v1490: KCORE BCACHE write/invalidation correction
 
 The production DTC write veneer previously invoked the MM-releasing

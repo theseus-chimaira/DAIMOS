@@ -1,3 +1,16 @@
+## 2026-11-11 v1493: BACKSTORE release refusal through scheduler service
+
+- [x] Run real production `proc_swap_in`, checked bitmap release and
+  slot-0 `proc_swap_mres_service_v481` with injected incomplete bitmap.
+- [x] Verify exactly one TERM request, no false RESIDENT/READY_ONCE,
+  preserved original DISK owner and accounting, successful MM rollback.
+- [x] Reject executable mutations removing either the checked release
+  or the scheduler's negative-result failure dispatch. Rerun v1405.
+- [ ] Observe complete `proc_event_apply`/finalizer ownership and actual
+  physical backing aftermath in a full 256K corrupt-release guest.
+  Native v1493 uses a controlled event observer, not full guest cleanup.
+  See `design/kcore-backstore-scheduler-refusal-v1493.md`.
+
 ## 2026-11-11 v1490: cache write/refusal gate
 
 - [x] Correct live DTC write ABI across BCACHE: preserve AC1=unit,
