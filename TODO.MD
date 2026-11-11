@@ -1,3 +1,20 @@
+## 2026-11-11 v1471: XIP release ordering and refusal retry
+
+- [x] Fix XIP `vm_space_destroy` pin-ownership loss on a refused
+  `proc_swap_detach`: for verified pinned XIP only, detach the resident
+  zero-text swap record before releasing the MEMFS pin, then publish
+  VM_NONE. Keep private-MM teardown unchanged and use saved base after
+  read-only provider query.
+- [x] Native production source-linked rejection/retry at both failure
+  boundaries, plus private-MM base check and two negative mutants.
+  Existing v1094/v1108/v1109 native fault cases pass.
+- [x] Rebuild and boot the changed full-profile 128K, 192K and 256K KCC
+  images; ROOT/DSH and real v1469 XIP lifecycles pass at all three.
+  Exact matched KCC fixed cost +19 words.
+- [ ] Inject RUN u-area MM allocation refusal *after* a certified XIP
+  is pinned, and demonstrate slot-0 deferred recovery and no ref loss.
+- [ ] Extend live concurrent RAM/slot pressure and multi-mount teardown.
+
 ## 2026-11-11 v1470: full-profile XIP 128K/192K/256K accepted
 
 - [x] Run actual independent full-profile MEMFS XIP cold boots at 128K,

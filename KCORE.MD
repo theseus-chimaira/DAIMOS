@@ -1,3 +1,38 @@
+## 2026-11-11 v1471: XIP detach refusal retains VM pin for retry
+
+Production `vm_space_destroy` had a post-release failure boundary: it
+released the MEMFS XIP pin before calling `proc_swap_detach`. An injected
+backing-record refusal returned -1 while retaining a VM descriptor that
+pointed at an already unpinned MEMFS extent. The new daimos-testkit
+`daimos-xip-detach-retry-v1471` native PDP-6 witness reproduced the
+failure against v1470 at phase octal 011, then passed after the fix.
+
+For a pinned XIP base only, `vm_space_destroy` now uses the existing
+read-only MEMFS query 031, detaches the **resident** zero-text backing
+record before releasing operation 026's MEMFS pin, and publishes VM_NONE
+only when both operations succeed. If detach refuses, both VM and pin
+are intact. If MM unpin refuses, the VM and pin remain owned; XIP's
+resident backing record may already be empty, and detach is idempotent
+on owner retry. Other private-process VM teardown retains its original
+MM-free-then-detach order. The ordinary branch uses the stacked physical
+base after the query because MRES calls may clobber scratch AC3.
+
+Native production-leaf tests PASS: backing-detach refusal and retry,
+MM-unpin refusal and retry, normal process-MM base validation and two
+unsafe release/base mutations rejected. Previous v1094, v1108 and
+v1109 fault/retry suites PASS with test-only fixtures updated for
+operations 030/031 and the new teardown order. Actual full-profile
+128K, 192K and 256K XIP guest boot/LOGIN/DSH, six RUN/WAIT and EXEC
+PASS after correcting the saved-base regression found by the first
+128K guest run.
+
+Matched full KCC fixed KCORE endpoint grows from octal 023411 to
+023434 (+19 words); the VM object text grows 607 -> 626, BSS 1 -> 1.
+This is required functional code and no size optimization. Independent
+192K/256K v1471 guest retests PASS, completing the three-size matrix.
+Unpublished RUN u-area allocation failure and heavy concurrent RAM
+pressure remain separate OPEN release gates.
+
 ## 2026-11-11 v1470: privileged raw-MEMFS XIP accepted at 128K/192K/256K
 
 The v1469 **unchanged production kernel** now PASSes an independent,

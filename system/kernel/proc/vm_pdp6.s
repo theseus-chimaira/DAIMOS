@@ -545,7 +545,36 @@ vm_space_destroy_mode_ok:
         ; existing movable-provider gateway; unloaded provider returns -1,
         ; which must never turn into an unsafe process-owned MM free.
         push    17,3                    ; provider dispatch clobbers scratch ACs
+        ; v1471: XIP has no disk-swap payload.  Unlike process-MM free,
+        ; its reference release must be LAST: a refused backing detach
+        ; after unpin left the VM pointing at a no-longer-owned MEMFS
+        ; extent and prevented a legitimate later retry.  The read-only
+        ; query selects this case before either ownership operation.
         move    1,3
+        movei   6,031                  ; XIP_OWNS_BASE
+        movei   7,4                    ; MEMFS provider
+        pushj   17,fs_provider_reg_call
+        caie    1,1
+        jrst    vm_space_destroy_release_normal_v1471
+        move    1,-1(17)               ; slot saved below physical base
+        pushj   17,proc_swap_detach
+        jumpn   1,vm_space_destroy_xip_detach_fail_v1471
+        move    1,(17)                 ; XIP base: still pinned
+        movei   6,026                  ; XIP_RELEASE
+        movei   7,4
+        pushj   17,fs_provider_reg_call
+        caie    1,1
+        jrst    vm_space_destroy_xip_detach_fail_v1471
+        pop     17,3
+        jrst    vm_space_destroy_publish_v1471
+vm_space_destroy_xip_detach_fail_v1471:
+        ; A refused unpin still retains the VM's MEMFS reference.  Its
+        ; now-empty resident backing record is harmless for write-free XIP
+        ; and the next retry can detach idempotently before releasing it.
+        pop     17,3
+        jrst    vm_space_destroy_fail
+vm_space_destroy_release_normal_v1471:
+        move    1,(17)                 ; saved base, query clobbered AC3
         movei   6,026                  ; FS_MRES_OP_XIP_RELEASE
         movei   7,4                    ; MEMFS provider
         pushj   17,fs_provider_reg_call
@@ -575,6 +604,7 @@ vm_space_destroy_detach:
         move    1,(17)
         pushj   17,proc_swap_detach
         jumpn   1,vm_space_destroy_fail  ; keep VM and swap record retryable
+vm_space_destroy_publish_v1471:
         move    2,-1(17)
         setom   1(2)                   ; VM_SPACE_NONE
         setz    1,

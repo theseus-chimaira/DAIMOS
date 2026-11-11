@@ -1,3 +1,35 @@
+## 2026-11-11 v1471: XIP VM release transaction repaired (native + 128K)
+
+Detected a real XIP pin/VM ownership bug at the edge between the
+provider's XIP_RELEASE (026) and `proc_swap_detach`: a refused backing
+detach could leave `vm_space_destroy` returning failure after the XIP
+pin had already been released. Native source-linked PDP-6 v1471 test
+reproduced the pre-fix failure exactly (test phase octal 011).
+
+The VM destroy path now uses the read-only MEMFS XIP base query 031 to
+select a special **resident XIP** teardown order: detach its no-PURE-text
+backing first; release the MEMFS pin only if detach succeeds; publish
+VM_NONE only after successful release. Retry after detach refusal retains
+both the VM and pin. MM-unpin refusal retains the original pin/VM; the
+already detached zero-text XIP backing is safe to detach again on retry.
+Private process-MM release retains its previous order and now uses the
+stack-saved base, not a scratch AC3 overwritten by the provider query.
+There are no new persistent process fields or BSS words.
+
+Native v1471 production-leaf acceptance tests detach and MM-unpin
+refusals, exact retry/unpin counts, private-MM base preservation, and
+two unsafe mutants. Existing v1094, v1108 and v1109 fault-stage tests
+also pass, with source-linked fixtures adapted to operations 030/031.
+Full-profile physical 128K, 192K and 256K KCC PDP-6 boots and the
+complete v1469 XIP RUN/EXEC lifecycle PASS after the saved-base bug
+was identified and fixed in the first 128K retest. Matched KCC KCORE end 023411 -> 023434 octal,
++19 fixed words; VM object `.text` 607 -> 626 and BSS remains 1.
+All three post-fix guest retests are accepted at this checkpoint.
+
+Open: controlled u-area allocation failure *after* XIP admission, heavy
+RAM pressure, and broader live mount/VM fault-injection acceptance.
+No KCORE size optimization or RAM bitmap compression integration here.
+
 ## 2026-11-11 v1470: real 128K, 192K and 256K full-profile XIP acceptance
 
 v1469 KCORE was left unchanged. New daimos-testkit
