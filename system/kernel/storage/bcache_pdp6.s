@@ -10,6 +10,7 @@
         .globl  bcache_fetch
         .globl  bcache_store
         .globl  bcache_reclaim
+        .globl  bcache_invalidate_all
         .globl  bcache_workspace_invalidate
         .globl  fs_block_workspace
         .globl  mm_alloc_aligned_noreclaim
@@ -140,6 +141,11 @@ bcache_store_done:
 ; The requested count is irrelevant: the sole clean slab is all-or-nothing.
 bcache_reclaim:
         push    17,010
+        ; A refused MM free does not mean that the cached contents are still
+        ; authoritative.  Media replacement and DTC writes need invalidation
+        ; regardless of whether MM can release the private slab right now.
+        ; Preserve the slab owner on refusal for a later reclaim attempt.
+        pushj   17,bcache_invalidate_all
         hrrz    010,bcache_state
         jumpe   010,bcache_reclaim_none
         move    1,010
@@ -154,6 +160,19 @@ bcache_reclaim:
 bcache_reclaim_none:
         setz    1,
         pop     17,010
+        popj    17,
+
+; void bcache_invalidate_all(void)
+; Discard both clean identities without freeing MM-owned memory.  External
+; device write adapters must preserve AC1=unit, AC2=block, AC3=buffer, so
+; this leaf uses only caller-scratch AC4 and leaves those arguments intact.
+; A later bcache_store may safely reuse an existing private slab.
+bcache_invalidate_all:
+        setom   bcache_workspace_tag
+        hrrz    4,bcache_state
+        jumpe   4,bcache_invalidate_all_done
+        setom   (4)
+bcache_invalidate_all_done:
         popj    17,
 
 ; void bcache_workspace_invalidate(void)

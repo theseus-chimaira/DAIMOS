@@ -239,6 +239,7 @@ dtfs_sync_ok:
         .globl  bcache_fetch
         .globl  bcache_store
         .globl  bcache_reclaim
+        .globl  bcache_invalidate_all
 dtfs_dtc_read:
         move    4,2                     ; physical block fits RH
         hrl     4,1                     ; DTC key is UNIT,,BLOCK
@@ -268,7 +269,10 @@ dtfs_dtc_read_jump:
 
         .globl  dtfs_dtc_write
 dtfs_dtc_write:
-        pushj   17,bcache_reclaim        ; invalidate before authoritative write
+        ; Invalidate without MM release: reclaim can refuse and can clobber
+        ; the raw DTC unit/block/buffer ABI in AC1..AC3.  A successful
+        ; physical write must never leave an older clean cache hit behind.
+        pushj   17,bcache_invalidate_all
         jrst    dtfs_dtc_write_jump
 
         .globl  dtfs_dtc_write_jump

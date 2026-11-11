@@ -15,6 +15,9 @@
 int bcache_fetch(kword_t key, kword_t *buf);
 void bcache_store(kword_t key, const kword_t *buf);
 int bcache_reclaim(kword_t words);
+/* Discard both clean tags even when MM cannot free the private slab.
+ * The PDP-6 leaf preserves AC1..AC3 for physical device write adapters. */
+void bcache_invalidate_all(void);
 void bcache_workspace_invalidate(void);
 
 #endif
