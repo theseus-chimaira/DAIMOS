@@ -851,7 +851,10 @@ memfs_mres_prepare_unmount:
         pushj   17,mm_free
         jumpn   1,memfs_mres_unmount_bad
         move    1,(17)
-        movei   2,5
+        ; v1476: memfs_mres_fs is exactly three MRES words.  Clearing
+        ; five corrupted the next two BSS words (or adjacent module core)
+        ; on every successful unmount, including after a refused retry.
+        movei   2,3
         pushj   17,fs_zero_words
         sub     17,kconst_1_1
         jrst    kret_zero

@@ -1,3 +1,29 @@
+## 2026-11-11 v1476: MEMFS unmount BSS overwrite repaired
+
+The v1474 128K, 192K and 256K KCC/full-profile physical PDP-6 guests
+each PASSed three actual singleton MEMFS unmount/remount lifetimes.
+The test verifies complete VM/process/MEMFS accounting recovery,
+old-path invalidation, recreated XIP file, and new RUN/EXEC lifetimes.
+
+An isolated v1475 provider test injected a single MEMFS data-destroy
+preflight refusal. The original VFS mount and XIP remained accessible,
+but a later mount cycle failed because the production success path
+cleared FIVE words from the THREE-word memfs_mres_fs BSS record. The
+extra two writes clobbered adjacent MRES words, including the test
+counter, which reset and refused a later unmount. Fix: clear exactly
+three words. No code-count or BSS growth. The corrected physical 128K
+v1475 guest PASSes a refusal, recovery, three remount cycles and
+full XIP RUN/EXEC. The v1476 test validates the adjacent BSS canary
+placement against the actual linked MEMFS MRES map.
+
+Native source-linked v1094/v1471 XIP and v1403/v1468 MEMFS cases PASS.
+The independent post-fix v1474 128K/192K/256K full-profile guest
+matrix also PASSes every remount lifecycle, complete v1469 RUN/EXEC,
+and orderly HALT. Still open: persistent MEMFS snapshot/HALT/reboot
+recovery, and actual dynamic
+provider unload/reload (not implied by filesystem unmount).
+The v1451 bitmap codec and 32K/48K non-XIP gates are unchanged.
+
 ## 2026-11-11 v1473: full-profile XIP process pressure and pinned unmount
 
 The real KCC full-profile 128K/192K/256K PDP-6 SIMH guest has passed

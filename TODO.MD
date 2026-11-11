@@ -1,3 +1,21 @@
+## 2026-11-11 v1476: MEMFS lifetime and state bounds
+
+- [x] v1474 baseline full-profile PDP-6 at 128K, 192K and 256K:
+  three unmount/remount cycles each with exact resource accounting,
+  stale XIP invalidation, recreated XIP RUN/WAIT, and full EXEC tests.
+- [x] v1475 injected MEMFS data-destroy preflight refusal: retained
+  mount, file readback, executable RUN, followed by successful retry.
+- [x] Fix two-word overwrite on MEMFS unmount: clear exactly three
+  memfs_mres_fs words rather than five. Native v1475 test includes
+  directly adjacent MRES BSS canary; 128K guest PASS.
+- [x] Native XIP v1094/v1471 and MEMFS v1403/v1468 regression PASS.
+- [x] Complete post-fix v1474 128K/192K/256K physical guest matrix:
+  all normal remount cycles, original XIP RUN/EXEC, and orderly HALT
+  PASS; fixed kernel was rebuilt independently for all three sizes.
+- [ ] Test persistent snapshot failure/retry across HALT/reboot and
+  distinguish it from filesystem unmount. Dynamic module unload/reload
+  must be specified and tested separately if available.
+
 ## 2026-11-11 v1473: XIP pressure and pinned provider refusal
 
 - [x] Real physical 128K/192K/256K full-profile KCC guest: three queued

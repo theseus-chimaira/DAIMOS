@@ -1,3 +1,35 @@
+## 2026-11-11 v1476: correct three-word MEMFS state clear on unmount
+
+Full-profile XIP v1474 filesystem tests unmount and remount /TEMP through
+the public root syscall. Each 128K/192K/256K KCC PDP-6 baseline guest
+PASSed three cycles, checking duplicate-mount refusal, old executable
+invalidation, zero MEMFS usage/capacity while unmounted, exact resource
+recovery, certified XIP recreation, fresh RUN/WAIT and v1469 RUN/EXEC.
+
+An isolated v1475 fault refused the first MEMFS data-destroy preflight
+without changing filesystem ownership. The original mount and executable
+survived, but a subsequent remount cycle failed with the original code.
+This revealed an actual two-word MRES memory overwrite: memfs_mres_fs
+has exactly three BSS words, but successful unmount called fs_zero_words
+with a five-word count. The extra zeros erased adjacent MRES memory,
+including the test-only one-shot refusal counter, and provoked a second
+spurious refusal after remount.
+
+Production memfs_runtime.s now clears exactly three words, consistent
+with its mount-failure cleanup. The physical 128K v1475 guest now PASSes
+refusal/retry, exact accounting, three remount cycles and original
+RUN/EXEC. A v1476 MRES map canary checks the first word following the
+three-word record. Only one existing instruction immediate changes
+from 5 to 3: no new KCORE words, MRES words, BSS or process state.
+
+Native v1094/v1471 XIP release and v1403/v1468 MEMFS tests PASS.
+All three post-fix physical 128K/192K/256K normal remount guests PASS
+three cycles and the complete original v1469 RUN/EXEC regression,
+ending with XIP-REMOUNT-PASS, XIP-RUN-PASS and STATUS:0.
+MEMFS orderly HALT uses snapshot publication; it does not
+dynamically unload the MRES. Persistent snapshot/reboot and runtime
+module unload/reload remain separate open work.
+
 ## 2026-11-11 v1473: privileged MEMFS XIP process-slot pressure accepted
 
 New `daimos-testkit/tests/validation/daimos-xip-pressure-matrix-v1473.sh`
