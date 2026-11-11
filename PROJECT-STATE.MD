@@ -1,3 +1,17 @@
+## 2026-11-11 v1494: KCORE PREVM finalizer on refused VM destroy
+
+The real PDP-6 `proc_finish_slot` and idle
+`proc_finish_service_v881` now have a source-linked v1494 native test
+for retained VM ownership after a first release refusal, then exact
+VM success and two u-area MM retry refusals. No repeat HUP or VM
+release, no premature zombie publication, and the false VM-commit
+mutation is rejected. Existing v1081/v1086 finalizer acceptance PASS.
+The `vm_space_destroy` backend is controlled in v1494; v1493 tests
+real swap-in/checked bitmap free with an event observer. Physical
+256K full guest cross-boundary BACKSTORE corruption/TERM/PREVM owner
+resolution remains OPEN. No production code, RAM or ABI change. See
+`design/kcore-backstore-prevm-finalizer-v1494.md`.
+
 ## 2026-11-11 v1493: KCORE slot-0 checked BACKSTORE refusal
 
 The genuine `proc_swap_in` checked BACKSTORE free and production

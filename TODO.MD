@@ -1,3 +1,15 @@
+## 2026-11-11 v1494: PREVM finalizer failure/retry
+
+- [x] Source-link real `proc_finish_slot` and
+  `proc_finish_service_v881` with controlled refused VM release.
+- [x] Retain FINALIZE+PREVM, TRANSITION, VM/u-area owner and exit
+  status; retry VM, then rejected u-area releases, with no repeated
+  sleeping HUP or double VM release.
+- [x] Reject premature VM-commit mutation; rerun v1081/v1086.
+- [ ] Source-link the *entire* real BACKSTORE detach/TERM/finalizer
+  chain and complete the corrupt-bitmap 256K physical full guest.
+  Separate native v1493 and v1494 tests do not imply this acceptance.
+
 ## 2026-11-11 v1493: BACKSTORE release refusal through scheduler service
 
 - [x] Run real production `proc_swap_in`, checked bitmap release and

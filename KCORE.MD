@@ -1,3 +1,18 @@
+## 2026-11-11 v1494: retained PREVM finalizer on VM refusal
+
+Testkit v1494 source-links the production `proc_finish_slot` and
+`proc_finish_service_v881` and injects a controlled first VM destroy
+refusal followed by success and two u-area MM release refusals.
+FINALIZE+PREVM, TRANSITION, exit status and the original VM owner
+survive the first refusal; later idle retries complete without a
+repeated sleeping HUP or VM release. The premature-VM-commit mutation
+is rejected. Earlier v1081/v1086 finalizer tests also PASS.
+`vm_space_destroy` is a controlled backend in v1494; the genuine
+BACKSTORE release appears in independent native v1493/v1405 tests.
+The combined full 256K physical corruption/TERM/finalizer sequence
+remains OPEN. No production KCORE changes. See
+`design/kcore-backstore-prevm-finalizer-v1494.md`.
+
 ## 2026-11-11 v1493: source-linked checked BACKSTORE scheduler refusal
 
 Testkit v1493 runs the production `proc_swap_in` and
