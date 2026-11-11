@@ -1,3 +1,20 @@
+## 2026-11-11 v1473: XIP pressure and pinned provider refusal
+
+- [x] Real physical 128K/192K/256K full-profile KCC guest: three queued
+  XIP RUN/WAIT rounds per memory size, up to 56 independent child slots
+  per batch, with exact process-slot, process-word and MEMFS accounting
+  recovery; full original v1469 RUN/EXEC regression also PASS.
+- [x] Distinguish queued zombies from truly pinned XIP processes. A
+  short-lived XIP child's occupied slot is not evidence of a live pin.
+- [x] Re-run full 128K v1472 fault-injected guest with an explicit
+  `dsys_unmount(/TEMP)` refusal after CHMOD proves the SIDL owner still
+  holds its MEMFS XIP pin. Deferred cleanup and both fault counters PASS.
+- [x] Keep changes entirely in testkit; no KCORE/MM/MRES growth.
+- [ ] Exercise successful MEMFS unmount/re-mount and provider shutdown,
+  reload and injected-failure lifetime under independently verified pins.
+- [ ] Complete separate 32K/48K non-XIP release gates and swapless PURE
+  reclamation with the already validated bitmap codec.
+
 ## 2026-11-11 v1472: XIP post-admission u-area failure recovery
 
 - [x] Inject one u-area MM refusal immediately after **real certified

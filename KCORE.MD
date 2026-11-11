@@ -1,3 +1,32 @@
+## 2026-11-11 v1473: privileged MEMFS XIP process-slot pressure accepted
+
+New `daimos-testkit/tests/validation/daimos-xip-pressure-matrix-v1473.sh`
+runs a full-profile KCC DSK/D6FS physical PDP-6 at 128K, 192K and
+256K. Each guest creates one certified root-owned no-write MEMFS XIP
+image and performs three queued RUN/WAIT pressure rounds, allocating
+distinct child slots and 0410-word u-areas up to the process-table
+admission limit (maximum 56 children per batch). The guest checks the
+expected occupied slot count, waits every child with zero EXIT status,
+then verifies baseline process slots, PROCESS MM words and MEMFS logical
+data words, and post-release CHMOD and exact image readback. The original
+v1469 XIP negative/positive RUN and EXEC replacement checks then pass.
+All three guests report XIP-PRESSURE-PASS, XIP-RUN-PASS and STATUS:0.
+
+A test-design defect was found and corrected: queued zero-write XIP
+children finish in two instructions and can become zombies before the
+parent returns. An occupied process slot does NOT establish an active
+XIP pin; therefore no unmount refusal is inferred from queued slots.
+Instead the existing v1472 injected u-area failure test now calls
+`dsys_unmount(/TEMP)` while a pending unpublished RUN has a proven
+MEMFS pin (CHMOD is refused). The full 128K v1472 guest PASSes this
+new check, then confirms deferred unpin/reap, exact MM counters (one
+allocation refusal, two injected unpin refusals), and new XIP RUN/WAIT.
+
+The v1473 pressure and proven-pinned unmount tests require NO DAIMOS
+KCORE or MEMFS source changes. All added code lives in daimos-testkit.
+Still open: explicit MEMFS unmount/re-mount and provider shutdown/reload
+lifetime tests, and the separate 32K/48K non-XIP swapless gates.
+
 ## 2026-11-11 v1472: XIP RUN u-area OOM and deferred retry matrix accepted
 
 After v1471 fixed XIP VM teardown, v1472 closes the outstanding fault

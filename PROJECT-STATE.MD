@@ -1,3 +1,32 @@
+## 2026-11-11 v1473: full-profile XIP process pressure and pinned unmount
+
+The real KCC full-profile 128K/192K/256K PDP-6 SIMH guest has passed
+three per-boot concurrent XIP RUN/WAIT pressure rounds at each memory
+size. The v1473 testkit uses all but a small reserve of currently free
+process slots (capped at 56 queued children), validates the occupied
+slot count, zero child EXIT statuses, and complete process/MM/MEMFS
+accounting recovery after each round. The original v1469 executable
+certification/permission/argv rejection and privileged EXEC replacement
+remain green. The final guest markers at every size are
+`XIP-PRESSURE-PASS`, `XIP-RUN-PASS` and `STATUS:0`.
+
+The initial attempt to unmount `/TEMP` while children were queued
+unexpectedly succeeded. Root cause was a **test assumption**, not a
+proven filesystem bug: the certified two-instruction XIP program exits
+immediately, and the still-occupied process slots can be zombies with
+their executable pins already released. The test now checks unmount
+only during the already validated v1472 deferred RUN failure: CHMOD
+first proves the XIP pin remains owned, then the guest verifies that
+unmount refuses it. A full 128K v1472 fault-injected boot PASSed with
+that extra assertion, recovered its SIDL owner, and showed the exact
+one u-area allocator and two unpin refusals in post-HALT KCORE samples.
+
+No DAIMOS source, resident footprint, process representation, memory
+allocation policy or shared-XIP executable certification changed.
+Next gate: successful MEMFS unmount/re-mount and provider failure/reload
+lifetimes under real and injected ownership states. Separate 32K/48K
+non-XIP swapless and v1451 codec integration remain open.
+
 ## 2026-11-11 v1472: pinned-XIP post-admission RUN rollback accepted
 
 The real production RUN order is certified MEMFS XIP pin and staged VM,
