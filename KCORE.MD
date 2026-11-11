@@ -1,3 +1,19 @@
+## 2026-11-11 v1497: physical corrupt-BACKSTORE lifecycle is not accepted
+
+Fresh disposable 256K KCC PDP-6 F07 v1495 diagnostic reached HALT,
+with one real bitmap fault, three matching checked frees, a repaired
+bitmap and final 0/0 process-swap/BACKSTORE blocks. Genuine F07 child
+counts are 18/18; testkit v1496 fixes a SIMH banner `+` miscount.
+However two failed swap-ins each called and returned from real TERM
+delivery without immediate TRANSITION/PREVM, and the third matching
+free had no PREVM marker. `proc_event_apply` permits safe deferred
+fatal delivery for owned executive continuations; the exact predicate
+was not captured. The injected test's idle-finalizer assumption is
+unproven. v1336 normal profile forbids fatal swap-in by design.
+Independent physical MM/owner/slot/stack verifiers PASS; the specific
+BACKSTORE fault acceptance remains OPEN. No production code/RAM
+changed. See `design/kcore-backstore-physical-f07-diagnostic-v1497.md`.
+
 ## 2026-11-11 v1494: retained PREVM finalizer on VM refusal
 
 Testkit v1494 source-links the production `proc_finish_slot` and

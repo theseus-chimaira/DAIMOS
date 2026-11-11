@@ -1,3 +1,20 @@
+## 2026-11-11 v1497: physical BACKSTORE fault diagnosis, gate OPEN
+
+The full physical 256K F07 v1495 KCC guest reached HALT and finished
+with zero process-swap and BACKSTORE blocks. Instrumentation recorded
+one bitmap fault, three matching frees, two failed swap-in service
+entries and two actual `proc_event_apply` returns, neither immediately
+entering FINALIZE+PREVM; the third free also lacked PREVM. Thus the
+original v1494 immediate idle-finalizer assumption is invalid. The
+existing foreign fatal path can legitimately defer TERM to preserve
+owned executive continuations; the precise case still needs testing.
+The v1496 testkit fix excludes SIMH's `+uncommitted-changes` host
+banner from F07 milestone counting; actual guest count was 18/18.
+Independent MM/owner/protected and slot/stack verifiers PASS. A
+distinct fault-specific end-to-end gate remains OPEN; normal v1336
+zero-swapin-failure policy is unchanged. No production source or RAM
+change. See `design/kcore-backstore-physical-f07-diagnostic-v1497.md`.
+
 ## 2026-11-11 v1494: KCORE PREVM finalizer on refused VM destroy
 
 The real PDP-6 `proc_finish_slot` and idle

@@ -1,3 +1,22 @@
+## 2026-11-11 v1497: actual physical BACKSTORE fault evidence
+
+- [x] Trace real v1495 256K physical swap, checked bitmap refusal,
+  TERM call/return and backing ownership through complete guest HALT.
+- [x] Fix F07 guest-child miscount from SIMH dirty-build banner in
+  testkit v1496; 18/18 real guest acknowledgments/reaps unchanged.
+- [x] Replay independent protected-OOM, MM peak, process slot,
+  swap-stack and full owner-lifecycle checks: PASS.
+- [ ] Identify why `proc_event_apply` defers or refuses synchronous
+  finalization for the faulted nonresident owner; observe actual
+  WAIT/CTX_PC, pending TERM and event return value.
+- [ ] Prove owner-safe deferred TERM delivery or PREVM retry on a
+  finalizable target; prevent permanent corrupt backing from becoming
+  an unsafe repeat-restore loop. Keep stack-safety invariants.
+- [ ] Add separate fault-specific full-guest acceptance. Normal v1336
+  still correctly requires zero fatal swap-ins. v1494 immediate PREVM
+  expectation is disproved by v1495. No KCORE optimization yet.
+  See `design/kcore-backstore-physical-f07-diagnostic-v1497.md`.
+
 ## 2026-11-11 v1494: PREVM finalizer failure/retry
 
 - [x] Source-link real `proc_finish_slot` and
