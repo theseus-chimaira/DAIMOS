@@ -1,3 +1,12 @@
+## 2026-11-11 v1479: XIP physical memory floor
+
+- [x] Enforce the MEMFS/XIP 96K minimum physical-memory policy at the
+  shared XIP guest driver: reject sub-96K requests before any build.
+- [x] Keep XIP acceptance strictly on the existing 128K, 192K and
+  256K full-profile guests. There were no active 32K/48K XIP guest
+  tests to remove.
+- [x] Preserve separate 32K/48K low-memory non-XIP release testing.
+
 ## 2026-11-11 v1476: MEMFS lifetime and state bounds
 
 - [x] v1474 baseline full-profile PDP-6 at 128K, 192K and 256K:

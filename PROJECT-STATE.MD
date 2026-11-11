@@ -1,3 +1,12 @@
+## 2026-11-11 v1479: exclude sub-96K MEMFS XIP tests
+
+XIP depends on MEMFS, which is disabled below 96K physical words. The
+active XIP guest suites cover 128K, 192K and 256K only. No active 32K
+or 48K XIP guest was found to delete. Testkit's shared v1469 launcher
+now immediately rejects any sub-96K XIP request before making an image.
+The separate 32K/48K low-memory tests remain necessary for non-XIP
+features; they are not XIP acceptance requirements.
+
 ## 2026-11-11 v1476: MEMFS unmount BSS overwrite repaired
 
 The v1474 128K, 192K and 256K KCC/full-profile physical PDP-6 guests

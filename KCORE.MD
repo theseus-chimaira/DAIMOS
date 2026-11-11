@@ -1,3 +1,14 @@
+## 2026-11-11 v1479: MEMFS XIP requires at least 96K physical words
+
+Raw XIP is exclusively a MEMFS-backed process image. MEMFS is disabled
+on hosts with less than 96K physical words, so 32K and 48K are NOT XIP
+test targets. No active XIP guest test case used either configuration:
+the full-profile acceptance matrix already covers only 128K, 192K and
+256K. The v1469 direct guest driver now refuses physical sizes below
+96K before it builds anything. Keep the separate low-memory 32K/48K
+non-XIP boot, APR, swapless and PURE release tests; they are unrelated
+to the MEMFS-dependent XIP feature. Do not add 32K/48K XIP tests again.
+
 ## 2026-11-11 v1476: correct three-word MEMFS state clear on unmount
 
 Full-profile XIP v1474 filesystem tests unmount and remount /TEMP through
