@@ -1,3 +1,26 @@
+## 2026-11-11 v1502: source/test/documentation feature state synchronized
+
+The status index has been synchronized with committed KCORE sources
+and daimos-testkit through v1501. The real-source native PDP-6
+positive and negative v1498, v1500 and v1501 tests all re-PASS.
+v1500 joins `proc_event_apply`, `proc_finish_slot` and
+`proc_finish_service_v881` across controlled VM refusal and exact
+PREVM/u-area retries; v1501 joins real foreign TERM deferral and the
+real `proc_deferred_term_check_v926` consuming the pending event once
+at the owner return, but controls restored VM and private fatal-close.
+No production source or RAM change accompanies this documentation.
+
+The v1499 full-guest branch diagnostic **prepares** only. Real v1495
+physical bitmap-corruption guest reached HALT with 0 final backing,
+but failed the distinct fault-specific TERM/PREVM owner assertions;
+neither native acceptance nor last-free accounting closes that gate.
+Irreparable backing, exact TERM branch and full physical finalizer
+remain OPEN. Normal v1336 no-failed-swap-in acceptance is unchanged.
+Dynamic FSINFO mount enumeration v1492 is locally modified/uncommitted,
+not accepted as production. Other open work is listed in TODO.MD
+and in pdp10-doc `STATUS/KCORE-FEATURE-STATE-V1502.MD` (authoritative
+current feature index). VERSION remains 0.5; no 0.9 release claim.
+
 ## 2026-11-11 v1500: integrated native TERM-to-idle finalization
 
 Native testkit v1500 (`5674a7e`) executes the real production

@@ -1,3 +1,31 @@
+## 2026-11-11 v1502: feature-status/documentation synchronization
+
+Current authoritative KCORE feature checklist: pdp10-doc
+`STATUS/KCORE-FEATURE-STATE-V1502.MD`. Native tests v1498, v1500 and
+newly committed v1501 (`daimos-testkit 7f415a8`) re-PASS with their
+executable negative controls. The native real-source v1500 foreign
+TERM -> PREVM idle finalizer test uses a controlled VM/BACKSTORE
+backend. v1501 adds real foreign TERM deferral and owning-return
+pending-bit consumption after *controlled* VM restoration, with a
+stub private fatal-close observer. Both lifecycle seams are covered
+at native level, not as one physical failure transaction.
+
+v1499's disposable 256K branch-diagnostic runner prepares and
+shell-validates but has **no accepted completed physical report**.
+The v1495 corrupt-bitmap full guest still cannot establish actual
+TERM branch, idle PREVM owner and permanently failed backing policy.
+The original v1336 normal no-failed-swap-in gate stays strict. No
+production KCORE code, RAM, ABI or acceptance policy is changed by
+this documentation step. Current uncommitted v1492 FSINFO dynamic
+mount-capacity work is not counted as an installed interface.
+
+Other open KCORE tracks: remaining mixed BACKSTORE/BCACHE/LOGSTORE
+device/media failure cases; physical DTFS tape-root integration;
+swapless PURE-text scheduler/MM/full APR lifecycle; mount enumeration
+ABI acceptance; and only then optional net-RAM-positive mutable
+compression. 32K is on HOLD, MRES code unload/reload stays POST-1.0,
+and KCORE size optimization remains last.
+
 ## 2026-11-11 v1500: native real event through idle PREVM finalizer
 
 Testkit `5674a7e` source-links unchanged production

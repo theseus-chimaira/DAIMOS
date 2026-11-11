@@ -1,3 +1,33 @@
+## 2026-11-11 v1502: live KCORE feature-completion checklist
+
+- [x] Native v1498 real nonresident TERM WAIT/saved-PC decision,
+  v1500 real immediate event+PREVM finalizer and v1501 real deferred
+  owner-return event consumer; positive and negative controls PASS.
+- [x] Prepare and shell-validate separate v1499 physical diagnostic;
+  **no** accepted physical branch report yet.
+- [ ] Run and verify v1499 256K full-guest map-backed TERM return,
+  WAIT/CTX_PC/FD-control before/after state and exact event branch.
+- [ ] Test permanently corrupt BACKSTORE bitmap/DEVICE failure with
+  exact DISK ownership, no false READY_ONCE or unsafe repeated restores,
+  and eventual safe deferred-owner/finalizer recovery.
+- [ ] Complete strict physical corruption-specific TERM -> FINALIZE/
+  PREVM -> checked backing-release acceptance; preserve normal F07/
+  v1336's zero-fatal-swap-in criteria without exception.
+- [ ] Close remaining mixed DEVICE/VOLUME/BCACHE/LOGSTORE/MEMFS swap
+  failure gates and physically installed DTFS tape-root integration.
+- [ ] Integrate uncompressed swapless PURE scheduler/MM transaction,
+  immutable backing, mutable suffix, complete APR restore and every
+  lifecycle/rollback case; do not link the +180-word v1487 pilot.
+- [ ] Finish v1492 dynamic FSINFO mount enumeration contract and
+  1/4/8/26-slot consumer/physical acceptance; currently uncommitted.
+- [ ] Evaluate optional mutable-RAM compression only after PURE and
+  positive matched RAM accounting, then remaining clock/device tests.
+
+Reference: pdp10-doc `STATUS/KCORE-FEATURE-STATE-V1502.MD`.
+This is documentation reconciliation, not KCORE optimization. 32K
+remains HOLD, unified TSFS/online D6FS packer are separate 0.9 tasks,
+and MRES code unload/reload is POST-1.0.
+
 ## 2026-11-11 v1500: integrated nonresident TERM and PREVM owner
 
 - [x] Source-link real `proc_event_apply` + `proc_finish_slot` +
