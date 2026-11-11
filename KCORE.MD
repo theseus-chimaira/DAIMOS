@@ -1,3 +1,21 @@
+## 2026-11-11 v1503: physical pre-existing TERM coalescing accepted
+
+Testkit `8987b4a` verifies the completed 256K PDP-6 v1499 guest's
+real map-backed event snapshots. Both scheduler TERM requests found
+the same nonresident DISK slot `010`, no WAIT class, saved executive
+PC and **an already-pending TERM**. Both returned zero, coalesced,
+and left VM, FD-control, scheduler and FINALIZE unchanged. One real
+BACKSTORE bit fault, three matching frees, one repair, final zero
+backing and F07 18/18 child milestones were also observed. The
+strict scoped verifier rejects 15 mutations; independent physical
+MM/process/owner verifiers PASS. Invalid v1499 SKIPN branch counters
+are explicitly excluded; v1502 corrected the test-only polarity.
+Physical *coalescing* PASS, but actual owner-return TERM consumption,
+permanent corrupt backing and full fault-specific physical finalizer
+are still OPEN. No KCORE source/RAM change. See
+`design/kcore-backstore-coalesced-physical-v1503.md` and current
+pdp10-doc `STATUS/KCORE-FEATURE-STATE-V1503.MD`.
+
 ## 2026-11-11 v1502: feature-status/documentation synchronization
 
 Current authoritative KCORE feature checklist: pdp10-doc

@@ -1,3 +1,21 @@
+## 2026-11-11 v1503: physical TERM coalescing accepted, recovery OPEN
+
+- [x] Attribute two real 256K F07 scheduler TERM calls to an
+  already-pending TERM on stable DISK slot `010`: no WAIT, saved
+  executive PC, return zero, no changed owner or FINALIZE.
+- [x] Strict physical snapshot/bitmap/F07 verifier v1503 and all 15
+  negative mutations PASS; replay protected-MM/process/swap-stack/
+  owner-lifecycle physical audits PASS.
+- [x] Exclude inverted v1499 SKIPN branch counters; v1502 corrected
+  observer polarity in testkit without altering production code.
+- [ ] Demonstrate actual pending TERM consumption at owning return
+  and exact victim owner/backing resolution in a physical guest.
+- [ ] Test permanent corruption fail-closed policy without unsafe
+  repeated swap-in, false RESIDENT/READY_ONCE or lost DISK owner.
+- [ ] Complete end-to-end physical fault acceptance; retain normal
+  v1336 zero-failed-swap-in rules. Other F1/F2/F3/F4 tasks below
+  remain open. See `design/kcore-backstore-coalesced-physical-v1503.md`.
+
 ## 2026-11-11 v1502: live KCORE feature-completion checklist
 
 - [x] Native v1498 real nonresident TERM WAIT/saved-PC decision,

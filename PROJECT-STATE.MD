@@ -1,3 +1,18 @@
+## 2026-11-11 v1503: physical KCORE TERM coalescing scoped acceptance
+
+The completed v1499 256K KCC PDP-6 guest's independent mapped
+pre/post snapshots prove two TERM requests coalesced with an existing
+TERM on nonresident DISK slot `010`, no WAIT and saved executive PC.
+Event return was zero and DISK/FD/scheduler/FINALIZE were unchanged.
+Testkit `8987b4a` validates exact real HALT/EXIT, physical bitmap
+fault/repair, 0 final backing, F07 18/18 and these states, rejecting
+15 data/milestone mutations. Independent physical MM/owner verifiers
+also PASS. Original v1499 branch counts are invalid due to SKIPN;
+v1502 fixed counter scope but they were excluded from this accepted
+report. Actual owner-return TERM consumption, unrecoverable backing
+and complete physical recovery remain OPEN; no KCORE source/RAM/ABI
+change. Report `design/kcore-backstore-coalesced-physical-v1503.md`.
+
 ## 2026-11-11 v1502: source/test/documentation feature state synchronized
 
 The status index has been synchronized with committed KCORE sources
