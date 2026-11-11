@@ -1,3 +1,17 @@
+## 2026-11-11 v1490: KCORE BCACHE write/invalidation correction
+
+The production DTC write veneer previously invoked the MM-releasing
+BCACHE path and could corrupt AC1..AC3 physical I/O arguments. If MM
+refused release, BCACHE also retained stale valid identities. v1490
+adds a non-reclaiming two-tag invalidation leaf and uses it before
+DTC raw writes and all reclaim attempts. Failed MM release preserves
+the owned slab pointer while invalidating its contents; later retry
+remains possible. Source-linked PDP-6 with nonzero DTC unit, failed
+MM free, retry, and two negative mutations PASS; previous BCACHE tests
+PASS. Fresh KCC KCORE compile and DTFS MRES link PASS. Physical
+tape-root guest qualification is still pending. Storage F2 is not
+complete; see `design/kcore-bcache-write-reclaim-v1490.md`.
+
 ## 2026-11-11 v1488: source-reconciled KCORE release status
 
 Current source-backed gate index replaces stale v512/v1029/v1286/v1395

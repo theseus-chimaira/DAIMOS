@@ -1,3 +1,17 @@
+## 2026-11-11 v1490: cache write/refusal gate
+
+- [x] Correct live DTC write ABI across BCACHE: preserve AC1=unit,
+  AC2=block, AC3=buffer, without a pre-write MM release.
+- [x] Invalidate clean cache identities even if `mm_free` refuses;
+  retain the still-owned private slab for retry, never a stale hit.
+- [x] PASS source-linked native PDP-6 device read/write, MM refusal,
+  retry, two executable negative controls and existing BCACHE tests.
+- [ ] Complete real tape-root/secondary-DTFS guest acceptance and the
+  remaining distinct BACKSTORE/BCACHE mixed-storage failure cases.
+  Disk-root DTFS mount refusal is intentional; historical v572's
+  mount-success predicate is superseded by the v1 online policy test.
+  See `design/kcore-bcache-write-reclaim-v1490.md`.
+
 ## 2026-11-11 v1488: documentation sweep and current 0.9 KCORE gates
 
 Authoritative CURRENT scope after source/linked-map/testkit cross-check:

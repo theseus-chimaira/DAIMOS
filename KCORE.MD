@@ -1,3 +1,17 @@
+## 2026-11-11 v1490: BCACHE/DTC write correctness, feature phase
+
+Production `dtfs_dtc_write` formerly called `bcache_reclaim` before
+physical I/O, clobbering the DTC unit/block/buffer AC1..AC3 ABI.
+Moreover an MM free refusal retained valid cache tags even across a
+caller-requested media invalidation. v1490 separates nonallocating
+`bcache_invalidate_all` from slab reclamation; DTC write arguments
+survive, both tags are always invalidated, and an MM-refused slab
+remains recorded for retry. Native real-PDP-6-source testkit v1490 and
+both executable negative controls PASS. Fresh KCC KCORE and DTFS MRES
+links PASS; this is correctness work, not size optimization. Real
+physical tape-root acceptance remains a separate gate. See
+`design/kcore-bcache-write-reclaim-v1490.md`.
+
 ## 2026-11-11 v1488: reconciled KCORE feature and RAM audit
 
 Production D6 grouped codec v1464 and strictly restricted MEMFS XIP
