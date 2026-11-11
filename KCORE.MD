@@ -1,3 +1,17 @@
+## 2026-11-11 v1500: native real event through idle PREVM finalizer
+
+Testkit `5674a7e` source-links unchanged production
+`proc_event_apply`, `proc_finish_slot` and
+`proc_finish_service_v881` in the same PDP-6 instruction run.
+For an immediately finalizable DISK owner, a controlled VM refusal
+retains FINALIZE+PREVM, exit status and disk ownership. Idle retry
+commits VM once, tolerates two u-area MM refusals and publishes the
+zombie without repeat HUP/FILE/VM effects. A missing PREVM-marker
+mutation is rejected. Native gate PASS; physical `vm_space_destroy`
+and BACKSTORE bitmap are controlled. v1499 full-guest branch capture
+and permanent-corruption acceptance remain OPEN. No KCORE code/RAM
+change. See `design/kcore-backstore-event-finalizer-v1500.md`.
+
 ## 2026-11-11 v1498: native nonresident TERM policy acceptance
 
 Testkit `f9ab499` executes unchanged production `proc_event_apply`

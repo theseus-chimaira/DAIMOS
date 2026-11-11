@@ -1,3 +1,16 @@
+## 2026-11-11 v1500: integrated native TERM-to-idle finalization
+
+Native testkit v1500 (`5674a7e`) executes the real production
+event-delivery, process-finalize and idle PREVM retry leaves together
+against a nonresident DISK owner. First VM refusal leaves exact
+FINALIZE+PREVM and original DISK ownership; later VM and u-area
+retry commit once, with no repeated HUP, FILE close or VM release.
+Missing PREVM ownership negative mutation rejected. This closes the
+native event/finalizer seam but uses a controlled VM/BACKSTORE backend.
+Full physical checked-bitmap refusal and exact event branch/owner
+resolution remain OPEN under v1499. No KCORE source/RAM changes.
+See `design/kcore-backstore-event-finalizer-v1500.md`.
+
 ## 2026-11-11 v1498: nonresident TERM source behavior verified
 
 Testkit v1498 (`f9ab499`) native PDP-6 PASS on the real foreign

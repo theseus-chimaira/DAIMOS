@@ -1,3 +1,16 @@
+## 2026-11-11 v1500: integrated nonresident TERM and PREVM owner
+
+- [x] Source-link real `proc_event_apply` + `proc_finish_slot` +
+  `proc_finish_service_v881` with nonresident DISK VM and controlled
+  refused release, followed by successful idle VM/u-area retries.
+- [x] Check exact retained TERM/PREVM status, stable disk ownership,
+  single FILE/HUP/VM commit and no duplicate zombie/reaper handling;
+  reject negative mutation removing the PREVM mark.
+- [ ] Accept equivalent real physical BACKSTORE/VM integration,
+  including actual deferred TERM classification (v1499) and safe
+  permanent-corruption policy. v1500 is native-only for VM backend.
+  See `design/kcore-backstore-event-finalizer-v1500.md`.
+
 ## 2026-11-11 v1498: classify actual nonresident fatal-event policy
 
 - [x] Native source-link real `proc_event_apply` with a DISK owner;
