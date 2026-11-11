@@ -1,3 +1,43 @@
+## 2026-11-11 v1488: reconciled KCORE feature and RAM audit
+
+Production D6 grouped codec v1464 and strictly restricted MEMFS XIP
+v1469-v1485 are ACCEPTED and must not be reimplemented based on older
+open v512/v1029/v1286 checklist prose. Physical 48K non-XIP v1486
+boot and five DATE/MEMSTAT probes PASS. 32K is deferred; neither
+32K nor 48K is an XIP profile, because MEMFS requires at least 96K.
+
+The v1487 source-preserving shared-DXR EXEC/PURE pilot passes its
+isolated native DXR positive/error regression, but costs +180 TEXT
+words (current EXEC 218, candidate 163, shared engine 235).
+Its original v1469 strict MEMFS XIP entry is copied unchanged, but
+this is NOT a fresh XIP guest-lifecycle acceptance for the candidate.
+Do not link this RAM-negative candidate as an optimization.
+Staged swapless PURE MM transaction and restore modules v1381/v1384/
+v1391/v1395/v1397 remain out of production until scheduler, backing
+source immutability, complete APR reconstitution, and real RAM-pressure
+acceptance. The v1451 30-word bitmap RAM codec remains isolated.
+
+Remaining KCORE feature work: truly outstanding shared backing/
+BCACHE/LOGSTORE failure and mixed-service gates, swapless PURE
+scheduler integration, then net-positive optional in-RAM compression.
+Online D6FS packer and unified TSFS remain separate 0.9 tasks;
+unified TSFS is scheduled after KCORE final optimization. Size-only
+optimization is LAST. Current fixed KCORE, MRES, transient KINIT and
+48K guest RAM figures refer to distinct profiles: never subtract
+unmatched figures to claim word savings.
+
+Dynamic MRES module unload/reload is NOT being deleted: keep it as
+POST-1.0, with no implementation or testing before 0.9 release.
+This documentation sweep makes no production source change.
+
+## 2026-11-11 v1487: KCORE feature scope excludes runtime MRES unloading
+
+Dynamic MRES module unload/reload is a POST-1.0 feature, not a
+0.9/1.0 requirement. Preserve it in the future roadmap but do not
+spend development or testing effort on it until 0.9 ships.
+Current boot-installed MRES modules remain permanent; filesystem
+unmount and snapshot recovery do not imply MRES code unloading.
+
 ## 2026-11-11 v1485: reclaim uncommitted MEMFS on corrupt snapshot
 
 The real 128K two-cold-boot v1485 test first publishes an ordinary

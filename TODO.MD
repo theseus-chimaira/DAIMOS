@@ -1,3 +1,67 @@
+## 2026-11-11 v1488: documentation sweep and current 0.9 KCORE gates
+
+Authoritative CURRENT scope after source/linked-map/testkit cross-check:
+
+- [x] Grouped D6 block codec v1464 is production-linked (Stage-1,
+  KCORE v1458, EXEC/PURE, TSFS, host producers). Do not reopen
+  D6LZ36 cutover solely because older v512/v1029/v1395 notes say OPEN.
+- [x] Restricted root-only write-free MEMFS XIP RUN/EXEC and v1469-v1485
+  pin, rollback, pressure, remount and cold-snapshot lifecycle accepted
+  at 128K/192K/256K. MEMFS/XIP requires at least 96K.
+- [x] v1486: separate 48K non-XIP physical LOWMEM guest PASS with five
+  stable DATE/MEMSTAT snapshots, MEMFS absent. 32K is explicitly
+  deferred and must not be tested until separately requested.
+- [x] v1487: isolated PDP-6 common-DXR EXEC pilot PASS on normal DXR
+  cases; original strict XIP branch retained by construction, not
+  newly guest-tested. The candidate adds 180 isolated TEXT words
+  (163+235 versus 218); REJECT production linkage as a RAM saving.
+- [x] F12/F13 requester-only BRK OOM production gate accepted by v1298
+  (64/64 in the defined 256K release profile). Raw disk swap unchanged.
+- [ ] Finish any independently identified BSTORE/BCACHE/LOGSTORE
+  production-interface/failure/combined-media gates not covered by
+  accepted v1484/v1485 evidence. Do not reimplement accepted backing.
+- [ ] Integrate swapless PURE-text dropping/restore with real process
+  scheduler/VM/MM ownership and tests; the v1381/v1384/v1395/v1397
+  component paths pass, but are NOT production-linked. Do not add
+  the v1487 +180-word shared loader merely to reach this milestone.
+- [ ] Integrate optional in-RAM mutable-suffix compression only if its
+  exact net physical RAM cost (code, buffer, full-APR restore headroom)
+  is favorable. v1451's 30-word trusted codec is test-only.
+- [ ] Complete the remaining 0.9 online D6FS packer and unified TSFS
+  post-KCORE implementation, and final accepted KCORE size sweep
+  LAST, after production functional/rollback gates are closed.
+
+Scope: dynamic MRES unload/reload is retained for POST-1.0, excluded
+from 0.9 AND 1.0 acceptance, and receives NO new work until 0.9 ships.
+Historical unchecked v512/v1029/v13xx/v14xx items below are chronological
+evidence, not an additive current release checklist; the old 32K XIP,
+32K PURE and compressed-disk-swap proposals are superseded. Version
+in DAIMOS/VERSION remains 0.5; no 0.9 release is claimed.
+
+## 2026-11-11 v1487: MRES runtime unload/reload is POST-1.0 ONLY
+
+Dynamic runtime unloading and reloading of boot-installed MRES modules,
+including the MEMFS provider, remains an explicit POST-1.0 feature.
+It is NOT a 0.9 or 1.0 release prerequisite, and must not receive
+implementation, investigation, regression gates or prioritization
+until DAIMOS 0.9 has been released. Revisit its design only in the
+post-0.9 planning phase, with implementation scheduled after 1.0.
+Boot-time MRES installation and filesystem instance mount/unmount
+remain part of the current functionality; neither implies dynamic
+MRES unloading. Older unchecked runtime-unload entries below are
+historical and superseded by this release-scope decision.
+
+## 2026-11-11 v1486: 48K non-XIP LOWMEM gate
+
+- [x] A real physical 48K PDP-6 LOWMEM DSK/D6FS image booted to
+  ROOT/DSH. Five consecutive DATE/MEMSTAT samples matched:
+  TOTAL 49152, RESIDENT 16271, PROCESS-WORDS 23320,
+  PROC-SLOTS 4/12 and MEMFS-CAPACITY 0.
+- [x] Put 48K-only repeatable acceptance in daimos-testkit v1486
+  while leaving historical v480 32K scripts unchanged.
+- [ ] 32K testing remains explicitly deferred until requested;
+  it is not a current KCORE feature gate.
+
 ## 2026-11-11 v1485: corrupt MEMFS snapshot admission rollback
 
 - [x] Commit an actual persistent root-owned MEMFS XIP image on DR0,
@@ -5076,16 +5140,17 @@ Release-critical or prerequisite correctness/acceptance:
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 
-The active KCORE decisions are 1, 3, 4 and 5; decision 2 is explicitly
-POST-KCORE. An unchecked active item means implementation/acceptance is
-outstanding, NOT that scheduling is undecided.
+The original KCORE decisions were 1, 3, 4 and 5; decision 2 is
+explicitly POST-KCORE. v1488 audit: decision 1 is complete as v1464,
+decision 4 is complete as v1469-v1485, and decisions 3 (remaining
+storage service gaps) and 5 (swapless PURE) remain OPEN. The historical
+v657-v670 notes below remain evidence, not current kernel blockers.
 
-- [ ] **DECISION 1 ACCEPTED (2026-10-27):** Complete the D6 codec production
-  streaming low-core decoder and atomic producer/consumer cutover before the
-  final KCORE sweep. This is a version 0.9 release prerequisite, not an
-  optional future experiment. Keep the old D6LZ36 system bootable until
-  the new format passes native regression; do not ship mixed formats or a
-  permanent legacy decoder. The decision is recorded, NOT implemented.
+- [x] **DECISION 1 IMPLEMENTED (2026-11-10 v1464):** Grouped block
+  streaming decoder and atomic producer/consumer cutover are deployed
+  in Stage-1, KCORE, EXEC/PURE, TSFS, and image-building tools.
+  The old D6LZ36 production format and permanent decoder are gone.
+  This is no longer an open 0.9 KCORE feature gate.
 - [ ] **DECISION 3 ACCEPTED (2026-10-27):** Complete the remaining BSTORE
   migration to generic shared backing/BCACHE/LOGSTORE BEFORE final KCORE
   optimization as a version 0.9 prerequisite. Audit remaining gaps against
@@ -5149,12 +5214,12 @@ outstanding, NOT that scheduling is undecided.
   BLOCKSET discovery/reads and superblock select entry. Capture
   precise failing return/check and root media fields; do not
   infer swap failure or claim full-system rollback acceptance.
-- [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
-  XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
-  Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,
-  unpin and rollback; validate scheduled process lifetime on native PDP-6
-  simulators. Existing admission and isolated VM tests are not production
-  process-launch acceptance. Decision recorded, implementation outstanding.
+- [x] **DECISION 4 IMPLEMENTED (2026-11-11 v1469-v1485):** Production
+  restricted MEMFS-only non-writing privileged XIP RUN/EXEC is accepted,
+  including scheduled 128K/192K/256K physical guests, MM pin lifecycle,
+  ownership/BRK/swap exclusion, injected rollback and MEMFS snapshot
+  recovery. Minimum physical MEMFS/XIP RAM is 96K, and no 32K/48K
+  XIP acceptance is expected or required.
 - [ ] **DECISION 5 REPLACED (2026-11-09 v1375):** Complete swapless-only
   PURE image dropping and opt-in in-RAM mutable-state compression, with
   exact MM/process ownership and full native lifecycle acceptance before

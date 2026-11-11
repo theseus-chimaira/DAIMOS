@@ -1,3 +1,49 @@
+## 2026-11-11 v1488: source-reconciled KCORE release status
+
+Current source-backed gate index replaces stale v512/v1029/v1286/v1395
+prose WITHOUT removing those dated historical experiments:
+
+1. DONE: production grouped block D6 codec v1464. The v1458
+   d6codec_decode_vfs_v1458 / d6codec_decode_buffer_v1458 runtime is
+   referenced by production EXEC, PURE backing and TSFS; the current
+   host image builders use the v1452 block codec. Old claims that
+   D6LZ36 remains the active production format are superseded.
+2. DONE: v1469-v1485 root-only nonwriting MEMFS XIP RUN/EXEC,
+   pinned VM lifecycle, remount, PERSIST HALT/reboot, fault refusal
+   and corrupt-snapshot rollback for 128K/192K/256K guests.
+3. DONE: v1486 physical 48K LOWMEM DSK/D6FS ROOT/DSH, five stable
+   DATE/MEMSTAT rounds, 49152 total, 16271 resident, 23320 process
+   words, four used of 12 process slots and no MEMFS.
+4. DONE: v1487 isolated common EXEC/PURE candidate source review,
+   native DXR regression and same-profile TEXT estimate. Candidate
+   163 + 235 versus production 218 = +180 code words, not linked.
+   The original XIP branch was carried over but its runtime has NOT
+   been revalidated in this standalone pilot.
+5. DONE: requester-only physical BRK OOM v1298 accepted 64/64 in
+   its exact 256K profile. Other profiles are not inferred from it.
+6. OPEN: remaining distinct BSTORE/BCACHE/LOGSTORE combined-service
+   gates; swapless PURE scheduler/rollback/restore integration; optional
+   mutable-RAM compression if demonstrably net-RAM-positive; and
+   online D6FS packer. Unified TSFS is after KCORE but before 0.9.
+   Final KCORE-only size optimization occurs after functional freeze.
+
+32K tests are on HOLD by explicit user decision, not a pre-0.9 KCORE
+development task. Runtime MRES code unload/reload is kept on the roadmap
+for AFTER 1.0, not a 0.9/1.0 gate, and must not be resumed until 0.9
+has been released. Current VERSION remains 0.5. This is a
+documentation-only reconciliation, not a new production kernel patch
+or a claim that the untested feature gates have passed.
+
+## 2026-11-11 v1487: runtime MRES unload/reload deferred until post-1.0
+
+The boot-installed MRES model remains permanent through 0.9 and 1.0.
+Dynamic unloading/reloading of the MEMFS MRES and other providers is
+retained in the roadmap specifically for AFTER 1.0. It is not a gate
+for 0.9/1.0 and is not to be developed or reconsidered before the
+0.9 release. VFS filesystem unmount/remount and snapshot rollback
+remain complete separate capabilities. Prior TODO entries proposing
+near-term provider unload/reload are superseded, not feature-complete.
+
 ## 2026-11-11 v1485: corrupted snapshot mount rollback accepted
 
 The v1484 PERSIST snapshot recovery, Type 236 LOGSTORE ABI and AUXSTORE
