@@ -1,3 +1,17 @@
+## 2026-11-11 v1468: certified XIP provider, remaining process integration
+
+- [x] Add production MEMFS private operation 030 for root-owned write-free
+  XIP certification, while retaining the legacy format-only 027 for native
+  hardware diagnostics. Check every image word, retain the pin until all
+  tests pass, preserve outputs on rejection and fail closed if cleanup
+  refuses MM unpin. Native success/negative/fatal/red-green PASS.
+- [ ] Connect this strict provider operation to privileged RUN/EXEC,
+  zero-write startup, BRK and swap exclusions, full rollback and actual
+  scheduled user-mode 32K/48K/256K tests. Do not optimize yet.
+- [x] Confirm that the RAM-only compressor is the existing v1451 30-word
+  bitmap encode/decode pair, tested on PDP-6; its process integration and
+  pressure acceptance remain OPEN, without a replacement codec.
+
 ## 2026-11-11 v1467: raw MEMFS XIP source ownership
 
 - [x] Reject non-root-owned raw-XIP vnode before MM pinning, using existing

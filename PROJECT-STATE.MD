@@ -1,3 +1,23 @@
+## 2026-11-11 v1468: certified raw-XIP provider path, no process launch
+
+The production movable MEMFS MRES gains private operation 030 to certify
+a pinned raw-XIP vnode without an untrusted process-store opportunity.
+The accepted program is an APR-aligned root-owned executable, no write
+permission, header/PURE with entry 020, MOVEI AC2,immediate then UUO 040
+EXIT, and zeros everywhere else. The native PDP-6 source-linked test covers
+success, bad EXIT, nonzero trailing data, failed provisional pin cleanup
+(fatal ownership invariant), and output/pin rollback. A compiled test
+linked to the pre-v1468 provider fails exactly at octal 0243; new source
+passes. Prior v216 SIMH/AAP user lifecycle, v202 AAP provider and v1394
+host/native restricted-policy tests PASS. Matched full movable MRES links
+with unchanged KCORE map: initialized 1770 -> 1841; BSS 13 -> 13;
+resident 1783 -> 1854 (+71). KCORE itself is not modified.
+
+This closes the **provider-level no-write verifier**, not privileged RUN/EXEC.
+No scheduled XIP process, startup/BRK/swap exclusion or complete cold-boot
+acceptance is claimed. RAM-only compression is the already tested 30-word
+v1451 bitmap pair; it is separate and still not production swapless-linked.
+
 ## 2026-11-11 v1467: root-owned MEMFS raw-XIP source prerequisite
 
 MEMFS's production private raw-XIP admission (MRES operation 027) now

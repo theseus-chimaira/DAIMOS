@@ -1,3 +1,24 @@
+## 2026-11-11 v1468: strict write-free raw-XIP provider admission
+
+Movable MEMFS now provides private FS MRES operation 030 (24 decimal)
+for a certified, root-owned, nonwritable raw XIP program. The strict
+operation reuses v1467 file ownership, format verification and MM pinning,
+then checks entry 020, APR extent geometry and **every** program word.
+Only MOVEI AC2,immediate followed by UUO 040 EXIT is permitted; all other
+nonheader words must be zero. The candidate is pinned throughout inspection.
+Caller base/entry outputs are published only on success, and a refusal
+releases its provisional pin; MM cleanup refusal is a fatal ownership
+invariant. The format-only operation 027 remains for hardware diagnostics.
+
+Native PDP-6 normal, failed-instruction, nonzero-trailing-data and fatal
+MM-unpin tests PASS, plus source-before negative witness 0243. Existing
+SIMH/AAP user XIP and v1394 C-policy tests PASS. Matched full MEMFS MRES
+relocation against the same KCORE map: 1783 -> 1854 resident words (+71,
+BSS unchanged at 13). This is a **provider feature**, not RUN/EXEC process
+launch; KCORE 9701-word v1466 fixed footprint is not updated or optimized.
+Still open: root-authorized loader selection, no-write startup, BRK/swap
+exclusion, atomic VM publication and scheduled RAM-pressure acceptance.
+
 ## 2026-11-11 v1467: MEMFS raw-XIP provenance gate, feature work only
 
 Production MEMFS `memfs_xip_admit` now verifies the existing UID9 owner

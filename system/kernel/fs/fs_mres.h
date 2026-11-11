@@ -35,6 +35,10 @@
 /* Privileged kernel-only XIP admission: AC1=vnode, AC2=basep,
  * AC3=entryp. Does not itself install any process VM mapping. */
 #define FS_MRES_OP_XIP_ADMIT            23U
+/* Strict, root-owned, write-free raw XIP image certification.  AC1=vnode,
+ * AC2=basep, AC3=entryp; returned pin is owned by VM only on success.
+ * Unlike the format-only probe above, this checks every image word. */
+#define FS_MRES_OP_XIP_SAFE_ADMIT_V1468 24U
 
 struct fs_mres_request {
         kword_t op;

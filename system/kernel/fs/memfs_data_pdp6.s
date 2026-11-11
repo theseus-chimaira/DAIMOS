@@ -27,6 +27,7 @@
         .globl  memfs_xip_is_pinned
         .globl  memfs_xip_any_pinned
         .globl  memfs_xip_admit
+        .globl  memfs_xip_safe_admit_v1468
 
         .globl  mm_alloc
         .globl  mm_alloc_aligned
@@ -571,6 +572,9 @@ memfs_xip_admit_bad:
         move    1,010
         move    2,011
         pushj   17,memfs_xip_unpin
+        ; The provisional pin has no published VM owner.  A refused MM
+        ; unpin cannot be treated as a recoverable image-format failure.
+        jumpn   1,proc_swap_storage_invariant_v30
 memfs_xip_admit_unreserved:
         seto    1,
 memfs_xip_admit_return:
@@ -583,6 +587,91 @@ memfs_xip_admit_done:
         pop     17,012
         pop     17,011
         pop     17,010
+        popj    17,
+
+; A separate strict admission service for privileged RUN/EXEC.  Preserve
+; the old format-only service for native hardware/VM diagnostics, whose
+; hand-written programs deliberately do not satisfy this no-write profile.
+; The PDP-6 has no physical XIP write protection: accept ONLY a root-owned
+; write-free regular MEMFS file with a PURE header, exact entry 020, an
+; unindexed/nonindirect MOVEI AC2,immediate and a following UUO 040 EXIT.
+; Every other image word except the two header words must be zero.
+;
+; Unlike the format-only entry, stage the base and entry on the private
+; stack until the complete policy passes.  A rejected image publishes
+; neither result nor an MM pin; refused cleanup is an ownership invariant.
+; AC1=fs, AC2=vnode, AC3=basep, AC4=entryp; return 0 or -1.
+memfs_xip_safe_admit_v1468:
+        add     17,[011,,011]          ; seven saved ACs, two scratch words
+        movei   0,-010(17)
+        hrli    0,010
+        blt     0,-002(17)
+        move    010,1
+        move    011,2
+        move    012,3
+        move    013,4
+        jumpe   012,memfs_xip_safe_no_pin_v1468
+        jumpe   013,memfs_xip_safe_no_pin_v1468
+        movei   3,-1(17)              ; stage base, not caller output
+        movei   4,(17)                ; stage entry, not caller output
+        pushj   17,memfs_xip_admit
+        jumpn   1,memfs_xip_safe_return_v1468
+        move    014,-1(17)             ; pinned MEMFS MM base
+        move    015,(17)               ; validated raw entry
+        caie    015,020
+        jrst    memfs_xip_safe_bad_v1468
+        ; The node's logical word length must be an APR multiple larger
+        ; than 02000.  The previous pin verified its physical data extent.
+        hrrz    4,011                  ; node slot, already validated
+        imuli   4,7
+        add     4,MEMFS_NODES(010)
+        hrrz    016,MEMFS_NODE_DATA(4)
+        caige   016,04000
+        jrst    memfs_xip_safe_bad_v1468
+        trne    016,01777
+        jrst    memfs_xip_safe_bad_v1468
+        ; Compare all instruction-control bits, ignoring only the 18-bit
+        ; immediate operand.  No indirection, index or address-based STORE.
+        hlrz    4,020(014)
+        caie    4,0201100             ; opcode MOVEI=0201, destination AC2
+        jrst    memfs_xip_safe_bad_v1468
+        move    4,021(014)
+        came    4,[040000000000]      ; exact monitor UUO 040 / EXIT
+        jrst    memfs_xip_safe_bad_v1468
+        movei   015,2                 ; scan after the two-word header
+memfs_xip_safe_scan_v1468:
+        caml    015,016
+        jrst    memfs_xip_safe_ok_v1468
+        cain    015,020
+        jrst    memfs_xip_safe_next_v1468
+        cain    015,021
+        jrst    memfs_xip_safe_next_v1468
+        move    4,014
+        add     4,015
+        skipn   (4)
+        jrst    memfs_xip_safe_next_v1468
+        jrst    memfs_xip_safe_bad_v1468
+memfs_xip_safe_next_v1468:
+        aoja    015,memfs_xip_safe_scan_v1468
+memfs_xip_safe_ok_v1468:
+        move    4,-1(17)
+        movem   4,(012)
+        move    4,(17)
+        movem   4,(013)
+        setz    1,
+        jrst    memfs_xip_safe_return_v1468
+memfs_xip_safe_bad_v1468:
+        move    1,010
+        move    2,011
+        pushj   17,memfs_xip_unpin
+        jumpn   1,proc_swap_storage_invariant_v30
+memfs_xip_safe_no_pin_v1468:
+        seto    1,
+memfs_xip_safe_return_v1468:
+        movei   0,010
+        hrli    0,-010(17)
+        blt     0,016
+        sub     17,[011,,011]
         popj    17,
 
 ; int memfs_xip_unpin(fs, vnode)

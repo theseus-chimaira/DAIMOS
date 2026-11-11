@@ -73,6 +73,7 @@ memfs_read_return:
 ;     unsigned int off, const kword_t *buf, unsigned int nwords)
         .globl  memfs_write_words
         .globl  memfs_xip_admit
+        .globl  memfs_xip_safe_admit_v1468
         .globl  memfs_xip_owns_base
         .globl  memfs_xip_unpin_base
 memfs_write_words:
@@ -887,6 +888,8 @@ memfs_mres_create:
 
 memfs_mres_dispatch:
 memfs_mres_reg_dispatch:
+        cain    6,030                   ; strict raw XIP no-write admit
+        jrst    memfs_mres_xip_safe_admit_v1468
         caie    6,023                   ; 19 decimal: MEMFS_MOUNT
         jrst    memfs_mres_not_mount
         jrst    memfs_mres_mount
@@ -910,6 +913,15 @@ memfs_mres_xip_admit:
         move    2,1
         movei   1,memfs_mres_fs
         jrst    memfs_xip_admit
+
+; Identical argument ABI to the format-only operation.  Certification
+; belongs to MEMFS while its private MM pin and file contents are stable.
+memfs_mres_xip_safe_admit_v1468:
+        move    4,3
+        move    3,2
+        move    2,1
+        movei   1,memfs_mres_fs
+        jrst    memfs_xip_safe_admit_v1468
 
 ; AC1=physical base. Return 1 if this XIP reference was released, 0 if
 ; not owned, -4 if an owned pin could not be released. The -1 result is
