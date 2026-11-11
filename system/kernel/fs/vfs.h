@@ -60,9 +60,11 @@ typedef kword_t vnode_t;
 #define VFS_NAME_WORDS       4U
 #define VFS_NAME_MAX_CHARS   (VFS_NAME_WORDS * 6U)
 
-/* KINIT still publishes four mounts. All live FILE/PURE record formats and
- * provider table accesses now accommodate up to 26; a boot-validated unit
- * inventory and an atomic KINIT capacity publication remain outstanding. */
+/* Legacy enumeration limit for the MOUNT/DF command consumers and old tests.
+ * It is NOT the live KCORE mount limit: KINIT allocates a six-array slab from
+ * the verified device inventory and publishes vfs_mount_limit last.  New
+ * KCORE code must use that runtime limit.  MOUNT/DF still stop after four
+ * entries; a distinct runtime-capacity query/consumer fix is pending. */
 #define VFS_NMOUNT           4U
 extern kword_t vfs_mount_limit;
 #define VFS_ID_MASK          0777U
