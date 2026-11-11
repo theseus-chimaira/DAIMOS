@@ -3,10 +3,12 @@
 - [x] Native v1498 real nonresident TERM WAIT/saved-PC decision,
   v1500 real immediate event+PREVM finalizer and v1501 real deferred
   owner-return event consumer; positive and negative controls PASS.
-- [x] Prepare and shell-validate separate v1499 physical diagnostic;
-  **no** accepted physical branch report yet.
-- [ ] Run and verify v1499 256K full-guest map-backed TERM return,
-  WAIT/CTX_PC/FD-control before/after state and exact event branch.
+- [x] Capture two v1499 physical pre/post owner snapshots; invalidate
+  original out-of-scope `SKIPN` event counts. Testkit v1502 `SKIPE`
+  native guard and negative mutation regression PASS.
+- [ ] Rerun corrected v1499/v1502 256K guest; verify map-backed TERM
+  return, WAIT/CTX_PC/FD-control owner snapshots and scoped event
+  branch counters, never reusing the old invalid counts.
 - [ ] Test permanently corrupt BACKSTORE bitmap/DEVICE failure with
   exact DISK ownership, no false READY_ONCE or unsafe repeated restores,
   and eventual safe deferred-owner/finalizer recovery.

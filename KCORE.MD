@@ -10,8 +10,12 @@ pending-bit consumption after *controlled* VM restoration, with a
 stub private fatal-close observer. Both lifecycle seams are covered
 at native level, not as one physical failure transaction.
 
-v1499's disposable 256K branch-diagnostic runner prepares and
-shell-validates but has **no accepted completed physical report**.
+The initial v1499 disposable 256K physical guest captured two real
+pre/post TERM-owner snapshots, but its optional `SKIPN`-guarded event
+counters were inverted and cannot qualify the TERM branch. Testkit
+v1502 (`6c3de2c`) corrects this diagnostic guard to `SKIPE` and its
+native positive/negative test PASSes. A corrected physical guest
+and accepted branch/owner classification remain **OPEN**.
 The v1495 corrupt-bitmap full guest still cannot establish actual
 TERM branch, idle PREVM owner and permanently failed backing policy.
 The original v1336 normal no-failed-swap-in gate stays strict. No

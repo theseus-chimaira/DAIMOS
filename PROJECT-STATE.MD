@@ -10,8 +10,12 @@ real `proc_deferred_term_check_v926` consuming the pending event once
 at the owner return, but controls restored VM and private fatal-close.
 No production source or RAM change accompanies this documentation.
 
-The v1499 full-guest branch diagnostic **prepares** only. Real v1495
-physical bitmap-corruption guest reached HALT with 0 final backing,
+The initial v1499 physical guest recorded two real pre/post TERM
+snapshots, but its optional event counters were incorrectly scoped
+(`SKIPN`). Testkit v1502 (`6c3de2c`) corrects that guard to `SKIPE`
+and passes the native positive/negative mutation test. A corrected
+full guest is still required to attribute the actual event branch.
+Real v1495 physical bitmap-corruption guest reached HALT with 0 final backing,
 but failed the distinct fault-specific TERM/PREVM owner assertions;
 neither native acceptance nor last-free accounting closes that gate.
 Irreparable backing, exact TERM branch and full physical finalizer
