@@ -1,3 +1,46 @@
+## 2026-11-11 v1484: persistent MEMFS and LOGSTORE/DRM dispatch diagnosis
+
+For the real PDP-6 full-profile PERSIST mount, valid snapshot v2 images
+were written to BACKSTORE, yet 192K/256K second boots recreated files
+instead of restoring them. The physical DR0 block-zero AUXSTORE
+descriptor was unexpectedly overwritten by KCORE instruction words.
+An isolated diagnostic SIMH logged WRITE transfers to drum block zero
+from memory 005372 and 005373: the intended LOGSTORE physical block
+addresses, incorrectly passed through an incompatible raw DRM MRES
+service. `logstore_runtime.s` needs the public unit/block/buffer ABI,
+not the raw hardware-group-address/buffer service ABI. KINIT's
+`logstore_minit` now verifies the physical device service is available
+and patches to the proper KCORE DRM/DSK bridge instead. The original
+corrupting trace and diagnostic descriptor-only repair proving snapshot
+recoverability are retained in the test workspace; no simulator patch
+or manual descriptor repair is shipped.
+
+The corrected snapshot source includes legitimate bounds comparisons,
+cache-tag invalidation before shared-workspace BACKSTORE I/O, and v2
+committed-range reservation by swap-boot. No fixed KCORE/process RAM
+growth; MEMFS MRES grows two words, no BSS change. An exact on-media
+two-boot test with descriptor inspection after each HALT is now the
+acceptance gate. The independently rebuilt 128K, 192K and 256K
+full-profile two-cold-boot guests all PASS actual snapshot recovery,
+strict root-owned XIP RUN/WAIT, and unchanged AUXSTORE descriptor
+geometry after both HALTs. An isolated 128K v1478 MRES fault test
+refuses the first partial snapshot data write once on each cold boot;
+the guest verifies `dsys_halt` refuses publication, and retry commits
+successfully. Fresh-boot exact snapshot restoration and both retries
+PASS. Native LOGSTORE append/read/write and MEMFS normal/fatal tests
+PASS. Existing 32K/48K non-XIP tests remain separate under the
+>=96K MEMFS policy.
+
+Final v1484 closure: the independent post-fix 128K normal v1474 MEMFS
+remount guest also PASSes three namespace destruction/recreation cycles,
+strict XIP RUN/EXEC and clean HALT. Native v1094/v1471 pin/VM owner
+retry, LOGSTORE append/direct-I/O, and MEMFS normal/v1403/v1468 fatal
+tests PASS. Both second-boot simulator runs and isolated failed-HALT
+injection were checked against the actual saved AUXSTORE media geometry;
+no hidden fallback to D6FS was accepted. The remaining separate gate is
+dynamic MRES provider unload/reload, which filesystem unmount does not
+implement or claim to test.
+
 ## 2026-11-11 v1479: exclude sub-96K MEMFS XIP tests
 
 XIP depends on MEMFS, which is disabled below 96K physical words. The

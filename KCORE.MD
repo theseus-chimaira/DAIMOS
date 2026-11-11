@@ -1,3 +1,51 @@
+## 2026-11-11 v1484: LOGSTORE direct-DRM ABI and persistent MEMFS snapshots
+
+Persistent MEMFS could publish a structurally valid snapshot on the
+auxiliary Type 236 drum but could fail to restore it after a cold boot.
+Disk-level inspection located the committed snapshot at physical drum
+block 015767 (v2 header, metadata length, and exact 36-bit checksum
+were valid). However, DR0 block zero's AUXSTORE descriptor was replaced
+by words from KCORE `vfs_write_words`, preventing AUXSTORE discovery on
+the next boot. Restoring *only* the first seven descriptor words of an
+already-corrupted diagnostic image let the existing snapshot restore;
+the repair was diagnostic evidence, never a production workaround.
+
+An isolated v1483 SIMH worktree recorded two actual Type 167/236 DR0
+block-zero WRITEs during INIT/LOGIN, using KCORE text addresses 005372
+and 005373 as DMA source. Those numbers were supposed to be LOGSTORE
+physical drum blocks 05372/05373. Source tracing established an ABI
+mismatch: `logstore_runtime.s` passes unit, block, buffer in AC1..AC3;
+`logstore_minit` patched its direct read/write slots to raw DRM MRES
+services expecting hardware group-address, buffer in AC1..AC2. Hence
+the 05372/05373 block argument was taken as a core-buffer address and
+unit zero was mistaken for drum block zero. v1484 patches the existing
+public KCORE DRM/DSK read/write bridges instead, after validating that
+the corresponding raw device services are installed. Only reclaimable
+KINIT selection code changes; no KCORE or process words are added.
+
+The persistence path also needed previously uncommitted v1477/v1480
+corrections: three inverted snapshot backing-size/reserve comparisons;
+BCACHE workspace invalidation before direct snapshot reads/writes; and
+boot-time recognition and reservation of committed v2 snapshot ranges
+in addition to v1, so swap cannot claim retained snapshot blocks.
+These are included in the same source review and native guest matrix.
+The MEMFS MRES image gains two code words from the new cache-invalidate
+calls (snapshot MRES BSS unchanged); fixed KCORE endpoint remains
+octal 023434 in matched 128K KCC images.
+
+The full-profile physical 128K, 192K and 256K two-cold-boot guests PASS:
+first boot creates/executes strict root-owned MEMFS XIP and snapshot
+payload, HALT commits; second boot reads exact saved data and executes
+restored XIP. AUXSTORE partition geometry is inspected and compared
+after *each* boot, rejecting the former DR0 block-zero clobber.
+The isolated 128K v1478 test refuses one snapshot payload write on
+each cold boot, verifies `dsys_halt` returns failure without committing
+an incomplete image, then performs a successful HALT retry. Its next
+boot restores the same strict XIP/data payload; both boots PASS with
+the AUXSTORE descriptor intact. Native v706 LOGSTORE direct read/write,
+v1 commit-last append, and MEMFS normal/v1403/v1468 fatal cases PASS.
+All 32K/48K tests remain non-XIP by the explicit MEMFS 96K minimum.
+
 ## 2026-11-11 v1479: MEMFS XIP requires at least 96K physical words
 
 Raw XIP is exclusively a MEMFS-backed process image. MEMFS is disabled

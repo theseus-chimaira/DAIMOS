@@ -17,6 +17,7 @@
 #define PROC_SWAP_MM_OWNER 4U
 #define SWAP_PERSIST_MAGIC   055464663UL
 #define SWAP_PERSIST_VERSION 1UL
+#define MEMFS_SNAPSHOT_VERSION_V1480 2UL
 
 static int
 proc_swap_reserve_persistent(kword_t blocks)
@@ -40,7 +41,13 @@ proc_swap_reserve_persistent(kword_t blocks)
         last = blocks - 1UL;
         if (backstore_read(last, 1UL, h) != 0)
                 return 0;
-        if (h[0] != SWAP_PERSIST_MAGIC || h[1] != SWAP_PERSIST_VERSION)
+        /* v1480: MEMFS snapshot v2 retains the v1 four-word range header.
+         * Reserve that exact run at KINIT too: otherwise early swap
+         * allocations may overwrite committed snapshot sectors before
+         * MOUNTALL can restore the MEMFS namespace. */
+        if (h[0] != SWAP_PERSIST_MAGIC ||
+            (h[1] != SWAP_PERSIST_VERSION &&
+            h[1] != MEMFS_SNAPSHOT_VERSION_V1480))
                 return 0;
         if (h[2] >= blocks || h[3] == 0UL || h[3] > blocks - h[2] ||
             h[2] + h[3] != blocks)

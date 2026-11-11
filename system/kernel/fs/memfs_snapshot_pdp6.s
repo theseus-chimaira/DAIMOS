@@ -19,6 +19,7 @@
         .globl  backstore_bitmap
         .globl  backstore_read
         .globl  backstore_write
+        .globl  bcache_workspace_invalidate
 
         .equ    SNAP_MAGIC,055464663
         .equ    SNAP_VERSION,2
@@ -65,11 +66,17 @@ memfs_snapshot_mount:
         addi    011,SECTOR_WORDS-1
         lsh     011,-7                 ; ceil(pool words / 128)
         addi    011,1+SNAP_META_BLOCKS
-        camge   011,backstore_blocks
+        ; v1477: required span must fit below the commit-header block.
+        ; Old CAMGE rejected the valid in-range case.
+        caml    011,backstore_blocks
         jrst    memfs_snapshot_mount_fail
         move    012,backstore_blocks
         sub     012,011                ; first reserved block
 
+        ; v1477: direct BACKSTORE reads overwrite the shared block buffer.
+        ; Its BCACHE tag must be dropped before this read; otherwise
+        ; subsequent D6FS metadata reads can accept stale backing data.
+        pushj   17,bcache_workspace_invalidate
         move    1,backstore_blocks
         subi    1,1
         movei   2,1
@@ -133,7 +140,8 @@ memfs_snapshot_new:
         move    016,backstore_blocks
         caile   016,SECTOR_WORDS
         movei   016,SECTOR_WORDS
-        camle   015,016                ; free <= process reserve
+        ; v1477: fail if free count <= process reserve, not if greater.
+        camg    015,016                ; free > process reserve
         jrst    memfs_snapshot_mount_fail
         move    1,015
         sub     1,016
@@ -198,6 +206,9 @@ memfs_snapshot_shutdown:
         skipn   MEMFS_NODES(010)
         jrst    memfs_snapshot_shutdown_ok
 
+        ; v1477: the commit-header buffer is shared with filesystem L1.
+        ; A failed HALT must not leave a valid tag on overwritten content.
+        pushj   17,bcache_workspace_invalidate
         setzm   fs_block_workspace     ; invalidate commit header first
         move    1,backstore_blocks
         subi    1,1
@@ -234,7 +245,8 @@ memfs_snapshot_shutdown_loop:
         lsh     015,-7                 ; file backing blocks
         move    1,011
         add     1,015
-        camge   1,backstore_blocks
+        ; Snapshot data must precede the last-block commit header.
+        caml    1,backstore_blocks
         jrst    memfs_snapshot_shutdown_fail
         move    1,011
         move    2,015

@@ -1,3 +1,28 @@
+## 2026-11-11 v1484: persistent MEMFS/LOGSTORE damage and recoverability
+
+- [x] Identify DR0 descriptor corruption: instrumented Type 167/236
+  simulator confirms LOGSTORE writes to physical block zero using KCORE
+  text as DMA source, due to raw MRES ABI target mismatch at KINIT.
+- [x] Patch LOGSTORE AUXSTORE read/write to existing public KCORE
+  DRM236/DSK270 bridges after validating installed driver services.
+  Testkit source-level negative mutation catches the previous target.
+- [x] Correct v1477 snapshot capacity checks, invalidate shared BCACHE
+  workspace before direct snapshot I/O, and reserve v2 snapshot runs at
+  swap boot. Preserve on-media v1 support and strict commit-last design.
+- [x] Validate real 128K and 192K two-cold-boot PERSIST mounts, exact
+  XIP/payload restore, and intact AUXSTORE descriptor after each HALT.
+- [x] Complete the 256K full-profile two-boot integrity/recovery test,
+  matching passing 128K and 192K guests.
+- [x] Complete isolated 128K partial-write/refused-HALT retry across
+  two cold boots with exact snapshot recovery and the same AUXSTORE
+  descriptor-integrity assertions. The RAM-only fault resets once per
+  boot; both boots explicitly refuse then safely retry HALT.
+- [x] Finish independent 128K normal MEMFS remount, XIP source-linked
+  v1094/v1471 teardown/retry and native LOGSTORE append/direct-I/O,
+  MEMFS normal/v1403/v1468 fatal regression checks; all PASS.
+- [ ] Independently define/test dynamic MEMFS provider MRES unload/reload
+  only if future runtime module unloading is made available.
+
 ## 2026-11-11 v1479: XIP physical memory floor
 
 - [x] Enforce the MEMFS/XIP 96K minimum physical-memory policy at the
