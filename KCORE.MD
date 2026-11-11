@@ -1,3 +1,20 @@
+## 2026-11-11 v1506: repaired physical BACKSTORE -> owning TERM accepted
+
+Testkit `2bf10ff` v1504 completes the real 256K PDP-6 corrupt-bitmap
+guest with one fault, three matching checked frees and one precise
+repair. Both scheduler TERM requests coalesced with the already-pending
+TERM on nonresident DISK slot `010`. After repair, the same owner
+entered `proc_deferred_term_v970` once and consumed the pending bit,
+ran its private fatal close once with `0400001`, finished once and
+published one zombie. Strict fault-specific verifier PASSes with
+20 negative owner mutations plus v1503's 15 prior checks. F07 exact
+18/18 and independent physical MM/owner checks PASS; zero final
+backing. Original normal v1336 still correctly rejects injected
+swap-in failures. **Repaired corruption full physical path ACCEPTED;
+permanently irreparable BACKSTORE handling remains OPEN.** No runtime
+KCORE/RAM change. See
+`design/kcore-backstore-owner-return-physical-v1506.md`.
+
 ## 2026-11-11 v1505: repeated checked-BACKSTORE rollback preserves owner
 
 Testkit `b0e5075` native PDP-6 runs six successive source-linked

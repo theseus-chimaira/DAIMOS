@@ -1,3 +1,20 @@
+## 2026-11-11 v1506: physical repaired-BACKSTORE TERM owner completion
+
+Accepted real physical 256K KCC PDP-6 v1504 guest: one injected
+BACKSTORE bitmap fault, two failed swap-ins/coalesced TERM, third
+checked free after exact repair, and the same selected nonresident
+DISK slot `010` consumed pending TERM on its actual owning return.
+Private fatal close and finish each ran exactly once, with status
+`0400001`; one zombie published, backing counters returned to zero,
+and original F07 18/18 children completed. Strict `2bf10ff` verifier
+rejects 20 target-specific owner-state mutations plus 15 earlier
+coalescing/bitmap mutations; independent physical MM/owner checks
+PASS. Normal v1336 still rejects injected failures; not relaxed.
+This closes the repairable full-guest lifecycle boundary, NOT terminal
+handling of permanently irreparable backing or DEVICE loss. No
+production functional KCORE/RAM/ABI change. Report:
+`design/kcore-backstore-owner-return-physical-v1506.md`.
+
 ## 2026-11-11 v1505: repeated physical-backing refusal native gate
 
 New testkit `b0e5075` source-links real swap-in, slot-0 service,

@@ -1,3 +1,20 @@
+## 2026-11-11 v1506: physical owner-side TERM completion accepted
+
+- [x] Boot real 256K KCC/PDP-6 v1504 F07 with one genuine bitmap
+  fault, two rejected restore attempts and one precise backing repair.
+- [x] Observe exact affected DISK slot `010` enter the real owning
+  deferred-TERM consumer once, clear pending TERM and set fatal-close
+  latch; real private close/finish/zombie each once at status `0400001`.
+- [x] Strict physical target-specific verification plus 20 negative
+  mutations PASS, inherited v1503 15 mutations and independent
+  MM/owner/F07 18/18 checks also PASS. Normal v1336 unchanged.
+- [ ] Design, implement and qualify permanently unrecoverable bitmap/
+  DEVICE fault behavior: bounded retry or safe quarantine without
+  false RELEASE, lost DISK owner or private executive continuation.
+- [ ] Close remaining mixed-media/DTFS/LOGSTORE cases, swapless PURE,
+  mount enumeration and (later) optional RAM compression.
+  See `design/kcore-backstore-owner-return-physical-v1506.md`.
+
 ## 2026-11-11 v1505: repeated invalid BACKSTORE transaction
 
 - [x] Source-link real PDP-6 swap-in, slot-0 scheduler, bitmap free
