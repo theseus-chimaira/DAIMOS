@@ -1,3 +1,40 @@
+## 2026-11-11 v1472: XIP RUN u-area OOM and deferred retry matrix accepted
+
+After v1471 fixed XIP VM teardown, v1472 closes the outstanding fault
+boundary between successful `exec_load_process` strict MEMFS admission
+and the subsequent RUN child u-area allocation. The daimos-testkit's
+`daimos-xip-uarea-retry-v1472.sh` copies the exact production kernel to
+an isolated build tree and inserts test-only failure hooks at the real
+`proc_run_block` allocator gateway and the resident MEMFS XIP-unpin leaf.
+The first hook verifies that operation 031 owns the newly staged pinned
+physical base before returning one simulated u-area allocation refusal.
+The second refuses two unpins without changing either the provider's
+reference count or the physical MM pin. Production kernel sources and
+the uninstrumented image ABI are unchanged.
+
+Independent full-profile KCC disk-root PDP-6 guests at **128K, 192K and
+256K** all PASS. Each reaches ROOT LOGIN/DSH with the correct KINIT
+memory banner and MEMFS loaded; the first XIP RUN fails as expected.
+The unpublished child is observed as SYS_TEARDOWN_RUN_VM (stage 3),
+its pinned file refuses CHMOD and the child is not published as a
+WAITable zombie. Slot zero retries with the original shared exponential
+backoff and eventually unpins the image, discards the slot, and returns
+process-slot/VM accounting to baseline. CHMOD then succeeds, file bytes
+remain unchanged, and subsequent XIP RUN/WAIT and EXEC replacement pass
+with `STATUS:0`. The boot simulator's post-HALT examination confirms
+**exactly one allocator refusal and exactly two unpin refusals** in
+each KCORE image. The testkit provides a three-size matrix runner.
+
+This is *fault-test-only* instrumentation and adds **zero words** to
+production KCORE/MRES, no new permanent ownership fields and no new
+compression algorithm. The initial native guest tests were corrected
+to query stage 3 instead of stage 2, to treat nonblocking WAIT=0 as
+nonzombie, and to respect slot-zero's capped retry backoff rather than
+mistaking a long injected refusal sequence for a kernel deadlock.
+Remaining open: heavier concurrent memory/process-slot pressure,
+provider/mount loss and cross-mount lifetime fault testing, and the
+separate swapless PURE/bitmap reclaim integration.
+
 ## 2026-11-11 v1471: XIP detach refusal retains VM pin for retry
 
 Production `vm_space_destroy` had a post-release failure boundary: it

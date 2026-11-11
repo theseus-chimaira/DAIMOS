@@ -1,3 +1,22 @@
+## 2026-11-11 v1472: XIP post-admission u-area failure recovery
+
+- [x] Inject one u-area MM refusal immediately after **real certified
+  MEMFS XIP pin and staged VM** in RUN, plus two test-only owner-side
+  unpin refusals, without changing permanent KCORE/MRES code.
+- [x] Verify the unpublished RUN remains at stage 3 (RUN_VM), CHMOD is
+  refused while pinned, reaper eventually unpins and discards it, no
+  child zombie is returned by WAIT, slots and physical process-word
+  accounting return to baseline, and later XIP RUN/WAIT and EXEC work.
+- [x] Independent full KCC disk-root SIMH acceptance at 128K, 192K and
+  256K: three PASSes, KINIT memory verified, post-HALT fixed-KCORE
+  counters exactly 1 allocation refusal and 2 unpin refusals each.
+  Testkit provides both individual and three-size v1472 runners.
+- [ ] Extend concurrent process-slot and physical-memory pressure with
+  pinned XIP images and test source mount removal/provider lifetime
+  failures; do not expand beyond the strict PDP-6 no-write XIP profile.
+- [ ] Continue separate swapless PURE release and v1451 bitmap reclaim
+  integration, plus 32K/48K non-XIP acceptance and later size reduction.
+
 ## 2026-11-11 v1471: XIP release ordering and refusal retry
 
 - [x] Fix XIP `vm_space_destroy` pin-ownership loss on a refused

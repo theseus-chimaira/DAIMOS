@@ -1,3 +1,35 @@
+## 2026-11-11 v1472: pinned-XIP post-admission RUN rollback accepted
+
+The real production RUN order is certified MEMFS XIP pin and staged VM,
+then MM allocation of the independent 0410-word stable u-area. New
+`daimos-testkit/tests/validation/daimos-xip-uarea-retry-v1472.sh`
+injects a single allocator refusal at the exact latter boundary in
+an isolated copy of the production KCORE assembly; before refusing,
+the hook proves the VM base is an actual pinned MEMFS XIP reference
+through the read-only operation 031. A separate test-only MEMFS hook
+refuses the first two owner-side physical unpins without mutating the
+ref or MM pin, forcing the existing stage-3 SIDL deferred cleanup path.
+No test code or new counters are linked into production.
+
+Full-profile KCC DSK/D6FS PDP-6 SIMH guest matrix at **128K / 192K /
+256K**: PASS at each size, with correctly detected installed memory,
+MEMFS loading, ROOT LOGIN/DSH, real XIP admission, injected u-area OOM,
+stage-3 SYS_TEARDOWN_RUN_VM pending owner, CHMOD denial while pinned,
+slot-zero retry and successful VM/pin teardown, no WAIT zombie,
+restored `sys_meminfo` slot/VM accounting, post-release CHMOD/readback,
+successful XIP RUN/WAIT recovery and the complete original v1469
+negative tests plus EXEC replacement (STATUS:0). SIMH post-HALT KCORE
+counter samples prove **one** allocator refusal and **two** unpin
+refusals in every image. New v1472 matrix runner selects all three
+physical sizes and checks the guest-detected memory size.
+
+No DAIMOS kernel fix was needed for this gate after v1471; production
+KCORE and MEMFS footprint are unchanged. The separate v1451 30-word
+bitmap codec is unchanged and not yet attached to swapless PURE.
+Still OPEN: larger concurrent slot/RAM pressure, multi-mount and MRES
+shutdown/reload fault lifetime testing, and separate 32K/48K non-XIP
+physical release acceptance.
+
 ## 2026-11-11 v1471: XIP VM release transaction repaired (native + 128K)
 
 Detected a real XIP pin/VM ownership bug at the edge between the
