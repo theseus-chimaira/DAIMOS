@@ -1,3 +1,33 @@
+## 2026-11-11 v1485: reclaim uncommitted MEMFS on corrupt snapshot
+
+The real 128K two-cold-boot v1485 test first publishes an ordinary
+root-owned strict MEMFS XIP snapshot. Host-side corruption then flips
+one bit in the committed namespace metadata without changing the
+checksum header or AUXSTORE partition descriptor. Boot 2 correctly
+refuses the persistent mount, but before this fix the unpublished
+memfs_mres_fs singleton still pointed at its 01200-word namespace MM
+allocation. MEMINFO falsely reported MEMFS capacity and a same-boot
+volatile mount was rejected despite no published VFS mount.
+
+system/kernel/fs/memfs_runtime.s now routes snapshot-admission refusal
+to the existing mount-failure cleanup. It releases the actual namespace
+extent first, clears exactly the three-word singleton only after
+successful MM free, then returns failure; if MM refuses, ownership is
+retained instead of losing the reference. No provider, format,
+allocator policy, permanent data or per-process state changes.
+Matched full-profile KCC fixed KCORE endpoint remains 023434 octal;
+MEMFS MRES code is one word larger, BSS unchanged.
+
+The isolated physical 128K guest PASSes: persistent boot 1 creates and
+executes strict XIP; boot 2 refuses deliberately corrupted snapshot
+metadata; a new volatile MEMFS mount then succeeds in the same boot,
+the exact new XIP image is readable/runnable, and the guest HALTs with
+XIP-SNAPSHOT-CORRUPT-RECOVERED and STATUS:0. A clean-media post-fix
+128K/192K/256K two-cold-boot matrix separately PASSes exact persistent
+payload/XIP restoration and unchanged AUXSTORE geometry on both boots.
+Source-linked v1094/v1471 ownership and native MEMFS normal/v1403/v1468
+fatal regressions all PASS. No sub-96K MEMFS/XIP profiles are tested.
+
 ## 2026-11-11 v1484: LOGSTORE direct-DRM ABI and persistent MEMFS snapshots
 
 Persistent MEMFS could publish a structurally valid snapshot on the

@@ -1,3 +1,32 @@
+## 2026-11-11 v1485: corrupted snapshot mount rollback accepted
+
+The v1484 PERSIST snapshot recovery, Type 236 LOGSTORE ABI and AUXSTORE
+descriptor fixes remain accepted. A new destructive metadata test
+(daimos-memfs-snapshot-corrupt-boot-v1485.sh) makes one independent
+128K committed MEMFS snapshot and flips one 36-bit metadata bit on
+physical DR0 while leaving its commit header and AUXSTORE descriptor
+untouched. On the unmodified v1484 kernel, checksum refusal left the
+01200-word unpublished MEMFS namespace allocation and three-word
+memfs_mres_fs singleton committed. No VFS mount existed, but MEMINFO
+still reported its capacity and a new volatile mount could not claim
+the singleton. The guest failed (XIP-FAIL-SNAP-NO-OWNER).
+
+Production memfs_mres_mount now invokes shared uncommitted-mount
+rollback when memfs_snapshot_mount refuses a corrupt snapshot. MM
+free precedes singleton clear; on MM failure, ownership remains
+recorded. Exact KCC fixed-core 023434 octal is unchanged; MRES text
+increases by one word, MRES BSS and process state unchanged. The
+corrected 128K guest PASSes on boot 2 with expected MOUNTALL refusal,
+successful same-boot volatile MEMFS mount, new certified XIP RUN/WAIT,
+XIP-SNAPSHOT-CORRUPT-RECOVERED, STATUS:0, and clean HALT.
+
+Independently rebuilt post-fix physical 128K, 192K and 256K two-boot
+PERSIST guests all PASS exact snapshot restore and strict XIP execution
+with unchanged AUXSTORE descriptor geometry. Native XIP release
+v1094/v1471 and MEMFS normal/v1403/v1468 fatal tests PASS. Separate
+32K/48K non-XIP gates and dynamic MRES unload/reload capability remain
+open; neither is part of MEMFS snapshot acceptance.
+
 ## 2026-11-11 v1484: persistent MEMFS and LOGSTORE/DRM dispatch diagnosis
 
 For the real PDP-6 full-profile PERSIST mount, valid snapshot v2 images

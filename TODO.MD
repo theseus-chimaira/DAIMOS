@@ -1,3 +1,25 @@
+## 2026-11-11 v1485: corrupt MEMFS snapshot admission rollback
+
+- [x] Commit an actual persistent root-owned MEMFS XIP image on DR0,
+  flip one metadata bit after HALT while preserving the v2 commit
+  header and AUXSTORE descriptor, and cold-boot with the damage.
+- [x] Reproduce pre-fix unpublished singleton/namespace MM retention
+  on refused snapshot checksum; verify MEMINFO false capacity and
+  inability to mount a new volatile MEMFS in the same boot.
+- [x] Share real mount-failure cleanup with refused snapshot admission:
+  MM release before three-word ownership clear; preserve ownership if
+  MM release refuses. No BSS or process RAM growth; +1 MRES text word.
+- [x] Real 128K corrupted-snapshot cold-boot: reject persistent mount
+  and subsequently create a same-boot volatile MEMFS, verify strict XIP
+  readback and RUN/WAIT, then HALT with zero status.
+- [x] Rebuild and PASS independent post-fix 128K/192K/256K two-cold-boot
+  normal persistent snapshot/XIP restore and AUXSTORE integrity matrix.
+- [x] Source-linked v1094/v1471 and native MEMFS normal/v1403/v1468
+  regression tests PASS with the new cleanup.
+- [ ] Continue independent sub-96K non-XIP release tests and swapless
+  PURE RAM reclamation. Dynamic MRES unload/reload is not a completed
+  or implied capability.
+
 ## 2026-11-11 v1484: persistent MEMFS/LOGSTORE damage and recoverability
 
 - [x] Identify DR0 descriptor corruption: instrumented Type 167/236
