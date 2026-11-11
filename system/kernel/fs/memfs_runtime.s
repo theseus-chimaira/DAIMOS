@@ -803,7 +803,9 @@ clkbind_mfr1:
         movei   1,memfs_mres_fs
         move    2,-1(17)
         pushj   17,memfs_snapshot_mount
-        jumpn   1,memfs_mres_mount_bad
+        ; v1485: a corrupt snapshot must not retain the unpublished
+        ; 01200-word namespace extent and a stale singleton record.
+        jumpn   1,memfs_mres_mount_cleanup_v1485
 
         push    17,[0]                  ; mounted-root scratch
         movei   6,(17)
@@ -817,13 +819,17 @@ clkbind_mfr1:
         sub     17,kconst_3_3
         jumpe   1,memfs_mres_mount_done
 
-        movei   1,memfs_mres_fs
-        movei   2,3
-        pushj   17,fs_zero_words
+memfs_mres_mount_cleanup_v1485:
+        ; Free the allocation before clearing its ownership record.
+        ; On MM refusal retain the record rather than orphaning RAM.
         move    1,(17)
         movei   2,3
         movei   3,011
         pushj   17,mm_free
+        jumpn   1,memfs_mres_mount_bad
+        movei   1,memfs_mres_fs
+        movei   2,3
+        pushj   17,fs_zero_words
         seto    1,
         jrst    memfs_mres_mount_done
 memfs_mres_mount_bad:
