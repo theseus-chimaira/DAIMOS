@@ -1,3 +1,16 @@
+## 2026-11-11 v1498: nonresident TERM source behavior verified
+
+Testkit v1498 (`f9ab499`) native PDP-6 PASS on the real foreign
+`proc_event_apply` leaf: WAIT_CHILD and saved executive return defer
+TERM while retaining the DISK owner, repeated TERM coalesces, and
+safe user-return delivery distinguishes refused finalization from
+successful commit. The unsafe-PC-bypass negative mutation fails.
+The precise branch taken by the physical v1495 guest is still
+unknown; v1499 physical before/after event instrumentation is
+diagnostic only. Full corrupt-BACKSTORE end-to-end acceptance OPEN.
+No production KCORE code, RAM or ABI modification. See
+`design/kcore-backstore-term-policy-v1498.md`.
+
 ## 2026-11-11 v1497: physical BACKSTORE fault diagnosis, gate OPEN
 
 The full physical 256K F07 v1495 KCC guest reached HALT and finished

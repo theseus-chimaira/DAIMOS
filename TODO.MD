@@ -1,3 +1,16 @@
+## 2026-11-11 v1498: classify actual nonresident fatal-event policy
+
+- [x] Native source-link real `proc_event_apply` with a DISK owner;
+  prove WAIT and executive-PC deferred TERM, pending coalescing,
+  rejected VM release owner retention and distinct successful commit.
+- [x] Reject executable mutation bypassing saved-executive-PC guard;
+  keep normal production syscall, scheduler and backing allocator.
+- [ ] In physical 256K guest capture the exact WAIT/CTX_PC, pending
+  FD-control event bits, return status and chosen fatal-event branch.
+- [ ] Qualify permanent corrupt backing and safely completed deferred
+  or immediate TERM without weakening the normal v1336 acceptance.
+  See `design/kcore-backstore-term-policy-v1498.md`.
+
 ## 2026-11-11 v1497: actual physical BACKSTORE fault evidence
 
 - [x] Trace real v1495 256K physical swap, checked bitmap refusal,

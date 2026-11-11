@@ -1,3 +1,17 @@
+## 2026-11-11 v1498: native nonresident TERM policy acceptance
+
+Testkit `f9ab499` executes unchanged production `proc_event_apply`
+on a PDP-6 with a nonresident DISK owner. WAIT_CHILD and a saved
+executive PC defer TERM and coalesce pending bits; a user-mode saved
+PC with no WAIT/pending event enters foreign finalization. Controlled
+VM refusal preserves DISK ownership, unlike a successful commit.
+The executable unsafe-saved-PC-bypass mutation is rejected. Physical
+v1495 did not identify which deferral/failure predicate applied;
+v1499 branch/owner instrumentation is diagnostic only until accepted.
+Full physical corrupt-backing feature gate remains OPEN. No KCORE
+code, resident RAM or ABI change. See
+`design/kcore-backstore-term-policy-v1498.md`.
+
 ## 2026-11-11 v1497: physical corrupt-BACKSTORE lifecycle is not accepted
 
 Fresh disposable 256K KCC PDP-6 F07 v1495 diagnostic reached HALT,
