@@ -1,3 +1,34 @@
+## 2026-11-11 v1470: privileged raw-MEMFS XIP accepted at 128K/192K/256K
+
+The v1469 **unchanged production kernel** now PASSes an independent,
+full-profile (`BOOT_PROFILE=full COMPILER=kcc`) PDP-6 disk-root XIP guest
+at physical core sizes 128K, 192K and 256K. The v1470 testkit uses
+`BOOT_CORE_WORDS=0400000/0600000/01000000` and
+`SIMH_CPU_KWORDS=128/192/256` respectively, builds separate images,
+and verifies the actual KINIT `MEM` banner before accepting a result.
+Each guest loaded MEMFS and D6FS, reached INIT V1, ROOT LOGIN and DSH,
+executed three serial and three queued certified XIP RUN/WAIT children,
+rejected malformed content, non-root execution and nonzero argv,
+verified EXEC argv rollback and completed privileged XIP EXEC with
+shell STATUS:0. Source and XIP reference cleanup checks stayed green.
+
+The first 192K run was a **false positive**: Open SIMH rejected the
+`set cpu 192k` request as an unknown CPU modifier and booted 256K
+instead. The `sims` fork mistakenly labeled its 12 * 16K memory option
+`196K`. This was corrected to `192K`, compiled with `make pdp6`, tested
+with direct `set cpu` / `show cpu` for all three sizes, installed to
+`$PDP10_PREFIX/bin/pdp6` via a versioned v1470 executable, and pushed
+to sims commit `16dc791`. The actual 192K guest was **retested** with
+the corrected simulator, reported `MEM 192 K`, and PASSed. The v1470
+matrix now preflights every simulator CPU modifier to avoid this error.
+
+The attempted lowmem-MEMFS experiment was stopped and its source edits
+reverted: MEMFS is absent by design from the 48K lowmem configuration.
+There are **no DAIMOS kernel feature/size changes** in v1470 and no
+KCORE size optimization. Still OPEN are controlled MM/u-area failure
+injection, post-publication teardown retries, heavy memory pressure,
+and 32K/48K acceptance of the *other* non-XIP features.
+
 ## 2026-11-11 v1469: privileged MEMFS raw-XIP RUN/EXEC full guest PASS
 
 Actual production KCORE now recognizes the XIP magic in `exec_load_process`

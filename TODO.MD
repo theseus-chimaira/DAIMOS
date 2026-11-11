@@ -1,3 +1,20 @@
+## 2026-11-11 v1470: full-profile XIP 128K/192K/256K accepted
+
+- [x] Run actual independent full-profile MEMFS XIP cold boots at 128K,
+  192K and 256K, with matching boot core-word limits, KINIT-reported
+  physical RAM and loaded MEMFS. All reach INIT, ROOT LOGIN, DSH and pass
+  the v1469 real privileged RUN/WAIT and EXEC/negative-lifecycle guest.
+- [x] Reject false simulator memory-size results: Open SIMH `196K` typo
+  corrected to `192K` in sims commit `16dc791`; new testkit v1470
+  preflights `set cpu`/`show cpu` and verifies the KINIT `MEM ... K`
+  banner. Re-ran the real 192K guest successfully after the fix.
+- [x] Preserve lowmem's exclusion of MEMFS and revert the unsupported
+  exploratory 48K XIP build changes. No size optimization or DAIMOS
+  kernel source change in v1470.
+- [ ] Continue XIP MM/u-area fault injection, transaction recovery,
+  post-commit teardown and high-pressure acceptance. Separately complete
+  32K/48K lowmem non-XIP release gates and swapless PURE integration.
+
 ## 2026-11-11 v1469: privileged raw MEMFS XIP integrated in RUN/EXEC
 
 - [x] Select the certified root-only MEMFS raw-XIP profile in the real

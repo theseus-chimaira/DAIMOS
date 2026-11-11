@@ -1,3 +1,33 @@
+## 2026-11-11 v1470: real 128K, 192K and 256K full-profile XIP acceptance
+
+v1469 KCORE was left unchanged. New daimos-testkit
+`tests/validation/daimos-xip-memory-matrix-v1470.sh` exercises three
+separate KCC/full-profile DSK/D6FS boot images with precisely matched
+image limit and installed SIMH core: 128K (0400000), 192K (0600000),
+256K (01000000) words. All three physically booted KINIT and reported
+the requested `MEM ... K`, loaded MEMFS, started INIT/LOGIN ROOT/DSH
+and passed v1469's complete privileged no-write XIP RUN/WAIT, negative
+certification, unprivileged denial, argv rejection, cleanup, failed
+EXEC rollback and successful EXEC replacement, finishing STATUS:0.
+
+The first apparent 192K guest pass was REJECTED because Open SIMH had
+silently left its default 256K installed following a rejected `set cpu
+192k`. Its 12-unit (12 * 16K = 192K) modifier was incorrectly spelled
+`196K` in `PDP10/kx10_cpu.c`. Sims fork commit `16dc791` corrects the
+modifier, and the rebuilt installed simulator reports 128KW, 192KW and
+256KW under direct `set cpu`/`show cpu` checks. The 192K DAIMOS guest
+was then re-run with this simulator, and the KINIT `MEM 192 K` banner
+was checked explicitly. The testkit now refuses unsupported simulator
+settings and refuses a boot whose reported memory differs from the
+request. There is no DAIMOS source or KCORE footprint change.
+
+MEMFS is not part of the 48K lowmem package set: an exploratory opt-in
+change for that profile was fully reverted before v1470 acceptance.
+XIP's 128K/192K/256K boot-and-lifecycle matrix is ACCEPTED; 32K/48K
+swapless release gates, fault-injected allocator/VM rollback, pressure
+and MM-owner retries are still open. v1451 bitmap RAM compressor is
+unchanged and remains separately staged for swapless PURE integration.
+
 ## 2026-11-11 v1469: privileged raw-MEMFS XIP RUN/EXEC accepted on 256K
 
 KCORE's actual `exec_load_process` now chooses the private MRES safe-admit
