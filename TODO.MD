@@ -1,3 +1,21 @@
+## 2026-11-11 v1505: repeated invalid BACKSTORE transaction
+
+- [x] Source-link real PDP-6 swap-in, slot-0 scheduler, bitmap free
+  across six *forced* permanently invalid checks: same DISK owner,
+  no false RESIDENT/READY_ONCE, exact MM/accounting/bitmap invariants.
+- [x] Explicitly repair missing bit, verify one successful restore
+  and exact zero backing; rerun two v1493 unsafe mutations.
+- [x] Correct inline swap-service success/result documentation, no
+  functional resident code change.
+- [ ] Verify actual physical v1504 owning-return TERM consumption and
+  final owner cleanup after repaired backing; do not infer from reaps.
+- [ ] Define and implement permanently-corrupt-backstore terminal
+  handling and bounded retry behavior without releasing a private
+  executive continuation or losing authoritative DISK backing.
+- [ ] Complete combined fault-specific physical acceptance, leaving
+  normal v1336 zero-terminal-swapin failure acceptance unchanged.
+  See `design/kcore-backstore-repeated-refusal-v1505.md`.
+
 ## 2026-11-11 v1503: physical TERM coalescing accepted, recovery OPEN
 
 - [x] Attribute two real 256K F07 scheduler TERM calls to an

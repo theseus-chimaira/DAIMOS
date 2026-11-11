@@ -1,3 +1,19 @@
+## 2026-11-11 v1505: repeated checked-BACKSTORE rollback preserves owner
+
+Testkit `b0e5075` native PDP-6 runs six successive source-linked
+swap-in/slot-0/bitmap-free failures on the same corrupt DISK owner,
+then explicitly repairs its bit and restores once. All six refused
+attempts preserve the same DISK run, bitmap/accounting, unchanged VM,
+released MM extent/pin and no READY_ONCE; later valid release commits
+one VM with zero backing. Existing v1493 two unsafe mutations PASS.
+Success AC1 is `slot|READY_ONCE` (`01002` for slot 2), while failure
+requests TERM but may only coalesce a pending event. Corrected the
+production service's misleading API comment, no functional source or
+RAM change. These requests are forced by the fixture, not evidence
+of real retry cadence or bounded permanent-corruption recovery.
+That and physical v1504 owner-return acceptance remain OPEN. See
+`design/kcore-backstore-repeated-refusal-v1505.md`.
+
 ## 2026-11-11 v1503: physical pre-existing TERM coalescing accepted
 
 Testkit `8987b4a` verifies the completed 256K PDP-6 v1499 guest's

@@ -1,3 +1,18 @@
+## 2026-11-11 v1505: repeated physical-backing refusal native gate
+
+New testkit `b0e5075` source-links real swap-in, slot-0 service,
+checked BACKSTORE verifier/free across six forced bitmap refusals.
+All attempts retain the authoritative DISK owner, unchanged bitmap,
+exact counts and zero leaked MM pins or premature RESIDENT/READY_ONCE.
+After explicit repair one successful restore releases the backing.
+Native v1493 false-success/false-ready mutation tests re-PASS. The
+production service comment now correctly says successful AC1 is
+slot|READY_ONCE; negative return requests TERM but does not certify
+instant termination. No functional KCORE/RAM/ABI change. The test
+does NOT show bounded scheduler retries under permanent corruption;
+physical selected-owner deferred TERM consumption (v1504) also OPEN.
+Report: `design/kcore-backstore-repeated-refusal-v1505.md`.
+
 ## 2026-11-11 v1503: physical KCORE TERM coalescing scoped acceptance
 
 The completed v1499 256K KCC PDP-6 guest's independent mapped

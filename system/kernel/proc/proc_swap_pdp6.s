@@ -1988,8 +1988,11 @@ proc_swap_in_restore:
 
 /**
  * @brief Service one scheduler-requested swap-in from slot-0 context.
- * @return AC1 selected slot on success, zero if no valid request, -1 when the
- *         requested process cannot be restored and is terminated.
+ * @return AC1=selected slot|PROC_SCHED_READY_ONCE after a successful restore,
+ *         zero for no applicable swap request, -1 after a refused restore.
+ *         A refused restore requests TERM, but the owner can still hold a
+ *         pending fatal event and its nonresident DISK backing. The call
+ *         does not guarantee synchronous process termination.
  */
 proc_swap_mres_service_v481:
         move    1,proc_sched_cursor
