@@ -1,3 +1,23 @@
+## 2026-11-11 v1467: MEMFS raw-XIP provenance gate, feature work only
+
+Production MEMFS `memfs_xip_admit` now verifies the existing UID9 owner
+metadata is zero before pinning a candidate raw-XIP file. A regular,
+nonwritable executable with valid XIP/PURE header is no longer sufficient
+when owned by a non-root account. Rejection leaves both output pointers
+and physical MM pin/refcount unchanged. This enforces one source-authenticity
+prerequisite without adding per-process state or changing normal DXR EXEC.
+
+The source-linked native PDP-6 MEMFS normal/fatal tests PASS; v216 real
+user-mode XIP UUO and VM teardown PASS on SIMH and AAP; v202 AAP and v1394
+host/native restricted-instruction policy PASS. A pre-v1467 production-source
+negative control fails the new owner test at octal `0236`, as required.
+Full privileged RUN/EXEC admission, instruction-policy linkage, startup
+no-write handling, BRK/swap exclusions, and integrated pressure/rollback
+acceptance remain OPEN. No size optimization was attempted.
+An exact matched movable MEMFS MRES link against the existing KCORE map
+measures 1774 -> 1781 resident words (+7 initialized, BSS still 13).
+No fixed-KCORE object was changed; this is footprint accounting only.
+
 ## 2026-11-10 v1464: block-only low core, +14 fixed words
 
 Removed D6LZ36 KCORE/Stage-1 code and replaced it with the versioned

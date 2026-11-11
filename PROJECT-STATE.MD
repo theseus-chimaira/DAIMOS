@@ -1,3 +1,28 @@
+## 2026-11-11 v1467: root-owned MEMFS raw-XIP source prerequisite
+
+MEMFS's production private raw-XIP admission (MRES operation 027) now
+checks its existing packed UID9 owner record before obtaining an MM pin.
+Non-root file ownership is refused even with executable, write-free mode
+and valid XIP/PURE header. The failed request does not change the caller's
+base/entry results, provider reference table or MM pin count. Root-owned
+existing admission is unchanged. This is an incremental functional security
+gate, not production RUN/EXEC raw-XIP process launch.
+
+Validated against live source: native PDP-6 MEMFS normal and fatal tests;
+v216 SIMH+AAP user-mode XIP/UUO/VM release; v202 AAP provider test; v1394
+host/native restricted no-write instruction-policy tests. The new native
+negative witness fails against the unchanged pre-v1467 provider with result
+octal `0236`, whereas current source passes. Existing local documentation
+changes from the preceding v1466 work were preserved separately.
+
+OPEN: privileged RUN/EXEC connection, actual no-write policy enforcement,
+startup/BRK/swap interactions, owner-preserving rollback and full physical
+memory-pressure acceptance. No code-size optimization or 32K fit claim.
+The matched source-before/source-after full MEMFS MRES links, using the same
+existing KCORE map and unchanged companion objects, measure 1774 -> 1781
+resident words (+7 initialized TEXT, static BSS unchanged at 13). Fixed
+KCORE is not modified. Full cold-boot acceptance is still outstanding.
+
 ## 2026-11-10 v1464: production D6LZ36 removed, block codec selected
 
 The explicit v1464 format decision supersedes the earlier v1395/v1462

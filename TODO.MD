@@ -1,3 +1,15 @@
+## 2026-11-11 v1467: raw MEMFS XIP source ownership
+
+- [x] Reject non-root-owned raw-XIP vnode before MM pinning, using existing
+  MEMFS UID9 metadata, with unchanged base/entry outputs and no leaked
+  provider reference on rejection. Source-linked native red/green PASS;
+  SIMH/AAP XIP lifecycle and v1394 no-write policy checks also PASS.
+- [ ] Connect privileged raw-XIP RUN/EXEC to this gate and the separately
+  staged strict instruction-policy verifier; provide a no-write startup
+  path, correct VM/swap/BRK exclusion, and failure-atomic rollback. Verify
+  actual scheduled guests under constrained physical memory. No folding
+  or final size-only optimization until feature acceptance is complete.
+
 ## 2026-11-10 v1464: requested single-format block codec cutover
 
 - [x] Supersede the previous D6 format deferral by explicit decision.

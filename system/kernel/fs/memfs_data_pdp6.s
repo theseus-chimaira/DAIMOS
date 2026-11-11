@@ -504,7 +504,9 @@ memfs_xip_pin_return:
 ; XIP magic, second has PURE in LH and logical entry in RH. Instructions
 ; begin at >= 020. PURE reuses the DXR promise; it is not hardware RO.
 ; Pin first to keep the file stable through inspection; undo on rejection.
-; A trusted no-write certification is still required before EXEC may use it.
+; Root-owned provenance and nonwritable executable mode are checked here.
+; A trusted no-write instruction certification and privileged RUN/EXEC
+; transaction are still required before a process may map this extent.
 memfs_xip_admit:
         push    17,010
         push    17,011
@@ -526,6 +528,17 @@ memfs_xip_admit:
         jrst    memfs_xip_admit_fail
         trnn    2,0111
         jrst    memfs_xip_admit_fail
+        ; v1467: trusted raw XIP can only originate from a root-owned file.
+        ; Owner metadata is UID9,,GID9 in the existing MEMFS table, not a
+        ; caller-supplied privilege assertion.  This check precedes the MM
+        ; pin and therefore cannot strand a reference on rejection.
+        move    4,MEMFS_NODES(010)
+        addi    4,01000               ; MEMFS_OWNER_OFFSET
+        add     4,1                    ; validated slot from memfs_slot
+        move    4,(4)
+        lsh     4,-011                 ; UID9 (GID9 is immaterial)
+        andi    4,0777
+        jumpn   4,memfs_xip_admit_fail
         move    1,010
         move    2,011
         push    17,[0]                ; preserve caller basep on failure
