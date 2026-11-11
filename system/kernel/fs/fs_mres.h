@@ -39,6 +39,9 @@
  * AC2=basep, AC3=entryp; returned pin is owned by VM only on success.
  * Unlike the format-only probe above, this checks every image word. */
 #define FS_MRES_OP_XIP_SAFE_ADMIT_V1468 24U
+/* Private read-only query for VM startup/BRK: AC1=physical base;
+ * 1 for a pinned MEMFS XIP extent, 0 otherwise. */
+#define FS_MRES_OP_XIP_OWNS_BASE_V1469 25U
 
 struct fs_mres_request {
         kword_t op;

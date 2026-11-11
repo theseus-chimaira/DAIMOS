@@ -1,3 +1,41 @@
+## 2026-11-11 v1469: privileged raw-MEMFS XIP RUN/EXEC accepted on 256K
+
+KCORE's actual `exec_load_process` now chooses the private MRES safe-admit
+operation 030 only for root callers and MEMFS vnode sources, after the
+normal regular-file and execute checks. The provider verifies ownership,
+nonwritable mode, PURE/header/geometry, instruction whitelist and zero
+outside the exact two-instruction program while maintaining an MM pin.
+The selected physical base is then owned by a staged process VM and
+uses the existing VM-destroy MEMFS unpin, not MM_TYPE_PROCESS free.
+Operation 031 performs a read-only physical XIP-owner lookup for startup
+and BRK. XIP startup cannot write argv/env/stack records into the shared
+physical image and rejects nonzero argc/envc; BRK setters reject XIP.
+Ordinary DXR1/DXR2 startup and the existing pinned-victim swap exclusion
+remain unchanged. The XIP loader's accidental DXR2 fallthrough and its
+mis-specified octal high-half magic were found by full cold-boot tests
+and repaired before acceptance, without relaxing the no-write policy.
+
+Fresh disposable 256K KCC DSK/D6FS physical simulator guest PASS: ROOT
+LOGIN/DSH/external v1469 driver, three sequential plus three queued XIP
+RUN/WAIT children, all normal EXIT status zero, rejected argc, rejected
+nonzero extra image word, rejected UID1 child launch of root-owned XIP,
+rejected nonzero-argc EXEC with caller rollback, successful privileged
+EXEC replacement, return to shell with STATUS:0 and orderly HALT. The
+driver also verifies source vnode mode/UID/size, byte-for-byte header/code
+readback and that CHMOD is possible again after final XIP unpin.
+
+Independent source-linked normal/fatal v1403/v1468 MEMFS tests, v216 SIMH
+and AAP user-mode XIP/teardown, v1394 host/native no-write verifier,
+v200 EXEC commit/rollback and v20 PURE backing tests PASS. Matched KCC
+MEMFS MRES source links are 1849 -> 1851 words (BSS stays 13). The exact
+GCC lowmem KCORE is 9765 words, endpoint octal 023125: +64 words versus
+the accepted v1466 9701-word functional baseline. No size optimization.
+Remaining release gates: 32K/48K physical pressure, MM fault injection
+through unpublished RUN and EXEC replacement, and broad mount/teardown
+lifetime tests. XIP remains restricted to the exact write-free profile.
+The already validated 30-word v1451 bitmap pair remains the selected RAM
+compression component; scheduler integration is a separate open task.
+
 ## 2026-11-11 v1468: certified raw-XIP provider path, no process launch
 
 The production movable MEMFS MRES gains private operation 030 to certify

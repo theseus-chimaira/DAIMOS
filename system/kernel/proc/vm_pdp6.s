@@ -151,6 +151,14 @@ vm_space_brk_current:
         jrst    vm_brk_return
 
 vm_brk_set:
+        ; v1469: the borrowed MEMFS extent is not a PROCESS allocation.
+        ; Reject every mutating BRK before a same-size publication or MM
+        ; resize; a zero-argument break query above remains read-only.
+        move    1,14                   ; physical VM base
+        movei   6,031                  ; XIP_OWNS_BASE, no pin release
+        movei   7,4                    ; MEMFS provider
+        pushj   17,fs_provider_reg_call
+        jumpg   1,vm_brk_fail
         tlne    10,0777777              ; break must be an 18-bit address
         jrst    vm_brk_fail
         move    5,10
@@ -619,8 +627,41 @@ vm_space_startup:
         hrli    0,10
         blt     0,(17)
 
+        ; v1469: XIP may run directly from shared MEMFS-owned physical RAM.
+        ; APR on PDP-6 has no write-protection, so ordinary argv/env/stack
+        ; setup MUST NOT write a single word into that extent. Distinguish
+        ; it by the provider's pinned-base identity, not by the entry PC or
+        ; a user-controlled PURE flag. This query never releases a pin.
+        move    11,1                   ; process descriptor
         move    10,2                   ; current source record
         move    12,4                   ; startup result
+        move    13,3                   ; argc,,envc before provider call
+        hrrz    1,1(11)
+        movei   6,031                  ; XIP_OWNS_BASE
+        movei   7,4                    ; MEMFS provider
+        pushj   17,fs_provider_reg_call
+        caie    1,1
+        jrst    vm_startup_normal_v1469
+        hlrz    5,13
+        hrrz    6,13
+        jumpn   5,vm_startup_xip_bad_v1469
+        jumpn   6,vm_startup_xip_bad_v1469
+        setzm   (12)                   ; argc=0
+        setzm   1(12)                  ; argv=0
+        setzm   2(12)                  ; envp=0
+        hlrz    1,1(11)
+        subi    1,02000                ; logical stack base, no memory write
+        movem   1,3(12)
+        setz    1,
+        jrst    vm_startup_return_v1469
+vm_startup_xip_bad_v1469:
+        seto    1,                     ; caller destroys staged pinned VM
+        jrst    vm_startup_return_v1469
+vm_startup_normal_v1469:
+        move    1,11
+        move    2,10
+        move    3,13
+        move    4,12
         hlrz    5,3                    ; argc
         hrrz    6,3                    ; envc
         hlrz    13,1(1)                ; logical user words
@@ -690,6 +731,7 @@ vm_startup_finish:
         movem   1,3(12)                ; initial user stack
         setz    1,
 
+vm_startup_return_v1469:
         movei   0,10
         hrli    0,-6(17)
         blt     0,16

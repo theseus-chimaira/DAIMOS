@@ -7,6 +7,9 @@
  * into the new VM, attaches pure-text swap backing, and publishes the initial
  * process entry/state only after the image is complete.  A failed load destroys
  * the staged VM and releases only an RT reservation acquired by this attempt.
+ * v1469 adds a separate privileged MEMFS-only raw-XIP image path. MEMFS
+ * certifies every instruction before handing the loader a pinned physical
+ * extent; the loader neither copies nor writes any of its image words.
  *
  * DXR2 is mandatory for compressed executables and carries the TX2 text-word
  * count used by pure backing.  RT_REQUIRED reserves the single proc_rt_owner;
@@ -40,8 +43,10 @@
         .globl  proc_swap_attach
         .globl  d6codec_decode_vfs_v1458
         .globl  proc_rt_owner
+        .globl  fs_provider_reg_call
 
         .equ    EXEC_DXR_MAGIC,0447062      ; SIXBIT /DXR/
+        .equ    EXEC_XIP_MAGIC_LH_V1469,054506
         .equ    EXEC_DXR_TEXT_TAG,0647022   ; SIXBIT /TX2/
         .equ    EXEC_DXR_MAX_IMAGE_WORDS,0300000
         .equ    EXEC_SCHED_SIDL_LH,0100024  ; SIDL + default nice bias
@@ -134,7 +139,7 @@ exec_load_read_header:
         jrst    exec_load_fail
         hlrz    0,-002(17)
         caie    0,EXEC_DXR_MAGIC
-        jrst    exec_load_fail
+        jrst    exec_load_xip_header_v1469
 
         hrrz    14,-002(17)             ; entry
         hlrz    13,-001(17)             ; uncompressed image words
@@ -209,6 +214,52 @@ exec_load_dxr2_header:
 exec_load_dxr2_header_ok:
         movem   0,-005(17)
         aos     -007(17)                ; header_words: DXR1 2 -> DXR2 3
+        ; DXR2 is still the ordinary private-VM path. The raw-XIP branch
+        ; below is reached ONLY from the separate magic-header decision;
+        ; do not fall through from valid DXR2 into the XIP rejection gate.
+        jrst    exec_load_create_vm
+
+; v1469: the only raw-XIP loader is a privileged, certified MEMFS path.
+; MEMFS verifies file ownership, mode, header, APR geometry and every
+; instruction while holding the MM pin.  Do not copy its image or run
+; the DXR relocator/decoder.  Publish the pinned base as the staged VM
+; before any fallible backing attach so the ordinary vm_space_destroy
+; rollback releases precisely the MEMFS owner's pin, never mm_free(PROCESS).
+exec_load_xip_header_v1469:
+        caie    0,EXEC_XIP_MAGIC_LH_V1469
+        jrst    exec_load_fail
+        move    1,12
+        lsh     1,-036                 ; vnode provider field (6 bits)
+        caie    1,4                    ; MEMFS only
+        jrst    exec_load_fail
+        pushj   17,file_check_root     ; invoking RUN/EXEC must be root
+        jumpn   1,exec_load_fail
+        move    1,12
+        movei   2,-011(17)             ; staged physical base
+        movei   3,-010(17)             ; staged logical entry
+        movei   6,030                  ; strict FS_MRES_OP_XIP_SAFE_ADMIT
+        movei   7,4                    ; MEMFS provider
+        pushj   17,fs_provider_reg_call
+        jumpn   1,exec_load_fail       ; provider owns rejection cleanup
+        hrlz    1,-006(17)             ; APR words from verified stat
+        hrr     1,-011(17)             ; pinned MEMFS physical extent
+        movem   1,1(10)                ; publish rollback owner immediately
+        move    0,(10)
+        andi    0,0177400              ; preserve parent slot only
+        movei   1,020
+        hrlz    1,1                    ; exact certified entry 020
+        ior     0,1
+        movem   0,(10)
+        movsi   0,EXEC_SCHED_SIDL_LH
+        movem   0,2(10)
+        move    1,11
+        move    2,12
+        setz    3,                     ; no omitted PURE disk-swap prefix
+        setz    4,                     ; record only; XIP remains MM-pinned
+        pushj   17,proc_swap_attach
+        jumpn   1,exec_load_vm_fail
+        setz    1,                     ; successful pinned XIP image
+        jrst    exec_load_return
 
 exec_load_create_vm:
         move    3,13

@@ -3,9 +3,16 @@
  * @brief DAIMOS DXR executable format and resident EXEC loader interface.
  *
  * DXR images contain a two-word base header, optional TX2 extension word, image
- * payload, and a two-bit relocation map.  Compressed images require the TX2
+ * payload, and a two-bit relocation map. Compressed images require the TX2
  * extension; PURE images may retain file backing for swap/reload; RT_REQUIRED
  * reserves the single real-time owner slot while the image is active.
+ *
+ * v1469: privileged RUN/EXEC additionally accepts the restricted raw-MEMFS
+ * XIP/PURE program profile after MRES certification and an exact MM pin.
+ * This is not general shared text: PDP-6 APR cannot protect the mapped
+ * file against user writes, so the certified image executes no STORE or
+ * stack instructions, and argv/environment must be empty. VM teardown
+ * releases the existing MEMFS reference instead of a PROCESS MM extent.
  */
 #ifndef DAIMON_EXEC_H
 #define DAIMON_EXEC_H

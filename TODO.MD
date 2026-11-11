@@ -1,3 +1,25 @@
+## 2026-11-11 v1469: privileged raw MEMFS XIP integrated in RUN/EXEC
+
+- [x] Select the certified root-only MEMFS raw-XIP profile in the real
+  `exec_load_process` path, retaining the existing DXR1/DXR2 loader and
+  no-write, pinned-image safety policy. Use the ordinary staged-VM
+  destruction path for exact pin ownership and EXEC rollback.
+- [x] Enforce zero argc/envc and write-free XIP startup through an actual
+  pinned-base lookup (private MRES operation 031). Refuse XIP BRK mutation;
+  reuse existing MM-pinned victim and swap-out exclusions, with no new
+  persistent per-process words.
+- [x] Fresh 256K KCC physical guest PASS: normal ROOT/LOGIN/DSH, three
+  serial and three queued XIP RUN/WAIT, malicious nonzero image rejection,
+  nonroot denial, argv refusal, EXEC argv rollback, successful root EXEC,
+  no final MEMFS pin leak and shell STATUS:0. Native v1468/v1403/v216/v1394,
+  EXEC v200/v20 compatibility PASS.
+- [x] Measure whole-link functional growth without optimizing: GCC lowmem
+  KCORE 9765 words (+64 from v1466), matched KCC MEMFS MRES 1849 -> 1851.
+- [ ] Extend to 32K/48K resident and pressure acceptance, injected UAREA
+  allocation/rollback/teardown failures, concurrent mount/unmount and
+  provider/MM failure recovery. Do not authorize arbitrary shared text:
+  PDP-6 APR still has no user-write protection for MEMFS code.
+
 ## 2026-11-11 v1468: certified XIP provider, remaining process integration
 
 - [x] Add production MEMFS private operation 030 for root-owned write-free

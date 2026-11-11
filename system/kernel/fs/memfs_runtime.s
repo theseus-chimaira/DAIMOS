@@ -888,6 +888,8 @@ memfs_mres_create:
 
 memfs_mres_dispatch:
 memfs_mres_reg_dispatch:
+        cain    6,031                   ; pinned XIP physical-base query
+        jrst    memfs_xip_owns_base
         cain    6,030                   ; strict raw XIP no-write admit
         jrst    memfs_mres_xip_safe_admit_v1468
         caie    6,023                   ; 19 decimal: MEMFS_MOUNT

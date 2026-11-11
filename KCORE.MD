@@ -1,3 +1,36 @@
+## 2026-11-11 v1469: privileged MEMFS raw-XIP RUN/EXEC full guest PASS
+
+Actual production KCORE now recognizes the XIP magic in `exec_load_process`
+and, for an invoking root process and MEMFS vnode only, calls the v1468
+strict pinned-image admission. The certified extent is published directly
+as the staged process VM; `RUN` creates its independent u-area and `EXEC`
+uses the existing transactional replacement/rollback. Unlike the ordinary
+DXR path, XIP never copies code, relocates it or writes startup words into
+the pinned MEMFS extent. `vm_space_startup` requires zero argc/envc and
+publishes only kernel-resident startup results; mutating BRK requests are
+refused. MEMFS's read-only operation 031 identifies the pinned extent using
+existing reference metadata, with no new persistent per-process words.
+Swap victim selection and direct swap-out already exclude MM-pinned bases.
+
+The fresh 256K KCC DSK/D6FS guest boots ROOT/DSH and PASSes three serial
+and three queued raw-XIP RUN/WAIT lifetimes, an intentionally malformed
+nonzero image-word refusal, an unprivileged UID1 RUN refusal, argv refusal,
+failed EXEC argv rollback and successful root EXEC replacement with final
+status zero. The restricted program is only MOVEI AC2,immediate followed
+by unindexed UUO 040 EXIT; DAIMOS takes EXIT status from UUO effective
+address, not AC2. MM pins and metadata mutation are checked across runs.
+The prior v216 SIMH/AAP user-mode release, native MEMFS normal/fatal,
+v1394 host/native policy, v200 EXEC rollback and v20 PURE-bit tests PASS.
+
+Exact GCC lowmem fixed KCORE: 9701 -> 9765 words (+64 functional code),
+endpoint 023125 octal. Matched v1468/v1469 KCC MEMFS MRES link against
+the same KCORE map: 1849 -> 1851 resident words (+2), BSS 13 unchanged.
+These are feature-footprint measurements, NOT a size-only optimization or
+strict 32K placement acceptance. Still open: 32K/48K and full pressure,
+fault-injected u-area/VM rollback and wider device/mount lifecycle tests.
+This accepts only the intentionally tiny no-write XIP instruction profile,
+not arbitrary code executing from shared MEMFS memory.
+
 ## 2026-11-11 v1468: strict write-free raw-XIP provider admission
 
 Movable MEMFS now provides private FS MRES operation 030 (24 decimal)
