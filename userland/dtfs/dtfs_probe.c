@@ -5,6 +5,43 @@
 static kword_t probe_dir[DTFS_BLOCK_WORDS];
 static kword_t probe_block[DTFS_BLOCK_WORDS];
 
+/* The native directory's ordinary magic is not a volume identity.
+ * Legacy DTFS has an entirely zero reserved physical block zero; a V1
+ * identity-stamped tape instead stores a checked two-word random token
+ * there.  Reject every nonempty malformed header, including nonzero
+ * padding, rather than downgrading corrupt identity media to legacy.
+ * This is a FORMAT probe: it does not retain live mounted identity.
+ */
+static int
+native_identity_valid(const kword_t *record)
+{
+        unsigned int i;
+        int legacy;
+
+        legacy = 1;
+        for (i = 0U; i < DTFS_BLOCK_WORDS; ++i)
+                if (record[i] != 0UL) {
+                        legacy = 0;
+                        break;
+                }
+        if (legacy)
+                return 1;
+        if (record[DTFS_ID_MAGIC_WORD_V1520] !=
+                DTFS_ID_MAGIC_V1520 ||
+            record[DTFS_ID_HIGH_WORD_V1520] == 0UL ||
+            record[DTFS_ID_LOW_WORD_V1520] == 0UL ||
+            record[DTFS_ID_CHECK_WORD_V1520] !=
+                ((~(record[DTFS_ID_MAGIC_WORD_V1520] ^
+                   record[DTFS_ID_HIGH_WORD_V1520] ^
+                   record[DTFS_ID_LOW_WORD_V1520])) &
+                   DTFS_ID_WORD_MASK_V1520))
+                return 0;
+        for (i = DTFS_ID_USED_WORDS_V1520; i < DTFS_BLOCK_WORDS; ++i)
+                if (record[i] != 0UL)
+                        return 0;
+        return 1;
+}
+
 static unsigned int
 owner_at(const kword_t *dir, unsigned int base, unsigned int index)
 {
@@ -155,8 +192,13 @@ dtfs_probe_unit(unsigned int unit, int deep)
         if (unit > 7U)
                 return -1;
         if (dsys_dtc_read_block(unit, DTFS_DIR_BLOCK, probe_dir) == 0) {
-                if (native_valid(probe_dir))
+                if (native_valid(probe_dir)) {
+                        if (dsys_dtc_read_block(unit, DTFS_ID_BLOCK_V1520,
+                            probe_block) != 0 ||
+                            !native_identity_valid(probe_block))
+                                return -1;
                         return SYS_DTFS_TYPE_NATIVE;
+                }
                 if (tenex_valid(unit, probe_dir, deep))
                         return SYS_DTFS_TYPE_TENEX;
         }

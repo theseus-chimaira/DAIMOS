@@ -709,7 +709,7 @@ dtfs_mount_unit_media_ready:
         move    1,012
         andi    1,030
         caie    1,010                   ; native DTFS only
-        jrst    dtfs_mount_unit_format_done_v1519
+        jrst    dtfs_mount_unit_foreign_identity_v1520
         .endif
         pushj   17,bcache_invalidate_all
         setzm   dtfs_cache_mount
@@ -735,7 +735,61 @@ dtfs_mount_unit_media_ready:
         and     1,[0177776]            ; 3 final five-bit owner tags
         came    1,[0167572]            ; each must be 035 (native tag)
         jrst    dtfs_mount_unit_fail
+
+        ; V1520: native RBN zero is reserved and previously all zero.
+        ; Read it PHYSICALLY; a clean unit/block tag from an earlier tape
+        ; is not evidence of the currently installed volume.  All-zero
+        ; remains accepted as legacy format, but provides NO identity
+        ; for reattachment of live open files.  A nonempty corrupt record
+        ; is always fatal to this mount admission (not to KCORE).
+        move    1,010
+        andi    1,7
+        setz    2,                      ; native identity RBN 0
+        movei   3,fs_block_workspace
+        pushj   17,dtfs_dtc_read_jump
+        jumpn   1,dtfs_mount_unit_fail
+        movei   1,fs_block_workspace
+        movei   2,0200                 ; full 128-word reserved block
+        setz    3,
+dtfs_mount_identity_nonzero_loop_v1520:
+        ior     3,(1)
+        aoj     1,
+        sojg    2,dtfs_mount_identity_nonzero_loop_v1520
+        jumpe   3,dtfs_mount_identity_valid_v1520
+        move    1,fs_block_workspace
+        came    1,[0446466575421]      ; SIXBIT DTVOL1
+        jrst    dtfs_mount_unit_fail
+        skipn   fs_block_workspace+1
+        jrst    dtfs_mount_unit_fail
+        skipn   fs_block_workspace+2
+        jrst    dtfs_mount_unit_fail
+        xor     1,fs_block_workspace+1
+        xor     1,fs_block_workspace+2
+        setcm   1,1                     ; 36-bit complement checksum
+        came    1,fs_block_workspace+3
+        jrst    dtfs_mount_unit_fail
+        movei   1,fs_block_workspace+4
+        movei   2,0174                 ; 124 zero padding words
+dtfs_mount_identity_padding_loop_v1520:
+        skipn   (1)
+        jrst    dtfs_mount_identity_padding_next_v1520
+        jrst    dtfs_mount_unit_fail
+dtfs_mount_identity_padding_next_v1520:
+        aoj     1,
+        sojg    2,dtfs_mount_identity_padding_loop_v1520
+dtfs_mount_identity_valid_v1520:
+        ; Keep both 36-bit halves on our private stack across the VFS
+        ; publication call.  The shared physical workspace may be reused
+        ; by another provider while that call is in progress.
+        push    17,fs_block_workspace+1
+        push    17,fs_block_workspace+2
+        jrst    dtfs_mount_unit_format_done_v1519
         .if DTFS_ENABLE_FOREIGN
+dtfs_mount_unit_foreign_identity_v1520:
+        push    17,[0]                 ; foreign media are not stamped
+        push    17,[0]
+dtfs_mount_unit_format_done_v1519:
+        .else
 dtfs_mount_unit_format_done_v1519:
         .endif
 
@@ -762,6 +816,20 @@ dtfs_mount_unit_format_done_v1519:
         ior     2,1                     ; media | owner18
         move    1,012
         pushj   17,dtfs_patch_media
+        ; The MM-backed SHAPE and EXTENT words are otherwise TSFS-only.
+        ; A DTFS mount occupies a disjoint VFS slot from every TSFS set.
+        ; Reuse those two per-slot words for its 72-bit identity; legacy
+        ; mounts keep both zero and are NOT eligible for trusted reuse.
+        move    3,012
+        subi    3,1
+        move    2,tsfs_file_shape_base
+        add     2,3
+        move    1,-2(17)               ; high half of volume identifier
+        movem   1,(2)
+        move    2,tsfs_extent_media_base
+        add     2,3
+        move    1,-1(17)               ; low half
+        movem   1,(2)
         setzm   dtfs_cache_mount
         move    1,(17)
         movem   1,(013)
@@ -771,7 +839,7 @@ dtfs_mount_unit_format_done_v1519:
 dtfs_mount_unit_fail_local:
         seto    1,
 dtfs_mount_unit_done_local:
-        sub     17,kconst_1_1
+        sub     17,kconst_3_3          ; root local and two ID halves
         jrst    dtfs_restore4
 dtfs_mount_unit_fail:
         seto    1,

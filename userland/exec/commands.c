@@ -948,6 +948,18 @@ cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
                 dir[i] = 0UL;
         block = DTFS_DIR_BLOCK;
         if (type == SYS_DTFS_TYPE_NATIVE) {
+                /* V1520: formatting a previously stamped DECtape must not
+                 * accidentally inherit its OLD 72-bit volume identity.
+                 * Target MKFS has no trusted random source to issue a new
+                 * identity, so explicitly revert to the legacy all-zero
+                 * reserved block before writing the new directory.  This
+                 * uses the SAME workspace; no second 128-word buffer.
+                 * A read/modify/write or identity-preserving format would
+                 * silently make two different filesystems look identical.
+                 */
+                if (dsys_dtc_write_block((unsigned int)unit,
+                    DTFS_ID_BLOCK_V1520, dir) != 0)
+                        return cmd_err(io, "MKFS.DTFS", argv[3]);
                 dir[0] = (kword_t)DTFS_OWNER_RESERVED << 31U;
                 dir[14] = (kword_t)DTFS_OWNER_RESERVED << 21U;
                 dir[82] = ((kword_t)DTFS_OWNER_NATIVE_TAG << 11U) |

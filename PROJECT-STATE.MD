@@ -1,3 +1,26 @@
+## 2026-11-12 v1520: optional native DTFS 72-bit volume IDs accepted
+
+`mkdtfs` now puts a random 72-bit `DTVOL1` identity/check record
+in otherwise unused native DTFS reserved physical RBN0 without
+changing the directory at 0144. Actual target/host probes and
+the PDP-6 mount path validate it from physical I/O; a fully zero
+block0 remains legacy/untagged while malformed nonempty identity
+records are refused. `dtfs_mount_unit` retains verified ID halves
+using the existing per-mount TSFS SHAPE/EXTENT entries of DTFS
+slots: no additional MM allocation or fixed KCORE data. Target
+MKFS.DTFS cannot generate trusted randomness, so clears any OLD
+ID before formatting and creates explicit legacy native media.
+Both original target KCC compiler objects build; host identity,
+C89 probe/MKFS tests and actual PDP-6 mount-ID positive/negative
+tests PASS, including five native mutants. Older v1519/v1518/v1490
+and DTFS/TSFS regressions PASS. Isolated KCC 256K/GCC 32K tape
+links PASS, strict 32K fixed size gate still FAILS at `023241`
+octal. Controlled folded **+46 optional MRES instructions**, zero
+permanent data/fixed KCORE words. The actual post-error ID match,
+silently replaced tape and dirty/open FILE lifetime remain OPEN:
+v1520 is not automatic reattachment. See
+`design/kcore-dtfs-volume-id-v1520.md`.
+
 ## 2026-11-12 v1519: direct DTFS mount now validates physical native format
 
 Fixed a feature gap in the optional DTFS mount interface: the

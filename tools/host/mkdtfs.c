@@ -4,6 +4,7 @@
  * uses the exact format written by the PDP-6 MKFS.DTFS command.
  */
 #include "tsfs-format.h"
+#include "../../system/kernel/fs/dtfs_identity_v1520.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -17,6 +18,57 @@
 #define DTFS_NATIVE_MAGIC UINT64_C(0446446632021)
 #define DTFS_OWNER_RESERVED 036U
 #define DTFS_OWNER_NATIVE_TAG 035U
+
+/* Fail closed if the OS cannot supply the full 72-bit new-volume token.
+ * Neither a deterministic clock nor a truncated rand() sequence can
+ * safely distinguish independently formatted removable media. */
+static int
+new_volume_id(uint64_t words[DTFS_ID_USED_WORDS_V1520])
+{
+    unsigned char random_bytes[9];
+    size_t count;
+    ssize_t n;
+    int random_fd;
+    unsigned int i;
+    uint64_t high;
+    uint64_t low;
+
+    random_fd = open("/dev/urandom", O_RDONLY);
+    if (random_fd < 0)
+        return -1;
+    count = 0;
+    while (count < sizeof(random_bytes)) {
+        n = read(random_fd, random_bytes + count,
+            sizeof(random_bytes) - count);
+        if (n < 0 && errno == EINTR)
+            continue;
+        if (n <= 0) {
+            close(random_fd);
+            return -1;
+        }
+        count += (size_t)n;
+    }
+    if (close(random_fd) != 0)
+        return -1;
+
+    high = 0;
+    for (i = 0U; i < 4U; ++i)
+        high = (high << 8) | random_bytes[i];
+    high = (high << 4) | (random_bytes[4] >> 4);
+    low = random_bytes[4] & 15U;
+    for (i = 5U; i < 9U; ++i)
+        low = (low << 8) | random_bytes[i];
+    /* Treat even extraordinarily unlikely all-zero output as failure. */
+    if (high == 0 || low == 0)
+        return -1;
+    words[DTFS_ID_MAGIC_WORD_V1520] = DTFS_ID_MAGIC_V1520;
+    words[DTFS_ID_HIGH_WORD_V1520] = high;
+    words[DTFS_ID_LOW_WORD_V1520] = low;
+    words[DTFS_ID_CHECK_WORD_V1520] =
+        (~(DTFS_ID_MAGIC_V1520 ^ high ^ low)) &
+        DTFS_ID_WORD_MASK_V1520;
+    return 0;
+}
 
 static int
 write_half(int fd, uint32_t half)
@@ -47,6 +99,7 @@ main(int argc, char **argv)
     unsigned int i;
     uint64_t word;
     const char *path;
+    uint64_t volume_id[DTFS_ID_USED_WORDS_V1520];
 
     if (argc != 3 || argv[1][0] != '-' || argv[1][1] != 'o' ||
         argv[1][2] != '\0') {
@@ -54,6 +107,10 @@ main(int argc, char **argv)
         return 2;
     }
     path = argv[2];
+    if (new_volume_id(volume_id) != 0) {
+        fprintf(stderr, "mkdtfs: 72-bit volume identity unavailable\n");
+        return 1;
+    }
     fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0600);
     if (fd < 0) {
         perror(path);
@@ -63,7 +120,9 @@ main(int argc, char **argv)
         unsigned int position = i - DTFS_DIRECTORY_BLOCK * TSFS_BLOCK_WORDS;
 
         word = 0;
-        if (i == DTFS_DIRECTORY_BLOCK * TSFS_BLOCK_WORDS)
+        if (i < DTFS_ID_USED_WORDS_V1520)
+            word = volume_id[i];
+        else if (i == DTFS_DIRECTORY_BLOCK * TSFS_BLOCK_WORDS)
             word = (uint64_t)DTFS_OWNER_RESERVED << 31;
         else if (position == 14U)
             word = (uint64_t)DTFS_OWNER_RESERVED << 21;

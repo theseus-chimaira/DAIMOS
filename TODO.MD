@@ -1,3 +1,26 @@
+## 2026-11-12 v1520: native DTFS persistent identity groundwork
+
+- [x] Define optional native `DTVOL1` 72-bit identity record in
+  already reserved RBN0, keeping old RBN0144 directory unchanged.
+  Host `mkdtfs` generates strong random IDs, C89 native probe
+  accepts all-zero legacy and validates stamped record/checksum.
+  Kernel DTFS mount physically validates header before VFS and
+  retains its two ID halves in existing dynamic per-mount
+  shape/extent words. Native PDP-6 source-linked identity tests
+  and five executed unsafe mutations PASS; target `MKFS.DTFS`
+  erases an old ID before formatting legacy tape, never copies it.
+  KCC/GCC tape-root builds and older DTFS/BCACHE tests PASS.
+  +46 optional MRES code, zero new data/fixed KCORE words.
+  Independent strict 32K size gate still FAILS.
+- [ ] Integrate verified **post-error** identity comparison before
+  previously open FILE/vnode or cached DTFS data can be reused.
+  Protect against partial dirty writes, mount-slot reuse, mismatched
+  replacement and legacy zero-ID volumes. Current format stamp
+  does NOT yet mean safe automatic same-tape recovery.
+- [ ] Obtain authoritative Type-551 tape loss/offline signal and
+  route confirmed TSFS root-set member loss to the v1515 fatal
+  HALT, without treating ordinary errors/watchdogs as loss.
+
 ## 2026-11-12 v1519: physical native DTFS mount admission
 
 - [x] Direct DTFS MOUNT_UNIT validates native magic and reserved

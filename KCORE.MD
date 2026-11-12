@@ -1,3 +1,28 @@
+## 2026-11-12 v1520: native DTFS volume identity stamp and mount-admission PASS
+
+Native DTFS uses reserved physical block 0 for an optional `DTVOL1`
+record: two random 36-bit halves (72-bit ID), complement checksum and
+zero padding; existing native directory/block layout stays unchanged.
+Official host `mkdtfs` draws nine bytes from `/dev/urandom` and
+fails if unavailable. Userspace DTFSPROBE and the actual PDP-6
+kernel DTFS mount now physically validate the record; legacy tapes
+with an all-zero block remain accepted but have **no verified ID**.
+The two identity halves are retained in the existing TSFS-only
+shape/extent MM slab words of a DTFS mount, requiring **zero new
+resident data words**. Target `MKFS.DTFS` clears any old block-0
+stamp before rewriting a native directory and, lacking trusted
+randomness, intentionally produces legacy rather than fake IDs.
+Host/target C source-linked tests and native PDP-6 source-linked
+mount/ID tests PASS, including five executed negative mutations.
+Older DTFS/BCACHE/TSFS regressions and isolated KCC/GCC tape-root
+links PASS; controlled +46 optional MRES instruction words, +0
+permanent data and fixed KCORE. The independent strict 32K KCORE
+size gate still FAILS (`023241` octal >= `020000`). This is
+**identity storage and mount validation, NOT online replacement
+recovery**: mounted open FILEs and cached hits still require a
+checked post-error identity transition. See
+`design/kcore-dtfs-volume-id-v1520.md`.
+
 ## 2026-11-12 v1519: physical native DTFS mount-admission verification PASS
 
 `dtfs_mount_unit` previously trusted the short-lived userspace

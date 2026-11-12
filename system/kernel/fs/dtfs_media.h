@@ -2,6 +2,7 @@
 #define DAIMON_DTFS_MEDIA_H
 
 #include "storage.h"
+#include "dtfs_identity_v1520.h"
 
 /* On-media DECtape layout shared by the resident provider and transient
  * userspace probe/check helper.  Keep policy out of this header: these are
