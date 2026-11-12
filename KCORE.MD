@@ -1,3 +1,21 @@
+## 2026-11-12 v1512: physical Type-236 lost completion / PI6 watchdog PASS
+
+Disposable booted 256K PDP-6 v1512 suppressed exactly two real
+selected Type-236 `DR_DONE` completion notifications, leaving the
+actual private I/O descriptors pending for production's original
+300-tick PI6 watchdog. Sixteen fault-on samples recorded two
+real PI6 timeout completions and 30 subsequent checked-free
+refusals: 32 exact failed slot-0 restores. Direct PI2-error
+count remained zero. Failed DISK slot `010` retained original
+`02350`/`0330` backing, u-area, bitmap accounting, retry tag
+and pending TERM with no false READY_ONCE, fatal close or ZOMB.
+Independent swapped PID `011` restored and executed 562 genuine
+SLEEP calls; resident PID 5 progressed by 992. Strict physical
+v1512, source and negative-mutation tests PASS; no production
+code, new process state, resident RAM or ABI growth. Real lost
+media/DEVICE reconstruction remains OPEN. Detailed evidence:
+`design/kcore-backstore-watchdog-physical-v1512.md`.
+
 ## 2026-11-12 v1511: physical Type-236 BACKSTORE read-error rollback PASS
 
 The booted 256K KCC PDP-6 v1511 faulted two genuine selected

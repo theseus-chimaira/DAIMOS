@@ -1,3 +1,24 @@
+## 2026-11-12 v1512: physical PI6 watchdog rollback accepted
+
+- [x] Full 256K PDP-6 source-linked selected Type-236 completion
+  loss: two real DR_DONE notifications suppressed, two original
+  300-tick PI6 watchdog timeouts; exact DRM accounting, request
+  event wakeup, negative BACKSTORE read/MM rollback. Sixteen
+  physical fault-on samples preserve original slot `010` DISK
+  backing/u-area/TERM/retry with 30 later checked-free refusals,
+  32 total failed restores and no false READY_ONCE/zombie.
+- [x] Confirm independent healthy swapped PID `011` restore and
+  562 real user SLEEP calls, and resident PID 5's 992 genuine
+  additional SLEEP calls. Strict v1512 physical verifier PASS,
+  four source and twelve evidence negatives plus missing-key
+  parser test rejected. No production RAM/process-state growth.
+- [ ] Qualify actually unreadable/disappeared DEVICE/media and
+  safe owner recovery or long-lived ownership policy, without
+  forced backing release or unverified parent WAIT completion.
+- [ ] Mixed DEVICE/VOLUME, BCACHE/DTFS, LOGSTORE/MEMFS provider
+  failure/recovery; F1 swapless PURE/MM/APR; F3 FSINFO dynamic
+  mount enumeration. Optimization/compression only afterward.
+
 ## 2026-11-12 v1511: real DRM PI2 BACKSTORE error propagation
 
 - [x] Physically route two selected Type-167/236 PI2 error

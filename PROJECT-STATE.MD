@@ -1,3 +1,25 @@
+## 2026-11-12 v1512: physically accepted lost Type-236 completion / PI6 timeout
+
+Real 256K KCC PDP-6 F07 guest tested missing completion for
+two actual selected Type-236 drum BACKSTORE reads: the PI2
+`DR_DONE` completion was suppressed without a fake failure.
+Production's original 300-tick PI6 watchdog subsequently
+failed both live private descriptors, accounted both DRM errors,
+woke slot-0 and drove checked MM rollback. Sixteen physical
+fault-on samples 24..39 preserved the selected original DISK
+slot `010` extent `02350`/`0330`, stable u-area, bitmap,
+retry marker and pending TERM, with no phantom RAM publish,
+zombie or release. Exactly 32 failed restores = two watchdog
+timeouts + 30 checked-free refusals; direct PI2 errors zero.
+Independent SLEEP/DISK PID `011` checked-restored and executed
+562 real SLEEP syscalls, resident PID 5 another 992 during
+the failure. Strict physical final logs/verifier and source/
+negative checks PASS; testkit revision `3cd5e6f`. The guest
+stopped at the bounded diagnostic horizon, not HALT; irreparable
+media ownership remains OPEN. No production source, ABI or RAM
+changes beyond v1507. Exact sample table and evidence SHA256:
+`design/kcore-backstore-watchdog-physical-v1512.md`.
+
 ## 2026-11-12 v1511: physically accepted DRM BACKSTORE read-error path
 
 The v1511 booted full 256K PDP-6 F07 guest routes two real
