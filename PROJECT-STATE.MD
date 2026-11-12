@@ -1,3 +1,43 @@
+## 2026-11-12 v1521: KCORE feature-only source and documentation reconciliation
+
+**This is an inventory/documentation change, not a release or a new
+physical-guest result.** Source audit:
+`design/kcore-feature-source-audit-v1521.md`; current active
+checklist: `KCORE.MD` and `TODO.MD` v1521. Baseline DAIMOS
+`65ed0b5b`/v1520, VERSION 0.5. Historical duplicate v1508
+BACKSTORE summaries and superseded XIP/PACKED backlog entries
+were removed from active listings; dated results otherwise
+remain historical evidence, not additional unfinished work.
+
+Fresh `make -C system/kernel kcore COMPILER=kcc` PASS for
+production source-to-ASM generation (no full link or guest);
+`$TMPDIR/kcore-feature-source-compile-v1521.log`. The
+**uncommitted** local v1492 FSINFO source and testkit PASS their
+native exact FSINFO capacity/unsafe-mutation and actual
+MOUNTS/DF 1/4/8/26-slot host tests. No FSINFO commit,
+physical >4 mount or integrated guest acceptance is claimed.
+Pre-existing local source, testkit and pdp10-doc modifications
+were preserved without being treated as merged functionality.
+
+Remaining active KCORE gates: P0 authoritative critical
+root/BACKSTORE and selected TSFS loss signal plus v1515 HALT
+caller; P0 safe post-error non-root DTFS volume-identity/
+open-handle/BCACHE/dirty-state revalidation; P1 genuinely
+untested mixed DEVICE/VOLUME/LOGSTORE/MEMFS/backing failures;
+P1 committed and real-guest dynamic FSINFO; P1 production
+uncompressed swapless inactive PURE/MM/APR lifecycle; then
+matched regression/feature freeze. Mutable-only RAM compression
+is a conditional net-RAM decision after PURE, not mandatory.
+
+Accepted v1506-v1512 repaired/failing BACKSTORE behavior and
+independent bystander progress are **not** open. v1518-v1520
+DTFS format/volume-ID groundwork is accepted, but online
+mounted-media recovery is not. 48K non-XIP, restricted MEMFS
+XIP, grouped block codec, normal F07/OOM remain accepted in
+their exact tested profiles. Strict 32K work stays HOLD;
+MRES unloading, unrelated userland, separate D6FS packer,
+unified TSFS and size-only work are excluded from this sweep.
+
 ## 2026-11-12 v1520: optional native DTFS 72-bit volume IDs accepted
 
 `mkdtfs` now puts a random 72-bit `DTVOL1` identity/check record

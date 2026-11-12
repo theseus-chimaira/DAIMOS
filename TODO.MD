@@ -1,3 +1,54 @@
+## 2026-11-12 v1521: CURRENT KCORE feature-only work (source audited)
+
+This is the **sole current KCORE feature checklist**. Older dated
+unchecked tasks below are original historical checkpoints, not
+additional obligations. See `KCORE.MD` v1521 and
+`design/kcore-feature-source-audit-v1521.md` for source paths,
+existing acceptance and exact verification limits.
+
+- [ ] **P0-A critical media:** obtain authoritative permanent
+  root/BACKSTORE and selected TSFS physical member-loss evidence,
+  distinguish PI/watchdog/illegal select, then source-link actual
+  v1515 HALT caller. Physical confirmed-loss and false-positive
+  negative tests, exact root/swap HALT PC mandatory. Do not attempt
+  root/BACKSTORE reconstruction or forced owner release (v1513).
+- [ ] **P0-B non-root media:** on DTFS observed error/return, physically
+  match v1520 saved identity before old FILE/vnode/BCACHE reuse.
+  Reject changed or unauthenticated legacy zero-ID volume safely;
+  account for dirty/partial writes, mount-slot lifecycle and
+  non-root return without corrupting the independent root.
+- [ ] **P1-C remaining combined storage:** complete only missing
+  in-flight DEVICE/VOLUME and shared BCACHE failure/return, mixed
+  DSK/DRM/DTC backing and LOGSTORE/MEMFS/process-swap ownership
+  matrix. Retain v1484/v1485/v1490/v1511-v1514 acceptances;
+  no second allocator, cache, log or mapping interface.
+- [ ] **P1-D FSINFO:** commit or reconcile the current **uncommitted**
+  v1492 capacity query and MOUNTS/DF changes/testkit. Its native
+  source-linked query/mutation and real command-body 1/4/8/26
+  tests PASS v1521; linked physical holes/provider-error/>4 mount
+  and small-inventory checks remain open.
+- [ ] **P1-E uncompressed swapless PURE:** integrate staged inactive
+  PURE drop, zero-copy MM rebase, complete bounded APR reload,
+  immutable backing + mutable suffix and exact scheduler/EXEC/
+  EXIT/WAIT/unmount/PI/OOM rollback on the production link.
+  Test native and physical memory pressure. Ordinary disk swap
+  remains unchanged; v1487 +180-TEXT prototype is not production.
+- [ ] **Feature freeze:** matched current-source regression of
+  affected physical and native guest cases, including failure,
+  cancellation and restored healthy operation, without reopening
+  already accepted F07/OOM/XIP/48K/codec profiles.
+- [ ] **Conditional decision only:** after uncompressed PURE passes,
+  enable mutable-only RAM compression *only if* exact matched peak
+  whole-system RAM wins; otherwise record NO COMPRESSION.
+
+Accepted and removed from active work: v1506 repaired BACKSTORE TERM
+and owner completion, v1507 bounded retry, v1509/v1510 independent
+bystander progress, v1511/v1512 real DRM PI2/watchdog failure,
+v1518-v1520 native DTFS mount/ID groundwork, v1469-v1485 XIP,
+v1464/v1466 block codec and v1486 non-XIP 48K boot. Strict 32K
+HOLD, unrelated MRES/userland, D6FS online packer, unified TSFS
+and optimization are **not KCORE feature tasks**. VERSION 0.5.
+
 ## 2026-11-12 v1520: native DTFS persistent identity groundwork
 
 - [x] Define optional native `DTVOL1` 72-bit identity record in
@@ -32,10 +83,11 @@
   isolated KCC 256K and GCC 32K KINIT/MRES links PASS.
   +27 optional folded MRES instructions, +0 data and fixed KCORE.
   Strict 32K KCORE size gate remains FAIL, not accepted.
-- [ ] Define a trustworthy persistent *native DTFS volume identity*
-  and compatibility rules, then safely revalidate **different**
-  replacement media and old FILE/vnode/dirty owner lifecycles.
-  Common magic/format tags alone do not distinguish tapes.
+- [x] Define persistent *native DTFS volume identity*: v1520
+  introduced checked `DTVOL1` stamps and zero-ID legacy rules.
+- [ ] Use that identity to revalidate **different** replacement
+  media and old FILE/vnode/dirty-owner lifecycles after initial mount.
+  Format tags alone do not guarantee safe mounted-volume reuse.
 - [ ] Authoritative physical Type-551 tape-loss event and checked
   TSFS root-member v1515 fatal HALT remain P0 and OPEN; a generic
   read timeout and live cached directory are not such evidence.
@@ -191,9 +243,9 @@
   PID `011` restores and runs 397 times; resident PID 5 progresses.
   Strict verifier PASS; five source and eleven evidence mutations
   rejected, zero new permanent RAM/process-state words.
-- [ ] Accept v1512 full physical missing-Type-236-PI2-completion
-  scenario using original PI6 300-tick watchdog and exact owner
-  rollback; native testkit source/negative checks prepared.
+- [x] v1512 accepted the full physical missing-Type-236-PI2-completion
+  scenario using the original PI6 300-tick watchdog and exact owner
+  rollback, with independent swapped/resident progress.
 - [ ] Genuine physical DEVICE/media loss/reconstruction and safe
   unrecoverable-owner policy; never claim false backing free/ZOMB.
 - [ ] Mixed DEVICE/VOLUME, DTFS/BCACHE, LOGSTORE/MEMFS failures;
@@ -230,8 +282,9 @@
   Strict v1509 verifier PASS; four guest-source and nine evidence
   negative mutations rejected. Zero production RAM/process-state
   growth; source and SHA256 in design/v1509.
-- [ ] Physically demonstrate a distinct healthy *swapped* process
-  restoring/executing while another original DISK owner stays bad.
+- [x] The later physical v1510 test demonstrated a distinct healthy
+  *swapped* process restoring/executing while the old DISK owner
+  remained in its original failure state.
 - [ ] Genuine permanent DEVICE/media failure: verified safe recovery
   or explicit retained-ownership policy, never forced backing release.
 - [ ] Mixed DEVICE/VOLUME, DTFS/BCACHE, LOGSTORE/MEMFS error gates;
@@ -271,9 +324,10 @@
 - [x] Native v788 paired publish and v854 sector/PURE exchange
   retire the incoming owner's retry tag without skipping checked
   MM/storage publication.
-- [ ] Physical sustained-failure guest: clock-qualified retries,
-  bystander and healthy swapped progress, stable DISK/bitmap/MM/
-  private executive continuation, no false zombie or READY_ONCE.
+- [x] v1508-v1512 subsequent physical sustained-failure guests
+  accepted clock-qualified retries, both kinds of bystander
+  progress and stable DISK/bitmap/MM/executive ownership without
+  false zombie or READY_ONCE.
 - [ ] Permanent media/DEVICE identity loss: safe recovery or
   explicit long-lived owned failure; never declare irreparable
   backing reclaimed without an accepted resource release.
@@ -307,8 +361,8 @@
   and exact zero backing; rerun two v1493 unsafe mutations.
 - [x] Correct inline swap-service success/result documentation, no
   functional resident code change.
-- [ ] Verify actual physical v1504 owning-return TERM consumption and
-  final owner cleanup after repaired backing; do not infer from reaps.
+- [x] v1506 subsequently accepted actual physical owning-return TERM
+  consumption and single real owner cleanup after repaired backing.
 - [ ] Define and implement permanently-corrupt-backstore terminal
   handling and bounded retry behavior without releasing a private
   executive continuation or losing authoritative DISK backing.
@@ -326,8 +380,8 @@
   owner-lifecycle physical audits PASS.
 - [x] Exclude inverted v1499 SKIPN branch counters; v1502 corrected
   observer polarity in testkit without altering production code.
-- [ ] Demonstrate actual pending TERM consumption at owning return
-  and exact victim owner/backing resolution in a physical guest.
+- [x] v1506 subsequently demonstrated actual pending TERM consumption
+  at owning return, fatal close and exact repaired victim resolution.
 - [ ] Test permanent corruption fail-closed policy without unsafe
   repeated swap-in, false RESIDENT/READY_ONCE or lost DISK owner.
 - [ ] Complete end-to-end physical fault acceptance; retain normal
@@ -342,9 +396,9 @@
 - [x] Capture two v1499 physical pre/post owner snapshots; invalidate
   original out-of-scope `SKIPN` event counts. Testkit v1502 `SKIPE`
   native guard and negative mutation regression PASS.
-- [ ] Rerun corrected v1499/v1502 256K guest; verify map-backed TERM
-  return, WAIT/CTX_PC/FD-control owner snapshots and scoped event
-  branch counters, never reusing the old invalid counts.
+- [x] Later v1503 accepted corrected physical TERM coalescing and
+  the map-backed owner snapshots; v1506 accepted owning return and
+  cleanup. The invalid original v1499 SKIPN counts stay excluded.
 - [ ] Test permanently corrupt BACKSTORE bitmap/DEVICE failure with
   exact DISK ownership, no false READY_ONCE or unsafe repeated restores,
   and eventual safe deferred-owner/finalizer recovery.

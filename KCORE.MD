@@ -1,3 +1,48 @@
+## 2026-11-12 v1521: current KCORE feature-only checklist (source audited)
+
+**Authoritative current list:** `design/kcore-feature-source-audit-v1521.md`;
+the historical dated sections below are evidence at their own revision,
+not an additive list of unfinished features. Committed baseline v1520
+(`65ed0b5b`), with separate uncommitted v1492 FSINFO changes. Fresh
+KCC kernel source-to-ASM build and v1492 source-linked native FSINFO /
+actual command-body tests PASS; **no new full physical guest claim**.
+
+1. **P0 critical-device loss:** prove trustworthy permanent boot-root or
+   BACKSTORE absence, qualify selected TSFS root-member loss, and route
+   confirmed loss to the implemented v1515 no-return HALT leaf. A DTC
+   select error, PI error or watchdog alone is not a reliable loss signal.
+2. **P0 mounted non-root media:** compare the saved v1520 DTFS 72-bit
+   identity after observed failure/return *before* cached or open-handle
+   reuse; safely handle replacement, zero-ID legacy media, dirty writes,
+   mount ownership and independent root operation. Existing mount-time
+   format validation is not a replacement-recovery protocol.
+3. **P1 mixed storage:** close only genuinely unaccepted DEVICE/VOLUME,
+   BCACHE, physical provider and LOGSTORE/MEMFS/swap concurrency fault
+   combinations; preserve existing allocators, shared cache and v1484/
+   v1485/v1490/v1511-v1514 accepted branches.
+4. **P1 FSINFO:** integrate/commit locally modified v1492 capacity
+   query and MOUNTS/DF scans; native 1/4/8/26-slot source tests PASS,
+   but a linked physical multi-mount guest and failure/holes are OPEN.
+5. **P1 swapless PURE:** integrate the uncompressed inactive-owner
+   drop/MM rebase and complete APR restore into real scheduler/VM
+   life cycles with fault-atomic ownership; isolated v1381-v1397
+   experiments are not production-linked.
+6. **Conditional:** only after uncompressed PURE acceptance, decide
+   on optional mutable-only RAM compression using *net peak RAM*.
+   "No compression" is valid; compressed disk-swap is cancelled.
+7. **Feature freeze:** run matched affected production guest/native
+   matrix and reconcile docs. No size-only KCORE optimization yet.
+
+**Already accepted:** grouped block codec, restricted MEMFS XIP and
+snapshots, defined-profile EXEC/RUN/OOM, normal backed swap, repaired
+BACKSTORE TERM/finalize, bounded failure retry and independent resident/
+swapped progress, physical DRM PI errors and missing completions, native
+DTFS mount/identity groundwork, 48K non-XIP boot and dynamic KINIT
+mount slab. Do not reopen these via older unchecked boxes.
+Strict 32K work is **on HOLD**; MRES unload/reload, separate D6FS
+packer, unified TSFS and general userland features are out of scope.
+DAIMOS VERSION remains 0.5.
+
 ## 2026-11-12 v1520: native DTFS volume identity stamp and mount-admission PASS
 
 Native DTFS uses reserved physical block 0 for an optional `DTVOL1`
@@ -7863,7 +7908,12 @@ ownership changes have been made. The GCC lowmem image links, and focused
 SIMH MEMFS and FIFO native target tests pass. AAP also passes the same
 MEMFS pinning target fixture; actual AAP XIP process launch is pending.
 
-# KCORE - Verified Open Work and Optimization Backlog
+# KCORE - Historical 2026-10-23 backlog (not current feature checklist)
+
+The sections in this archived planning snapshot include completed,
+deferred and cancelled work. The current v1521 feature-only checklist
+is at the top of this file. In particular, old 32K optimization and
+restricted XIP checkboxes are not active.
 
 ## 2026-10-23 native uncompressed EXEC physical OOM v205
 
@@ -8387,18 +8437,12 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## P1 follow-up: restricted MEMFS XIP production integration
 
-- [x] Provide aligned dedicated MEMFS XIP storage, pin lifetime, restricted
-  PURE admission (private provider op 027) and VM release (op 026); native
-  SIMH/AAP fixtures validate the individual mechanisms (v203-v219).
-- [x] Provide an experimental raw PURE XIP linker mode limited to a verified
-  non-writing instruction subset (v218); ordinary DXR/PURE is not XIP.
-- [ ] Design a privileged argument-free, environment-free EXEC/RUN admission
-  path, preserving existing ABI and no additional permanent process fields.
-- [ ] Make XIP startup genuinely non-writing: zero argc/envc alone is not
-  sufficient because `vm_space_startup` unconditionally stores VM metadata.
-- [ ] Native-test *production* scheduler entry, failed EXEC replacement and
-  rollback, process exit, swap exclusion, storage-map state, and memory
-  pressure on both simulators before claiming XIP enabled.
+**HISTORICAL (CLOSED):** the former v203-v219 XIP follow-up checklist
+is superseded by v1469-v1485's production acceptance of privileged,
+root-owned, nonwriting, argument-free MEMFS XIP EXEC/RUN, rollback,
+pin lifetime, scheduler/process exit and memory-pressure cases at
+128K/192K/256K. It is not an active implementation task. Ordinary
+DXR/PURE does not become raw XIP; physical MEMFS minimum is 96K.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
@@ -9268,23 +9312,12 @@ production boot/KCORE still uses D6LZ36. New source details and linked
 pre-cutover size baseline are in
 `design/d6codec-cutover-entry-v1352.md`. Production consumer migration,
 stack measurement and exact image acceptance remain OPEN.
-## P1: packed-process lifecycle and compression
+## Historical packed-process plan (cancelled v1375; not open)
 
-The v33-v45 packed registry/layout and transaction sources are staged
-experiments, not active production packed processes; retain ordinary swap.
-
-- [ ] Choose a compact dense or bounded sparse packed registry using measured
-  whole-KCORE code + dynamic data + MM extent cost, not isolated v33-v45
-  prototype sizes; preserve MM-authoritative extent ownership.
-- [ ] Connect KINIT registry allocation, boot abort, process exit, VM destroy,
-  packed publication and teardown; validate exclusion and failure rollback.
-- [ ] Complete packed restore against the selected registry, rather than its
-  private descriptor, then integrate packed eviction/restoration with the
-  scheduler; do not remove disk swap before full native acceptance.
-- [ ] Integrate the production D6 codec with the resident KCORE encoder and
-  streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
-  KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan
-  in system/kernel/core/D6CODEC-INTEGRATION-TODO-v054.md.
-- [ ] Measure combined resident codec text, stack, workspace and peak MM
-  descriptors; test direct ABI, malformed input, resumptions, packed
-  transaction failures and real PDP-6 execution before activating it.
+The v33-v45 packed registry and compressed DISK-swap experiments were
+cancelled by v1375. Raw disk/drum swap remains production; later
+grouped block-codec migration is complete. Their old unchecked
+requirements are removed from the active KCORE list. The separate
+**uncompressed swapless inactive PURE** scheduler/MM/APR integration
+remains open (v1521 item P1-E). Mutable-only in-RAM compression may
+be evaluated **after** PURE with matched total RAM accounting.
