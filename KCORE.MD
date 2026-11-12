@@ -1,3 +1,18 @@
+## 2026-11-12 v1509: independent resident progress under permanent BACKSTORE refusal
+
+Booted 256K PDP-6 v1509 source-linked physical samples 24..29 retain
+the exact failed DISK slot `010` extent `02350`/`0330`, original
+u-area, retry marker and pending TERM with 3..14 refused frees.
+A distinct real PID 5 resident spinner entered `SLEEP` 98..456
+times (358 new real syscalls) across 7,904 PI6 ticks; its process
+descriptor stayed live at every fault-on sample. Strict physical
+v1509 verifier PASS; four guest-source and nine progress/ownership
+mutations rejected. No KCORE source, process state or RAM growth.
+Only **resident** bystander progress is accepted: healthy swapped
+contender, genuine DEVICE/media loss and unrecoverable owner
+reconstruction/reclaim remain OPEN. See
+`design/kcore-backstore-bystander-physical-v1509.md`.
+
 ## 2026-11-12 v1508: physical sustained BACKSTORE refusal (scoped PASS)
 
 Disposable real 256K KCC PDP-6 captured three post-fault snapshots of

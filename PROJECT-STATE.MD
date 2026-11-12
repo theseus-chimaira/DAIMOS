@@ -1,3 +1,24 @@
+## 2026-11-12 v1509: physical resident-bystander fairness accepted
+
+The disposable 256K KCC PDP-6 v1509 guest retains its original
+permanently refused checked BACKSTORE DISK owner, slot `010`,
+first `02350` / blocks `0330` octal. Six actual post-fault
+samples 24..29 show 3..14 refused checked releases, unchanged
+DISK/u-area/bitmap/TERM/retry ownership, no false restore, repair,
+zombie or private fatal-close. Independent PID 5 remains physically
+resident and executes an additional 358 **real SLEEP syscalls**
+(counter 98..456) while PI6 clock advances 7,904 ticks. Strict
+v1509 verifier PASS, nine negative evidence mutations rejected;
+disposable F07 source checks reject four more mutations. All
+diagnostic changes are in the testkit copied guest, no production
+KCORE/RAM modifications beyond v1507. Guest is intentionally
+sample-stopped, not HALT. Full evidence and SHA256 in
+`design/kcore-backstore-bystander-physical-v1509.md`.
+Still OPEN: independently swapped healthy contender progress,
+genuine DEVICE/media loss, terminal recovery or safe unreclaimed
+owner policy, mixed storage failure gates and remaining KCORE
+features.
+
 ## 2026-11-12 v1508: physical permanently refused BACKSTORE release
 
 Booted 256K KCC PDP-6 with disposable v1508 fault instrumentation

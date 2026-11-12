@@ -1,3 +1,21 @@
+## 2026-11-12 v1509: physical scheduler fairness with failed BACKSTORE
+
+- [x] Keep the actual F07 PID 5 spinner runnable through extra-child
+  TERM/WAIT in a disposable test guest and source-sample its real
+  SLEEP syscall counter during repeated checked-release refusal.
+  Six physical fault-on samples retained failed slot `010` backing
+  while independent resident PID 5 completed 358 more SLEEP calls.
+  Strict v1509 verifier PASS; four guest-source and nine evidence
+  negative mutations rejected. Zero production RAM/process-state
+  growth; source and SHA256 in design/v1509.
+- [ ] Physically demonstrate a distinct healthy *swapped* process
+  restoring/executing while another original DISK owner stays bad.
+- [ ] Genuine permanent DEVICE/media failure: verified safe recovery
+  or explicit retained-ownership policy, never forced backing release.
+- [ ] Mixed DEVICE/VOLUME, DTFS/BCACHE, LOGSTORE/MEMFS error gates;
+  F1 swapless PURE/MM/APR; F3 dynamic FSINFO enumeration; optional
+  compression only after functional acceptance.
+
 ## 2026-11-12 v1508: physical permanent BACKSTORE refusal gate
 
 - [x] Boot a disposable 256K PDP-6 and refuse every checked release of
