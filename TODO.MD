@@ -1,3 +1,19 @@
+## 2026-11-12 v1517: physical DTC loss signaling remains an OPEN P0 gate
+
+- [x] Execute a real SIMH PDP-6 Type-551 select/CONI regression
+  for unattached, attached and detached DTC0, plus unrelated
+  unattached DTC7; all four status/PC checks PASS. Type-551
+  select error `000004` is not itself a media-removal event.
+  No production code or RAM change; testkit `3536d98`.
+- [ ] Obtain original Type-551-compatible positive loss/offline
+  evidence that distinguishes media/transport unavailability
+  from illegal commands and transient errors. Only then route
+  confirmed selected v1516 TSFS root-member loss to the v1515
+  fatal stop. Do not infer loss from a select error or timeout.
+- [ ] Full physical guest root-set removal HALT proof and
+  unrelated non-root DTFS removal/return with identity, BCACHE,
+  dirty/open resources and surviving root operation.
+
 ## 2026-11-12 v1516: exact TSFS physical root member identification
 
 - [x] Resolve the unit-zero/trailing-zero ambiguity for roots spanning

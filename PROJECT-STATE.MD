@@ -1,3 +1,20 @@
+## 2026-11-12 v1517: Type-551 selection/offline evidence, no false root panic
+
+PDP-6 SIMH v1517 regression PASS, testkit `3536d98`: legal
+Type-551 SEARCH/SELECT issued by actual CPU instructions returns
+CONI `000004` when physical DTC0 is unattached, `001000` when
+attached, and `000004` after detach; unrelated DTC7 unattached
+also returns `000004`. This is SIMH's `DTB_ILL` behavior, not a
+verified permanent-loss signal on original Type-551/TU55 hardware.
+TU55/TU56 controller documentation warns against equating SELECT
+error with missing media; TU56 analog SELECT ECHO is expressly
+not used with 550/551/552. Type-136 error and search/transfer
+watchdogs likewise remain non-authoritative. Therefore v1515
+HALT remains uncalled pending sound real-hardware detection;
+v1516 physical TSFS root-member query remains accepted.
+No DAIMOS production change, no new data or code words.
+Evidence: `design/kcore-dtc-select-status-v1517.md`.
+
 ## 2026-11-12 v1516: TSFS physical root-member identity accepted
 
 Fixed v1515 critical-device HALT remains uncalled pending reliable

@@ -1,3 +1,20 @@
+## 2026-11-12 v1517: simulated Type-551 detach is not an authoritative media-loss event
+
+Executed PDP-6 SIMH legal Type-551 SEARCH/SELECT + CONI 0214:
+unattached DTC0=`000004`, attached DTC0=`001000`, detached
+DTC0=`000004`, and unrelated unattached DTC7=`000004` octal.
+Four actual HALT PCs and memory-stored controller-status words
+verified by testkit `3536d98`. SIMH emits `DTB_ILL` for selecting
+unattached units, but Type-551 status combines illegal/select
+conditions, and TU55/TU56 historical documentation does not
+validate a universal physical tape-removed indication. In
+particular TU56 notes analog SELECT ECHO is not used with 550/551/552.
+Do not automatically HALT on `DTB_ILL`, generic I/O error or timeout.
+v1515 critical HALT and v1516 exact root-member ownership are
+ready; reliable hardware event and physical guest acceptance remain
+OPEN. No production RAM/code changes. See
+`design/kcore-dtc-select-status-v1517.md`.
+
 ## 2026-11-12 v1516: exact selected TSFS root physical-member mask
 
 TSFS formerly stored eight 3-bit physical DECtape selectors, with
