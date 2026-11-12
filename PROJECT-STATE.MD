@@ -1,3 +1,36 @@
+## 2026-11-12 v1523: FILE/cwd mount-retirement lifetime guard
+
+Fixed KCORE now refuses VFS unmount when any process still
+owns an open FILE descriptor or cwd referencing its public
+mount ID. The actual `file_mount_busy_v1523` scans stable
+u-areas of all live (including swapped) processes, testing
+the full canonical mount ID in the cwd and all 16 existing
+two-word FILE records. It allocates no memory and introduces
+no extra permanent owner table. The existing PIPE/SWAP owner
+checks now use the correct saved public mount ID even when
+the preceding helper clobbers AC2, and a precommit recheck
+protects against fresh owners created during sleeping
+SYNC/PREPARE calls.
+
+Native source-linked PDP-6 v1523 test PASS with seven executed
+negative mutations; v1514 missing-media unmount retry PASS.
+An isolated 256K KCC tape-root full image assembles/links.
+Controlled exact-link delta is **+54 fixed instruction words,
+zero data words** (same other KCORE objects and independent
+fold plans); VERSION remains 0.5. The attempted physical
+secondary DTC3 mounted-cwd scenario reaches DSH but its
+target filesystem formatting or validation stalls; no
+full-guest acceptance of P0-B is claimed. Details:
+`design/kcore-file-mount-lifetime-v1523.md`.
+
+Still open: physical non-root DTFS errors/recovery with genuine
+FILEs and dirty writes, administrative write-uncertain recovery
+and VFS retirement on a fully working second medium; P0-A
+authoritative critical media-loss detection and v1515 dispatch;
+P1 mixed storage, FSINFO and uncompressed swapless PURE.
+Strict 32K stays HOLD. Existing uncommitted FSINFO and other
+worktree changes were preserved.
+
 ## 2026-11-12 v1522: DTFS mounted same-media identity gate, native PASS
 
 This is the first implemented P0-B KCORE increment after v1521,

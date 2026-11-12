@@ -1,3 +1,37 @@
+## 2026-11-12 v1523: mounted FILE/cwd lifetime and unmount refusal
+
+P0-B feature correctness: `vfs_unmount` must not retire a public
+mount ID while any live process retains a FILE vnode or current
+working directory on that mount. The new fixed KCORE
+`file_mount_busy_v1523` scans actual stable u-areas for all
+`proc_high_slot` processes (including swapped processes), using
+the existing three-word process descriptor and all 16 FILE slots.
+No new owner table, bitmap, reference count, per-process field or
+dynamic allocation is introduced. The helper preserves the public
+mount ID across PIPE, SWAP and FILE checks, correcting the old
+AC2-clobber dependency, and performs a second owner check after
+potentially sleeping FS SYNC/PREPARE, before committing retirement.
+Failures preserve old mount and FILE/cwd ownership.
+
+Source-linked native PDP-6 `daimos-file-mount-busy-v1523.sh`
+PASS with seven rejected unsafe mutations: local/remote FILE,
+swapped process FD15, remote cwd, proper owner ID, failed SYNC,
+concurrent open during SYNC, and final clean retirement. Prior
+v1514 error/return unmount test PASS. An isolated 256K KCC
+tape-root image assembles and links; controlled identical-link
+fixed KCORE growth: **+54 instruction words, zero additional
+data words**. Documentation:
+`design/kcore-file-mount-lifetime-v1523.md`.
+
+**Not yet a full physical P0-B acceptance.** The additional
+booted tape-root fixture reaches DSH but a real DTC3 formatting
+or validation operation has stalled without a successful
+secondary mount. This is not evidence of open-FILE physical
+recovery; the source-linked test only establishes correct
+process/mount ownership. P0-A reliable permanent media-loss
+classification is still OPEN. Strict 32K and optimization
+remain excluded.
+
 ## 2026-11-12 v1522: non-root DTFS mounted-ID fail-closed return (native)
 
 The first P0-B increment is installed: a negative raw DTFS read

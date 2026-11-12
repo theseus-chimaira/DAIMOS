@@ -1,3 +1,26 @@
+## 2026-11-12 v1523: all-process mount/FILE lifetime gate
+
+- [x] Implement `file_mount_busy_v1523` using existing process
+  metadata and stable u-areas; scan all 16 FILE descriptors and
+  cwd for the full public mount ID, even if process user VM
+  has been swapped out. No new permanent registration table.
+- [x] Fix PIPE/SWAP owner-ID corruption caused by helper AC2
+  clobber, and recheck the complete owner set after
+  potentially sleeping SYNC/PREPARE, immediately before VFS
+  mount-slot retirement.
+- [x] Native PDP-6 v1523 FILE/cwd/unmount test PASS with
+  seven executed unsafe mutations rejected; v1514 retry
+  regression PASS. Full KCC 256K tape-root image link PASS.
+  Controlled +54 KCORE text words, no new data words.
+- [ ] Finish full physical secondary DTC3 mount/cwd/FILE
+  fault-recovery guest. Initial boot and DSH PASS but
+  target MKFS/FSCK on DTC3 stalls: investigate physical
+  medium/controller/fixture before accepting any actual
+  multi-process mounted-media scenario.
+- [ ] Finish P0-A permanent-loss evidence/dispatch and
+  remaining P0-B sticky uncertain-write recovery, then
+  P1 features per the current v1521/v1522 checklists.
+
 ## 2026-11-12 v1522: mounted DTFS identity-after-error native acceptance
 
 - [x] Flag only actual mounted DTFS members sharing a failed

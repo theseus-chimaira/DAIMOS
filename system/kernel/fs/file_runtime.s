@@ -662,6 +662,71 @@ file_unlock_mount_next:
         sojg    3,file_unlock_mount_loop
         popj    17,
 
+; int file_mount_busy_v1523(unsigned int mount_id)
+;
+; A mount slot must not be retired while ANY stable process u-area still
+; contains an open FILE descriptor or cwd referring to it. Checking only
+; file_table (the current process) is insufficient: other runnable and
+; swapped processes retain their u-areas and may later access an old vnode
+; after this slot has been assigned to a different volume. The existing
+; process table's u-area ownership bit and physical base are authoritative.
+;
+; No new registration tables, reference counters or allocated words. Do
+; not follow user VM bases: swapped processes also retain their u-area.
+; Caller holds the VFS/provider serialization; no sleep or I/O in this scan.
+; Preserve AC10..AC13 as required by the KCORE register ABI.
+        .globl  proc_high_slot
+        .globl  file_mount_busy_v1523
+file_mount_busy_v1523:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1                   ; public mount ID 1..63
+        skipn   012,proc_table
+        jrst    file_mount_busy_no_v1523
+        move    013,proc_high_slot      ; exclusive upper slot
+        setz    011,                    ; process slot
+file_mount_busy_proc_v1523:
+        caml    011,013
+        jrst    file_mount_busy_no_v1523
+        move    2,(012)                 ; meta = uarea base,,flags
+        trnn    2,0400000              ; PROC_F_UAREA
+        jrst    file_mount_busy_next_v1523
+        hlrz    3,2                     ; stable physical u-area
+        jumpe   3,file_mount_busy_next_v1523
+        move    4,025(3)               ; PROC_FILE_CWD_OFFSET
+        jumpe   4,file_mount_busy_fd_setup_v1523
+        ldb     5,[POINT 6,4,11]       ; full public mount ID
+        camn    5,010
+        jrst    file_mount_busy_yes_v1523
+file_mount_busy_fd_setup_v1523:
+        movei   6,026(3)               ; PROC_FILE_TABLE_OFFSET
+        movei   7,020                  ; FILE_NFILE, 16 entries
+file_mount_busy_fd_v1523:
+        skipn   4,(6)                  ; only occupied FILE entries
+        jrst    file_mount_busy_fd_next_v1523
+        ldb     5,[POINT 6,4,11]       ; vnode mount, not metadata bits
+        camn    5,010
+        jrst    file_mount_busy_yes_v1523
+file_mount_busy_fd_next_v1523:
+        addi    6,2                    ; two-word FILE entry
+        sojg    7,file_mount_busy_fd_v1523
+file_mount_busy_next_v1523:
+        addi    012,3                  ; three-word process descriptor
+        aoja    011,file_mount_busy_proc_v1523
+file_mount_busy_yes_v1523:
+        movei   1,1
+        jrst    file_mount_busy_done_v1523
+file_mount_busy_no_v1523:
+        setz    1,
+file_mount_busy_done_v1523:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
 ; int file_close_all(void): zero if all entries closed, -1 if any failed.
         .globl  file_close_all
 file_close_all:

@@ -19,6 +19,7 @@
         .globl  pipe_fifo_mount_busy
         .globl  proc_swap_backing_busy
         .globl  proc_swap_mount_busy
+        .globl  file_mount_busy_v1523
 
 ; int vfs_lookup(dir, name, nodep)
         .globl  vfs_lookup
@@ -1040,10 +1041,7 @@ vfs_unmount_slot:
         push    17,1                    ; root
         push    17,2                    ; slot
         movei   1,1(2)                  ; public mount id is slot + 1
-        pushj   17,pipe_fifo_mount_busy
-        jumpn   1,vfs_unmount_fail
-        movei   1,1(2)
-        pushj   17,proc_swap_mount_busy
+        pushj   17,vfs_unmount_owner_check_v1523
         jumpn   1,vfs_unmount_fail
         move    1,-1(17)
         pushj   17,vfs_sync
@@ -1063,6 +1061,17 @@ vfs_unmount_prepare:
         move    2,(17)
         move    1,-1(17)
 vfs_unmount_after_prepare:
+        ; SYNC and D6FS/MEMFS PREPARE may sleep. An independent process
+        ; could open a FILE or chdir while the first check was suspended.
+        ; Recheck all ownership immediately before retirement, after the
+        ; last possibly sleeping provider call; no new allocation or I/O
+        ; occurs between this check and the slot's final retirement.
+        move    2,(17)
+        movei   1,1(2)
+        pushj   17,vfs_unmount_owner_check_v1523
+        jumpn   1,vfs_unmount_fail
+        move    2,(17)
+        move    1,-1(17)
         came    1,vfs_namespace_root
         jrst    vfs_unmount_unlock
         move    3,vfs_mount_target_base
@@ -1095,6 +1104,24 @@ vfs_mount_retire_slot:
 vfs_unmount_fail:
         sub     17,kconst_2_2
         jrst    kret_neg1
+
+; AC1=public mount ID. The underlying PIPE and process-swap checkers may
+; clobber AC2 (the old code accidentally derived slot+2 after PIPE).
+; Preserve the actual public ID once, use it for all three owner classes,
+; and return nonzero without disturbing their resources on refusal.
+vfs_unmount_owner_check_v1523:
+        push    17,010
+        move    010,1
+        pushj   17,pipe_fifo_mount_busy
+        jumpn   1,vfs_unmount_owner_return_v1523
+        move    1,010
+        pushj   17,proc_swap_mount_busy
+        jumpn   1,vfs_unmount_owner_return_v1523
+        move    1,010
+        pushj   17,file_mount_busy_v1523
+vfs_unmount_owner_return_v1523:
+        pop     17,010
+        popj    17,
 
         .data
 ; KINIT publishes both bases after MRES installation and before the first
