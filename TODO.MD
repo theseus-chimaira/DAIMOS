@@ -1,3 +1,22 @@
+## 2026-11-12 v1519: physical native DTFS mount admission
+
+- [x] Direct DTFS MOUNT_UNIT validates native magic and reserved
+  block tags on a **fresh raw physical directory read** before
+  publishing VFS mount/media ownership, even if callers bypass
+  userspace DTFSPROBE or a cached directory looks valid.
+  Native PDP-6 source-linked test PASS and six actual negative
+  source mutations rejected. Existing BCACHE/DTFS regressions,
+  isolated KCC 256K and GCC 32K KINIT/MRES links PASS.
+  +27 optional folded MRES instructions, +0 data and fixed KCORE.
+  Strict 32K KCORE size gate remains FAIL, not accepted.
+- [ ] Define a trustworthy persistent *native DTFS volume identity*
+  and compatibility rules, then safely revalidate **different**
+  replacement media and old FILE/vnode/dirty owner lifecycles.
+  Common magic/format tags alone do not distinguish tapes.
+- [ ] Authoritative physical Type-551 tape-loss event and checked
+  TSFS root-member v1515 fatal HALT remain P0 and OPEN; a generic
+  read timeout and live cached directory are not such evidence.
+
 ## 2026-11-12 v1518: non-root DTFS failed-I/O cache invalidation
 
 - [x] Negative physical DTFS read/write invalidates both shared

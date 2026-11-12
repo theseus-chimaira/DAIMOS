@@ -1,3 +1,25 @@
+## 2026-11-12 v1519: physical native DTFS mount-admission verification PASS
+
+`dtfs_mount_unit` previously trusted the short-lived userspace
+format probe: a direct mount syscall could publish a native DTFS
+mount without validating its current physical tape. The optional
+DTFS provider now invalidates shared clean cache tags/directory
+identity and performs a **raw physical** read of native directory
+block 0144 before VFS mount publication. It refuses failed I/O,
+wrong native magic, missing reserved owners for blocks 0/0144,
+or incorrect three terminal native allocation tags. Native
+PDP-6 source-linked mount admission plus six executed unsafe
+mutants PASS. Existing DTFS/BCACHE regression tests PASS.
+Isolated GCC lowmem 32K and KCC full 256K tape-root KINIT/MRES
+links PASS. Controlled folded size: **+27 optional tape MRES
+instructions, +0 data, +0 fixed KCORE words**. The independent
+strict 32K fixed KCORE size gate still FAILS `023241` octal
+against `<020000`. Format validation cannot distinguish two
+separately formatted native tapes: persistent volume identity,
+checked replacement/open FILE handling and actual tape-removal
+signaling remain OPEN. Details:
+`design/kcore-dtfs-native-mount-validation-v1519.md`.
+
 ## 2026-11-12 v1518: failed DTFS I/O invalidates shared cached identities
 
 Corrected optional DTFS DTC read/write veneers: after a *negative

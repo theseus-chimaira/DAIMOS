@@ -697,6 +697,47 @@ dtfs_mount_unit_its:
         iori    010,020                 ; DTFS_MEDIA_ITS
         .endif
 dtfs_mount_unit_media_ready:
+        ; V1519: the short-lived userspace probe is not a trust boundary.
+        ; A direct MOUNT_UNIT caller can bypass it, and the medium can be
+        ; changed after the probe.  Verify native directory invariants from
+        ; a FRESH PHYSICAL read before publishing a VFS mount slot.  An
+        ; ordinary BCACHE hit is not proof of the current tape contents.
+        ; These are format checks, NOT unique-volume identity: two distinct
+        ; native tapes can both pass them.  Replacement of an OPEN mount
+        ; still requires a separate checked media-identity protocol.
+        .if DTFS_ENABLE_FOREIGN
+        move    1,012
+        andi    1,030
+        caie    1,010                   ; native DTFS only
+        jrst    dtfs_mount_unit_format_done_v1519
+        .endif
+        pushj   17,bcache_invalidate_all
+        setzm   dtfs_cache_mount
+        move    1,010
+        andi    1,7                     ; physical DTC unit
+        movei   2,0144                  ; native directory block
+        movei   3,fs_block_workspace
+        pushj   17,dtfs_dtc_read_jump  ; bypass all old clean tags
+        jumpn   1,dtfs_mount_unit_fail
+        move    1,fs_block_workspace+0177
+        came    1,[0446446632021]      ; native directory magic
+        jrst    dtfs_mount_unit_fail
+        move    1,fs_block_workspace
+        lsh     1,-037                  ; owner of physical block zero
+        caie    1,036                   ; reserved
+        jrst    dtfs_mount_unit_fail
+        move    1,fs_block_workspace+014
+        lsh     1,-025                  ; owner of physical block 0144
+        andi    1,037
+        caie    1,036                   ; directory is reserved
+        jrst    dtfs_mount_unit_fail
+        move    1,fs_block_workspace+0122
+        and     1,[0177776]            ; 3 final five-bit owner tags
+        came    1,[0167572]            ; each must be 035 (native tag)
+        jrst    dtfs_mount_unit_fail
+        .if DTFS_ENABLE_FOREIGN
+dtfs_mount_unit_format_done_v1519:
+        .endif
 
         push    17,[0]                  ; root local
         movei   1,(17)                  ; sixth argument: &root

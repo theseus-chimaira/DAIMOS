@@ -1,3 +1,26 @@
+## 2026-11-12 v1519: direct DTFS mount now validates physical native format
+
+Fixed a feature gap in the optional DTFS mount interface: the
+kernel previously relied on userspace DTFSPROBE before accepting
+direct SYS_DTFS_MOUNT and could publish an invalid/replaced native
+tape without another physical check. The real `dtfs_mount_unit`
+now clears shared clean cache tags/directory identity and reads
+native directory block 0144 directly from DTC, then checks magic,
+block-zero/directory reserved owners and three terminal native tags
+**before** the VFS publisher runs. A negative physical read is
+refused; no rootp, VFS/media slot or clean cache publication.
+Source-linked native PDP-6 positive/negative media fixtures PASS,
+with six executed source mutations rejected. Existing v1518/v1490
+BCACHE and DTFS chain/create/unlink/rename regression tests PASS.
+Both isolated 256K KCC and 32K GCC tape-root KINIT/MRES link;
+strict 32K KCORE size still FAILS (`023241` >= `020000` octal).
+Controlled folded +27 optional tape MRES code words, no data/fixed
+KCORE growth; on-media format/ABI unchanged. This is structural
+format validation only: native DTFS has NO unique volume ID,
+so safe automatic *different-tape* replacement/open-file recovery
+remains OPEN. Source report:
+`design/kcore-dtfs-native-mount-validation-v1519.md`.
+
 ## 2026-11-12 v1518: non-root DTFS I/O error cache coherency PASS
 
 DTFS had a real fail-closed gap: physical DTC reads returned error
