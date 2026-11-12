@@ -1,3 +1,22 @@
+## 2026-11-12 v1518: non-root DTFS failed-I/O cache invalidation
+
+- [x] Negative physical DTFS read/write invalidates both shared
+  clean BCACHE tags and the per-directory cached mount identity,
+  without forced unmount, MM release, retry state or extra RAM.
+  Tested in PDP-6 source-linked actual DTFS loader and BCACHE
+  with four executed unsafe source mutations. Existing v1490
+  BCACHE and DTFS/TSFS regression suites PASS. Cost +6 optional
+  MRES instructions, +0 data, +0 fixed KCORE words. Full KCC
+  and GCC tape-root KINIT/MRES link; strict 32K size gate still
+  FAILS independently.
+- [ ] Obtain authoritative tape-loss notification, not a generic
+  PI error/timeout, then route confirmed TSFS root-set loss to
+  v1515 HALT. Native v1518 does not claim physical removal.
+- [ ] On non-root DTFS replacement, revalidate unique volume
+  identity, BCACHE, dirty/open handles and safe remount before
+  resuming old filesystem identity. Silent detach without physical
+  I/O remains undetectable by the current driver.
+
 ## 2026-11-12 v1517: physical DTC loss signaling remains an OPEN P0 gate
 
 - [x] Execute a real SIMH PDP-6 Type-551 select/CONI regression

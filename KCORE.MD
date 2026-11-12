@@ -1,3 +1,22 @@
+## 2026-11-12 v1518: failed DTFS I/O invalidates shared cached identities
+
+Corrected optional DTFS DTC read/write veneers: after a *negative
+physical read*, clear the shared directory's cached mount ID and
+invalidate both clean BCACHE tags, preserving the original I/O error.
+Writes already invalidated clean tags before physical transfer; now
+they also clear the directory identity if the physical write fails.
+Successful reads/writes keep their existing return and directory
+semantics. Native PDP-6 source-linked DTFS directory loader, actual
+BCACHE and DTC wrappers PASS; four executed unsafe source mutations
+rejected, plus existing DTFS/BCACHE/TSFS regressions PASS. Isolated
+KCC 256K and GCC 32K tape-root KINIT/MRES builds LINK. Controlled
+cost **+6 optional MRES instructions, +0 data, +0 fixed KCORE**.
+The existing strict 32K fixed-KCORE size gate still FAILS at
+`023241` octal >= `020000`. This fix prevents stale reuse **after
+an observed I/O error**; it does not authenticate a different tape
+or detect a silently disconnected device. See
+`design/kcore-dtfs-io-error-cache-v1518.md`.
+
 ## 2026-11-12 v1517: simulated Type-551 detach is not an authoritative media-loss event
 
 Executed PDP-6 SIMH legal Type-551 SEARCH/SELECT + CONI 0214:

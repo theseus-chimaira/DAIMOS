@@ -253,7 +253,7 @@ dtfs_dtc_read:
         hrrz    2,-1(17)                ; physical block
         move    3,(17)                  ; caller buffer
         pushj   17,dtfs_dtc_read_jump
-        jumpn   1,dtfs_dtc_read_done
+        jumpn   1,dtfs_dtc_read_failed_v1518
         move    1,-1(17)                ; successful miss becomes clean hit
         move    2,(17)
         pushj   17,bcache_store
@@ -262,6 +262,14 @@ dtfs_dtc_read_hit:
 dtfs_dtc_read_done:
         sub     17,kconst_2_2
         popj    17,
+dtfs_dtc_read_failed_v1518:
+        ; Failed physical reads are not a media-change verdict, but the
+        ; shared directory and clean block tags must not survive an
+        ; unverified read.  A later access must reach real DTC I/O again.
+        ; This preserves the original error in AC1; the cache leaf uses AC4.
+        setzm   dtfs_cache_mount
+        pushj   17,bcache_invalidate_all
+        jrst    dtfs_dtc_read_done
 
         .globl  dtfs_dtc_read_jump
 dtfs_dtc_read_jump:
@@ -273,7 +281,14 @@ dtfs_dtc_write:
         ; the raw DTC unit/block/buffer ABI in AC1..AC3.  A successful
         ; physical write must never leave an older clean cache hit behind.
         pushj   17,bcache_invalidate_all
-        jrst    dtfs_dtc_write_jump
+        pushj   17,dtfs_dtc_write_jump
+        jumpe   1,dtfs_dtc_write_done_v1518
+        ; A failed write may have changed part of the physical medium.
+        ; Discard the shared directory identity instead of reusing it as
+        ; if the metadata commit had succeeded.  Do not free the mount.
+        setzm   dtfs_cache_mount
+dtfs_dtc_write_done_v1518:
+        popj    17,
 
         .globl  dtfs_dtc_write_jump
 dtfs_dtc_write_jump:

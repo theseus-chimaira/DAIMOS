@@ -1,3 +1,25 @@
+## 2026-11-12 v1518: non-root DTFS I/O error cache coherency PASS
+
+DTFS had a real fail-closed gap: physical DTC reads returned error
+without clearing the prior `dtfs_cache_mount` directory identity
+or the shared clean BCACHE tags; partial/failed writes likewise
+left a current directory identity. v1518 now invalidates both
+cache identities after a negative physical read or write without
+discarding the mount, backing allocation or process ownership.
+Successful paths still follow the same DTC ABI and clean cache
+rules. Native source-linked PDP-6 read/write + actual BCACHE +
+`dtfs_load` PASS; four executed negative mutants rejected.
+Older v1490 source-linked BCACHE ABI/MM refusal, DTFS chain/
+create/unlink/rename and TSFS cross-member regressions also PASS.
+Isolated 32K GCC and 256K KCC tape-root KINIT/MRES links PASS.
+Controlled optional tape MRES cost +6 code, zero data and no fixed
+KCORE growth. The separate strict fixed-KCORE 32K memory gate
+still FAILS (end `023241` octal, limit `<020000`). This is only
+after-*observed-error* coherency. A silent detach/cache hit and
+same-vs-replacement tape identity remain OPEN, as does reliable
+Type-551 physical loss classification. Report:
+`design/kcore-dtfs-io-error-cache-v1518.md`.
+
 ## 2026-11-12 v1517: Type-551 selection/offline evidence, no false root panic
 
 PDP-6 SIMH v1517 regression PASS, testkit `3536d98`: legal
