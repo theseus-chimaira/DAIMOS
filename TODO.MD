@@ -1,3 +1,22 @@
+## 2026-11-12 v1511: real DRM PI2 BACKSTORE error propagation
+
+- [x] Physically route two selected Type-167/236 PI2 error
+  completions through original DRM error accounting, the actual
+  BACKSTORE read failure and checked MM rollback. Thirteen real
+  fault-on samples preserve slot `010` exact DISK/u-area/TERM/
+  bitmap and produce 2 controller errors plus 25 refused frees,
+  exactly 27 failed slot-0 restorations. The independently swapped
+  PID `011` restores and runs 397 times; resident PID 5 progresses.
+  Strict verifier PASS; five source and eleven evidence mutations
+  rejected, zero new permanent RAM/process-state words.
+- [ ] Accept v1512 full physical missing-Type-236-PI2-completion
+  scenario using original PI6 300-tick watchdog and exact owner
+  rollback; native testkit source/negative checks prepared.
+- [ ] Genuine physical DEVICE/media loss/reconstruction and safe
+  unrecoverable-owner policy; never claim false backing free/ZOMB.
+- [ ] Mixed DEVICE/VOLUME, DTFS/BCACHE, LOGSTORE/MEMFS failures;
+  F1 swapless PURE/MM/APR; F3 FSINFO mounts. Optimize only later.
+
 ## 2026-11-12 v1510: real swapped bystander after sustained BACKSTORE failure
 
 - [x] Boot authentic 256K PDP-6 F07 full stress guest; prove an

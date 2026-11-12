@@ -1,3 +1,26 @@
+## 2026-11-12 v1511: physically accepted DRM BACKSTORE read-error path
+
+The v1511 booted full 256K PDP-6 F07 guest routes two real
+Type-236 drum request completions of selected slot `010`
+through production PI2 error accounting, descriptor wakeup,
+`backing_region_io` and swap-in MM rollback. Thirteen fault-on
+physical samples show 2 DRM errors plus 25 checked free
+refusals, exactly 27 source-linked failed slot-0 services,
+unchanged original `02350`/`0330` DISK extent, stable u-area,
+retry timestamp, bitmap accounting and pending TERM. No
+READY_ONCE/RESIDENT, forced free, finalizer or ZOMB. A separate
+healthy swapped slot `011` completed real checked restore and
+397 user SLEEP entries; resident spinner PID 5 progressed 823
+calls. Strict physical verifier PASS, five source and eleven
+evidence negative controls rejected. No production source/RAM
+changes beyond v1507. The sample-stopped guest did NOT HALT,
+and the unrecovered owner remains allocated.
+Evidence, guest paths and five SHA256s are in
+`design/kcore-backstore-device-error-physical-v1511.md`.
+True media loss, missing PI2/PI6 timeout, irrecoverable owner
+cleanup and mixed storage integrations remain OPEN. Testkit
+v1512 prepares the next lost-completion watchdog test only.
+
 ## 2026-11-12 v1510: physical independent swapped-process fairness accepted
 
 The v1510 disposable full 256K PDP-6 F07 stress guest demonstrated

@@ -1,3 +1,20 @@
+## 2026-11-12 v1511: physical Type-236 BACKSTORE read-error rollback PASS
+
+The booted 256K KCC PDP-6 v1511 faulted two genuine selected
+DRM PI2 completions through the original Type-167/236 error and
+event-wakeup path. Real slot-0 failed returns distinguish 2
+controller read errors from 25 checked BACKSTORE free refusals.
+Thirteen physical fault-on samples retained exact bad DISK
+slot `010` run `02350`/`0330`, u-area, allocation, pending TERM
+and retry epoch with no false RAM/READY_ONCE or zombie.
+An independent swapped PID `011` restored and executed 397 real
+SLEEP calls, while resident PID 5 progressed by 823. Strict
+v1511 physical verifier PASS, five source and eleven evidence
+negative controls rejected. This is injected PI2 DRM error-path
+acceptance, **not** actual lost media or terminal reclamation.
+Production KCORE unchanged; no RAM/process-state growth. See
+`design/kcore-backstore-device-error-physical-v1511.md`.
+
 ## 2026-11-12 v1510: physical healthy swapped contender progress PASS
 
 Full 256K KCC PDP-6 v1510 source-linked physical guest observed
