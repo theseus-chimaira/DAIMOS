@@ -1,3 +1,21 @@
+## 2026-11-12 v1510: physical healthy swapped contender progress PASS
+
+Full 256K KCC PDP-6 v1510 source-linked physical guest observed
+original failed DISK slot `010` (BACKSTORE `02350`/`0330` octal)
+across 13 post-fault snapshots, 1..24 refused releases and stable
+bitmap/u-area/TERM/retry ownership. An independently swapped
+slot `011` was `SLEEP/DISK` before a **real checked swap-in**
+commit at sample 32, then `SLEEP/RESIDENT` and executing 331 real
+user SLEEP syscalls by sample 37. The independent resident PID 5
+also progressed (42..770), while no owner repair/finalization or
+false READY_ONCE occurred. Strict physical v1510 verifier PASS;
+eight source and eleven false-evidence mutations rejected. No
+production KCORE source/ABI/RAM change from v1507. The guest
+intentionally stopped after diagnostic sampling, not HALT.
+All persistent-refusal scheduler fairness gates are now accepted;
+genuine DEVICE/media loss and terminal owner recovery remain OPEN.
+Evidence and SHA256: `design/kcore-backstore-swapped-progress-physical-v1510.md`.
+
 ## 2026-11-12 v1509: independent resident progress under permanent BACKSTORE refusal
 
 Booted 256K PDP-6 v1509 source-linked physical samples 24..29 retain

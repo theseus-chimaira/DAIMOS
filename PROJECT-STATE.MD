@@ -1,3 +1,28 @@
+## 2026-11-12 v1510: physical independent swapped-process fairness accepted
+
+The v1510 disposable full 256K PDP-6 F07 stress guest demonstrated
+true independent swapped-process restoration and subsequent user
+execution while the earlier permanently failing BACKSTORE owner
+remained intact. Faulted slot `010`, original DISK span
+`02350`/`0330` octal, stayed nonresident with exact allocation
+accounting, stable u-area, retry tag, pending TERM, and 1..24
+checked free refusals in 13 clock-progressing physical samples.
+Healthy slot `011` was `SLEEP/DISK` during the fault, committed a
+real successful swap-in at sample 32, and executed 331 actual user
+SLEEP syscalls by sample 37. Resident PID 5 additionally progressed
+from 42 to 770 real SLEEP entries. No false READY_ONCE, bitmap
+repair, private fatal-close, finalization or zombie. All strict
+v1508-v1510 physical checks PASS; eight test-source and eleven
+v1510 verifier mutations rejected. No new production source,
+process state, ABI or permanent KCORE RAM. The guest was purposely
+sample-stopped, not a normal F07 HALT; the bad owner still owns
+unrecoverable backing. Testkit revisions `0de641c`, `d79991e`,
+`0808309`; report/evidence SHA256:
+`design/kcore-backstore-swapped-progress-physical-v1510.md`.
+True DEVICE/media loss handling, safe permanently held-resource
+recovery, mixed storage providers, PURE/MM/APR and dynamic FSINFO
+remain OPEN. Feature completion precedes optimization/compression.
+
 ## 2026-11-12 v1509: physical resident-bystander fairness accepted
 
 The disposable 256K KCC PDP-6 v1509 guest retains its original

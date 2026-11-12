@@ -1,3 +1,24 @@
+## 2026-11-12 v1510: real swapped bystander after sustained BACKSTORE failure
+
+- [x] Boot authentic 256K PDP-6 F07 full stress guest; prove an
+  independently DISK-backed healthy slot `011` restores through
+  the original checked production swap transaction **after**
+  original slot `010` backing release remains permanently refused.
+  Slot `011` went `SLEEP/DISK` -> `SLEEP/RESIDENT`, then executed
+  331 real user SLEEP syscalls in 13 fault-on snapshots. Original
+  owner preserved exactly: first `02350`, length `0330` octal,
+  1..24 refused releases, u-area/bitmap/pending TERM retained;
+  resident PID 5 also progressed. v1510 strict verifier PASS,
+  eight source and eleven false-evidence mutants rejected.
+  No new KCORE RAM/state or kernel source changes.
+- [ ] Physically qualify genuine permanent DEVICE/media failure,
+  timeouts and safe recovery or explicitly retained unresolved
+  ownership. Never fabricate a ZOMB/WAIT or free the bad run.
+- [ ] Complete mixed DEVICE/VOLUME, BCACHE/DTFS/LOGSTORE/MEMFS
+  failure gates, swapless PURE/MM/APR and dynamic FSINFO mounts.
+- [ ] Reassess optional compression only after feature acceptance
+  and a proven net RAM saving; do not start a size-only sweep.
+
 ## 2026-11-12 v1509: physical scheduler fairness with failed BACKSTORE
 
 - [x] Keep the actual F07 PID 5 spinner runnable through extra-child
