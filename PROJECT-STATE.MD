@@ -1,3 +1,48 @@
+## 2026-11-12 v1524: real DTC3 RBN0 simulator correction
+
+KCORE P0-B physical acceptance uncovered a Type-551 *simulator*
+first-search-mark defect, independent of v1522/v1523 KCORE
+source-linked correctness. A newly selected stationary DTC3
+forward search skipped RBN0 because SIMH kept `DTB_REQ`
+through the first mark. Exact production DAIMOS Type-551/
+Type-136 PDP-6 physical write/read on host-formatted DTC3
+demonstrated old SIMH FAIL for RBN0, PASS for RBN1/0144.
+Corrected SIMH now promotes `FNC_SRCH` to `DTB_ACT`
+before delivering the first mark. Physical RBN0/1/0144
+all PASS with unchanged DAIMOS driver, while the original
+installed simulator reproduces the RBN0 failure.
+
+SIMS PDP-6 rebuild (with `-Werror`) and register sanity,
+existing real DTC stream/reverse/status/watchdog and KCORE
+v1522 mounted-ID / v1523 FILE/cwd native suites all PASS.
+`sims` commit `96394c5` is pushed; versioned
+`pdp6-v1524` was installed through `local.tar.gz` into
+`PDP10_PREFIX` while preserving old `pdp6-v1470`.
+No KCORE code, on-media format, fixed KCORE words or MRES
+data/text changed: **+0 KCORE RAM** for this correction.
+See `design/kcore-dtc-first-mark-v1524.md`.
+
+The existing full tape-root guest still launches the transient
+MKFS program through extensive root DTC0 traffic. No DTC3
+operation was seen yet in that trace. A separate KCC 256K
+`ROOT=auto BOOT=dsk` guest now completes **real DTC3
+target MKFS and FSCK.DTFS NATIVE OK**. But KINIT intentionally
+installs DTFS/TSFS MRES **only if the selected root is DTC**.
+The disk-root MOUNT.DTFS therefore returned an error;
+that was NOT a mounted filesystem. The previous v578
+fixture falsely reported PASS by STATing the existing
+D6FS mountpoint while ignoring failed MOUNT/UNMOUNT
+commands. The harness now checks actual FSINFO mount
+publication and final retirement. A cleanly rebuilt
+scratch D6FS root passed the negative-policy full
+guest: MKFS and FSCK NATIVE OK, MOUNT.DTFS refused,
+actual MOUNT inventory contained D6FS/MEMFS and
+no DTFS. Actual physical
+mounted-volume recovery still remains OPEN. P0-A root/BACKSTORE
+permanent-loss classification is still OPEN; P1 mixed
+storage, dynamic FSINFO and swapless PURE likewise OPEN.
+Strict 32K HOLD; VERSION remains 0.5.
+
 ## 2026-11-12 v1523: FILE/cwd mount-retirement lifetime guard
 
 Fixed KCORE now refuses VFS unmount when any process still

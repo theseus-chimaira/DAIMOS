@@ -1,3 +1,53 @@
+## 2026-11-12 v1524: Type-551 physical RBN0 now works; P0-B guest still open
+
+The v1523 tape-root guest was able to boot and enter DSH, but
+formatting/checking the secondary DTC3 volume did not finish.
+We isolated a concrete simulator defect below KCORE:
+the newly selected stopped Type-551 transport kept `DTB_REQ`
+through its first forward block mark, so `FNC_SRCH` failed
+to send the first RBN0 to the prearmed Type-136 channel.
+Original SIMH physically failed one-block DTC3 RBN0 writes;
+ordinary RBN1 and RBN0144 passed. `sims` v1524 activates
+the pending search *before* publishing that first mark.
+The exact same production tape driver now physically writes,
+reads and compares all three blocks. The previous simulator
+still fails the actual native RBN0 negative-control test.
+Native stream, reverse, select, watchdog, v1522 identity
+and v1523 FILE/cwd regressions also PASS.
+
+No KCORE code, on-media DTFS stamp, permanent RAM word or
+instruction was modified to accommodate this simulator defect.
+Corrected `pdp6-v1524` is installed under `PDP10_PREFIX`
+from a versioned `local.tar.gz`, retaining `pdp6-v1470`
+for comparison. Full tape-root DSH `MKFS.DTFS` still showed
+heavy DTC0 root-media traffic, without yet reaching DTC3.
+An isolated 256K KCC disk-selected auto-root guest now
+**physically formats DTC3 and reports FSCK.DTFS NATIVE OK**.
+But its optional DTFS/TSFS MRES is deliberately *not installed*
+by KINIT when the root is DSK; its MOUNT.DTFS is refused.
+The old v578 guest script falsely treated the pre-existing
+D6FS mountpoint as a successful DTFS mount. Its checks now
+reject MOUNT/UNMOUNT command errors and require actual
+FSINFO mount-table publication and subsequent retirement.
+A freshly regenerated disk-root guest then PASSED the
+explicit negative-policy oracle: MKFS/FSCK OK, expected
+MOUNT.DTFS refusal and an inventory with D6FS/MEMFS
+but no DTFS.
+No true booted DTFS mount/FILE/dirty-recovery acceptance yet.
+
+**KCORE features still OPEN:** P0-A authoritative permanent
+root/BACKSTORE/selected TSFS member loss and v1515 HALT;
+P0-B physically mounted non-root DTFS full open-FILE,
+replaced-media and dirty/partial-write lifetime/recovery;
+P1-C genuinely untested mixed device/LOGSTORE/MEMFS/swap
+fault interactions; P1-D integrate and physically test
+dynamic FSINFO capacity/MOUNTS/DF; P1-E integrate uncompressed
+swapless PURE drop and APR/MM restore; final matched feature
+acceptance. Mutable-only RAM compression remains strictly
+conditional on a measured *net* peak-RAM reduction. No
+optimization work yet; strict 32K stays HOLD. Full evidence:
+`design/kcore-dtc-first-mark-v1524.md`.
+
 ## 2026-11-12 v1523: mounted FILE/cwd lifetime and unmount refusal
 
 P0-B feature correctness: `vfs_unmount` must not retire a public

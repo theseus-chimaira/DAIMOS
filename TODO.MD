@@ -1,3 +1,59 @@
+## 2026-11-12 v1524: current KCORE feature completion state
+
+- [x] Identify why physically formatted secondary DECtape
+  could not use native reserved RBN0: the simulator skipped
+  its first forward search mark while `DTB_REQ` was pending.
+  Repair this in the Type-551 SIMH model (not in KCORE),
+  keeping native v1520 `DTVOL1` at reserved block zero.
+  Real DTC3 RBN0, RBN1, RBN0144 source-linked writes/reads
+  PASS; negative pre-fix simulator fails RBN0. Existing tape,
+  v1522 and v1523 native regressions PASS. Install tested
+  `pdp6-v1524` from `local.tar.gz` in `PDP10_PREFIX`;
+  no KCORE RAM/code growth.
+- [x] Physical DTC3 native MKFS/FSCK via a real 256K
+  disk-selected auto-root guest, corrected SIMH:
+  `FSCK.DTFS NATIVE OK`. This tests RBN0 and real
+  physical format/validation, NOT DTFS mounting.
+  A disk-selected root intentionally omits installed
+  DTFS/TSFS MRES, so MOUNT.DTFS fails by design.
+  Fix the older v578 guest false PASS caused by
+  treating the existing D6FS mountpoint STAT as
+  proof of mounted DTFS; require real FSINFO
+  publication and successful UNMOUNT retirement.
+- [ ] **P0-B physical mounted acceptance:** use a
+  truly DTC-selected root with installed DTFS MRES,
+  mount verified native DTC3, test open FILE/cwd,
+  same-volume error/return and mismatched replacement,
+  dirty/partial writes and safe mount retirement.
+  The tape-root guest still does long DTC0 root work
+  before its secondary operation. On a fresh rebuilt
+  scratch D6FS root, the disk-root **negative-policy**
+  guest PASS confirmed MKFS/FSCK, MOUNT.DTFS refusal,
+  and D6FS/MEMFS-only MOUNT inventory. It does not
+  establish actual mounted DTFS recovery.
+- [ ] **P0-B policy:** explicit failure-atomic handling of
+  sticky WRITE_UNCERTAIN and zero-ID legacy volumes;
+  no silent automatic reattachment, forged identity or
+  forced FILE owner invalidation.
+- [ ] **P0-A critical loss:** find authoritative permanent
+  root/BACKSTORE or selected TSFS member-loss evidence
+  and test exact v1515 no-return HALT routing, without
+  treating a timeout/PI/illegal select as permanent loss.
+- [ ] **P1-C:** remaining real mixed DEVICE/VOLUME,
+  BCACHE, LOGSTORE, MEMFS and backing/swap faults only,
+  preserving already accepted source paths.
+- [ ] **P1-D:** reconcile uncommitted FSINFO mount-capacity
+  query and MOUNTS/DF 1/4/8/26 scan into production;
+  finish linked physical hole/error/multi-mount tests.
+- [ ] **P1-E:** real scheduler/VM integration for
+  uncompressed inactive swapless PURE drop and complete
+  MM/APR restore, with OOM/error-atomic ownership.
+- [ ] **Final feature freeze:** matched physical/native
+  current-source regression and documentation cleanup;
+  decide on mutable-only RAM compression only after
+  measuring net peak RAM (NO COMPRESSION is acceptable).
+  No KCORE optimization and no 32K size gate (HOLD).
+
 ## 2026-11-12 v1523: all-process mount/FILE lifetime gate
 
 - [x] Implement `file_mount_busy_v1523` using existing process
