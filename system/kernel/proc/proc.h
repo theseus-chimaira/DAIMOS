@@ -111,7 +111,10 @@
  * One compact control word precedes cwd/file state.  Descriptors 0..15 are
  * ordinary two-word FILE records. UID9, GID9 and UMASK9 fit in the one
  * credential word. The formerly unused u-area word 067 carries the v881
- * post-VM deferred-finalizer marker and its low-18-bit exit status;
+ * post-VM deferred-finalizer marker and its low-18-bit exit status. While
+ * a normal RUN process remains DISK-backed (not finalizing), v1507 also
+ * stores a transient failed-restore retry epoch in this same word.
+ * This does not add a process state or any permanent resident allocation;
  * descriptor mount bits do not require an extension bitmap.
  * Low bit 0 of the separate control word carries the pipe
  * event, bit 1 marks a live direct user mapping, and bit 2 marks an
@@ -142,9 +145,14 @@
 #define PROC_USER_MAP_BIT              02UL
 #define PROC_FATAL_CLOSE_BIT           04UL
 #define PROC_FINALIZE_OFFSET          067UL
-/* Existing unused u-area word: marker in bit 35, exit status in RH. */
+/* Shared word 067: FINALIZE bit 35 and exit status, or, exclusively for
+ * ordinary nonresident RUN owners, retry bit 32 plus a 17-bit timer epoch.
+ * Successful restoration and expiration retire the transient retry bit.
+ * Do not combine retry and FINALIZE owners in one descriptor. */
 #define PROC_FINALIZE_MARK            ((kword_t)1UL << 35U)
 #define PROC_FINALIZE_PREVM           ((kword_t)1UL << 33U)
+#define PROC_SWAP_RETRY_TAG_V1507     ((kword_t)1UL << 32U)
+#define PROC_SWAP_RETRY_TICKS_V1507   0100U
 #define PROC_TIMER_TAG_RH            0400000UL
 #define PROC_TIMER_CLOCK_MASK         0377777UL
 #define PROC_STOP_MASK              03UL

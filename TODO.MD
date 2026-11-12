@@ -1,3 +1,29 @@
+## 2026-11-12 v1507: failed BACKSTORE retry bounded in native scheduler
+
+- [x] Fix a permanently failing swap-in's uncontrolled repeated
+  selection without inventing a new quarantine process state or
+  allocating more resident per-process words.
+- [x] Preserve independent healthy swapped admission and realtime
+  fallback even with two different failing DISK owners; retain the
+  original global allocator-pressure cooldown.
+- [x] Validate source-linked PI6 expiry at 0100 octal ticks, clock
+  wrap, marker retirement on successful checked restore/exchange,
+  exact DISK accounting and pending TERM policy. Native v1507
+  PASS, three negative mutants PASS, earlier native v1493/v1505/
+  v1316-v1317 regressions PASS; isolated 256K KCC image build PASS.
+- [x] Native v788 paired publish and v854 sector/PURE exchange
+  retire the incoming owner's retry tag without skipping checked
+  MM/storage publication.
+- [ ] Physical sustained-failure guest: clock-qualified retries,
+  bystander and healthy swapped progress, stable DISK/bitmap/MM/
+  private executive continuation, no false zombie or READY_ONCE.
+- [ ] Permanent media/DEVICE identity loss: safe recovery or
+  explicit long-lived owned failure; never declare irreparable
+  backing reclaimed without an accepted resource release.
+- [ ] Other KCORE work: mixed DEVICE/VOLUME and BCACHE/DTFS/
+  LOGSTORE/MEMFS failures, PURE-text reclaim/APR, F3 FSINFO mount
+  enumeration and final feature acceptance. Not optimizing yet.
+
 ## 2026-11-11 v1506: physical owner-side TERM completion accepted
 
 - [x] Boot real 256K KCC/PDP-6 v1504 F07 with one genuine bitmap

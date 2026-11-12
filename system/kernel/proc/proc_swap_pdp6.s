@@ -59,6 +59,7 @@
         .globl  proc_swap_in
         .globl  proc_sched_cursor
         .globl  proc_swap_pressure_ticks
+        .globl  proc_timer_clock
         .globl  proc_high_slot
         .globl  proc_table
         .globl  proc_swap_records
@@ -96,6 +97,10 @@
         .equ    PROC_USER_MAP_BIT,02
         .equ    PROC_FATAL_CLOSE_BIT,04
         .equ    PROC_FDCTL_OFFSET,024
+        .equ    PROC_FINALIZE_OFFSET,067
+        .equ    PROC_FINALIZE_MARK_LH,0400000
+        .equ    PROC_SWAP_RETRY_LH,040000
+        .equ    PROC_TIMER_CLOCK_MASK,0377777
         .equ    PROC_SWAP_BACKING_OFFSET,0406
         .equ    MM_TYPE_PROCESS,1
         .equ    MM_ALLOC_HIGH,1
@@ -1043,6 +1048,12 @@ proc_swap_exchange_publish_v788:
         move    2,3(010)
         pushj   17,proc_storage_exchange_modes_v778
         jumpn   1,proc_swap_storage_invariant_v30
+        ; The incoming owner's old failed-restore epoch cannot outlive
+        ; a successful exchanged restore. B remains transition-locked.
+        move    1,1(010)
+        hlrz    1,(1)
+        movsi   2,PROC_SWAP_RETRY_LH
+        andcam  2,PROC_FINALIZE_OFFSET(1)
         move    1,(010)
         move    2,(1)
         andcmi  2,PROC_TRANSITION_RH
@@ -1923,6 +1934,11 @@ proc_swap_in_read_offset:
         move    1,(11)
         andcmi  1,PROC_TRANSITION_RH
         movem   1,(11)
+        ; A successful restore retires the owner's retry deadline even
+        ; when proc_swap_in is called directly, outside slot-0 service.
+        hlrz    1,(11)
+        movsi   2,PROC_SWAP_RETRY_LH
+        andcam  2,PROC_FINALIZE_OFFSET(1)
         sub     17,kconst_1_1
         setz    1,
         jrst    proc_swap_in_restore
@@ -2078,6 +2094,26 @@ proc_swap_service_cooldown_v833:
 proc_swap_service_failed:
         move    1,(17)
         movem   1,proc_sched_cursor
+        ; Record a per-owner failure epoch, not a new process state.
+        ; Word 067 is reserved for finalization, but is otherwise unused
+        ; while an ordinary RUN process owns its private u-area. Never
+        ; overwrite a real FINALIZE marker or the authoritative DISK run.
+        move    3,1
+        lsh     3,1
+        add     3,1
+        add     3,proc_table
+        move    4,(3)
+        trnn    4,0400000
+        jrst    proc_swap_service_failed_event_v1507
+        hlrz    4,4
+        jumpe   4,proc_swap_service_failed_event_v1507
+        move    3,PROC_FINALIZE_OFFSET(4)
+        tlne    3,PROC_FINALIZE_MARK_LH
+        jrst    proc_swap_service_failed_event_v1507
+        hrrz    3,proc_timer_clock
+        hrli    3,PROC_SWAP_RETRY_LH
+        movem   3,PROC_FINALIZE_OFFSET(4)
+proc_swap_service_failed_event_v1507:
         movei   2,SYS_EVENT_TERM
         pushj   17,proc_event_apply
         sub     17,kconst_1_1

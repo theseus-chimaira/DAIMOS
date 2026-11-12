@@ -1,3 +1,27 @@
+## 2026-11-12 v1507: owner-specific BACKSTORE retry (native accepted)
+
+KCORE uses the existing stable u-area word 067 for a transient
+nonresident RUN retry tag (LH bit 040000) and 17-bit PI6 clock epoch.
+Real slot-0 swap-service failures retain the exact DISK backing,
+u-area and pending TERM; normal and realtime selection postpone only
+that owner for 0100 octal ticks, allowing healthy swapped processes
+to run. Two independent failed owners cannot alternate without clock
+progress. Expired retry tags, checked successful swap-in and checked
+exchange remove the tag; genuine FINALIZE ownership is never
+overwritten. The original global allocator-pressure delay is
+unchanged. **No new process state or resident data word.**
+
+Testkit v1507 real-source scheduler/clock/bitmap native tests PASS,
+including three executable negative mutations, two independent
+failures, direct repair and clock wrap. v1493/v1505/v1316-v1317
+native regressions PASS (eight combined negative mutations);
+v788 real exchange publication and v854 full sector/PURE exchange
+also PASS with retry-tag retirement.
+Isolated 256K KCC PDP-6 image build PASS. **Physical persistent
+BACKSTORE/DEVICE failure and irreparable-resource release remain
+OPEN**; do not confuse throttled retry with terminal reclamation.
+See `design/kcore-backstore-retry-scheduler-v1507.md`.
+
 ## 2026-11-11 v1506: repaired physical BACKSTORE -> owning TERM accepted
 
 Testkit `2bf10ff` v1504 completes the real 256K PDP-6 corrupt-bitmap

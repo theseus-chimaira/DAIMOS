@@ -29,6 +29,8 @@
         .equ    PROC_FINALIZE_OFFSET,067
         .equ    PROC_FINALIZE_MARK_LH,0400000
         .equ    PROC_FINALIZE_PREVM_LH,0100000
+        .equ    PROC_SWAP_RETRY_LH,040000
+        .equ    PROC_SWAP_RETRY_TICKS,0100
         .equ    PROC_WAIT_LH_MASK,060000
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_WAIT_CHILD_LH,040000
@@ -280,8 +282,28 @@ proc_select_rt_fatal_check_v879:
         jrst    proc_select_return_slot
 proc_select_rt_normal_swap_v879:
         skipn   proc_swap_pressure_ticks
-        jrst    proc_select_rt_swap
+        jrst    proc_select_rt_retry_v1507
         jrst    proc_select_runq_start
+proc_select_rt_retry_v1507:
+        ; A refused swap-in retains its DISK owner and private stack.
+        ; Delay only this owner; another swapped job must remain eligible.
+        move    2,(16)
+        trnn    2,0400000
+        jrst    proc_select_rt_swap
+        hlrz    2,2
+        jumpe   2,proc_select_rt_swap
+        move    4,2
+        move    2,PROC_FINALIZE_OFFSET(2)
+        tlnn    2,PROC_SWAP_RETRY_LH
+        jrst    proc_select_rt_swap
+        hrrz    3,proc_timer_clock
+        sub     3,2
+        andi    3,PROC_TIMER_CLOCK_MASK
+        caige   3,PROC_SWAP_RETRY_TICKS
+        jrst    proc_select_runq_start
+        ; Retire the expired tag: later swap cycles must not inherit it.
+        movsi   3,PROC_SWAP_RETRY_LH
+        andcam  3,PROC_FINALIZE_OFFSET(4)
 proc_select_rt_swap:
         movei   1,0400
         iorm    1,proc_sched_cursor
@@ -401,8 +423,28 @@ proc_select_candidate_check_swap_v879:
         move    1,(1)
         jumpe   1,proc_select_next
         skipn   proc_swap_pressure_ticks
-        jrst    proc_select_score
+        jrst    proc_select_candidate_retry_v1507
         jrst    proc_select_next
+proc_select_candidate_retry_v1507:
+        ; Each nonresident owner has its own retry epoch in its already
+        ; allocated u-area. Never suppress unrelated swapped processes.
+        move    2,(16)
+        trnn    2,0400000
+        jrst    proc_select_score
+        hlrz    2,2
+        jumpe   2,proc_select_score
+        move    4,2
+        move    2,PROC_FINALIZE_OFFSET(2)
+        tlnn    2,PROC_SWAP_RETRY_LH
+        jrst    proc_select_score
+        hrrz    3,proc_timer_clock
+        sub     3,2
+        andi    3,PROC_TIMER_CLOCK_MASK
+        caige   3,PROC_SWAP_RETRY_TICKS
+        jrst    proc_select_next
+        movsi   3,PROC_SWAP_RETRY_LH
+        andcam  3,PROC_FINALIZE_OFFSET(4)
+        jrst    proc_select_score
 
 proc_select_score:
         ; priority = biased nice + recent CPU

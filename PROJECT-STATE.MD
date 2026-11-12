@@ -1,3 +1,27 @@
+## 2026-11-12 v1507: native bounded BACKSTORE retry scheduling
+
+Source-linked PDP-6 normal/realtime scheduler and PI6-clock tests
+now prove independently delayed nonresident DISK owners after a
+failed checked swap-in release. Per-owner 0100-octal-tick retry
+timestamp occupies the already-resident u-area word 067 only while
+the FINALIZE marker is clear; no new process status, global table,
+or permanent RAM data. Other swapped jobs remain eligible and two
+bad owners do not cause a slot-0 service spin. Successful repair,
+exchange and retry expiry retire the marker. Existing global
+allocation-pressure cooldown remains unchanged. Native v1507
+and negative mutants PASS; repaired-boundary v1493/v1505 and native
+v1316-v1317 regressions PASS. Fresh isolated 256K KCC PDP-6
+image build PASS. Native v788 checked paired publication and v854
+full sector/PURE exchange regression also PASS with incoming retry
+tag cleared. Document:
+`design/kcore-backstore-retry-scheduler-v1507.md`.
+
+**Still OPEN:** a sustained permanent-corruption *physical guest*
+with observed bystander scheduling and exact DISK/u-area ownership;
+also irreparable backing/DEVICE resource policy (no unsafe forced
+free). The v1506 repaired physical owning-TERM acceptance is retained.
+The 32K profile remains HOLD and VERSION remains 0.5.
+
 ## 2026-11-11 v1506: physical repaired-BACKSTORE TERM owner completion
 
 Accepted real physical 256K KCC PDP-6 v1504 guest: one injected
