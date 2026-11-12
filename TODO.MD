@@ -1,3 +1,18 @@
+## 2026-11-12 v1515: authoritative critical-device fatal leaf
+
+- [x] Implement versioned fixed KCORE terminal leaf for confirmed
+  root/BACKSTORE device loss; fixed/non-removable media loss shares
+  device-loss category. Disable global PI and distinguish root,
+  BACKSTORE, invalid-caller halt PCs without console buffers.
+  Six actual native PDP-6 cases and three negative mutations PASS.
+  +11 fixed code words, zero data words, no process state/ABI change.
+- [ ] Classify confirmed permanent device loss distinctly from PI
+  errors/PI6 timeouts. Route through existing device/volume critical
+  ownership to fatal leaf and physically test true device absence.
+  No error-count threshold and no spurious panic on transient -1.
+- [ ] Non-root identity/cached-block/dirty FILE recovery, mixed
+  providers, F1 PURE/MM/APR and F3 dynamic FSINFO still OPEN.
+
 ## 2026-11-12 v1514: secondary-media unmount failure ordering
 
 - [x] Source-linked native PDP-6 v1514: secondary D6FS failed

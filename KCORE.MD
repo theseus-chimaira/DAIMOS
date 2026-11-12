@@ -1,3 +1,19 @@
+## 2026-11-12 v1515: fixed KCORE critical-device fatal stop
+
+For non-removable media, permanent medium loss **is device loss**;
+the category is distinguished from individual bad blocks and transient
+controller errors. On *confirmed* boot-root or BACKSTORE device loss,
+KCORE now provides a no-return `kcore_critical_device_lost_v1515`
+entry, disabling PI and HALTing at separate linked root/swap code
+addresses; invalid reasons have a third HALT. Six native PDP-6
+source-linked tests PASS, including three executed negative mutations
+and exact simulator HALT-PC comparisons. A controlled KCC KCORE relink
+measures **+11 fixed instruction words, +0 permanent data words**.
+Reliable physical device-loss classification and its caller routing
+remain OPEN; existing generic negative I/O / PI6 watchdog results
+must never automatically invoke this leaf. See
+`design/kcore-critical-device-stop-v1515.md`.
+
 ## 2026-11-12 v1514: source-linked non-root unmount retry PASS
 
 Native PDP-6 v1514 links actual `vfs_unmount` and mount retirement:

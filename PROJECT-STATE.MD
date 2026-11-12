@@ -1,3 +1,18 @@
+## 2026-11-12 v1515: minimal confirmed critical-device HALT mechanism
+
+Fixed KCORE now exports `kcore_critical_device_lost_v1515` for an
+*authoritative* boot-root (AC1=1) or BACKSTORE (AC1=2) device loss;
+unknown reasons stop separately. A fixed/non-removable medium loss
+is treated as whole-device loss, not an additional state. The leaf
+inhibits global PI and HALTs at a distinct safe linked code address
+without touching storage or process ownership. Native PDP-6 positive
+and three mutation negatives PASS. Controlled identical-input links
+measure +11 fixed instruction words, zero data words. It is not yet
+called by production drivers: Type-270/236 PI errors and watchdogs
+are not reliable permanent-loss classification. Automatic routing,
+physical unplug acceptance and non-root recovery remain OPEN.
+Source report: `design/kcore-critical-device-stop-v1515.md`.
+
 ## 2026-11-12 v1514: non-root VFS retained-until-sync acceptance
 
 Source-linked native PDP-6 v1514 PASS: `vfs_unmount` of a

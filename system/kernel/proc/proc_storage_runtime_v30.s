@@ -101,3 +101,34 @@ proc_storage_exchange_return_v778:
 proc_storage_exchange_invalid_v778:
         seto    1,
         popj    17,
+
+; KCORE v1515: terminal dispatch for an AUTHORITATIVELY confirmed loss of
+; a device/storage provider holding critical data. Non-removable medium loss
+; is device loss; individual bad blocks or transient controller faults are not.
+; AC1=1: boot root; AC1=2: BACKSTORE. Unknown reason
+; is a caller invariant violation, with its own HALT address. This leaf must
+; not be called on a generic negative I/O result or watchdog expiration:
+; neither proves permanent media loss. Both have recoverable physical tests.
+;
+; No KINIT, console, process-private stack or live filesystem is needed here.
+; Distinct HALT *addresses* identify the failed owner without storing a
+; panic string or another permanent data word. HALT . leaves the halted PC
+; at the actual instruction, never in low-core vector words; CONTINUE just
+; halts again. There is no cleanup or owner release.
+        .globl  kcore_critical_device_lost_v1515
+kcore_critical_device_lost_v1515:
+        cono    0004,000400             ; disable global PI before HALT
+        caie    1,1
+        jrst    kcore_critical_media_check_swap_v1515
+kcore_critical_media_root_halt_v1515:
+        halt    .                       ; confirmed boot root lost
+        jrst    .-1
+kcore_critical_media_check_swap_v1515:
+        caie    1,2
+        jrst    kcore_critical_media_bad_reason_v1515
+kcore_critical_media_swap_halt_v1515:
+        halt    .                       ; confirmed BACKSTORE lost
+        jrst    .-1
+kcore_critical_media_bad_reason_v1515:
+        halt    .                       ; invalid caller reason
+        jrst    .-1
