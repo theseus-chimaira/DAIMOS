@@ -1,3 +1,17 @@
+## 2026-11-12 v1514: non-root VFS retained-until-sync acceptance
+
+Source-linked native PDP-6 v1514 PASS: `vfs_unmount` of a
+secondary D6FS returns -1 on missing-media sync failure while
+retaining the mount, RO flag, namespace root and FILE ownership.
+The same medium's return permits successful sync, provider
+preparation, FILE unlock and secondary slot retirement with
+the boot root intact. Three executed unsafe ordering mutants
+rejected; testkit `34fab36`, full scoped detail in
+`design/kcore-nonroot-unmount-return-v1514.md`. This is not
+a full physical hot-unplug/replacement recovery or critical
+root/BACKSTORE fail-stop implementation. Zero KCORE RAM/ABI/code
+change; v1513 critical-media crash-only policy remains active.
+
 ## 2026-11-12 v1513: accepted critical/non-root media-loss split
 
 User policy supersedes earlier proposed *root or BACKSTORE media

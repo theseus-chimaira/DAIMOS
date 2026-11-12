@@ -1,3 +1,16 @@
+## 2026-11-12 v1514: source-linked non-root unmount retry PASS
+
+Native PDP-6 v1514 links actual `vfs_unmount` and mount retirement:
+missing secondary D6FS media makes sync fail and preserves the
+mount root/target, RO policy and FILE owner without a fake
+unmount. When that **same** medium returns, sync and provider
+preparation succeed, FILE is unlocked and only its mount slot
+is retired; the root namespace is unchanged. Three actual
+VFS ordering mutants rejected. Testkit `34fab36`. Full media
+replacement revalidation, real BCACHE invalidation and dirty
+open-handle recovery remain OPEN. No production RAM/code change.
+See `design/kcore-nonroot-unmount-return-v1514.md`.
+
 ## 2026-11-12 v1513: root/BACKSTORE media loss fatal; non-root recoverable
 
 Confirmed loss of root filesystem or BACKSTORE is **crashworthy**:

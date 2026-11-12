@@ -1,3 +1,16 @@
+## 2026-11-12 v1514: secondary-media unmount failure ordering
+
+- [x] Source-linked native PDP-6 v1514: secondary D6FS failed
+  sync preserves mount/RO/namespace/FILE and returns -1; same
+  medium return permits checked sync, D6FS preparation, FILE
+  unlock and mount retirement without altering the root.
+  Three executed negative VFS mutations rejected, no KCORE RAM.
+- [ ] Full physical hot-unplug/return, checked replacement-media
+  revalidation, BCACHE and dirty/open FILE ownership remain OPEN.
+- [ ] Confirmed critical root/BACKSTORE loss classifier and
+  minimal HALT (no recovery), plus remaining mixed providers,
+  PURE/MM/APR and dynamic FSINFO features, remain OPEN.
+
 ## 2026-11-12 v1513: media-loss classification and recovery scope
 
 - [x] Adopt crash-only policy for **confirmed** root filesystem
