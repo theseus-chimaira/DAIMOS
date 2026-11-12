@@ -20,6 +20,37 @@ checked recovery. A critical owner wins when one device serves both
 critical and optional consumers. Device and ownership classification
 are separate questions; there is no per-media recovery state.
 
+### Removable DECtape: classify by active root-set membership
+
+The same critical-owner rule applies to **removable DECtape**. If the
+selected boot root is TSFS on DTC, confirmed removal/loss of **any
+DECtape member in its active root set** is terminal: dispatch the root
+reason to `kcore_critical_device_lost_v1515` once authoritative loss
+has been established. TSFS is read-only, but root availability is
+still essential. There is no online root-tape replacement path.
+
+TSFS may span multiple physical units. `tsfs_boot_select()` validates
+the selected set, and `tsfs_boot_unit_mask_v22()` returns the selected
+physical root-member mask for `root_select_mount_capacity_v22()`.
+The boot handoff includes the logical-member-to-physical-unit mapping,
+and the mounted TSFS provider retains it in `tsfs_file_shape_base`.
+Runtime classification must use **those selected root members**, not
+assume every tape connected to the DTC controller is critical. The
+transient KINIT selector scratch must not become a new permanent table.
+
+An auxiliary DECtape mounted through non-root DTFS is **nonfatal** on
+confirmed removal, provided it is not also a critical root-set member
+and does not hold BACKSTORE. Return I/O errors, preserve mount and
+open-resource ownership, and require checked same-volume identity or
+replacement validation, including cache/dirty-data handling, before
+reusing the volume. A critical owner wins if roles overlap.
+
+The Type-136 tape driver has bounded search/transfer timeouts,
+including `tape_watchdog_tick_v1089`, but a negative read or timeout
+does not prove the tape was removed. Reliable DTC media-present/change
+classification and physical root-member-versus-non-root removal tests
+remain OPEN; the v1515 fatal leaf has no tape caller yet.
+
 Current Type-270 and Type-167/236 drivers report only generic negative
 transfer status for PI errors/watchdog timeouts and maintain simple error
 counters. Neither exposed status is an accepted authoritative permanent

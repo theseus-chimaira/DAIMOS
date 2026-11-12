@@ -1,3 +1,16 @@
+## 2026-11-12 v1515 DECtape critical-root clarification
+
+Removability does not determine whether loss is crashworthy. The
+selected TSFS root may span several physical DTC units: confirmed
+loss of any active root-set DECtape is fatal via the v1515 root
+reason. An auxiliary mounted non-root DTFS tape is nonfatal when
+it holds no critical volume; preserve ownership and recover only
+after media identity and BCACHE checks. Tape search/transfer timeout
+is not reliable media-removal proof. The fatal stop entry is built
+and native-tested, but DTC root-member loss detection/routing and
+physical root-vs-auxiliary tape removal acceptance remain OPEN.
+See `design/kcore-critical-device-stop-v1515.md`.
+
 ## 2026-11-12 v1515: minimal confirmed critical-device HALT mechanism
 
 Fixed KCORE now exports `kcore_critical_device_lost_v1515` for an

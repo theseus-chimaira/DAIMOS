@@ -1,3 +1,17 @@
+## 2026-11-12 v1515 DECtape addendum: selected TSFS root members are critical
+
+Confirmed removal of **any physical DECtape belonging to the mounted
+TSFS root set** is a fatal root-device loss, even if the other members
+remain readable. `tsfs_boot_select()` validates the physical set and
+`tsfs_boot_unit_mask_v22()` supplies its selected-member mask during
+boot; the TSFS runtime retains its logical-to-physical member map.
+Do not treat every tape on the shared DTC controller as critical.
+An auxiliary non-root DTFS tape is nonfatal on removal: fail I/O,
+retain mount/FILE ownership, and revalidate tape identity/cache before
+recovery. Type-136 timeouts alone cannot confirm tape removal.
+The v1515 fatal leaf is ready but loss classification and calling it
+from DTC remain OPEN; no new KCORE code or RAM in this addendum.
+
 ## 2026-11-12 v1515: fixed KCORE critical-device fatal stop
 
 For non-removable media, permanent medium loss **is device loss**;

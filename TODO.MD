@@ -1,3 +1,17 @@
+## 2026-11-12 v1515 DECtape role-based device loss
+
+- [x] Confirm that **any selected TSFS root-set member**, including
+  removable DECtape, is critical: confirmed removal must HALT
+  KCORE, without online root replacement. Auxiliary non-root DTFS
+  removal is nonfatal unless it shares a critical owner.
+- [ ] Source-linked/physical DTC removal classification distinct
+  from bounded search/data-transfer timeouts; use actual selected
+  TSFS root-member mapping, not all DTC units. Route confirmed
+  root-set loss to the v1515 fatal leaf and verify the HALT PC.
+- [ ] Non-root DTFS removal/return or replacement, member identity,
+  stale BCACHE invalidation, dirty/open FILE policy and independent
+  root operation during a fault. Do not infer recovery from retry alone.
+
 ## 2026-11-12 v1515: authoritative critical-device fatal leaf
 
 - [x] Implement versioned fixed KCORE terminal leaf for confirmed
