@@ -1,3 +1,22 @@
+## 2026-11-12 v1516: TSFS physical root-member identity accepted
+
+Fixed v1515 critical-device HALT remains uncalled pending reliable
+removal classification. TSFS optional runtime v1516 now preserves
+the validated exact physical root-member bitmap in high bits24..31
+of the existing 36-bit per-mount logical-to-physical shape word;
+unit zero is no longer confused with trailing unused slots.
+The root-member query validates the actual TSFS namespace root,
+mount ID/capacity and shape metadata before returning 1/0/-1.
+Host KINIT 1/2/8-member, native PDP-6 source-query and four
+mutation negative tests, and TSFS cross-member reader regressions
+PASS. Isolated 32K GCC and 256K KCC tape-root KINIT/MRES links PASS.
+Controlled TSFS MRES code grows about 25-27 instructions, no
+additional fixed KCORE or per-mount RAM data. The separate strict
+32K KCORE size gate still FAILS `023241` octal >= `020000`.
+No physical removal, guaranteed DTC absence indication or actual
+v1515 fatal dispatch is claimed. Evidence:
+`design/kcore-tsfs-root-member-v1516.md`.
+
 ## 2026-11-12 v1515 DECtape critical-root clarification
 
 Removability does not determine whether loss is crashworthy. The

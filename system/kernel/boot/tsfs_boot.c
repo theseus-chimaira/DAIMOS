@@ -330,6 +330,7 @@ build_handoff(const struct scan_info *scan)
         struct table_info extent;
         kword_t member_map;
         kword_t hi;
+        unsigned int unit_mask;
         unsigned int i;
 
         if (scan_metadata(scan, &file, &extent) != 0 || !file.present ||
@@ -338,12 +339,25 @@ build_handoff(const struct scan_info *scan)
         hi = ((kword_t)scan->unit[file.member] << 15) | file.records;
         tsfs_handoff[0] = (hi << 18) | file.block;
         member_map = 0UL;
+        unit_mask = 0U;
         for (i = 0U; i < scan->seed.members; ++i) {
+                unsigned int bit;
+
                 if (scan->unit[i] > 7U)
                         return -1;
+                bit = 1U << scan->unit[i];
+                if ((unit_mask & bit) != 0U)
+                        return -1;     /* duplicate physical root member */
+                unit_mask |= bit;
                 member_map |= (kword_t)scan->unit[i] << (3U * i);
         }
-        tsfs_handoff[1] = member_map;
+        /* V1516: the low 24 bits contain eight 3-bit unit slots.  A
+         * trailing zero is ambiguous: unit 0 may be a member or padding.
+         * Retain the exact physical member mask in unused bits 24..31 of
+         * the SAME mount word.  TSFS reads shift at most 21 bits and mask
+         * the low three; this upper mask cannot affect block selection.
+         * No additional resident allocation or on-media format change. */
+        tsfs_handoff[1] = member_map | ((kword_t)unit_mask << 24);
         tsfs_handoff[2] = 0UL;
         if (extent.present) {
                 if (extent.records >= 0100000U || scan->unit[extent.member] > 7U)
@@ -372,21 +386,10 @@ tsfs_boot_select(unsigned int ordinal)
                         continue;
                 if (found++ != ordinal)
                         continue;
-                {
-                        unsigned int i;
-                        unsigned int units;
-
-                        units = 0U;
-                        for (i = 0U; i < scan.seed.members; ++i) {
-                                unsigned int bit;
-
-                                bit = 1U << scan.unit[i];
-                                if ((units & bit) != 0U)
-                                        return -1;
-                                units |= bit;
-                        }
-                        tsfs_selected_units_v22 = units;
-                }
+                /* The validated runtime handoff now carries this same
+                 * mask; do not scan and allocate another local copy. */
+                tsfs_selected_units_v22 =
+                    (unsigned int)((tsfs_handoff[1] >> 24) & 0377U);
                 tsfs_selected = 1;
                 return 0;
         }

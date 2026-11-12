@@ -47,6 +47,10 @@ tsfs_mres_vector:
 ; cannot be both DTFS and TSFS.  tsfs_file_shape supplies the second word:
 ;   dtfs_media[slot]       (DTC_UNIT << 15 | RECORD_COUNT),,START_BLOCK
 ;   tsfs_file_shape[slot]  packed logical->physical DTC map
+;     V1516: low 24 bits are the eight 3-bit unit selectors; bits 24..31
+;     retain the EXACT 8-unit root-set membership mask from KINIT.  Unit
+;     zero may be genuine; unused selectors also encode zero.  Do not
+;     infer membership by scanning unbounded trailing selector fields.
 ;   tsfs_extent_media[slot] (DTC_UNIT << 15 | RECORD_COUNT),,START_BLOCK
 ;
 ; Providers are serialized around fs_block_workspace.  Therefore metadata
@@ -58,6 +62,51 @@ tsfs_mres_vector:
         .globl  tsfs_extent_media_base
         .globl  fs_block_workspace
         .globl  dtfs_dtc_read
+
+; int tsfs_root_owns_dtc_unit_v1516(unsigned int physical_unit)
+; AC1=0..7. Return +1 only if that physical DECtape belongs to the
+; currently selected TSFS namespace ROOT, 0 if not TSFS/not a member,
+; -1 if unit or selected TSFS root state is invalid.  This does not by
+; itself confirm media loss and MUST NOT be called for a transient I/O
+; timeout to trigger a kernel HALT.  No new resident DATA words; this
+; optional tape MRES does contain the membership code itself.
+        .globl  tsfs_root_owns_dtc_unit_v1516
+        .globl  vfs_namespace_root
+        .globl  vfs_mount_limit
+tsfs_root_owns_dtc_unit_v1516:
+        jumpl   1,tsfs_root_dtc_bad_v1516
+        caile   1,7
+        jrst    tsfs_root_dtc_bad_v1516
+        move    2,vfs_namespace_root
+        lsh     2,-036                ; provider in top six bits
+        caie    2,7                   ; TSFS_PROVIDER
+        jrst    tsfs_root_dtc_no_v1516
+        hlrz    2,vfs_namespace_root
+        lsh     2,-6
+        andi    2,077                 ; public mount ID
+        jumpe   2,tsfs_root_dtc_bad_v1516
+        camle   2,vfs_mount_limit
+        jrst    tsfs_root_dtc_bad_v1516
+        move    3,tsfs_file_shape_base
+        jumpe   3,tsfs_root_dtc_bad_v1516
+        subi    2,1
+        add     3,2
+        move    3,(3)
+        lsh     3,-030                ; physical root-member mask
+        andi    3,0377
+        jumpe   3,tsfs_root_dtc_bad_v1516
+        movei   2,1
+        lsh     2,0(1)
+        and     3,2
+        jumpe   3,tsfs_root_dtc_no_v1516
+        movei   1,1
+        popj    17,
+tsfs_root_dtc_no_v1516:
+        setz    1,
+        popj    17,
+tsfs_root_dtc_bad_v1516:
+        seto    1,
+        popj    17,
         .globl  bcache_reclaim
         .globl  tsfs_file_record
         .globl  tsfs_node_record

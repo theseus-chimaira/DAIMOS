@@ -1,3 +1,22 @@
+## 2026-11-12 v1516: exact TSFS physical root member identification
+
+- [x] Resolve the unit-zero/trailing-zero ambiguity for roots spanning
+  1..8 DECtapes. KINIT validates/exports exact 8-unit physical mask
+  in existing mount shape bits 24..31; runtime helper validates real
+  namespace root, mount bounds and mask. KINIT host tests, PDP-6
+  native source and four mutation negatives, TSFS read regressions,
+  isolated GCC/KCC tape-root build links PASS. No data words; about
+  25-27 optional tape MRES instructions. 32K fixed size gate still
+  FAILS and has not been reclassified as accepted.
+- [ ] Obtain reliable DTC unit removal/changed-media status distinct
+  from ordinary Type-136 errors and tape search/transfer watchdogs;
+  qualify physical removal of each active TSFS root-set member and
+  route confirmed loss to v1515 root fatal HALT (AC1=1).
+- [ ] Validate auxiliary non-root DTFS removal/replacement stays
+  nonfatal, preserving independent root, mounted ownership and
+  correct cache/volume identity revalidation. No spurious fatal
+  branch for unattached unrelated DTC units.
+
 ## 2026-11-12 v1515 DECtape role-based device loss
 
 - [x] Confirm that **any selected TSFS root-set member**, including

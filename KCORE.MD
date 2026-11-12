@@ -1,3 +1,24 @@
+## 2026-11-12 v1516: exact selected TSFS root physical-member mask
+
+TSFS formerly stored eight 3-bit physical DECtape selectors, with
+unused slots zero-filled, making real physical DTC0 indistinguishable
+from trailing padding. KINIT now packs the verified 8-unit root
+membership mask into previously unused bits 24..31 of the **same**
+36-bit per-mount shape word. Existing selectors, volume format and
+RAM layout are unchanged. The optional source-linked
+`tsfs_root_owns_dtc_unit_v1516` checks namespace-root provider,
+published mount bounds and physical unit membership; invalid root
+metadata returns -1 rather than a false noncritical verdict.
+KINIT host 1/2/8 member tests PASS (including unit zero), native
+PDP-6 predicate and four unsafe mutants PASS, TSFS stored-extent
+and cross-member tests PASS; isolated 32K GCC and full 256K KCC
+tape-root KINIT/MRES builds LINK. Controlled additional optional
+MRES code ~25-27 words, zero data, fixed KCORE unchanged.
+Strict 32K fixed KCORE size gate remains FAILED at `023241` octal
+against `<020000`; not an accepted 32K deployment. No automatic
+device-loss report or critical HALT caller in v1516. See
+`design/kcore-tsfs-root-member-v1516.md`.
+
 ## 2026-11-12 v1515 DECtape addendum: selected TSFS root members are critical
 
 Confirmed removal of **any physical DECtape belonging to the mounted
