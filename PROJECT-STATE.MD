@@ -1,3 +1,18 @@
+## 2026-11-12 v1508: physical permanently refused BACKSTORE release
+
+Booted 256K KCC PDP-6 with disposable v1508 fault instrumentation
+captured slot `010` octal, preserved BACKSTORE run
+`02350`/`0330`, and 1/4/7 checked refusals across three real
+clock-progressing fault-on samples. No false RAM publication,
+premature TERM consumption, lost stable u-area or finalizer; original
+DISK record and pending TERM remain. Strict testkit physical v1508
+verifier PASS and ten evidence mutations rejected. This qualifies
+bounded physical retry/ownership preservation only. The deliberately
+sample-stopped guest does not demonstrate HALT, failed DEVICE
+reconstruction, physical runnable-bystander progress or release of
+the permanently unrepairable owner. Production v1507 is unchanged.
+Evidence: `design/kcore-backstore-persistent-physical-v1508.md`.
+
 ## 2026-11-12 v1507: native bounded BACKSTORE retry scheduling
 
 Source-linked PDP-6 normal/realtime scheduler and PI6-clock tests

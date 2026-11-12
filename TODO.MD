@@ -1,3 +1,20 @@
+## 2026-11-12 v1508: physical permanent BACKSTORE refusal gate
+
+- [x] Boot a disposable 256K PDP-6 and refuse every checked release of
+  one real ordinary DISK owner without changing its original bitmap.
+  Three actual fault-on snapshots prove 1/4/7 refusals, advancing PI6
+  clock, unchanged DISK/u-area/pending TERM and zero false finalizers.
+  Strict v1508 physical verifier PASS, ten unsafe mutants rejected.
+- [ ] Demonstrate real independently runnable/swapped bystander
+  progress during a sustained physical failure, not merely native
+  scheduler fairness or clock progress.
+- [ ] Resolve irreparable backing/DEVICE loss via genuine recovery,
+  reconstruction, or explicitly safe retained ownership; no forced
+  release and no unverified zombie. Physically validate mixed media.
+- [ ] Continue KCORE feature completion: mixed DEVICE/VOLUME,
+  BCACHE/DTFS/LOGSTORE/MEMFS error gates, F1 swapless PURE/MM/APR,
+  F3 dynamic FSINFO mount enumeration. Compression only after PURE.
+
 ## 2026-11-12 v1507: failed BACKSTORE retry bounded in native scheduler
 
 - [x] Fix a permanently failing swap-in's uncontrolled repeated

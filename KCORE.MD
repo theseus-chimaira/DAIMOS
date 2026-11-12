@@ -1,3 +1,17 @@
+## 2026-11-12 v1508: physical sustained BACKSTORE refusal (scoped PASS)
+
+Disposable real 256K KCC PDP-6 captured three post-fault snapshots of
+one genuine selected DISK slot `010`, extent `02350`/`0330`.
+Checked-release refusals advanced 1/4/7 while PI6 clock progressed;
+the original DISK record, stable u-area, retry epoch and pending TERM
+survived. No owner TERM consumption, zombie, false RESIDENT or repair.
+Testkit's strict physical v1508 verifier PASS; ten unsafe witness
+mutations rejected. Diagnostic sampling stopped intentionally, NOT a
+normal HALT or terminal reclaim. Physical bystander fairness, genuine
+DEVICE loss and recovery/reclamation still OPEN. No new KCORE code,
+resident RAM or process state beyond accepted v1507.
+See `design/kcore-backstore-persistent-physical-v1508.md`.
+
 ## 2026-11-12 v1507: owner-specific BACKSTORE retry (native accepted)
 
 KCORE uses the existing stable u-area word 067 for a transient
