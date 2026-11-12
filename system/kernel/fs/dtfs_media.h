@@ -49,5 +49,11 @@
 #define DTFS_MEDIA_UNIT_MASK  07U
 #define DTFS_MEDIA_TENEX      010U
 #define DTFS_MEDIA_ITS        020U
+/* Runtime-only flags in spare bits of the existing per-mount media RH.
+ * A read fault requires physical identity proof before mounted reuse.
+ * A possibly partial write is never repaired merely by matching identity.
+ * They preserve the original UID/GID LH and unit/personality bits. */
+#define DTFS_MEDIA_RD_SUSPECT_V1522 0200000U
+#define DTFS_MEDIA_WR_UNCERT_V1522  0400000U
 
 #endif

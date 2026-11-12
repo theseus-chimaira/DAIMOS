@@ -1,3 +1,41 @@
+## 2026-11-12 v1522: non-root DTFS mounted-ID fail-closed return (native)
+
+The first P0-B increment is installed: a negative raw DTFS read
+marks exactly the still-mounted DTFS roots sharing its actual DTC
+unit with READ_SUSPECT in a spare bit of the existing MM media word.
+Negative physical writes mark WRITE_UNCERTAIN, a distinct *sticky*
+condition, because partially written data is not repaired merely
+by verifying the same medium. The existing shared BCACHE and
+directory invalidations remain. On subsequent `dtfs_load`, before
+using old directory/FILE/vnode state or a cached hit, READ_SUSPECT
+forces a physical reserved RBN0 identity read, full native v1520
+record validation and comparison of **both** retained 36-bit ID
+halves. Only an exact stamped same-volume match clears the read
+bit and allows reloading the directory. A changed/invalid/legacy
+identity, I/O failure, or WRITE_UNCERTAIN refuses reuse without
+retiring VFS/FILE ownership. DTFS FSINFO and SYNC share this
+checked path. Other media units and providers remain unaffected.
+
+The real source-linked PDP-6 + BCACHE v1522 suite PASSES,
+including **seven executed unsafe mutants** and actual raw-DTC
+AC6 clobber. v1490/v1518/v1519/v1520 DTFS, BCACHE and v1516
+TSFS root-member regressions PASS. A clean isolated 256K KCC
+tape-root KCORE/DTFS+TSFS MRES link PASSES. Controlled same-map,
+same-companion fold/relink measures **+86 optional MRES TEXT
+words, +0 static/data/fixed KCORE or MM mount words**. The
+separate strict single-root residency gate still fails and
+32K remains HOLD. This is native, not a full guest test.
+
+P0-B is **still open** for full booted open-FILE/dirty-state
+fault/return/replacement and administrative cleanup. Silent
+exchange without observed error remains undetectable, and
+WRITE_UNCERTAIN cannot be auto-cleared. P0-A authoritative
+Type-551/root/BACKSTORE permanent-loss detection and actual
+v1515 fatal caller also remain OPEN: ordinary PI/status/error
+or watchdog is never a root-loss signal. Technical report:
+`design/kcore-dtfs-mounted-identity-v1522.md`. Testkit:
+`tests/validation/daimos-dtfs-mounted-id-v1522.md`.
+
 ## 2026-11-12 v1521: current KCORE feature-only checklist (source audited)
 
 **Authoritative current list:** `design/kcore-feature-source-audit-v1521.md`;

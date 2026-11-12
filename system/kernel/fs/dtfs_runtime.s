@@ -30,6 +30,12 @@ dtfs_mres_reg_dispatch:
 ; allocation map.  The supported PDP-6 build uses native DTFS only; dormant
 ; TENEX/ITS compatibility remains behind disabled assembly guards.
 dtfs_space:
+        ; A returned/replaced physical tape must never expose stale cached
+        ; allocation figures through FSINFO before identity validation.
+        push    17,1
+        pushj   17,dtfs_load
+        jumpn   1,dtfs_space_failed_revalidate_v1522
+        pop     17,1
         ldb     4,[POINT 6,1,11]        ; public mount id
         sojl    4,dtfs_space_fail
         caml    4,vfs_mount_limit       ; MM media table is boot-sized
@@ -69,6 +75,9 @@ dtfs_space_done:
 dtfs_space_fail:
         seto    1,
         popj    17,
+dtfs_space_failed_revalidate_v1522:
+        pop     17,2
+        jrst    dtfs_space_fail
 
         .data
 dtfs_mres_vector:
@@ -231,7 +240,10 @@ dtfs_sync:
         pushj   17,dtfs_is_file
         jumpe   1,kret_neg1
 dtfs_sync_ok:
-        jrst    kret_zero
+        ; Read-only/clean sync still cannot claim success for an unverified
+        ; or write-uncertain volume. This also protects VFS unmount ordering.
+        move    1,4
+        jrst    dtfs_load
 ; Shared clean DTC block-cache veneers.  The key identifies the physical
 ; UNIT/BLOCK, not a filesystem personality, so native DTFS, TENEX, ITS, and
 ; TSFS can reuse the same clean copy.  MINIT patches the raw JRST slots below.
@@ -269,6 +281,13 @@ dtfs_dtc_read_failed_v1518:
         ; This preserves the original error in AC1; the cache leaf uses AC4.
         setzm   dtfs_cache_mount
         pushj   17,bcache_invalidate_all
+        ; Mark every DTFS mount on the actual failed physical UNIT.  A later
+        ; unrelated mount/cache reload must not erase the recovery barrier.
+        push    17,1
+        hlrz    1,-2(17)               ; saved UNIT,,BLOCK key
+        movei   2,0200000              ; READ_SUSPECT in media RH
+        pushj   17,dtfs_mark_unit_suspect_v1522
+        pop     17,1                   ; preserve physical error exactly
         jrst    dtfs_dtc_read_done
 
         .globl  dtfs_dtc_read_jump
@@ -280,6 +299,7 @@ dtfs_dtc_write:
         ; Invalidate without MM release: reclaim can refuse and can clobber
         ; the raw DTC unit/block/buffer ABI in AC1..AC3.  A successful
         ; physical write must never leave an older clean cache hit behind.
+        push    17,1                   ; preserve physical unit across I/O
         pushj   17,bcache_invalidate_all
         pushj   17,dtfs_dtc_write_jump
         jumpe   1,dtfs_dtc_write_done_v1518
@@ -287,12 +307,50 @@ dtfs_dtc_write:
         ; Discard the shared directory identity instead of reusing it as
         ; if the metadata commit had succeeded.  Do not free the mount.
         setzm   dtfs_cache_mount
+        push    17,1                   ; exact failed raw return status
+        move    1,-1(17)               ; saved unit from write entry
+        movei   2,0400000              ; WRITE_UNCERTAIN in media RH
+        pushj   17,dtfs_mark_unit_suspect_v1522
+        pop     17,1
 dtfs_dtc_write_done_v1518:
+        pop     17,4
         popj    17,
 
         .globl  dtfs_dtc_write_jump
 dtfs_dtc_write_jump:
         jrst    0
+
+; AC1=physical DTC unit, AC2=exact READ_SUSPECT or WRITE_UNCERTAIN bit.
+; Scan the boot-published MM mount slab, not stale unit fields left behind
+; by VFS unmount.  Root vnodes identify DTFS independently of media tags.
+; No new state words, no guessed error-count threshold or lost-root HALT.
+; Caller retains its original error on the stack; AC3..AC7 are scratch.
+        .globl  vfs_mount_root_base
+        .globl  vfs_mount_limit
+        .globl  dtfs_media_base
+dtfs_mark_unit_suspect_v1522:
+        move    3,vfs_mount_root_base
+        jumpe   3,dtfs_mark_unit_done_v1522
+        move    6,dtfs_media_base
+        jumpe   6,dtfs_mark_unit_done_v1522
+        move    7,vfs_mount_limit
+        jumple  7,dtfs_mark_unit_done_v1522
+dtfs_mark_unit_next_v1522:
+        move    4,(3)
+        lsh     4,-036                 ; root vnode provider
+        caie    4,5                    ; DTFS only
+        jrst    dtfs_mark_unit_skip_v1522
+        move    5,(6)
+        andi    5,7
+        came    5,1
+        jrst    dtfs_mark_unit_skip_v1522
+        iorm    2,(6)                  ; preserve owner/unit/personality
+dtfs_mark_unit_skip_v1522:
+        aoj     3,
+        aoj     6,
+        sojg    7,dtfs_mark_unit_next_v1522
+dtfs_mark_unit_done_v1522:
+        popj    17,
 
         .if DTFS_ENABLE_FOREIGN
 ; void dtfs_foreign_name(slot, name, its)
@@ -748,36 +806,8 @@ dtfs_mount_unit_media_ready:
         movei   3,fs_block_workspace
         pushj   17,dtfs_dtc_read_jump
         jumpn   1,dtfs_mount_unit_fail
-        movei   1,fs_block_workspace
-        movei   2,0200                 ; full 128-word reserved block
-        setz    3,
-dtfs_mount_identity_nonzero_loop_v1520:
-        ior     3,(1)
-        aoj     1,
-        sojg    2,dtfs_mount_identity_nonzero_loop_v1520
-        jumpe   3,dtfs_mount_identity_valid_v1520
-        move    1,fs_block_workspace
-        came    1,[0446466575421]      ; SIXBIT DTVOL1
-        jrst    dtfs_mount_unit_fail
-        skipn   fs_block_workspace+1
-        jrst    dtfs_mount_unit_fail
-        skipn   fs_block_workspace+2
-        jrst    dtfs_mount_unit_fail
-        xor     1,fs_block_workspace+1
-        xor     1,fs_block_workspace+2
-        setcm   1,1                     ; 36-bit complement checksum
-        came    1,fs_block_workspace+3
-        jrst    dtfs_mount_unit_fail
-        movei   1,fs_block_workspace+4
-        movei   2,0174                 ; 124 zero padding words
-dtfs_mount_identity_padding_loop_v1520:
-        skipn   (1)
-        jrst    dtfs_mount_identity_padding_next_v1520
-        jrst    dtfs_mount_unit_fail
-dtfs_mount_identity_padding_next_v1520:
-        aoj     1,
-        sojg    2,dtfs_mount_identity_padding_loop_v1520
-dtfs_mount_identity_valid_v1520:
+        pushj   17,dtfs_identity_validate_v1522
+        jumpn   1,dtfs_mount_unit_fail
         ; Keep both 36-bit halves on our private stack across the VFS
         ; publication call.  The shared physical workspace may be reused
         ; by another provider while that call is in progress.
@@ -844,6 +874,50 @@ dtfs_mount_unit_done_local:
 dtfs_mount_unit_fail:
         seto    1,
         jrst    dtfs_restore4
+
+; Shared native identity parser for new mount admission and post-error
+; revalidation of an existing mount.  Requires a PHYSICAL RBN0 read
+; into fs_block_workspace by the caller. Returns zero for a structurally
+; valid DTVOL1 record or all-zero legacy block; -1 for every malformed
+; nonempty record. The recovery caller additionally requires a nonzero
+; previously saved 72-bit ID and an exact match of both halves.
+; No copy, persistent scratch, or second identity validator.
+dtfs_identity_validate_v1522:
+        movei   1,fs_block_workspace
+        movei   2,0200                 ; full 128-word reserved block
+        setz    3,
+dtfs_mount_identity_nonzero_loop_v1520:
+        ior     3,(1)
+        aoj     1,
+        sojg    2,dtfs_mount_identity_nonzero_loop_v1520
+        jumpe   3,dtfs_mount_identity_valid_v1520
+        move    1,fs_block_workspace
+        came    1,[0446466575421]      ; SIXBIT DTVOL1
+        jrst    dtfs_identity_invalid_v1522
+        skipn   fs_block_workspace+1
+        jrst    dtfs_identity_invalid_v1522
+        skipn   fs_block_workspace+2
+        jrst    dtfs_identity_invalid_v1522
+        xor     1,fs_block_workspace+1
+        xor     1,fs_block_workspace+2
+        setcm   1,1                     ; 36-bit complement checksum
+        came    1,fs_block_workspace+3
+        jrst    dtfs_identity_invalid_v1522
+        movei   1,fs_block_workspace+4
+        movei   2,0174                 ; 124 zero padding words
+dtfs_mount_identity_padding_loop_v1520:
+        skipn   (1)
+        jrst    dtfs_mount_identity_padding_next_v1520
+        jrst    dtfs_identity_invalid_v1522
+dtfs_mount_identity_padding_next_v1520:
+        aoj     1,
+        sojg    2,dtfs_mount_identity_padding_loop_v1520
+dtfs_mount_identity_valid_v1520:
+        setz    1,
+        popj    17,
+dtfs_identity_invalid_v1522:
+        seto    1,
+        popj    17,
 
 dtfs_lookup:
         push    17,010
@@ -1346,6 +1420,9 @@ dtfs_stat_owner:
 dtfs_load:
         push    17,010
         ldb     010,[POINT 6,1,11]      ; mount id
+        move    1,010
+        pushj   17,dtfs_identity_revalidate_v1522
+        jumpn   1,dtfs_load_fail
         move    4,dtfs_cache_mount
         camn    4,010
         jrst    dtfs_load_ok
@@ -1417,6 +1494,9 @@ dtfs_patch_media:
 dtfs_load:
         push    17,010
         ldb     010,[POINT 6,1,11]
+        move    1,010
+        pushj   17,dtfs_identity_revalidate_v1522
+        jumpn   1,dtfs_load_native_fail
         move    4,dtfs_cache_mount
         camn    4,010
         jrst    dtfs_load_native_ok
@@ -1438,6 +1518,63 @@ dtfs_load_native_fail:
         jrst    kret_neg1
 
 .endif
+
+; AC1=public DTFS mount ID. A read fault in a mounted physical unit
+; marks that mount in an unused bit of its existing media word. On its
+; next operation, read RBN0 PHYSICALLY before allowing any cached vnode,
+; clean BCACHE, directory or FILE reuse. A completely valid, nonlegacy
+; DTVOL1 matching BOTH saved ID halves clears only READ_SUSPECT.
+; A write failure may have partially changed directory/data: preserve
+; WRITE_UNCERTAIN and refuse all old operations, even on an ID match,
+; until an explicit checked recovery path is implemented. Neither
+; condition is evidence that a critical root medium vanished.
+dtfs_identity_revalidate_v1522:
+        sojl    1,dtfs_identity_revalidate_fail_v1522
+        caml    1,vfs_mount_limit
+        jrst    dtfs_identity_revalidate_fail_v1522
+        move    6,1                     ; zero-based mount slot
+        add     1,dtfs_media_base
+        move    5,(1)
+        trne    5,0400000              ; WRITE_UNCERTAIN
+        jrst    dtfs_identity_revalidate_fail_v1522
+        trnn    5,0200000              ; READ_SUSPECT
+        jrst    kret_zero
+        move    1,5
+        andi    1,7                     ; physical DTC selector
+        setz    2,                      ; reserved native RBN0
+        movei   3,fs_block_workspace
+        ; Raw DTC may clobber AC4..AC7. Save the MM slot across both
+        ; physical I/O and full record parsing, then restore on success
+        ; or failure; an unchecked AC6 could index a foreign mount.
+        push    17,6
+        pushj   17,dtfs_dtc_read_jump  ; no stale BCACHE hit
+        jumpn   1,dtfs_identity_revalidate_pop_fail_v1522
+        pushj   17,dtfs_identity_validate_v1522
+        jumpn   1,dtfs_identity_revalidate_pop_fail_v1522
+        pop     17,6
+        move    4,tsfs_file_shape_base
+        jumpe   4,dtfs_identity_revalidate_fail_v1522
+        add     4,6
+        move    4,(4)
+        jumpe   4,dtfs_identity_revalidate_fail_v1522
+        came    4,fs_block_workspace+1
+        jrst    dtfs_identity_revalidate_fail_v1522
+        move    4,tsfs_extent_media_base
+        jumpe   4,dtfs_identity_revalidate_fail_v1522
+        add     4,6
+        move    4,(4)
+        jumpe   4,dtfs_identity_revalidate_fail_v1522
+        came    4,fs_block_workspace+2
+        jrst    dtfs_identity_revalidate_fail_v1522
+        move    4,dtfs_media_base
+        add     4,6
+        movei   5,0200000
+        andcam  5,(4)                   ; only after fully checked ID
+        jrst    kret_zero
+dtfs_identity_revalidate_pop_fail_v1522:
+        pop     17,6
+dtfs_identity_revalidate_fail_v1522:
+        jrst    kret_neg1
 
 
 .if DTFS_ENABLE_FOREIGN

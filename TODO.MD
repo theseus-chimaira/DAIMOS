@@ -1,3 +1,32 @@
+## 2026-11-12 v1522: mounted DTFS identity-after-error native acceptance
+
+- [x] Flag only actual mounted DTFS members sharing a failed
+  physical DTC unit using spare per-mount media RH bits; distinguish
+  recoverable read suspicion from sticky uncertain partial writes,
+  without new MM/static data or a false critical HALT.
+- [x] Gate regular `dtfs_load`, FSINFO and SYNC before stale
+  cached-directory/vnode reuse: raw physical RBN0, same v1520
+  checksum/padding parser, exact both-half saved volume-ID match;
+  refuse changed, malformed and legacy zero-ID return.
+- [x] Actual PDP-6 source-linked v1522 suite PASS with seven
+  negative mutations (including actual AC6 raw-I/O clobber).
+  Existing DTFS, BCACHE and TSFS regressions PASS; isolated
+  256K KCC tape-root KCORE + optional DTFS/TSFS MRES LINK.
+  Controlled +86 optional MRES text, no new fixed KCORE or
+  per-mount data. Independent strict single-root size gate
+  remains FAILED (32K HOLD).
+- [ ] **P0-B remains open:** full booted multi-process guest
+  with genuine open FILE/vnode, dirty write, repeated medium
+  error/return, mismatched replacement, mount retirement and
+  independent root progress. Define safe explicit recovery for
+  WRITE_UNCERTAIN; do not automatically clear it after same-ID
+  read. Silent unreported exchange remains a detection limit.
+- [ ] **P0-A remains open:** authoritative controller-level
+  permanent boot-root/BACKSTORE loss signal and qualified v1515
+  fatal caller. Type-551 select error/PI timeout is not proof.
+  Continue remaining v1521 P1 mixed/FSINFO/swapless PURE work
+  only after the relevant P0 correctness gates.
+
 ## 2026-11-12 v1521: CURRENT KCORE feature-only work (source audited)
 
 This is the **sole current KCORE feature checklist**. Older dated

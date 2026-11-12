@@ -1,3 +1,47 @@
+## 2026-11-12 v1522: DTFS mounted same-media identity gate, native PASS
+
+This is the first implemented P0-B KCORE increment after v1521,
+**not** P0-A physical-loss closure or a KCORE feature freeze.
+Negative physical DECtape reads now set READ_SUSPECT on every
+still-mounted DTFS slot using that unit; failed writes set sticky
+WRITE_UNCERTAIN. Both flags reside in spare bits of each existing
+MM-backed DTFS media descriptor. The shared BCACHE and cached
+directory state are still invalidated as in v1518. The regular
+directory loader, FSINFO and SYNC refuse unverified mounted data
+or write-uncertain metadata. A read-suspect mount rechecks
+physical RBN0 with the exact v1520 stamp parser and compares
+both stored 36-bit halves before clearing just READ_SUSPECT.
+Legacy zero IDs, changed media and bad/partial stamps are never
+accepted as returning the old mounted FILE/vnode owner.
+Physical Type-551 status remains **insufficient** for a root
+loss verdict; v1515 HALT has no production caller.
+
+The new `daimos-testkit` source-linked native PDP-6 mounted-ID
+test and **seven unsafe source mutations** PASS, including
+independent high/low replacements, separate read/write failure,
+other units/providers, old-mount FSINFO/SYNC, legacy no-ID and
+AC6 register clobber across raw DTC. Existing v1490/v1518/
+v1519/v1520 DTFS/BCACHE, chain/create/unlink/rename/resize/
+dirfields and v1516 root-member tests PASS. Clean isolated
+256K KCC tape-root KINIT/KCORE/DTFS+TSFS MRES assemble/LINK
+PASS. The independent strict single-root placement check
+remains FAIL, no accepted 32K or full physical fault guest.
+
+Exact controlled same-KCORE-map and same-companion MRES relink:
+package image `003620` -> `003746` octal, **+86 decimal
+optional installed MRES text words**, **zero extra persistent
+data/MM words or fixed KCORE instructions**. No second cache,
+identity parser, allocator or new VFS fields were created.
+Implementation and scoped evidence:
+`design/kcore-dtfs-mounted-identity-v1522.md`.
+
+OPEN: authoritative P0-A permanent critical device loss signal;
+P0-B booted physical open FILE, dirty/partial-write and repeated
+medium replacement/recovery and VFS retirement; P1 mixed provider
+faults, existing uncommitted F3 FSINFO and production swapless
+PURE/MM/APR. Strict 32K HOLD and size optimization excluded.
+VERSION remains 0.5.
+
 ## 2026-11-12 v1521: KCORE feature-only source and documentation reconciliation
 
 **This is an inventory/documentation change, not a release or a new
