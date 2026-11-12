@@ -66,6 +66,11 @@ fs_backing_root_write_jump:
         popj    17,
 
 fs_backing_root_error:
+        ; One failing root request does not establish physical media loss:
+        ; PI errors and the controller watchdog share this result.  The
+        ; v1513 policy requires fail-stop on *confirmed* lost boot-root media,
+        ; not on a temporary negative callback.  Keep the ordinary per-I/O
+        ; error visible until a reliable device-loss classifier exists.
         aos     mfsdev_storage_errors+4 ; D6SET0 logical backing failure
         popj    17,
 

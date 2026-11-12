@@ -1,3 +1,22 @@
+## 2026-11-12 v1513: root/BACKSTORE media loss fatal; non-root recoverable
+
+Confirmed loss of root filesystem or BACKSTORE is **crashworthy**:
+no reconstruction, quarantine, forced foreign process teardown,
+or fabricated backing release. Mounted non-root media loss is
+recoverable in principle; I/O must fail, the mount and other
+filesystems remain owned, and returning/replaced media needs
+checked revalidation plus BCACHE invalidation. The physical
+drivers currently return the same negative status for a transient
+PI error and PI6 watchdog timeout, so this status alone must
+**not** trigger fatal HALT. Reliable permanent-loss detection,
+minimal fatal dispatch and full physical non-root recovery
+remain OPEN. Native source-linked v1513 PASS: two secondary
+D6FS read failures publish no clean cache entry, root reader
+remains operational, same secondary returns and reads succeed,
+then repeated disconnect/return also works; three real source
+mutants rejected. Testkit `8ab7648`, no runtime code/RAM change.
+See `design/kcore-media-loss-policy-v1513.md`.
+
 ## 2026-11-12 v1512: physical Type-236 lost completion / PI6 watchdog PASS
 
 Disposable booted 256K PDP-6 v1512 suppressed exactly two real

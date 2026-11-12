@@ -1,3 +1,24 @@
+## 2026-11-12 v1513: accepted critical/non-root media-loss split
+
+User policy supersedes earlier proposed *root or BACKSTORE media
+reconstruction*: their **confirmed permanent loss is terminal**.
+No quarantine state, forced resource reclamation, or recovery
+algorithm is required for those cases; minimal diagnostic if
+cheap. A generic Type-270/236 error or watchdog return is not
+confirmed loss, so the successful v1511-v1512 physical transient
+recovery/rollback contracts remain valid. Actual detection and
+fatal dispatch still OPEN. Non-root mounts should remain usable
+for eventual revalidation/recovery, preserving all other mounts.
+Testkit v1513 `8ab7648` native source-linked D6FS and backing
+read accepts failure->return of the same secondary media, no
+false clean cache store, separate root reader, and three rejected
+source mutations. The old v1 multi-mount oracle was repaired
+to link its fail-closed unused backing callback. Physical media
+replacement, stale BCACHE invalidation, dirty state and full
+provider reattachment remain OPEN. No permanent KCORE source
+instructions, RAM, on-media layout, or ABI change. Policy:
+`design/kcore-media-loss-policy-v1513.md`.
+
 ## 2026-11-12 v1512: physically accepted lost Type-236 completion / PI6 timeout
 
 Real 256K KCC PDP-6 F07 guest tested missing completion for

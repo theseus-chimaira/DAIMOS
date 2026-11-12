@@ -1016,6 +1016,10 @@ vfs_shutdown_root:
 ; int vfs_unmount(root)
         .globl  vfs_unmount
 vfs_unmount:
+        ; Non-root media can disappear temporarily.  A failed transfer or
+        ; sync must not silently clear the mount, provider ownership, or
+        ; cached namespace state; explicit recovery/revalidation precedes
+        ; reuse after media replacement (v1513 policy).
         ldb     2,[POINT 6,1,11]
         sojl    2,kret_neg1
         caml    2,vfs_mount_limit

@@ -1,3 +1,26 @@
+## 2026-11-12 v1513: media-loss classification and recovery scope
+
+- [x] Adopt crash-only policy for **confirmed** root filesystem
+  or BACKSTORE media loss: drop earlier reconstruction/recovery
+  requirements. Avoid creating a quarantine process state or
+  releasing suspended private owners; optional small fatal text.
+- [x] Source-linked PDP-6 v1513 native D6FS non-root read
+  failure/retry test: two failed secondary reads return NULL
+  without new clean BCACHE publication, an independent root
+  read succeeds, and restored same secondary media succeeds
+  twice after separate losses. Three actual negative mutants
+  rejected; v1 multi-mount oracle corrected; no KCORE RAM growth.
+- [ ] Distinguish *confirmed* offline/lost root or BACKSTORE
+  from ordinary PI errors/PI6 timeouts; implement concise fatal
+  HALT/diagnostic and physical critical-loss acceptance. Do NOT
+  turn any single `-1` into a terminal media-loss verdict.
+- [ ] Non-root removal/reattachment and replacement-media
+  verification, BCACHE invalidation and dirty/open-owner safety;
+  actual full guest acceptance remains OPEN.
+- [ ] Mixed DEVICE/VOLUME, DTFS/BCACHE, LOGSTORE/MEMFS errors;
+  F1 swapless PURE/MM/APR; F3 FSINFO dynamic mount enumeration.
+  Compression/optimization only after feature completion.
+
 ## 2026-11-12 v1512: physical PI6 watchdog rollback accepted
 
 - [x] Full 256K PDP-6 source-linked selected Type-236 completion

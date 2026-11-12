@@ -1944,6 +1944,11 @@ proc_swap_in_read_offset:
         jrst    proc_swap_in_restore
 
 proc_swap_in_read_fail:
+        ; A read error may be a transient PI2 controller error or a PI6
+        ; watchdog timeout (physically verified in v1511/v1512).  Retain
+        ; backing and MM ownership through rollback.  Confirmed permanent
+        ; BACKSTORE loss will be a terminal kernel event (v1513 policy),
+        ; but this generic -1 does not distinguish loss from retryable I/O.
         move    1,(17)
         pushj   17,mm_unpin
         ; A failed unpin still owns the extent. Never free it or
