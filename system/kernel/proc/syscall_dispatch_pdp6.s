@@ -612,7 +612,7 @@ native_sys_extctl:
         hrrz    5,1
         subi    5,020
         jumpl   5,native_sys_procctl
-        caile   5,033
+        caile   5,034                  ; now includes ext 054
         jrst    native_sys_procctl
         move    6,5
         andi    5,1
@@ -639,6 +639,26 @@ native_sys_clock_table_word:
         .word   native_sys_memfs_mount,,native_sys_storagectl
         .word   native_sys_ttyctl,,native_sys_fsinfo
         .word   native_sys_brk,,native_sys_d6fs_read_block
+        .word   native_sys_dtfs_recover_v1531,,native_sys_procctl
+
+; Explicit destructive administration of a quarantined noncritical DTFS.
+; This is deliberately *not* the retired DTFS_FORMAT UUO: there is no
+; implicit reformat or "media looks valid" recovery.  The caller supplies
+; either a live FD to abandon or a zero-based MM mount slot to replace.
+; Slot retirement requires a fresh, differently stamped physical tape.
+; Only uid 0 may initiate the operation. Each target helper independently
+; checks the published VFS slot and its sticky WRITE_UNCERTAIN flag.
+native_sys_dtfs_recover_v1531:
+        pushj   17,file_check_root
+        jumpn   1,kret_neg1
+        hrrz    1,3
+        caie    2,1                     ; ABANDON_FD
+        jrst    native_sys_dtfs_recover_discard_v1531
+        jrst    file_dtfs_abandon_fd_v1531
+native_sys_dtfs_recover_discard_v1531:
+        caie    2,2                     ; REPLACE_SLOT
+        jrst    kret_neg1
+        jrst    vfs_dtfs_discard_slot_v1531
 
 ; Read a logical block of the mounted root D6FS through the existing
 ; BLOCKSET mapper. This is intentionally read-only: metadata repair needs

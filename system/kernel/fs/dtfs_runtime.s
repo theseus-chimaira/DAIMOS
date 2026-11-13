@@ -20,6 +20,8 @@
 
 dtfs_mres_dispatch:
 dtfs_mres_reg_dispatch:
+        cain    6,026                   ; DTFS private VERIFY_REPLACE_V1531
+        jrst    dtfs_verify_replacement_v1531
         cain    6,025                   ; FS_MRES_OP_SPACE
         jrst    dtfs_space
         move    7,[dtfs_mres_vector]
@@ -78,6 +80,101 @@ dtfs_space_fail:
 dtfs_space_failed_revalidate_v1522:
         pop     17,2
         jrst    dtfs_space_fail
+
+; Accept replacement ONLY when a genuinely different full 72-bit stamped
+; native DTFS medium is physically present on the poisoned unit, and its
+; freshly read native directory is structurally valid. Never permit the
+; same damaged medium through on an RBN0 identity match, all-zero legacy
+; block or stale BCACHE tag. Under the serialized provider lease, the
+; physical reads may sleep; caller rechecks all stable-uarea owners after
+; the lease returns and before retiring the old slot.
+;
+; This does not repair, rewrite or release any data on the damaged tape.
+; No persistent tombstone is necessary for old vnodes: all process and
+; swap/PIPE owners must be gone, and the fresh next MOUNT revalidates
+; both the new volume stamp and directory independently.
+; AC1=zero-based poisoned DTFS mount slot. 0 verified, -1 refused.
+dtfs_verify_replacement_v1531:
+        push    17,010
+        push    17,011
+        move    010,1                   ; preserve slot across raw DTC I/O
+        move    3,dtfs_media_base
+        jumpe   3,dtfs_replace_bad_v1531
+        add     3,010
+        move    4,(3)
+        trnn    4,0400000              ; WRITE_UNCERTAIN still set
+        jrst    dtfs_replace_bad_v1531
+        move    011,4
+        andi    011,7                   ; original DTC physical unit
+        ; Both old identity halves are needed to distinguish a genuinely
+        ; different replacement; a legacy zero-ID volume cannot recover.
+        move    3,tsfs_file_shape_base
+        jumpe   3,dtfs_replace_bad_v1531
+        add     3,010
+        skipn   (3)
+        jrst    dtfs_replace_bad_v1531
+        move    3,tsfs_extent_media_base
+        jumpe   3,dtfs_replace_bad_v1531
+        add     3,010
+        skipn   (3)
+        jrst    dtfs_replace_bad_v1531
+        setzm   dtfs_cache_mount
+        pushj   17,bcache_invalidate_all
+
+        ; Reuse the exact native directory structural admission checks
+        ; from dtfs_mount_unit; do not trust a volume ID in isolation.
+        move    1,011
+        movei   2,0144                  ; physical native directory
+        movei   3,fs_block_workspace
+        pushj   17,dtfs_dtc_read_jump  ; actual Type-551 I/O
+        jumpn   1,dtfs_replace_bad_v1531
+        move    1,fs_block_workspace+0177
+        came    1,[0446446632021]
+        jrst    dtfs_replace_bad_v1531
+        move    1,fs_block_workspace
+        lsh     1,-037
+        caie    1,036
+        jrst    dtfs_replace_bad_v1531
+        move    1,fs_block_workspace+016
+        lsh     1,-025
+        andi    1,037
+        caie    1,036
+        jrst    dtfs_replace_bad_v1531
+        move    1,fs_block_workspace+0122
+        and     1,[0177776]
+        came    1,[0167572]
+        jrst    dtfs_replace_bad_v1531
+
+        ; Verify a complete nonlegacy DTVOL1 identity physically.
+        move    1,011
+        setz    2,                      ; reserved stamped physical RBN0
+        movei   3,fs_block_workspace
+        pushj   17,dtfs_dtc_read_jump
+        jumpn   1,dtfs_replace_bad_v1531
+        pushj   17,dtfs_identity_validate_v1522
+        jumpn   1,dtfs_replace_bad_v1531
+        move    4,fs_block_workspace
+        came    4,[0446466575421]      ; reject all-zero legacy RBN0
+        jrst    dtfs_replace_bad_v1531
+        move    3,tsfs_file_shape_base
+        add     3,010
+        move    4,(3)
+        came    4,fs_block_workspace+1 ; different high half: accepted
+        jrst    dtfs_replace_ok_v1531
+        move    3,tsfs_extent_media_base
+        add     3,010
+        move    4,(3)
+        camn    4,fs_block_workspace+2 ; both halves equal: old medium
+        jrst    dtfs_replace_bad_v1531
+dtfs_replace_ok_v1531:
+        setz    1,
+        jrst    dtfs_replace_done_v1531
+dtfs_replace_bad_v1531:
+        seto    1,
+dtfs_replace_done_v1531:
+        pop     17,011
+        pop     17,010
+        popj    17,
 
         .data
 dtfs_mres_vector:

@@ -520,6 +520,35 @@ file_close_fail:
         seto    1,
         jrst    file_close_done
 
+; Root explicitly abandons ONE poisoned DTFS FILE descriptor without a
+; writeback. Ordinary CLOSE is still fail-closed and never uses this code.
+; No hardware I/O, mounted-slot recycle, PIPE release or implicit repair
+; occurs here. Discarding the last reference is the administrator's own
+; destructive decision; VFS refuses to retire the mount until *every*
+; other process's stable-uarea cwd/FILE and swap/PIPE owner is gone.
+; AC1=FD; root privilege checked by the syscall entry.
+        .globl  vfs_dtfs_poisoned_slot_v1531
+        .globl  file_dtfs_abandon_fd_v1531
+file_dtfs_abandon_fd_v1531:
+        pushj   17,file_find
+        jumpe   1,kret_neg1
+        push    17,1                     ; exact live FILE entry
+        pushj   17,file_node_from_fd
+        ldb     2,[POINT 6,1,5]         ; provider
+        caie    2,5                      ; only DTFS, never PIPE or root
+        jrst    file_dtfs_abandon_bad_v1531
+        ldb     1,[POINT 6,1,11]        ; full six-bit mount ID
+        sojl    1,file_dtfs_abandon_bad_v1531
+        pushj   17,vfs_dtfs_poisoned_slot_v1531
+        jumpn   1,file_dtfs_abandon_bad_v1531
+        pop     17,2
+        setzm   (2)                     ; no stale packed vnode/lock bits
+        setzm   1(2)                    ; clear seek position with descriptor
+        jrst    kret_zero
+file_dtfs_abandon_bad_v1531:
+        pop     17,2
+        jrst    kret_neg1
+
 ; int file_dup(int fd)
 ; A duplicate has the same vnode, access and lock state, and a separately
 ; copied full-word offset. No shared seek position is introduced.

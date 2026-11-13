@@ -1,3 +1,47 @@
+## 2026-11-13 v1531: root-only poisoned-DTFS replacement PASS
+
+Full rebuilt 256K PDP-6 KCORE/DTFS/TSFS + real
+Type-551 DTC3 physical guest **PASS**:
+root-only UUO 077 extension 054 permits explicit
+DROP_FD for one WRITE_UNCERTAIN native DTFS FILE
+without claiming SYNC success. An ordinary CLOSE
+still refuses; an outstanding cwd or any remote
+FILE/PIPE/swap reference prevents slot retirement.
+After a real write failure, return of the original
+same stamped 72-bit-ID DTC3 is **rejected**, even
+after all owners are released. Only a physically
+verified *different* stamped DTC3 volume with
+valid native directory/RBN0 can authorize
+REPLACE_SLOT. The old slot retires without
+syncing damaged data, the new medium mounts
+fresh, old filename is absent, and TSFS root
+remains available. Guest PASS.
+
+Native source-linked PDP-6 test PASS checks
+actual stable-uarea remote/swapped FD15 and
+cwd references, PIPE/swap exclusion, failed
+physical verification and remote-open race
+during sleeping provider lease. Four executed
+unsafe mutations are rejected. The initial
+native oracle false pass was corrected by
+seeding its failure witness before first
+assertion. v1526-v1529 physical regressions
+PASS on the new KCORE, and v1514/v1523
+native legacy source windows were corrected
+to exclude the unrelated v1531 implementation.
+
+Full DXR versus accepted v1527: fixed KCORE
+`023116` -> `023261` (+99 decimal text/image
+words), BSS `000415` unchanged. Optional
+DTFS/TSFS MRES `003747` -> `004057`
+(+72 words), BSS `000002` unchanged.
+No additional persistent data allocation.
+The feature is deliberately destructive
+*replacement*, not in-place filesystem repair
+or forced cleanup of another process.
+Detail: `design/kcore-dtfs-admin-replace-v1531.md`.
+VERSION 0.5; strict 32K and optimization HOLD.
+
 ## 2026-11-13 v1529: actual partially written physical DTC3 block PASS
 
 Full isolated 256K PDP-6 DTC-root guest, unchanged

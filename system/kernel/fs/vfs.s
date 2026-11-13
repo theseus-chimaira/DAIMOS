@@ -1123,6 +1123,103 @@ vfs_unmount_owner_return_v1523:
         pop     17,010
         popj    17,
 
+; Validate a zero-based, currently published non-root DTFS mount slot
+; that has definitively entered sticky WRITE_UNCERTAIN. Never use this
+; for READ_SUSPECT or clean volumes; matching a 72-bit volume ID is not
+; proof of repaired data after an interrupted physical block write.
+; Return 0 only for the still-mounted, explicitly discardable slot.
+; AC1=slot, AC2..AC7 scratch, AC10..AC13 preserved.
+        .globl  dtfs_media_base
+        .globl  tsfs_file_shape_base
+        .globl  tsfs_extent_media_base
+        .globl  vfs_dtfs_poisoned_slot_v1531
+vfs_dtfs_poisoned_slot_v1531:
+        caml    1,vfs_mount_limit
+        jrst    kret_neg1
+        skipn   2,vfs_mount_root_base
+        jrst    kret_neg1
+        add     2,1
+        skipn   3,(2)
+        jrst    kret_neg1
+        camn    3,vfs_namespace_root
+        jrst    kret_neg1              ; never discard the selected root
+        ldb     4,[POINT 6,3,5]
+        caie    4,5                     ; DTFS_PROVIDER, not TSFS/D6FS
+        jrst    kret_neg1
+        ldb     4,[POINT 6,3,11]        ; root must belong to this slot
+        movei   5,1(1)
+        came    4,5
+        jrst    kret_neg1
+        movei   4,1(1)                  ; public mount/critical owner token
+        ldb     5,[POINT 5,vfs_mount_policy,9]
+        camn    5,4
+        jrst    kret_neg1
+        ldb     5,[POINT 5,vfs_mount_policy,4]
+        camn    5,4
+        jrst    kret_neg1
+        skipn   2,dtfs_media_base
+        jrst    kret_neg1
+        add     2,1
+        move    3,(2)
+        trnn    3,0400000              ; sticky WRITE_UNCERTAIN, not read
+        jrst    kret_neg1
+        trne    3,030                   ; native DTFS only, no foreign mode
+        jrst    kret_neg1
+        skipn   tsfs_file_shape_base
+        jrst    kret_neg1
+        skipn   tsfs_extent_media_base
+        jrst    kret_neg1
+        jrst    kret_zero
+
+; Explicit replacement, NOT repair: all live FILE, cwd, PIPE, swap/
+; backstore owners must be released first. There is no physical SYNC
+; and no claim of repaired old data. A serialized provider call
+; PHYSICALLY verifies a valid DIFFERENT native medium with a distinct
+; complete 72-bit ID and a valid directory, without writing it.
+; The final poison and owner checks occur AFTER the provider's I/O/wait.
+; From that last check through retirement no call can sleep or do I/O.
+; The old public slot, media word and both 72-bit identity halves are
+; cleared together without a chance for stale vnode reuse.
+; AC1=zero-based MM slot; 0 on retired, -1 on any denial.
+        .globl  vfs_dtfs_discard_slot_v1531
+vfs_dtfs_discard_slot_v1531:
+        push    17,010
+        move    010,1
+        pushj   17,vfs_dtfs_poisoned_slot_v1531
+        jumpn   1,vfs_dtfs_discard_bad_v1531
+        movei   1,1(010)
+        pushj   17,vfs_unmount_owner_check_v1523
+        jumpn   1,vfs_dtfs_discard_bad_v1531
+        move    1,010                   ; zero-based slot to authenticate
+        movei   6,026                   ; private DTFS VERIFY_REPLACE
+        movei   7,5
+        pushj   17,fs_provider_reg_call
+        jumpn   1,vfs_dtfs_discard_bad_v1531
+        move    1,010
+        pushj   17,vfs_dtfs_poisoned_slot_v1531
+        jumpn   1,vfs_dtfs_discard_bad_v1531
+        movei   1,1(010)
+        pushj   17,vfs_unmount_owner_check_v1523
+        jumpn   1,vfs_dtfs_discard_bad_v1531
+        movei   1,1(010)
+        pushj   17,file_unlock_mount
+        move    2,010
+        pushj   17,vfs_mount_retire_slot
+        move    3,dtfs_media_base
+        add     3,010
+        setzm   (3)
+        move    3,tsfs_file_shape_base
+        add     3,010
+        setzm   (3)
+        move    3,tsfs_extent_media_base
+        add     3,010
+        setzm   (3)
+        pop     17,010
+        jrst    kret_zero
+vfs_dtfs_discard_bad_v1531:
+        pop     17,010
+        jrst    kret_neg1
+
         .data
 ; KINIT publishes both bases after MRES installation and before the first
 ; root mount. No mount table exists before that point: permanent fallback

@@ -70,6 +70,16 @@
 #define SYS_EXT_FSINFO             051U
 #define SYS_EXT_BRK                052U
 #define SYS_EXT_D6FS_READ_BLOCK    053U
+/* Root-only, explicitly destructive DTFS recovery.  Unlike ordinary
+ * CLOSE/UNMOUNT, neither operation writes or repairs damaged media.
+ * AC2=command, AC3=FD (DROP) or zero-based mount slot (REPLACE).
+ * REPLACE requires an independently stamped, physically verified
+ * DIFFERENT native DTFS volume on the original DTC unit before the
+ * old mount can be retired. A matching old ID is never sufficient.
+ * Other providers and unpoisoned mounts always reject these commands. */
+#define SYS_EXT_DTFS_RECOVER_V1531 054U
+#define SYS_DTFS_DROP_FD_V1531       1U
+#define SYS_DTFS_REPLACE_SLOT_V1531  2U
 
 #define SYS_FSINFO_PATH_WORDS      18U
 

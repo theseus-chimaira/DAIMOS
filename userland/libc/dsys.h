@@ -24,6 +24,10 @@ int dsys_rmdir(kword_t *p);
 int dsys_utime(kword_t *p, kword_t mtime);
 int dsys_sleep(unsigned int ticks);
 int dsys_dtfs_mount(kword_t *d, kword_t *p, unsigned int f);
+/* Root-only: drop one poisoned DTFS FILE, or retire an unowned poisoned
+ * noncritical DTFS mount only after authenticating a different, valid
+ * physical replacement tape. This does NOT repair the damaged original. */
+int dsys_dtfs_recover_v1531(unsigned int command, unsigned int fd_or_slot);
 int dsys_unmount(kword_t *p);
 int dsys_flock(int fd, unsigned int op);
 int dsys_dup(int fd);

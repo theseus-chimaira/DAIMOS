@@ -1,3 +1,47 @@
+## 2026-11-13 v1531: owner-checked DTFS administrative replacement
+
+**PASS** full 256K KCC PDP-6 TSFS-root physical
+acceptance of privileged root-only UUO 077
+EXT054: explicitly abandon one poisoned
+DTFS FILE, while ordinary CLOSE remains
+fail-closed; require all stable-uarea FILE/cwd
+and PIPE/swap references to be released before
+retirement. Actual DTC3 detach and failed
+metadata write set WRITE_UNCERTAIN; attaching
+the same original stamped medium is rejected
+even after owner cleanup. A separate, physically
+attached different stamped native DTC3 with
+freshly checked directory and full 72-bit RBN0
+permits REPLACE_SLOT. Old mount MM slot/identity
+is retired without SYNCing damaged data. New
+DTFS mount, missing old filename, normal clean
+UNMOUNT and independent TSFS root all PASS.
+
+Native source-linked PDP-6 oracle independently
+tests actual remote swapped-process FD15/cwd,
+PIPE/swap references, a remote FILE introduced
+during provider I/O, poison and native-personality
+guards; four unsafe mutations rejected.
+v1526, v1527, v1528 and v1529 *physical* guests
+all PASS on the v1531 full rebuild. Legacy
+v1514/v1523 source-linked test windows stop
+before new v1531 routines; their original
+assertions remain unchanged.
+
+Measured versus v1527: fixed KCORE image
+`023116` -> `023261` (+99 decimal words),
+BSS remains `000415`; optional DTFS/TSFS
+MRES `003747` -> `004057` (+72 decimal
+words), BSS remains `000002`. No new
+permanent tables/data. Destructive replacement
+is accepted; this is NOT old-volume repair,
+automatic close of remote owners, or recovery
+of partially written user data. Details:
+`design/kcore-dtfs-admin-replace-v1531.md`.
+P0-A critical root/BACKSTORE loss and
+P1-C/P1-D/P1-E remain OPEN. VERSION 0.5,
+strict 32K/optimization gate HOLD.
+
 ## 2026-11-13 v1529: physical mixed-old/new DTFS block accepted
 
 The real booted PDP-6 256K KCORE + DTFS MRES

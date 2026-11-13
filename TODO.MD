@@ -1,3 +1,45 @@
+## 2026-11-13 v1531: explicit poisoned-DTFS replacement accepted
+
+- [x] Implement root-only recovery UUO 077
+  EXT054: explicit DROP_FD (selected local
+  poisoned native DTFS FILE; no SYNC) and
+  REPLACE_SLOT. Verify actual physical
+  **different**, nonlegacy 72-bit-DTVOL1
+  identity AND native directory before
+  retiring an otherwise owner-free poisoned
+  noncritical DTFS mount. Same original
+  damaged medium always refuses. No
+  in-place repair or silent poison clear.
+- [x] Recheck remote/swapped FILE/cwd,
+  PIPE and swap owners both before and
+  after potentially sleeping physical
+  provider validation. Native source-linked
+  tests for stable 0410-word u-areas,
+  post-I/O open race, poison-only FD drop,
+  and four unsafe source mutations PASS.
+- [x] Full real 256K PDP-6 DTC3 fault,
+  same-ID refusal, root explicit FD drop,
+  residual cwd denial, different-volume
+  physical replacement, new mount, clean
+  retirement and independent root PASS.
+  Rebuilt v1526-v1529 physical regressions
+  PASS. Existing v1514/v1523 source-linked
+  test extraction corrected for new API.
+- [ ] Optional strengthening: direct physical
+  multi-process administrative replacement
+  acceptance (native all-process owner scan
+  and v1526 physical cross-process ownership
+  are already separately proven).
+- [ ] **P0-A:** authoritative permanent
+  critical TSFS root/BACKSTORE loss and
+  precisely qualified HALT.
+- [ ] **P1-C/D/E:** mixed provider faults,
+  dynamic FSINFO capacity/inventory and
+  swapless PURE/MM/APR, then final
+  feature-only regression freeze.
+  VERSION 0.5; strict 32K and
+  optimization gate HOLD.
+
 ## 2026-11-13 v1529: genuinely partial physical DTFS write
 
 - [x] Native PDP-6 source-linked empty-file

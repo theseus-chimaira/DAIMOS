@@ -27,6 +27,7 @@
         .globl dsys_halt
         .globl dsys_chmod
         .globl dsys_dtfs_mount
+        .globl dsys_dtfs_recover_v1531
         .globl dsys_unmount
         .globl dsys_flock
         .globl dsys_dup
@@ -94,6 +95,13 @@ dsys_halt:             uuo 063,0
 dsys_chmod:            uuo 064,0(1)
                        popj 17,
 dsys_dtfs_mount:       uuo 066,0(1)
+                       popj 17,
+; UUO 077, extension 054: AC2=action, AC3=fd or zero-based mount slot.
+dsys_dtfs_recover_v1531:
+                       move 3,2
+                       move 2,1
+                       movei 1,054
+                       uuo 077,0(1)
                        popj 17,
 dsys_unmount:          uuo 067,0(1)
                        popj 17,
