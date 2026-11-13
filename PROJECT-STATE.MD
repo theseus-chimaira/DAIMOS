@@ -1,3 +1,27 @@
+## 2026-11-13 v1552: pinned MM-owned DTFS intent scratch accepted
+
+`dtfs_intent_owned_arm_v1552.s` now wraps v1551 physical RBN0
+arming with an optional 0200-word MM_TYPE_KERNEL_DYNAMIC owner
+015 octal extent. Its exact six-argument no-reclaim MM allocation,
+physical pin across I/O, unpin and typed-owner free protect the
+buffer from MM relocation while Type-551 DMA sleeps. A refused
+cleanup leaves the allocation base in the caller's retained word
+and returns -1; a nonzero existing base refuses new work.
+
+Native PDP-6 11 strict-MM boundary scenarios/ten unsafe source
+mutants PASS; separately, real production MM allocator/extent,
+pin/unpin/free instructions execute twice with the real wrapper
+and correct type/owner/pin checks, followed by genuine allocator
+shortage refusal. This is not a full physical Type-551 guest.
+No permanent KCORE RAM/data allocation or default media change.
+
+**P0-B OPEN:** this standalone helper remains unlinked from
+the mounted DTFS provider until exclusive first-write gating,
+per-mount retained MM base and final owner-safe CLEAN-unmount
+are implemented and physically tested across cold boot.
+See `design/kcore-dtfs-owned-scratch-v1552.md`. P0-A complete,
+P1-C separate; VERSION 0.5/strict 32K optimization HOLD.
+
 ## 2026-11-13 v1551: native physical-intent service PASS, P0-B OPEN
 
 Standalone `dtfs_intent_arm_v1551.s` now implements raw Type-551

@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1551, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1552, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -162,6 +162,16 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   scratch lease, mandatory first-data-write arm, clean-unmount
   transaction, physical Type-551 or cold-boot acceptance yet.
   **P0-B OPEN.** See `design/kcore-dtfs-intent-arm-v1551.md`.
+  **v1552 pinned MM scratch PASS:** exactly 0200 temporary managed
+  words, owner 015 octal, MM pin across the complete raw Type-551
+  arm/readback, checked unpin/free and caller-retained base after
+  cleanup refusal. Eleven native strict-MM boundary cases/ten
+  unsafe mutants PASS; separate actual native MM allocator/pin/
+  free source test with two full allocations and no-arena refusal
+  PASS. No fixed RAM/ABI change. The wrapper is not installed in
+  the mounted provider: first-write gating, final CLEAN unmount,
+  physical failed-media reinsertion/cold boot still OPEN.
+  See `design/kcore-dtfs-owned-scratch-v1552.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

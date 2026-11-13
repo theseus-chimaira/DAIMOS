@@ -1,3 +1,25 @@
+## 2026-11-13 v1552: native pinned MM-owned DTVOL2 intent scratch
+
+Added standalone `dtfs_intent_owned_arm_v1552.s`: the exact
+v1551 physical dirty-before-data barrier runs using an optional
+0200-word MM_TYPE_KERNEL_DYNAMIC=3 / owner 015 octal buffer.
+Allocate without reclaim, **pin across all Type-551 DMA/readback**,
+unpin and free afterward. Retain the exact caller-owned basep
+on any cleanup refusal, never discard another owner's extent
+or report a successful transaction with unreleased scratch.
+
+Native PDP-6 strict-MM boundary suite: 11 cases, ten actual-source
+mutants PASS/rejected. Independent real `mm_pdp6.s` allocator,
+pin/unpin/free source-linked guest also PASSes two complete
+temporary leases and actual no-arena shortage. Physical Type-551
+is controlled in these tests; actual full-guest P0-B remains open.
+
+No permanent RAM, default media, ABI or fixed KCORE code change;
+new wrapper is still **unlinked** from mounted DTFS. Next
+integrated provider first-write and final exclusive CLEAN unmount.
+See `design/kcore-dtfs-owned-scratch-v1552.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1551: raw DTFS DTVOL2 intent arm validated
 
 New standalone PDP-6 `dtfs_intent_arm_v1551.s` requires the
