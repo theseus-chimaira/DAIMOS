@@ -1,3 +1,22 @@
+## 2026-11-13 v1544: native secondary D6FS DSK/DRM source isolation
+
+The actual PDP-6 D6FS read/write callers, full physical
+DSK270/DRM236 direct adapter and selected-root classifier now
+pass 24 integrated native cases/six unsafe source mutations.
+Physical kind, unit/block mapping, direct and three-member sets,
+secondary error returns and root-only logical I/O counts are
+verified. The older v1513/v1515/direct-adapter native regressions
+and full KCC fixed-KCORE/D6FS-MRES link PASS. Only outdated
+v1513/v1515 policy comments were corrected in production source;
+zero executable instruction/data/ABI changes.
+
+Full-guest secondary *mounted* D6FS physical detach remains
+OPEN: it needs a genuinely validated transient mount handoff;
+the existing syscall has no production userland handoff scanner.
+Likewise mixed shared ROOT/BACKSTORE DEVICE/VOLUME physical tests
+remain. See `design/kcore-secondary-d6fs-direct-isolation-v1544.md`.
+VERSION 0.5, size/optimization HOLD.
+
 ## 2026-11-13 v1543: actual D6FS DRM236 root-loss HALT accepted
 
 Full 256K PDP-6 KCC `ROOT=drum BOOT=drm` with four authentic

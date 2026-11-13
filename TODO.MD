@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1543, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1544, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -73,6 +73,11 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   required root data, reach exact root HALT PC `003743`.
   No production code/RAM changes; corresponding DSK270
   disk-root v1540 already PASSes.
+- [x] **v1544 actual D6FS->DSK/DRM direct adapter native
+  integration:** 24 real PDP-6 cases/six source mutants PASS;
+  selected root/secondary mount, direct and three-member sets,
+  read/write/error and physical kind/unit/block accounting.
+  No executable KCORE changes; stale comments corrected.
 
 ### Outstanding, strictly KCORE features
 
@@ -82,8 +87,9 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   Physical TSFS all/one-root-member, D6FS disk-root, noncritical
   DTC3 and Type-236 owned BACKSTORE reason-2 HALT PASS through
   v1543. Both DSK270 and DRM236 root positive physical tests
-  PASS. Still qualify unrelated physical DSK/DRM negative controls,
-  and shared DEVICE/VOLUME faults;
+  PASS. Source-linked integrated secondary DSK/DRM v1544 PASS;
+  still qualify *real mounted* secondary DSK/DRM physical negative
+  controls and shared DEVICE/VOLUME faults;
   source-linked native DSK270/DRM236 mapped coverage already PASS.
   Do not HALT for invalid requests, inactive/unowned probes,
   successful driver recovery or noncritical FS errors; never

@@ -1,3 +1,19 @@
+## 2026-11-13 v1544: D6FS secondary direct adapter source isolation
+
+Actual PDP-6 source-linked D6FS root/secondary I/O callers plus
+complete `fs_backing.s` DSK270/DRM236 direct and INTERLEAVE
+device mapper and v1538 critical service classifier PASS 24
+cases and reject six unsafe source mutants. Actual kind/unit/RBN,
+BCACHE and root-only counters checked; final device status is
+test-controlled. Older v1513/v1515/direct-adapter regressions
+PASS and full KCC KCORE/D6FS MRES link PASS. Only source comments
+retired obsolete positive-permanence requirement; no code/RAM
+or ABI changes. Real secondary D6FS mounted physical detach and
+shared ROOT/BACKSTORE tests are still pending.
+
+See `design/kcore-secondary-d6fs-direct-isolation-v1544.md`.
+VERSION 0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1543: selected DRM236 D6FS root physical outage PASS
 
 Complete `ROOT=drum BOOT=drm` 256K KCC PDP-6 root boots from

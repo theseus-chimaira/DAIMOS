@@ -66,11 +66,12 @@ fs_backing_root_write_jump:
         popj    17,
 
 fs_backing_root_error:
-        ; One failing root request does not establish physical media loss:
-        ; PI errors and the controller watchdog share this result.  The
-        ; v1513 policy requires fail-stop on *confirmed* lost boot-root media,
-        ; not on a temporary negative callback.  Keep the ordinary per-I/O
-        ; error visible until a reliable device-loss classifier exists.
+        ; Account a failed *logical* D6SET transfer, and return its error.
+        ; This adapter has no public mount ID and must never decide which
+        ; filesystem is fatal.  The actual D6FS read/write caller now uses
+        ; the v1538 provider+mount root gate: a failed required ROOT I/O
+        ; HALTs, while identical secondary I/O remains a local error.
+        ; This replaces the obsolete v1513 permanent-media-loss policy.
         aos     mfsdev_storage_errors+4 ; D6SET0 logical backing failure
         popj    17,
 

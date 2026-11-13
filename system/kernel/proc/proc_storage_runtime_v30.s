@@ -127,17 +127,15 @@ kcore_root_fs_io_halt_v1538:
         movei   1,1                     ; root-specific fatal reason
         jrst    kcore_critical_device_lost_v1515
 
-; KCORE v1515: terminal dispatch for an AUTHORITATIVELY confirmed loss of
-; a device/storage provider holding critical data. Non-removable medium loss
-; is device loss; individual bad blocks or transient controller faults are not.
-; AC1=1: boot root; AC1=2: BACKSTORE. Unknown reason
-; is a caller invariant violation, with its own HALT address. This leaf must
-; not be called directly by hardware on a generic negative I/O result or
-; watchdog: those do not prove permanent media loss.  v1538 deliberately
-; changes the ROOT policy: once the bounded physical driver has returned an
-; actual failed I/O to the selected root provider, its filesystem is no
-; longer usable for the requested operation and KCORE fails stop. The
-; secondary filesystem and BACKSTORE policies remain independently scoped.
+; KCORE v1515: terminal dispatch after a *critical service* has failed.
+; AC1=1: selected boot ROOT; AC1=2: active or still-owned BACKSTORE.
+; Unknown reason is a caller invariant violation, with its own HALT PC.
+; Never enter directly from a controller PI/watchdog: those events may be
+; unrelated to the critical service, or the driver may recover internally.
+; v1538 ROOT and v1541 BACKSTORE caller gates classify an actual failed,
+; validated I/O after normal bounded driver recovery. No proof of permanent
+; physical media disappearance is required for such a critical request;
+; identical failures on unrelated secondary filesystem mounts are nonfatal.
 ;
 ; No KINIT, console, process-private stack or live filesystem is needed here.
 ; Distinct HALT *addresses* identify the failed owner without storing a
