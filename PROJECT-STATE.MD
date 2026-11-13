@@ -1,3 +1,22 @@
+## 2026-11-13 v1550: native DTVOL2 record and formatter opt-in PASS
+
+Added DTVOL2 six-word format header, actual PDP-6 validator
+(`0` CLEAN, `1` WRITE_INTENT, `-1` INVALID), and explicit host
+`mkdtfs --durable-v1550` image output. Normal default `mkdtfs`
+remains legacy DTVOL1 and existing target MKFS unchanged.
+Thirteen real host-image/native PDP-6 record cases and seven
+unsafe source mutations PASS; full v1520 formatter/probe/native
+mount regression PASS. A generated test-case numeric-constant
+octal error was corrected (the production validator was sound).
+
+The parser remains **unlinked** from runtime DTFS: no actual
+write-ahead intent, RBN0 readback, final clean unmount or cold-boot
+acceptance is claimed. **P0-B OPEN** pending coordinated native
+provider, probe, formatter admission and physical Type-551 tests.
+No KCORE fixed code/RAM, ABI or normal media-format change.
+See `design/kcore-dtfs-intent-source-v1550.md`. VERSION 0.5;
+strict 32K/optimization HOLD. P0-A complete; P1-C open.
+
 ## 2026-11-13 v1549: DTFS durable intent protocol model PASS, P0-B OPEN
 
 Current DTFS persistent RBN0 DTVOL1 stamp is solely a 72-bit

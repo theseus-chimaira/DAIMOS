@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1549 design, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1550, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -146,6 +146,13 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   formatter/provider/probe together and test real partial write,
   cold boot, new replacement and retained process/PIPE/swap owners.
   See `design/kcore-dtfs-durable-intent-v1549.md`.
+  **v1550 staged source PASS:** actual six-word DTVOL2 header,
+  native PDP-6 parser and opt-in `mkdtfs --durable-v1550` clean
+  format. 13 real-media/native cases, seven source mutants, and
+  full v1520 legacy regression PASS. The parser is not yet in
+  the production provider; no real intent barrier, clean-unmount
+  or physical cold-boot acceptance. **P0-B remains OPEN.**
+  See `design/kcore-dtfs-intent-source-v1550.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

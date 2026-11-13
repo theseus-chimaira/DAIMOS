@@ -1,3 +1,23 @@
+## 2026-11-13 v1550: native DTVOL2 validator and opt-in formatter
+
+The v1549 P0-B on-media protocol now has concrete source:
+`system/kernel/fs/dtfs_intent_v1550.h` holds its six checked
+record constants, and `dtfs_intent_validate_v1550.s` contains
+the native PDP-6 parser returning CLEAN=0, WRITE_INTENT=1 and
+INVALID=-1 after full 36-bit checks and zero padding.
+`mkdtfs` keeps its normal DTVOL1 default; only explicit
+`--durable-v1550` creates experimental DTVOL2/CLEAN media.
+
+Native p10run 13 actual-image record cases and seven source
+mutation controls PASS. Legacy v1520 host and native mount
+regressions remain PASS. The parser is **not installed in
+production DTFS mount/write paths**, and new-format media is
+not supported for mounted operations yet. P0-B OPEN; next
+physical write-ahead arming and checked clean unmount. No fixed
+KCORE words/RAM or ABI changes. See
+`design/kcore-dtfs-intent-source-v1550.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1549: DTFS durable write-intent design and offline models
 
 P0-B source sweep confirms that DTVOL1 in native reserved physical
