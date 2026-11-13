@@ -1,3 +1,21 @@
+## 2026-11-13 v1547: shared physical DRM root and owned BACKSTORE
+
+Full 256K KCC PDP-6 boots `ROOT=drum BOOT=drm`, with selected
+D6FS root and mapped BACKSTORE sharing DR0..DR3. A genuine
+Type-236 PI2 completion on a live owned swap WRITE is redirected
+to the driver's original error path and HALTs at the **BACKSTORE**
+PC `003747` (root is `003743`). Physical memory: swap enabled 1,
+blocks used `0320`, device map `400000000000`, volume data
+`075774`, selected D6FS root `060101000000`; one PI2 error and
+four clean pre-fault samples. Nine corrupted-evidence mutants
+rejected. No code/RAM change.
+
+P0-A remains open only for shared physical **ROOT-first** loss
+with live owned BACKSTORE; v1546 native proves both orders but
+cannot replace that guest. See
+`design/kcore-shared-drm-root-backstore-v1547.md`, VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1546: shared ROOT/BACKSTORE native failure order
 
 Source-linked PDP-6 D6FS reader, DSK270/DRM236 direct adapter,

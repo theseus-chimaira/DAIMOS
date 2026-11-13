@@ -1,3 +1,21 @@
+## 2026-11-13 v1547: full physical shared DRM-root swap fail-stop
+
+The complete 256K KCC PDP-6 DR0..DR3 D6FS-root guest uses a
+mapped BACKSTORE VOLUME over those same Type-236 physical members.
+A selected actual PI2 controller completion redirected through
+its existing error path stops at octal BACKSTORE HALT `003747`,
+not root HALT `003743`. Owner count `0320`, enabled flag 1,
+Type-236 selector `400000`, volume_data_blocks `075774`, and
+selected D6FS root verified from actual linked memory at HALT.
+One selected PI2 error, four zero-error pre-samples, nine unsafe
+evidence mutants rejected. No production code or RAM growth.
+
+P0-A still needs the physical shared **ROOT-first** failure while
+BACKSTORE owns blocks; the previous native v1546 test proves the
+logical ordering but uses controlled physical return status.
+See `design/kcore-shared-drm-root-backstore-v1547.md`. VERSION
+0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1546: combined critical-owner native source acceptance
 
 Actual PDP-6 D6FS root reader, DSK270/DRM236 adapter,

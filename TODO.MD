@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1546, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1547, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -98,6 +98,14 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   remain unchanged and no second I/O runs after HALT.
   No KCORE code or RAM changes; physical combined guest open.
 
+- [x] **v1547 shared physical DRM root/BACKSTORE:** real
+  256K PDP-6 `ROOT=drum BOOT=drm` shares DR0..DR3 mapped
+  VOLUME with owned BACKSTORE. Selected live Type-236 PI2
+  error halts at swap PC `003747`, root remains `003743`.
+  Post-HALT root vnode/device mapping, `0320` owned blocks,
+  one error and nine corrupted-evidence controls PASS.
+  Injected PI2 error branch, not natural physical disappearance.
+
 ### Outstanding, strictly KCORE features
 
 - [ ] **P0-A, remaining highest safety gate:** selected ROOT and
@@ -108,10 +116,11 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   v1543. Both DSK270 and DRM236 root positive physical tests
   PASS. Source-linked v1544 and full-guest v1545 mounted secondary
   DSK/DRM physical negative controls PASS. Still qualify
-  combined *full-guest physical* ROOT/BACKSTORE DEVICE/VOLUME
-  failure order, exact reason and live retained critical
-  ownership; source-linked v1546 native order PASS but does
-  not close combined physical acceptance;
+  combined *full-guest physical ROOT-first* failure while
+  BACKSTORE holds live blocks. Shared v1547 physical
+  BACKSTORE-first fault and owner retention PASS. Native
+  v1546 proves both orders but does not replace ROOT-first
+  physical qualification;
   source-linked native DSK270/DRM236 mapped coverage already PASS.
   Do not HALT for invalid requests, inactive/unowned probes,
   successful driver recovery or noncritical FS errors; never
