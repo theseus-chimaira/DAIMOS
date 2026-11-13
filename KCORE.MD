@@ -39,6 +39,14 @@ No additional persistent data allocation.
 The feature is deliberately destructive
 *replacement*, not in-place filesystem repair
 or forced cleanup of another process.
+**LIMITATION:** v1531 does not persist a
+quarantine blacklist: deliberate reinsertion
+of the old tape (or reboot with its volatile
+poison lost) can permit a later normal
+MOUNT if its format/ID survived the failed
+write. Operationally quarantine that tape
+offline; durable cross-reboot refusal is
+a separately OPEN P0-B integrity gate.
 Detail: `design/kcore-dtfs-admin-replace-v1531.md`.
 VERSION 0.5; strict 32K and optimization HOLD.
 

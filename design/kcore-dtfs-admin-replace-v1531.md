@@ -111,6 +111,24 @@ the old VFS/FILE ownership is retained.
 A normal subsequent DTFS mount independently
 revalidates its new tape.
 
+This is **not durable quarantine of the discarded
+original volume**. v1531 records no permanent
+blacklist or repaired-data certificate. After
+explicit discard, a later operator could
+physically reinsert the old damaged tape,
+and after a reboot the volatile WRITE_UNCERTAIN
+marker is also lost. Its otherwise valid
+RBN0 identity and directory can pass an
+ordinary fresh MOUNT despite corrupted
+file data. Administrators must keep the
+old tape offline for salvage or disposal;
+the v1531 API is not a persistent bad-volume
+registry. If policy requires the OS to
+refuse old damaged volumes after restart/
+reinsertion, that is an **additional P0-B
+durability/integrity feature gate**, still
+OPEN and not silently solved here.
+
 ## Physical and native acceptance
 
 The full 256K KCC PDP-6 TSFS-root PTR-boot
@@ -163,7 +181,8 @@ HOLD until feature completion.
 
 This closes the **explicit destructive
 replacement** scope for P0-B without claiming
-in-place data repair or a physical multi-process
+in-place data repair, durable cross-reboot
+quarantine or a physical multi-process
 administrator test. P0-A permanent critical
 root/BACKSTORE loss remains OPEN. P1-C mixed
 storage errors, P1-D FSINFO inventory and

@@ -36,7 +36,14 @@ words), BSS remains `000002`. No new
 permanent tables/data. Destructive replacement
 is accepted; this is NOT old-volume repair,
 automatic close of remote owners, or recovery
-of partially written user data. Details:
+of partially written user data. Volatile
+WRITE_UNCERTAIN is NOT a cross-reboot
+blacklist: later physical reinsertion of
+the old damaged tape can pass format/ID
+checks. Keep discarded tape offline.
+Persistent quarantine / re-admission
+integrity is P0-B OPEN if required.
+Details:
 `design/kcore-dtfs-admin-replace-v1531.md`.
 P0-A critical root/BACKSTORE loss and
 P1-C/P1-D/P1-E remain OPEN. VERSION 0.5,

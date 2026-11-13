@@ -30,6 +30,13 @@
   acceptance (native all-process owner scan
   and v1526 physical cross-process ownership
   are already separately proven).
+- [ ] **P0-B durability:** decide and implement
+  the required cross-reboot/physical-reinsertion
+  policy for previously WRITE_UNCERTAIN media.
+  v1531 retains no durable blacklist and
+  a valid old RBN0 ID/directory alone cannot
+  prove unchanged user data. Explicit discard
+  requires keeping the old tape offline.
 - [ ] **P0-A:** authoritative permanent
   critical TSFS root/BACKSTORE loss and
   precisely qualified HALT.
