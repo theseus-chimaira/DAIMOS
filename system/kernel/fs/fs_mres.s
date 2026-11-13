@@ -25,6 +25,9 @@
         .globl dsk270_write_sector
         .globl drm236_read_block
         .globl drm236_write_block
+        .globl backstore_enabled
+        .globl backstore_blocks_used
+        .globl kcore_critical_device_lost_v1515
 
 ; Legacy configuration entry: AC3 nonzero requests VOLUME (BLOCKSET)
 ; mapping; AC3 zero selects a direct DEVICE range. Preserve its ABI.
@@ -139,6 +142,27 @@ blockset_direct_tail_done:
         hrli    0,-5(17)
         blt     0,013
         sub     17,kconst_6_6
+        ; v1541: BACKSTORE is critical just like the selected root. Once
+        ; the configured DEVICE/VOLUME provider actually refuses a valid
+        ; transfer after its normal driver recovery, continuing would
+        ; leave swapped owners or RAM-backed snapshot data inaccessible.
+        ; HALT at the existing v1515 BACKSTORE-specific instruction.
+        ; An inactive, unowned service must still return failure: KINIT
+        ; probes optional snapshots before STORAGECTL enables swap.
+        ; STORAGECTL may also disable new allocations while old swapped
+        ; owners still hold blocks; those owners remain critical. Range/
+        ; argument validation above never reaches this branch.
+        jumpe   1,blockset_direct_tail_return_v1541
+        skipn   backstore_enabled
+        jrst    blockset_direct_tail_owned_v1541
+        jrst    blockset_direct_tail_halt_v1541
+blockset_direct_tail_owned_v1541:
+        skipn   backstore_blocks_used
+        jrst    blockset_direct_tail_return_v1541
+blockset_direct_tail_halt_v1541:
+        movei   1,2
+        jrst    kcore_critical_device_lost_v1515
+blockset_direct_tail_return_v1541:
         popj    17,
 blockset_tail_blocks:
 backing_region_blocks:

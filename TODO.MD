@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1539, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1541, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -45,29 +45,39 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   trigger. Full 256K physical TSFS-root DTC0/DTC1/DTC2
   detachment plus required root data read HALTs at PC 003743;
   physical nonroot DTC3 write failure/return stays nonfatal.
-
 - [x] **v1539 single-member TSFS root loss:** the running full
   256K KCC PDP-6 guest detaches only DTC0 of the selected
   DTC0/DTC1/DTC2 root set. Required uncached root-file I/O
   HALTs at the exact v1515 root PC 003743; the other two
   root members remain attached. No production code or RAM growth.
+- [x] **v1540 disk-root physical loss:** real KCC PDP-6 D6FS
+  DSK0..DSK3 root physically detached; required root data read
+  reaches exact root HALT PC 003743 (testkit v1540 PASS).
+- [x] **v1541 BACKSTORE critical-service fail-stop:** a valid
+  active or still-owned BACKSTORE DEVICE/VOLUME I/O failure
+  after bounded lower-driver recovery reaches v1515 reason 2
+  BACKSTORE HALT. Inactive unowned boot probes and invalid
+  requests do not HALT. Native PDP-6 17 cases/six mutants and
+  tape-root KCC KCORE/MRES link PASS. No permanent state.
+  This supersedes earlier final-negative-I/O scheduler retries
+  from v1511/v1512; lower driver retries still run normally.
 
 ### Outstanding, strictly KCORE features
 
-- [ ] **P0-A, remaining highest safety gate:** a required
-  filesystem ROOT I/O that cannot complete after the usual
-  bounded driver recovery now HALTs, regardless of whether
-  permanent physical device disappearance can be proven.
-  Source integration and native classification v1538 PASS.
-  Full TSFS-root loss and independent noncritical DTC3 physical
-  negative cases PASS. Still prove physical D6FS disk/drum root
-  loss and unrelated
-  secondary DSK/DRM negative controls.
-  Independently specify BACKSTORE failure escalation without
-  regressing accepted recoverable PI/watchdog owner rollback.
-  Neither category may reconstruct critical owners or invent
-  successful checked release. Do not HALT for logical EOF,
-  invalid user arguments or secondary mounted FS errors.
+- [ ] **P0-A, remaining highest safety gate:** selected ROOT and
+  active/owned BACKSTORE services HALT on actual required I/O
+  that remains unsuccessful after normal driver recovery, not
+  on a speculative permanent-media-loss register value.
+  TSFS all-members and one-member root physical HALT, D6FS
+  disk-root HALT, and unrelated DTC3 failure isolation PASS.
+  BACKSTORE v1541 source/native integration PASS; still verify
+  real full-guest selected Type-236/270 BACKSTORE failure and
+  exact v1515 **swap**, not root, HALT PC. Also require physical
+  DRM-root and independent DSK/DRM negative controls plus
+  shared DEVICE/VOLUME faults. Do not HALT on invalid requests,
+  optional inactive/unowned probes, successful driver recovery
+  or secondary mounted FS errors. Do not reconstruct, release
+  or falsely publish missing critical process owners.
 - [ ] **P0-B, media durability policy:** after a
   genuinely partial WRITE_UNCERTAIN non-root DTFS
   volume is explicitly discarded, prevent its later

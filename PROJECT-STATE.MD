@@ -1,3 +1,28 @@
+## 2026-11-13 v1541: active or still-owned BACKSTORE I/O fail-stop
+
+The fixed `fs_mres.s` BACKSTORE gateway now treats a negative actual
+storage transfer, after existing lower-driver recovery, as a fatal
+critical dependency whenever `backstore_enabled` or
+`backstore_blocks_used` is nonzero. Direct DSK270 and DRM236 plus
+mapped BLOCKSET VOLUME all share the same completed-transfer
+classification, and only v1515 BACKSTORE reason 2 is used. No
+extra resident DATA/BSS or second ownership table. Inactive/unowned
+KINIT snapshot probes and malformed/empty transfer requests retain
+nonfatal results. No forced reclaim, process publication or unpin.
+
+Native source-linked PDP-6 17 cases/six unsafe source mutations PASS
+and KCC tape-root KCORE/FS MRES link PASS. Final-failed-transfer
+retries in earlier v1511/v1512 guests are intentionally superseded:
+ordinary driver retries may still resolve a problem before return,
+but any final valid active swap failure HALTs instead of returning
+to the scheduler. Physical Type-236 PI2 error-to-HALT demonstration
+remains to be accepted independently. See
+`design/kcore-backstore-service-failstop-v1541.md`.
+
+Positive physical D6FS disk root loss v1540 is accepted in testkit;
+DRM-root and secondary DSK/DRM mixed tests remain. KCORE feature
+work only, VERSION 0.5, optimization/strict 32K HOLD.
+
 ## 2026-11-13 v1539: one member of multi-tape root lost (physical PASS)
 
 On the full 256K KCC PDP-6 v1538 root-I/O fail-stop image,

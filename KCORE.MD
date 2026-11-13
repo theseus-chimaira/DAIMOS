@@ -1,3 +1,33 @@
+## 2026-11-13 v1541: BACKSTORE failed service is a terminal event (P0-A)
+
+The BACKSTORE policy now matches the already accepted v1538 ROOT
+policy: after an actual required transfer's bounded physical-driver
+recovery returns failure, the machine HALTs. `fs_mres.s`'s sole
+`backing_region_io` completion routes valid negative direct DSK270/
+DRM236 DEVICE and BLOCKSET VOLUME transfers to fixed v1515 with
+AC1=2, reaching the distinct BACKSTORE-specific HALT. A successful
+transfer, zero count or invalid request is never promoted to HALT.
+An inactive **unowned** region still returns ordinary failure to
+optional KINIT snapshot probing. Disabling new swap allocations
+does not absolve already allocated DISK owners: a failed transfer
+with nonzero `backstore_blocks_used` remains fatal.
+
+Native source-linked PDP-6 tests PASS 17 positive/negative cases
+and six unsafe mutations; the full KCC tape-root fixed KCORE and
+optional FS MRES link PASS. No new permanent DATA/BSS or ABI.
+This deliberately supersedes the old v1511/v1512 policy of returning
+an exhausted BACKSTORE I/O failure to the scheduler for later retry;
+pre-error driver recovery remains. No process backing owner can be
+freed or reconstructed on this fatal path.
+
+Physical positive Type-236 PI2 error/HALT acceptance is a separate
+full-guest gate; see `design/kcore-backstore-service-failstop-v1541.md`.
+Current accepted root physical positives include TSFS three-member
+v1538, single-member v1539 and D6FS disk v1540 (testkit). P0-A
+remains OPEN for BACKSTORE positive physical fault and DRM-root/
+secondary-DSK/DRM mixed hardware profiles. VERSION 0.5;
+strict 32K and optimization HOLD.
+
 ## 2026-11-13 v1539: physically lost single TSFS root member (P0-A)
 
 The same full 256K KCC PDP-6 image now PASSes a root-outage
