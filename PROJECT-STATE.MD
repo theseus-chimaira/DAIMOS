@@ -1,3 +1,26 @@
+## 2026-11-13 v1545: physical secondary DSK270 and DRM236 nonfatal errors
+
+Full 256K KCC PDP-6 physically mounts and authenticates a secondary
+D6FS using the real privileged `dsys_d6fs_mount` syscall and a
+test-only media-derived, `d6fsck`-validated 14-word handoff. With
+`ROOT=drum` (DRM236), a separate DSK270 D6FS secondary fails its
+first post-DETACH file-data read and returns normally; the selected
+root remains fully readable. Inverse `ROOT=disk` and DRM236 secondary
+also PASS. Both guests prove a real failed mounted-secondary I/O
+rather than detaching a never-used device.
+
+The original full guest revealed bad `module_minit.c` DSK direct
+adapter bindings: they entered the raw MRES service without the
+required Type-270 address conversion. Four KINIT export slots now
+use the existing fixed DSK270 read/write bridge. Native full
+DSK encoder test plus five wrong-ABI mutations rejected, six
+corrupt-media handoffs rejected; no fixed KCORE word or RAM change.
+
+P0-A still needs physical combined ROOT/BACKSTORE shared DEVICE/
+VOLUME fault classification and owner-state acceptance. See
+`design/kcore-secondary-d6fs-physical-v1545.md`. VERSION 0.5;
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1544: D6FS secondary direct adapter source isolation
 
 Actual PDP-6 source-linked D6FS root/secondary I/O callers plus

@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1544, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1545, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -78,6 +78,17 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   selected root/secondary mount, direct and three-member sets,
   read/write/error and physical kind/unit/block accounting.
   No executable KCORE changes; stale comments corrected.
+- [x] **v1545 real mounted-secondary DSK/DRM loss:** with
+  256K KCC D6FS root on the opposite controller, actual
+  secondary `dsys_d6fs_mount` ID2/provider6 and clean
+  DBOOT/superblock handoff, physical detach of DSK0..3
+  or DR0..3 causes a real file-data read error that returns
+  nonfatally. Independent root file-data read still succeeds.
+  Fixed KINIT binding ABI: the four DSK adapter call sites
+  now use existing DSK270 address-conversion wrappers, not
+  low-level MRES physical-address entry points. Native ABI
+  and five wrong-binding/encoder mutants, six corrupt media
+  handoffs PASS. No added fixed KCORE instructions/RAM.
 
 ### Outstanding, strictly KCORE features
 
@@ -87,9 +98,10 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   Physical TSFS all/one-root-member, D6FS disk-root, noncritical
   DTC3 and Type-236 owned BACKSTORE reason-2 HALT PASS through
   v1543. Both DSK270 and DRM236 root positive physical tests
-  PASS. Source-linked integrated secondary DSK/DRM v1544 PASS;
-  still qualify *real mounted* secondary DSK/DRM physical negative
-  controls and shared DEVICE/VOLUME faults;
+  PASS. Source-linked v1544 and full-guest v1545 mounted secondary
+  DSK/DRM physical negative controls PASS. Still qualify
+  combined shared ROOT/BACKSTORE DEVICE/VOLUME failure order,
+  exact reason and retained critical ownership;
   source-linked native DSK270/DRM236 mapped coverage already PASS.
   Do not HALT for invalid requests, inactive/unowned probes,
   successful driver recovery or noncritical FS errors; never

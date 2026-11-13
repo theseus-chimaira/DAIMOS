@@ -1,3 +1,31 @@
+## 2026-11-13 v1545: physical mounted D6FS secondary loss (P0-A)
+
+Full-guest D6FS secondary error isolation now PASSes on both
+physical controller classes. With selected root on DRM236,
+independently mounted DSK270 D6FS fails its first post-DETACH
+file-data READ nonfatally; a separate ROOT file-data read succeeds.
+The inverse selected DSK270 root and mounted DRM236 secondary
+likewise PASSes after physical DR0..DR3 detach. Each full guest
+uses 256K KCC PDP-6, real `dsys_d6fs_mount` public mount ID 2,
+host-validated DBOOT/superblock handoff and actual D6FS media.
+
+These guests uncovered a real KINIT adapter ABI bug. MINIT was
+patching D6FS secondary DSK direct calls to raw MRES services
+which expect `(encoded_address, buffer)` rather than the public
+`(unit, sector, buffer)` arguments. Exports 7/8/11/12 now call
+the existing fixed `dsk270_read_sector`/`dsk270_write_sector`
+encoding bridge, like the already-correct DRM bindings. The
+native source guard rejects four wrong KINIT bindings, and the
+actual PDP-6 direct DSK encoder test rejects an unsafe raw-MRES
+call. Six corrupted physical handoffs are rejected. There is no
+additional resident instruction, RAM/data, syscall ABI or media
+layout change; only reclaimed KINIT instructions changed.
+
+**P0-A still OPEN** for combined shared-device ROOT/BACKSTORE
+DEVICE/VOLUME failure ordering and exact critical owner reason.
+See `design/kcore-secondary-d6fs-physical-v1545.md`. VERSION 0.5,
+32K/optimization HOLD.
+
 ## 2026-11-13 v1544: native secondary D6FS DSK/DRM source isolation
 
 The actual PDP-6 D6FS read/write callers, full physical

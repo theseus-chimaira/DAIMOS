@@ -1688,21 +1688,29 @@ d6fs_minit(void)
                     (kword_t *)(unsigned long)callback_write, write_addr);
         }
         /* Secondary direct D6FS mounts need the physical DSK bindings even
-         * when the boot root uses a multi-member BLOCKSET. Patch both the
-         * ordinary branch/tail and accounting PUSHJ sites during KINIT. */
+         * when the boot root uses a multi-member BLOCKSET. The D6FS adapter
+         * passes (unit, sector, buffer); the relocated DSK MRES entry takes
+         * (encoded controller address, buffer) instead. Patch through the
+         * fixed dsk270_read_sector/dsk270_write_sector ABI converters, not
+         * directly to the MRES addresses. Patch both the ordinary branch
+         * and root-accounting PUSHJ sites during KINIT. */
         read_addr = module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
         write_addr = module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
         if (read_addr != 0U) {
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 7U), read_addr);
+                    minit_export(name, base, 7U),
+                    (unsigned int)(unsigned long)&dsk270_read_sector);
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 11U), read_addr);
+                    minit_export(name, base, 11U),
+                    (unsigned int)(unsigned long)&dsk270_read_sector);
         }
         if (write_addr != 0U) {
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 8U), write_addr);
+                    minit_export(name, base, 8U),
+                    (unsigned int)(unsigned long)&dsk270_write_sector);
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 12U), write_addr);
+                    minit_export(name, base, 12U),
+                    (unsigned int)(unsigned long)&dsk270_write_sector);
         }
         /* The per-mount direct adapter is also used by secondary D6FS
          * instances.  Patch DRM independently of the root backing so a
