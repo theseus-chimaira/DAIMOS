@@ -1,3 +1,24 @@
+## 2026-11-13 v1542: physical BACKSTORE final I/O failure HALT PASS
+
+Actual full 256K KCC PDP-6 with real Type-236 PI2 error
+completion on selected backed WRITE HALTs at fixed BACKSTORE PC
+003747 (entry 003740+7), not root PC 003743. Live observations:
+actual PI2 completion error counter 1, backstore_enabled 1,
+backstore_blocks_used octal 0320; four clean pre-error samples.
+Nine unsafe corrupted source/evidence mutations rejected in
+testkit physical verifier. Source-linked native v1541 already
+demonstrates DSK270/DRM236 and mapped VOLUME critical failures.
+
+No new source/RAM/ABI change in v1542; this validates v1541
+in a real full guest. Historical v1511/v1512 scheduler retry
+after an exhausted critical BACKSTORE error is superseded by
+the explicit fatal-service policy. See
+design/kcore-backstore-physical-failstop-v1542.md.
+
+P0-A still requires alternate hardware/secondary storage and
+combined root/BACKSTORE physical negative/positive profile
+qualification. VERSION 0.5, 32K/optimization gate HOLD.
+
 ## 2026-11-13 v1541: active or still-owned BACKSTORE I/O fail-stop
 
 The fixed `fs_mres.s` BACKSTORE gateway now treats a negative actual

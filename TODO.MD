@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1541, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1542, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -61,23 +61,26 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   tape-root KCC KCORE/MRES link PASS. No permanent state.
   This supersedes earlier final-negative-I/O scheduler retries
   from v1511/v1512; lower driver retries still run normally.
+- [x] **v1542 BACKSTORE full-guest physical positive:** actual
+  256K KCC PDP-6 Type-236 PI2 error completion for an owned
+  BACKSTORE WRITE HALTs exactly at fixed swap reason PC 003747;
+  counter 1, enabled 1 and octal 0320 owned blocks recorded.
+  Four clean pre-error samples and nine corrupt-evidence
+  mutations PASS. No new production source/RAM/ABI.
 
 ### Outstanding, strictly KCORE features
 
 - [ ] **P0-A, remaining highest safety gate:** selected ROOT and
-  active/owned BACKSTORE services HALT on actual required I/O
-  that remains unsuccessful after normal driver recovery, not
-  on a speculative permanent-media-loss register value.
-  TSFS all-members and one-member root physical HALT, D6FS
-  disk-root HALT, and unrelated DTC3 failure isolation PASS.
-  BACKSTORE v1541 source/native integration PASS; still verify
-  real full-guest selected Type-236/270 BACKSTORE failure and
-  exact v1515 **swap**, not root, HALT PC. Also require physical
-  DRM-root and independent DSK/DRM negative controls plus
-  shared DEVICE/VOLUME faults. Do not HALT on invalid requests,
-  optional inactive/unowned probes, successful driver recovery
-  or secondary mounted FS errors. Do not reconstruct, release
-  or falsely publish missing critical process owners.
+  active/owned BACKSTORE services HALT after an exhausted required
+  I/O failure, not a speculative permanent-media-loss register bit.
+  Physical TSFS all/one-root-member, D6FS disk-root, noncritical
+  DTC3 and Type-236 owned BACKSTORE reason-2 HALT PASS through
+  v1542. Still qualify alternate DRM root, unrelated physical
+  DSK/DRM negative controls, and shared DEVICE/VOLUME faults;
+  source-linked native DSK270/DRM236 mapped coverage already PASS.
+  Do not HALT for invalid requests, inactive/unowned probes,
+  successful driver recovery or noncritical FS errors; never
+  reconstruct or falsely release critical owners.
 - [ ] **P0-B, media durability policy:** after a
   genuinely partial WRITE_UNCERTAIN non-root DTFS
   volume is explicitly discarded, prevent its later

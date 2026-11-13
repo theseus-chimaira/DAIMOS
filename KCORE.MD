@@ -1,3 +1,22 @@
+## 2026-11-13 v1542: physical Type-236 BACKSTORE HALT accepted (P0-A)
+
+Full 256K PDP-6 KCC disk-root F07 guest PASSes a selected real
+Type-236 PI2 error completion on the first enabled, already-owned
+BACKSTORE WRITE. The fixed v1541 completion gate HALTs at octal
+PC 003747, exactly v1515's distinct BACKSTORE reason-2 HALT
+(linked fatal entry 003740; root HALT is 003743). Physical
+post-HALT native counters: PI2 error 1, BACKSTORE enabled 1,
+owned blocks 0320 octal. Four sampled clean pre-error intervals,
+nine corrupt-evidence verifier mutations rejected. The old v1511/
+v1512 post-negative scheduler retry is intentionally not allowed.
+Actual controller error completion, not simulated direct -1.
+See design/kcore-backstore-physical-failstop-v1542.md.
+
+P0-A remains partly open for alternate DRM root, negative
+secondary DSK/DRM and shared DEVICE/VOLUME root/BACKSTORE fault
+profiles. No KCORE code/RAM/ABI change in v1542. KCORE feature
+completion only, VERSION 0.5, strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1541: BACKSTORE failed service is a terminal event (P0-A)
 
 The BACKSTORE policy now matches the already accepted v1538 ROOT
