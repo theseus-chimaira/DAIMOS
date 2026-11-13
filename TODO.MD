@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1538, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1539, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -46,6 +46,12 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   detachment plus required root data read HALTs at PC 003743;
   physical nonroot DTC3 write failure/return stays nonfatal.
 
+- [x] **v1539 single-member TSFS root loss:** the running full
+  256K KCC PDP-6 guest detaches only DTC0 of the selected
+  DTC0/DTC1/DTC2 root set. Required uncached root-file I/O
+  HALTs at the exact v1515 root PC 003743; the other two
+  root members remain attached. No production code or RAM growth.
+
 ### Outstanding, strictly KCORE features
 
 - [ ] **P0-A, remaining highest safety gate:** a required
@@ -55,7 +61,7 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   Source integration and native classification v1538 PASS.
   Full TSFS-root loss and independent noncritical DTC3 physical
   negative cases PASS. Still prove physical D6FS disk/drum root
-  loss, single selected TSFS-root member failure, and unrelated
+  loss and unrelated
   secondary DSK/DRM negative controls.
   Independently specify BACKSTORE failure escalation without
   regressing accepted recoverable PI/watchdog owner rollback.

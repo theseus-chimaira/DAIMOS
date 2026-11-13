@@ -1,3 +1,21 @@
+## 2026-11-13 v1539: one member of multi-tape root lost (physical PASS)
+
+On the full 256K KCC PDP-6 v1538 root-I/O fail-stop image,
+the v1539 testkit physically detaches **only DTC0** after a
+running PID1 explicitly acknowledges its three-member TSFS root.
+DTC1 and DTC2 remain attached. A real noncached `/SYSTEM/INIT`
+data read reaches the fixed root-specific v1515 HALT at octal
+PC `003743`; the strict verifier rejects normal user exit and
+incorrect HALT address. This complements the v1538 full-root
+detach and v1534 independent secondary-device outage regressions.
+
+No production source, RAM, DATA/BSS, ABI, or on-media change.
+Remaining P0-A: actual physical D6FS disk/drum root-outage tests,
+critical BACKSTORE exhaustion/failure policy and mixed acceptance.
+Tests and exact scope in daimos-testkit
+`tests/validation/daimos-root-member-outage-v1539.md`.
+VERSION 0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1538: P0-A fails stop on actual selected-root I/O failure
 
 The required root policy no longer waits for an authoritative

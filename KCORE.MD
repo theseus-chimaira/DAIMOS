@@ -1,3 +1,22 @@
+## 2026-11-13 v1539: physically lost single TSFS root member (P0-A)
+
+The same full 256K KCC PDP-6 image now PASSes a root-outage
+variant that detaches only physical **DTC0** of its selected
+three-member TSFS root while DTC1 and DTC2 stay attached. After
+the guest attempts a real uncached `/SYSTEM/INIT` root-file
+data read, it HALTs at the exact linked root-specific v1515
+PC `003743` (octal), rather than returning an error or halting
+as a user process at PC zero. This is a real Type-551/Type-136
+SIMH media-detach acceptance, not a permanent-loss status bit.
+
+The all-members-detached root HALT and independent nonroot DTC3
+fault/return under healthy DTC4/MEMFS were accepted in v1538.
+Remaining P0-A: D6FS disk/drum root physical outage and the
+distinct BACKSTORE critical-unavailability policy and acceptance.
+No production KCORE/MRES code or resident state changes in v1539;
+VERSION 0.5, strict 32K and optimization HOLD. Testkit:
+`tests/validation/daimos-root-member-outage-v1539.md`.
+
 ## 2026-11-13 v1538: selected-root I/O fail-stop after bounded error (P0-A)
 
 The P0-A root policy is intentionally simplified: an actual negative
