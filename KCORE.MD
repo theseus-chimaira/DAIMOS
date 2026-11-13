@@ -1,3 +1,31 @@
+## 2026-11-13 v1528: physical failed-write quarantine accepted
+
+Real PDP-6 256K DTC-root KCORE/PID1 with unchanged
+v1527 DTFS/TSFS MRES **PASS**: mount stamped DTC3
+read/write, create and write a file, commit real
+metadata, DETACH DTC3 at a synchronized SIMH stop,
+and attempt a further metadata write, which fails.
+After the original identically stamped DTC3 returns,
+FSINFO and STAT still fail. FILE CLOSE fails twice
+without losing ownership; ordinary UNMOUNT refuses.
+The guest reports `DTFSWRITE V1528 WRITE_FAILED`,
+`WRITE_STICKY`, and `PASS`. An independent repeat
+with Type-551 CONO trace also PASSes and confirms
+real DTC3 write commands.
+
+The existing production `WRITE_UNCERTAIN` state
+correctly persists across matching 72-bit volume
+return: automatic revalidation cannot certify
+metadata/data following a failed physical write.
+No production source change, RAM or MRES growth.
+This is a genuine *failed write* but not yet
+a physically interrupted **partial-block** write;
+that and checked administrative cleanup remain
+P0-B OPEN. File close's refusal and retaining the
+original mount are deliberate fail-closed behavior.
+Detail: `design/kcore-dtfs-write-uncertain-physical-v1528.md`.
+VERSION 0.5; strict 32K HOLD, no optimization.
+
 ## 2026-11-13 v1527: physical DTC3 replacement/return and DTC4 isolation PASS
 
 **Actual 256K PDP-6 DTC-root KCORE** with the

@@ -1,3 +1,33 @@
+## 2026-11-13 v1528: KCORE WRITE_UNCERTAIN physical containment
+
+- [x] Real booted 256K PDP-6 DTC-root KCORE
+  + DTFS/TSFS MRES mounts correctly stamped
+  native DTC3 RW, writes a real file and
+  metadata, DETACHes physical DTC3, observes
+  failed native metadata write, and ATTACHes
+  original identical tape. FSINFO/STAT refuse
+  the original mount after return. Repeated
+  FILE CLOSE and ordinary UNMOUNT refuse
+  instead of silently losing old ownership.
+  Target and host v1528 gate PASS; Type-551
+  CONO diagnostic repeat PASS. No production
+  bytes or persistent RAM added.
+- [ ] **P0-B:** prove a real partially completed
+  DTC3 physical block/transaction WRITE,
+  not only failure with media already detached.
+- [ ] **P0-B:** implement and verify explicit
+  administrator-checked uncertain-media
+  repair/replacement and owner cleanup,
+  retaining fail-atomic VFS slot protection.
+  Do not clear poison because original 72-bit
+  volume ID matches; do not silently release
+  FILE/cwd, swap, or PIPE references.
+- [ ] **P0-A/P1:** authoritative critical
+  root/BACKSTORE loss, mixed storage faults,
+  dynamic FSINFO capacity, swapless PURE,
+  then final feature-only regression freeze.
+  Strict 32K/optimization gate HOLD.
+
 ## 2026-11-13 v1527: verified physical DTFS read-fault return
 
 - [x] Fix false BCACHE slot-0 identity after

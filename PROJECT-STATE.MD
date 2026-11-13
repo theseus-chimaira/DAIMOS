@@ -1,3 +1,31 @@
+## 2026-11-13 v1528: real failed DTFS write remains quarantined
+
+Booted full PDP-6 256K KCORE/DTFS/TSFS guest
+**PASS** on noncritical physical DTC3 write
+failure: the real target mounted a stamped
+native RW filesystem, created/wrote a FILE,
+completed metadata writes, then DETACHed DTC3
+at a synchronized SIMH stop and attempted
+another metadata commit. Negative write return
+observed. After reattaching the same full
+72-bit-ID tape, FSINFO and STAT remained
+fail-closed, repeated FILE CLOSE kept ownership,
+and ordinary UNMOUNT refused. A repeat with
+Type-551 CONO trace confirmed real DTC3
+FNC_WRIT command activity. No mock raw I/O
+or filesystem provider; original v1527 KCORE
+and optional MRES unchanged. See
+`design/kcore-dtfs-write-uncertain-physical-v1528.md`.
+
+P0-B physical failed-write sticky containment
+is accepted. **Still OPEN:** positive partial
+mid-block write damage, and explicit checked
+administrative recovery of WRITE_UNCERTAIN
+and retained FILE/cwd owners. Same-ID read
+does not repair uncertain data. P0-A and
+P1-C/P1-D/P1-E are unchanged. No permanent
+RAM growth, VERSION 0.5, strict 32K HOLD.
+
 ## 2026-11-13 v1527: physical mounted-media return physically accepted
 
 Full 256K KCC PDP-6 KCORE + installed DTFS
