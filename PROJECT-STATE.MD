@@ -1,3 +1,18 @@
+## 2026-11-13 v1546: combined critical-owner native source acceptance
+
+Actual PDP-6 D6FS root reader, DSK270/DRM236 adapter,
+BACKSTORE DEVICE/VOLUME service and fixed v1515 HALT leaves
+PASS 12 combined cases/five source mutations. The first
+failed root or swap request on a shared physical unit picks
+the corresponding HALT instruction; owned BACKSTORE blocks
+are unchanged and the second operation is not executed.
+No production code, RAM, ABI or media-format change.
+
+P0-A still needs a booted full-guest shared ROOT/BACKSTORE
+physical fault with genuine mapper/process ownership. See
+`design/kcore-shared-root-backstore-v1546.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1545: physical secondary DSK270 and DRM236 nonfatal errors
 
 Full 256K KCC PDP-6 physically mounts and authenticates a secondary

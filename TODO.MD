@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1545, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1546, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -90,6 +90,14 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   and five wrong-binding/encoder mutants, six corrupt media
   handoffs PASS. No added fixed KCORE instructions/RAM.
 
+- [x] **v1546 shared ROOT/BACKSTORE native order:** genuine
+  D6FS reader, DSK/DRM adapter, BACKSTORE DEVICE/VOLUME
+  gateway and distinct HALT leaves execute on one physical
+  unit. Twelve PDP-6 cases/five unsafe source mutants PASS.
+  First failed service selects root or swap HALT, owner blocks
+  remain unchanged and no second I/O runs after HALT.
+  No KCORE code or RAM changes; physical combined guest open.
+
 ### Outstanding, strictly KCORE features
 
 - [ ] **P0-A, remaining highest safety gate:** selected ROOT and
@@ -100,8 +108,10 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   v1543. Both DSK270 and DRM236 root positive physical tests
   PASS. Source-linked v1544 and full-guest v1545 mounted secondary
   DSK/DRM physical negative controls PASS. Still qualify
-  combined shared ROOT/BACKSTORE DEVICE/VOLUME failure order,
-  exact reason and retained critical ownership;
+  combined *full-guest physical* ROOT/BACKSTORE DEVICE/VOLUME
+  failure order, exact reason and live retained critical
+  ownership; source-linked v1546 native order PASS but does
+  not close combined physical acceptance;
   source-linked native DSK270/DRM236 mapped coverage already PASS.
   Do not HALT for invalid requests, inactive/unowned probes,
   successful driver recovery or noncritical FS errors; never

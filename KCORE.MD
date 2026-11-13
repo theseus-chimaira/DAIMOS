@@ -1,3 +1,19 @@
+## 2026-11-13 v1546: shared ROOT/BACKSTORE native failure order
+
+Source-linked PDP-6 D6FS reader, DSK270/DRM236 direct adapter,
+BACKSTORE DEVICE/VOLUME gateway and both v1515 HALT leaves on
+the same unit PASS 12 cases and five unsafe source mutants.
+Root-first vs swap-first failure selects the correct distinct
+HALT instruction; disabled-but-owned swap remains fatal and
+unowned inactive probes remain nonfatal. Backing owner count
+is retained and a second operation never runs after a fatal
+first I/O. No KCORE executable or RAM changes.
+
+Remaining P0-A: actual combined full-guest ROOT/BACKSTORE
+DEVICE/VOLUME physical failure, shared mapper and live ownership.
+See `design/kcore-shared-root-backstore-v1546.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1545: physical mounted D6FS secondary loss (P0-A)
 
 Full-guest D6FS secondary error isolation now PASSes on both
