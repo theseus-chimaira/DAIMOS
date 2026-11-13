@@ -1,3 +1,40 @@
+## 2026-11-13 v1538: selected-root I/O fail-stop after bounded error (P0-A)
+
+The P0-A root policy is intentionally simplified: an actual negative
+root-provider backing read/write after its normal bounded controller
+recovery is a fatal inability to complete essential root I/O. No
+positive proof of physically permanent device absence is required.
+Secondary filesystem errors retain normal nonfatal mount/FILE/cache
+handling. BACKSTORE remains a separate critical failure case and
+its previously accepted recoverable PI/timeout rollback is unchanged.
+
+Fixed `kcore_root_fs_io_failure_v1538` compares the failed provider
+(D6FS 6 or TSFS 7) and public mount ID against the selected
+`vfs_namespace_root`, stopping at v1515's root-specific HALT only
+on an exact match. Actual D6FS read and write-through failures and
+TSFS FILE/EXTENT metadata, STORED and BLOCK data reads are routed.
+Logical invalid arguments, missing records, EOF, MM/decoder failure,
+unpublished root and secondary mounts must not invoke fatal stop.
+No new permanent storage state; the fixed gate is ten instructions.
+
+Source-linked real PDP-6 native D6FS (11 cases, five unsafe mutants)
+and TSFS (12 cases, four unsafe mutants) PASS, as do existing
+v1513/v1515/v1516/v1517/v1537 and TSFS slab/multiextent controls.
+Full KCC tape-root and disk-root fixed KCORE plus optional provider
+MRES links PASS. A full tape-root image also builds successfully.
+
+The current-source full 256K KCC physical TSFS-root guest PASSes
+real DTC0/DTC1/DTC2 detachment followed by a root `/SYSTEM/INIT`
+data read: the PDP-6 stops at exact linked root HALT PC `003743`.
+A separate v1534 physical guest PASSes genuine failed DTC3 WRITE
+without stopping the TSFS root, DTC4 native DTFS or writable MEMFS.
+
+**P0-A remains partly OPEN:** physical disk/drum D6FS-root outage,
+single-member TSFS-root loss, and the independent
+BACKSTORE-unrecoverability policy/physical acceptance. See
+`design/kcore-root-io-failstop-v1538.md`. No general optimization;
+VERSION 0.5, strict 32K HOLD.
+
 ## 2026-11-13 v1537: guarded TSFS root-member terminal dispatch (partial P0-A)
 
 Optional TSFS provider now has the five-instruction

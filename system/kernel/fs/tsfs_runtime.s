@@ -149,10 +149,12 @@ tsfs_extent_record:
 
 tsfs_table_record:
         push    17,010
+        push    17,011
         move    010,2                  ; stable record index
         hlrz    4,1
         lsh     4,-6
         andi    4,077
+        move    011,4                  ; public mount ID of requesting vnode
         subi    4,1
         add     3,4                    ; selected mount locator
         hlrz    5,(3)
@@ -173,7 +175,7 @@ tsfs_table_record:
         push    17,6
         pushj   17,dtfs_dtc_read
         pop     17,6
-        jumpn   1,tsfs_table_record_done
+        jumpn   1,tsfs_table_record_io_error_v1538
 
         move    1,010
         hrrz    7,6
@@ -186,7 +188,15 @@ tsfs_table_record:
 
 tsfs_table_record_bad:
         hrroi   1,1
+        jrst    tsfs_table_record_done
+tsfs_table_record_io_error_v1538:
+        ; Only an actual negative DTC request, not an invalid record
+        ; index, is an I/O failure. The requesting mount owns the error.
+        movei   1,7                     ; TSFS provider
+        move    2,011
+        pushj   17,kcore_root_fs_io_failure_v1538
 tsfs_table_record_done:
+        pop     17,011
         pop     17,010
         popj    17,
 
@@ -504,7 +514,7 @@ tsfs_read_stored:
         hrrz    2,7
         movei   3,fs_block_workspace
         pushj   17,dtfs_dtc_read
-        jumpn   1,tsfs_read_words_fail
+        jumpn   1,tsfs_read_words_io_error_v1538
         move    5,011
         andi    5,0177
         movei   6,0200
@@ -536,7 +546,7 @@ tsfs_read_block:
         hrrz    2,7
         movei   3,fs_block_workspace
         pushj   17,dtfs_dtc_read
-        jumpn   1,tsfs_read_words_fail
+        jumpn   1,tsfs_read_words_io_error_v1538
         move    6,fs_block_workspace
         jumpe   6,tsfs_read_words_fail
         caile   6,TSFS_RESTART_WORDS
@@ -594,6 +604,16 @@ tsfs_read_block_free:
         pushj   17,mm_free
 tsfs_read_block_drop:
         sub     17,kconst_1_1
+        jrst    tsfs_read_words_fail
+
+tsfs_read_words_io_error_v1538:
+        ; AC13 still holds the requesting TSFS vnode across the hardware
+        ; callback. The error belongs to this mount, not every DTC unit.
+        movei   1,7                     ; TSFS provider
+        hlrz    2,013
+        lsh     2,-6
+        andi    2,077                  ; public mount ID
+        pushj   17,kcore_root_fs_io_failure_v1538
         jrst    tsfs_read_words_fail
 
 tsfs_read_words_done:

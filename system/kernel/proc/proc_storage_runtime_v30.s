@@ -102,13 +102,42 @@ proc_storage_exchange_invalid_v778:
         seto    1,
         popj    17,
 
+; KCORE v1538: fail-stop for an exhausted physical I/O on the selected root.
+; AC1=filesystem provider (6 D6FS, 7 TSFS), AC2=public mount ID.
+; The calling provider supplies these from the actual failed I/O owner,
+; never from the physical controller number alone.  A secondary mount,
+; failed boot probe before root publication, or unrelated provider must
+; return -1 through the normal filesystem error path.  This entry is
+; only called for a failed backing/physical transfer on a previously
+; validated filesystem operation. A missing backing callback is itself an
+; unusable root provider; a malformed user argument or EOF never enters
+; this path. No persistent device or fault table is needed.
+        .globl  kcore_root_fs_io_failure_v1538
+        .globl  vfs_namespace_root
+kcore_root_fs_io_failure_v1538:
+        lsh     1,6                     ; provider,,public mount ID
+        ior     1,2
+        move    2,vfs_namespace_root
+        lsh     2,-030                  ; compare root's top twelve bits
+        camn    1,2
+        jrst    kcore_root_fs_io_halt_v1538
+        seto    1,                      ; secondary: retain normal I/O error
+        popj    17,
+kcore_root_fs_io_halt_v1538:
+        movei   1,1                     ; root-specific fatal reason
+        jrst    kcore_critical_device_lost_v1515
+
 ; KCORE v1515: terminal dispatch for an AUTHORITATIVELY confirmed loss of
 ; a device/storage provider holding critical data. Non-removable medium loss
 ; is device loss; individual bad blocks or transient controller faults are not.
 ; AC1=1: boot root; AC1=2: BACKSTORE. Unknown reason
 ; is a caller invariant violation, with its own HALT address. This leaf must
-; not be called on a generic negative I/O result or watchdog expiration:
-; neither proves permanent media loss. Both have recoverable physical tests.
+; not be called directly by hardware on a generic negative I/O result or
+; watchdog: those do not prove permanent media loss.  v1538 deliberately
+; changes the ROOT policy: once the bounded physical driver has returned an
+; actual failed I/O to the selected root provider, its filesystem is no
+; longer usable for the requested operation and KCORE fails stop. The
+; secondary filesystem and BACKSTORE policies remain independently scoped.
 ;
 ; No KINIT, console, process-private stack or live filesystem is needed here.
 ; Distinct HALT *addresses* identify the failed owner without storing a

@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1536, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1538, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -36,19 +36,32 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
 - [x] SIMH physical guest CTY acknowledgments corrected
   to instruction-delayed console SEND; strict v1527,
   v1528, v1529, v1531 and v1534 regressions PASS v1535.
+- [x] **v1538 root I/O fail-stop source integration:** D6FS
+  read/write and TSFS metadata/STORED/BLOCK actual negative
+  I/O on the selected mounted root reach v1515's root HALT.
+  D6FS 11 native/5 mutants and TSFS 12 native/4 mutants
+  PASS, plus prior native secondary isolation and regressions.
+  This replaces permanent-device-loss detection as the ROOT
+  trigger. Full 256K physical TSFS-root DTC0/DTC1/DTC2
+  detachment plus required root data read HALTs at PC 003743;
+  physical nonroot DTC3 write failure/return stays nonfatal.
 
 ### Outstanding, strictly KCORE features
 
-- [ ] **P0-A, highest safety gate:** authoritative
-  positive *permanent* device-loss evidence for active
-  TSFS root-set members and BACKSTORE physical provider.
-  Distinguish transient PI error, missing completion/PI6
-  timeout, illegal select, detached unrelated DTC and
-  actual sustained loss. Route **only confirmed** root/
-  BACKSTORE loss to v1515 distinct fail-safe HALT PCs.
-  Prove native negative controls and full physical
-  false-positive/confirmed-HALT tests. Do not reconstruct
-  missing critical owners or manufacture release.
+- [ ] **P0-A, remaining highest safety gate:** a required
+  filesystem ROOT I/O that cannot complete after the usual
+  bounded driver recovery now HALTs, regardless of whether
+  permanent physical device disappearance can be proven.
+  Source integration and native classification v1538 PASS.
+  Full TSFS-root loss and independent noncritical DTC3 physical
+  negative cases PASS. Still prove physical D6FS disk/drum root
+  loss, single selected TSFS-root member failure, and unrelated
+  secondary DSK/DRM negative controls.
+  Independently specify BACKSTORE failure escalation without
+  regressing accepted recoverable PI/watchdog owner rollback.
+  Neither category may reconstruct critical owners or invent
+  successful checked release. Do not HALT for logical EOF,
+  invalid user arguments or secondary mounted FS errors.
 - [ ] **P0-B, media durability policy:** after a
   genuinely partial WRITE_UNCERTAIN non-root DTFS
   volume is explicitly discarded, prevent its later

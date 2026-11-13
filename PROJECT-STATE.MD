@@ -1,3 +1,37 @@
+## 2026-11-13 v1538: P0-A fails stop on actual selected-root I/O failure
+
+The required root policy no longer waits for an authoritative
+permanently-detached-device signal. If an otherwise valid D6FS or
+TSFS operation on the published namespace root has an exhausted
+lower-level I/O failure, fixed `kcore_root_fs_io_failure_v1538`
+matches provider+mount ID against `vfs_namespace_root` and enters
+v1515 root HALT. A secondary mount, alternate provider or invalid
+unpublished root returns the original error. No extra resident
+data, owner eviction, or hardware-specific loss guess is added.
+
+Real D6FS backing read/write-through and TSFS FILE/EXTENT metadata,
+STORED and BLOCK physical read error paths are connected. Source-
+linked PDP-6 D6FS 11/5 and TSFS 12/4 positive-negative/mutation
+cases PASS, including exact reason-specific HALT PC. Historical
+v1513/v1515/v1516/v1517/v1537 and TSFS slab/multiextent PASS.
+Full KCC disk-root/tape-root fixed KCORE and corresponding filesystem
+MRES links PASS; the full tape-root image builds. New fixed gate
+contains ten instruction words and no new permanent data.
+
+Real full 256K KCC PDP-6 current-source TSFS root loss PASS: after
+physical DTC0/DTC1/DTC2 detach, a required `/SYSTEM/INIT` data
+read stops exactly at linked root HALT PC `003743`. The distinct
+real v1534 noncritical DTC3 detach/write failure/return also PASSes
+with healthy TSFS root, DTC4 native DTFS and writable MEMFS.
+
+P0-A still needs physical D6FS disk/drum root outage, isolated
+single TSFS root-member failure and separate BACKSTORE-critical
+service failure treatment. A recoverable BACKSTORE
+PI error/timeout still uses validated owner-retaining rollback.
+See `design/kcore-root-io-failstop-v1538.md` and testkit
+`tests/validation/daimos-root-io-failstop-v1538.md`.
+VERSION 0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1537: guarded TSFS critical-owner terminal dispatch
 
 First P0-A integration stage: actual `tsfs_root_owns_dtc_unit_v1516`

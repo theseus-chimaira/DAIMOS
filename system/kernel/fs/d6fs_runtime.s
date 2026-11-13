@@ -187,7 +187,7 @@ d6fs_reader_get_block:
         move    2,011
         movei   3,fs_block_workspace     ; shared transfer block
         pushj   17,fs_backing_read
-        jumpn   1,d6fs_get_block_read_fail
+        jumpn   1,d6fs_get_block_io_error_v1538
         move    1,012
         movei   2,fs_block_workspace
         pushj   17,bcache_store          ; miss becomes a clean cache entry
@@ -196,6 +196,15 @@ d6fs_reader_get_block:
 d6fs_get_block_cache_hit:
         movei   1,fs_block_workspace
         jrst    d6fs_get_block_read_done
+d6fs_get_block_io_error_v1538:
+        ; AC10 is the reader that actually issued the failed block read.
+        ; Its low six state bits hold the public VFS mount ID. A secondary
+        ; D6FS must remain recoverable even when a D6FS root is mounted.
+        movei   1,6                     ; D6FS provider
+        move    2,1(010)
+        andi    2,077
+        pushj   17,kcore_root_fs_io_failure_v1538
+        ; Only non-root / unpublished-root errors can return here.
 d6fs_get_block_read_fail:
         setz    1,
 d6fs_get_block_read_done:
@@ -967,12 +976,17 @@ d6fs_reader_commit_cache:
         move    2,011
         movei   3,fs_block_workspace
         pushj   17,fs_backing_write
-        jumpn   1,d6fs_reader_commit_fail_saved
+        jumpn   1,d6fs_reader_commit_io_error_v1538
         move    1,012
         movei   2,fs_block_workspace
         pushj   17,bcache_store          ; refresh only after write-through
         setz    1,
         jrst    d6fs_reader_commit_done
+d6fs_reader_commit_io_error_v1538:
+        movei   1,6                     ; D6FS provider
+        move    2,1(010)                ; actual writing reader's mount ID
+        andi    2,077
+        pushj   17,kcore_root_fs_io_failure_v1538
 d6fs_reader_commit_fail_saved:
         seto    1,
 d6fs_reader_commit_done:
