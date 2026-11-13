@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1542, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1543, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -67,6 +67,12 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   counter 1, enabled 1 and octal 0320 owned blocks recorded.
   Four clean pre-error samples and nine corrupt-evidence
   mutations PASS. No new production source/RAM/ABI.
+- [x] **v1543 DRM236 physical D6FS-root outage:** complete
+  `ROOT=drum BOOT=drm` 256K KCC PDP-6 guest boots from
+  D6FS DR0..DR3. Detach all selected physical members, read
+  required root data, reach exact root HALT PC `003743`.
+  No production code/RAM changes; corresponding DSK270
+  disk-root v1540 already PASSes.
 
 ### Outstanding, strictly KCORE features
 
@@ -75,8 +81,9 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   I/O failure, not a speculative permanent-media-loss register bit.
   Physical TSFS all/one-root-member, D6FS disk-root, noncritical
   DTC3 and Type-236 owned BACKSTORE reason-2 HALT PASS through
-  v1542. Still qualify alternate DRM root, unrelated physical
-  DSK/DRM negative controls, and shared DEVICE/VOLUME faults;
+  v1543. Both DSK270 and DRM236 root positive physical tests
+  PASS. Still qualify unrelated physical DSK/DRM negative controls,
+  and shared DEVICE/VOLUME faults;
   source-linked native DSK270/DRM236 mapped coverage already PASS.
   Do not HALT for invalid requests, inactive/unowned probes,
   successful driver recovery or noncritical FS errors; never

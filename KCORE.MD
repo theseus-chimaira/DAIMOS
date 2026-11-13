@@ -1,3 +1,18 @@
+## 2026-11-13 v1543: actual D6FS DRM236 root-loss HALT accepted
+
+Full 256K PDP-6 KCC `ROOT=drum BOOT=drm` with four authentic
+Type-236 D6FS root members boots successfully. After a checked
+PID1 root checkpoint and physical detach of DR0..DR3, a required
+root `/SYSTEM/INIT` data read HALTs at exact v1515 root PC
+`003743` octal (BACKSTORE would be `003747`). No DAIMOS code,
+RAM or syscall changes were required. The matching Type-270
+disk-root physical test v1540 also PASSes.
+
+P0-A still needs secondary DSK270/DRM236 real failed-I/O negative
+controls and shared root/BACKSTORE DEVICE/VOLUME fault coverage.
+See `design/kcore-drm-root-outage-v1543.md`, VERSION 0.5,
+optimization/strict 32K HOLD.
+
 ## 2026-11-13 v1542: physical Type-236 BACKSTORE HALT accepted (P0-A)
 
 Full 256K PDP-6 KCC disk-root F07 guest PASSes a selected real

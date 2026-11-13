@@ -1,3 +1,17 @@
+## 2026-11-13 v1543: selected DRM236 D6FS root physical outage PASS
+
+Complete `ROOT=drum BOOT=drm` 256K KCC PDP-6 root boots from
+four real D6FS DR0..DR3 images. The guest's required uncached
+`/SYSTEM/INIT` data read after physically detaching all four
+selected drum members causes a root-specific HALT at octal
+`003743`; current linked fatal entry is `003740`. Root DRM236
+and v1540 root DSK270 both PASS. No production code or RAM growth.
+
+P0-A now needs real noncritical secondary DSK/DRM I/O negative
+and combined root/BACKSTORE DEVICE/VOLUME physical acceptance.
+See `design/kcore-drm-root-outage-v1543.md`. VERSION 0.5,
+32K size/optimization HOLD.
+
 ## 2026-11-13 v1542: physical BACKSTORE final I/O failure HALT PASS
 
 Actual full 256K KCC PDP-6 with real Type-236 PI2 error
