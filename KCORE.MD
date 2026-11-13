@@ -1,3 +1,23 @@
+## 2026-11-13 v1549: DTFS durable write-intent design and offline models
+
+P0-B source sweep confirms that DTVOL1 in native reserved physical
+RBN0 contains only a 72-bit identity, not a durable WRITE_UNCERTAIN
+record. v1531's owner-safe explicit discard and changed-media
+replacement cannot protect an old partly damaged stamped DECtape
+after the volatile mount table disappears on cold boot. A poison
+write *after* a physical partial-write error is not reliable.
+
+Proposed DTVOL2 uses the same reserved RBN0 and checked CLEAN vs
+WRITE_INTENT seal, with physical write-and-readback of intent BEFORE
+the first data/directory write, then owner-checked clean unmount.
+Old DTVOL1 and zero-ID media cannot be silently promoted because
+their previous write history is unknowable. 16 offline invariants,
+256 simulated partial-seal transitions and five real host `mkdtfs`
+image byte tests PASS. **No KCORE runtime/formatter changes yet**:
+P0-B remains OPEN; models are not physical PDP-6 acceptance.
+See `design/kcore-dtfs-durable-intent-v1549.md`.
+VERSION 0.5, strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1548: KCORE critical-device P0-A feature accepted
 
 The remaining shared ROOT-first/owned-swap physical test now PASSes.

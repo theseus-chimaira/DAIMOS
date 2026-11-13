@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1548, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1549 design, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -135,6 +135,17 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   Optional strengthening: full physical multi-process
   administrative owner scan (native and separate
   cross-process guests already accepted).
+  **v1549 design/model accepted, feature still OPEN:** use a
+  checked on-media DTVOL2 WRITE_INTENT seal before any data
+  WRITE, physically verify it, and clear only at owner-safe
+  checked unmount. Reject unknown/corrupt/dirty and historical
+  DTVOL1/legacy media rather than automatically claiming them
+  healthy. Sixteen protocol invariants, 256 partial seal prefixes,
+  five offline real mkdtfs-image byte checks PASS, but NONE are
+  production KCORE or full-guest Type-551 acceptance. Implement
+  formatter/provider/probe together and test real partial write,
+  cold boot, new replacement and retained process/PIPE/swap owners.
+  See `design/kcore-dtfs-durable-intent-v1549.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

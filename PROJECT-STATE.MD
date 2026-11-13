@@ -1,3 +1,27 @@
+## 2026-11-13 v1549: DTFS durable intent protocol model PASS, P0-B OPEN
+
+Current DTFS persistent RBN0 DTVOL1 stamp is solely a 72-bit
+identity; its valid directory and identical identity cannot prove
+that a discarded partial WRITE has not damaged data. The live
+WRITE_UNCERTAIN flag is volatile and disappears on cold boot.
+v1549 designs a conservative checked DTVOL2 write-intent RBN0
+seal, requiring physical dirty write/readback before data WRITE
+and a final owner-safe clean-unmount transition. Fail closed for
+old unstamped/DTVOL1 media until explicit salvage/reformat; no
+implicit legacy upgrade. Offline testkit protocol model PASSes 16
+invariants and 256 partial-seal prefix cases; real host `mkdtfs`
+image-format experiment PASSes five checks, including a partly
+changed RBN0145 and persistent dirty RBN0 on cold reopen.
+
+No production KCORE, native DTFS provider, host formatter or
+ABI change in this stage. **P0-B is not implemented or physically
+accepted yet.** Next integrate atomic-before-data intent with
+real Type-551 I/O and checked owner-safe unmount, then physical
+partial-write, reinsertion and cold-boot tests. P0-A complete;
+P1-C untouched. Details:
+`design/kcore-dtfs-durable-intent-v1549.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1548: P0-A KCORE critical-storage acceptance CLOSED
 
 Real 256K PDP-6 KCC `ROOT=drum BOOT=drm` shares D6FS ROOT and
