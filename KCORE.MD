@@ -1,3 +1,24 @@
+## 2026-11-13 v1551: raw DTFS DTVOL2 intent arm validated
+
+New standalone PDP-6 `dtfs_intent_arm_v1551.s` requires the
+previously admitted 72-bit ID, independent 128-word MM scratch
+and provider lease. It physically reads DTVOL2/CLEAN RBN0,
+verifies both ID halves, sets WRITE_INTENT with checked seal,
+invalidates clean BCACHE, issues direct raw RBN0 WRITE, clears
+scratch and physically rereads/validates DTVOL2/DIRTY. Only
+verified readback returns 0. Failed or uncertain marker WRITE
+and failed readback mark the mounted unit WRITE_UNCERTAIN; no
+pending user buffer or existing owner is released.
+
+Actual source-linked PDP-6 **14 cases and 8 unsafe source mutants
+PASS**, including torn marker, false controller success, bad high/
+low ID, cache-invalidate omission and write-error bypass.
+The helper is NOT yet linked into production DTFS MRES, and no
+mount/write/unmount behavior has been enabled: P0-B OPEN.
+No permanent fixed KCORE RAM/data growth. Details:
+`design/kcore-dtfs-intent-arm-v1551.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1550: native DTVOL2 validator and opt-in formatter
 
 The v1549 P0-B on-media protocol now has concrete source:

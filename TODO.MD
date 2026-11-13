@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1550, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1551, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -153,6 +153,15 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   the production provider; no real intent barrier, clean-unmount
   or physical cold-boot acceptance. **P0-B remains OPEN.**
   See `design/kcore-dtfs-intent-source-v1550.md`.
+  **v1551 native raw intent arm PASS:** independent DTC RBN0
+  scratch, correct DTVOL2/CLEAN and 72-bit identity admission,
+  physically checked WRITE_INTENT commit/readback, full BCACHE
+  invalidation and WRITE_UNCERTAIN on attempted write failure.
+  Actual source-linked PDP-6 14 cases and 8 source mutants PASS.
+  Deliberately UNLINKED from production provider: no MM-owned
+  scratch lease, mandatory first-data-write arm, clean-unmount
+  transaction, physical Type-551 or cold-boot acceptance yet.
+  **P0-B OPEN.** See `design/kcore-dtfs-intent-arm-v1551.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

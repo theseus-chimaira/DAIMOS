@@ -1,3 +1,27 @@
+## 2026-11-13 v1551: native physical-intent service PASS, P0-B OPEN
+
+Standalone `dtfs_intent_arm_v1551.s` now implements raw Type-551
+RBN0 DTVOL2/CLEAN admission by exact 72-bit ID, physical checked
+WRITE_INTENT header commit, clean BCACHE invalidation, scratch
+clear and independent raw RBN0 readback. No successful return is
+possible without a verified dirty on-media header. Failed header
+WRITE/readback sets the existing WRITE_UNCERTAIN media bit.
+The routine uses a caller-owned independent scratch buffer and
+preserves all pending data and mount/FILE/PIPE/swap owners.
+
+Source-linked actual PDP-6 CPU validation: 14 cases PASS, 8 unsafe
+mutations rejected. Physical IO completion is test-controlled,
+not yet a complete Type-551 full guest. v1550 native DTVOL2
+parser and experimental opt-in host formatter remain accepted.
+
+The arm helper is deliberately not linked into production DTFS
+MRES until MM scratch ownership, CLEAN mount admission,
+serialized first-write gating and exclusive owner-safe CLEAN
+unmount are implemented. Thus **P0-B remains OPEN**; no normal
+DTFS runtime functionality or permanent KCORE RAM changed.
+See `design/kcore-dtfs-intent-arm-v1551.md`. VERSION 0.5,
+strict 32K/optimization HOLD. P0-A complete; P1-C open.
+
 ## 2026-11-13 v1550: native DTVOL2 record and formatter opt-in PASS
 
 Added DTVOL2 six-word format header, actual PDP-6 validator
