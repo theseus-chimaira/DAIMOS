@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1547, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1548, 2026-11-13)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -106,25 +106,22 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   one error and nine corrupted-evidence controls PASS.
   Injected PI2 error branch, not natural physical disappearance.
 
+- [x] **P0-A CLOSED v1548, critical-storage fail-stop:** full
+  256K PDP-6 DRM236 guest with D6FS root and mapped BACKSTORE
+  sharing DR0..DR3. A real selected-root data cache miss while
+  BACKSTORE owns octal `0320` blocks receives an actual Type-236
+  PI2 driver error and HALTs at exact ROOT PC `003743`, not
+  BACKSTORE PC `003747`. Both arm-time and HALT-time owned
+  counts `0320` unchanged; one selected root arm, one PI2 error,
+  five clean pre-fault samples and 13 unsafe mutants rejected.
+  v1547 already proved the BACKSTORE-first shared order.
+  v1538-v1548 native and real full-guest P0-A matrix ACCEPTED.
+  Selected PI2 error injection is not natural physical removal.
+  No additional production code/RAM/ABI/media changes in v1548.
+  See `design/kcore-p0a-failstop-acceptance-v1548.md`.
+
 ### Outstanding, strictly KCORE features
 
-- [ ] **P0-A, remaining highest safety gate:** selected ROOT and
-  active/owned BACKSTORE services HALT after an exhausted required
-  I/O failure, not a speculative permanent-media-loss register bit.
-  Physical TSFS all/one-root-member, D6FS disk-root, noncritical
-  DTC3 and Type-236 owned BACKSTORE reason-2 HALT PASS through
-  v1543. Both DSK270 and DRM236 root positive physical tests
-  PASS. Source-linked v1544 and full-guest v1545 mounted secondary
-  DSK/DRM physical negative controls PASS. Still qualify
-  combined *full-guest physical ROOT-first* failure while
-  BACKSTORE holds live blocks. Shared v1547 physical
-  BACKSTORE-first fault and owner retention PASS. Native
-  v1546 proves both orders but does not replace ROOT-first
-  physical qualification;
-  source-linked native DSK270/DRM236 mapped coverage already PASS.
-  Do not HALT for invalid requests, inactive/unowned probes,
-  successful driver recovery or noncritical FS errors; never
-  reconstruct or falsely release critical owners.
 - [ ] **P0-B, media durability policy:** after a
   genuinely partial WRITE_UNCERTAIN non-root DTFS
   volume is explicitly discarded, prevent its later

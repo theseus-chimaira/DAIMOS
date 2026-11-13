@@ -1,3 +1,25 @@
+## 2026-11-13 v1548: P0-A KCORE critical-storage acceptance CLOSED
+
+Real 256K PDP-6 KCC `ROOT=drum BOOT=drm` shares D6FS ROOT and
+BLOCKSET-mapped BACKSTORE on DR0..DR3. A genuine root FILE data
+miss is armed only after a swapped owner exists; the selected
+Type-236 descriptor's actual PI2 error completion reaches v1538
+ROOT HALT `003743` (distinct from swap `003747`). BACKSTORE
+blocks used at arm and HALT both `0320` octal, with enabled=1;
+one root miss arm, one selected PI2 error, five clean pre-error
+samples and 13 unsafe evidence/source mutants PASS. Combined
+BACKSTORE-first physical fault v1547 already PASSed.
+
+The P0-A critical fail-stop requirements have complete native and
+stated full-guest physical acceptance through v1548, including
+root disk/drum/tape failures and noncritical mounted secondaries.
+Selected PI2 failure injection is not proof of natural physical
+drum disappearance. No production code, RAM, ABI or media change
+in v1548. **P0-A closed; next P0-B DTFS durable reinsertion**,
+then P1-C swap/MEMFS snapshot fault integration. Details in
+`design/kcore-p0a-failstop-acceptance-v1548.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1547: full physical shared DRM-root swap fail-stop
 
 The complete 256K KCC PDP-6 DR0..DR3 D6FS-root guest uses a

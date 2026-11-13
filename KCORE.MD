@@ -1,3 +1,26 @@
+## 2026-11-13 v1548: KCORE critical-device P0-A feature accepted
+
+The remaining shared ROOT-first/owned-swap physical test now PASSes.
+Full 256K KCC PDP-6 on DRM236 DR0..DR3 starts actual BACKSTORE
+owners, then attempts a real D6FS root data read after a cache miss.
+The test-only selected descriptor PI2 error goes through the real
+driver completion and v1538 root gate to v1515 **ROOT HALT PC
+`003743`**, not swap PC `003747`. Physical witnesses: one root
+miss arm, one Type-236 PI2 error, five clean pre-fault samples,
+and octal `0320` owned BACKSTORE blocks **both at root arm and
+after HALT**; mapped controller and D6FS selected-root words
+also match. Thirteen unsafe corrupt-source/evidence cases rejected.
+
+**P0-A COMPLETE** for the explicitly accepted critical-service
+fail-stop policy and physical/native matrix v1538..v1548. It is
+not proof of every naturally possible hardware failure: selected
+PI2 error injection differs from physical media removal. No new
+production instructions, resident RAM, syscall ABI or storage
+format. Next P0-B DTFS durable poisoned-media reinsertion; P1-C
+mixed snapshot/swap remains open. See
+`design/kcore-p0a-failstop-acceptance-v1548.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1547: shared physical DRM root and owned BACKSTORE
 
 Full 256K KCC PDP-6 boots `ROOT=drum BOOT=drm`, with selected
