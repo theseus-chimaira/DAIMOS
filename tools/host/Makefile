@@ -64,7 +64,9 @@ $(BUILD)/dta2dtr: dta2dtr.c | $(BUILD)
 $(BUILD)/mktsfs: mktsfs.c tsfs-format.c tsfs-format.h d6block-codec-v1452.c d6block-codec-v1452.h | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktsfs.c tsfs-format.c d6block-codec-v1452.c
 
-$(BUILD)/mkdtfs: mkdtfs.c tsfs-format.h | $(BUILD)
+$(BUILD)/mkdtfs: mkdtfs.c tsfs-format.h \
+	../../system/kernel/fs/dtfs_identity_v1520.h \
+	../../system/kernel/fs/dtfs_intent_v1550.h | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkdtfs.c
 
 $(BUILD)/tsfscheck: tsfscheck.c tsfs-format.c tsfs-format.h d6block-codec-v1452.c d6block-codec-v1452.h | $(BUILD)

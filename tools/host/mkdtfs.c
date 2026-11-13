@@ -5,12 +5,14 @@
  */
 #include "tsfs-format.h"
 #include "../../system/kernel/fs/dtfs_identity_v1520.h"
+#include "../../system/kernel/fs/dtfs_intent_v1550.h"
 
 #include <errno.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #define DTFS_DIRECTORY_BLOCK 0144U
@@ -99,17 +101,39 @@ main(int argc, char **argv)
     unsigned int i;
     uint64_t word;
     const char *path;
-    uint64_t volume_id[DTFS_ID_USED_WORDS_V1520];
+    uint64_t volume_id[DTFS_INTENT_USED_WORDS_V1550];
+    int durable_v1550;
+    unsigned int used_identity_words;
 
-    if (argc != 3 || argv[1][0] != '-' || argv[1][1] != 'o' ||
-        argv[1][2] != '\0') {
-        fprintf(stderr, "usage: mkdtfs -o new-native-dtfs-image\n");
+    durable_v1550 = (argc == 4 &&
+        strcmp(argv[1], "--durable-v1550") == 0);
+    if ((!durable_v1550 && argc != 3) ||
+        strcmp(argv[durable_v1550 ? 2 : 1], "-o") != 0) {
+        fprintf(stderr, "usage: mkdtfs [--durable-v1550] -o new-native-dtfs-image\n");
         return 2;
     }
-    path = argv[2];
+    path = argv[durable_v1550 ? 3 : 2];
     if (new_volume_id(volume_id) != 0) {
         fprintf(stderr, "mkdtfs: 72-bit volume identity unavailable\n");
         return 1;
+    }
+    used_identity_words = DTFS_ID_USED_WORDS_V1520;
+    if (durable_v1550) {
+        /* Explicit experimental image: current mounted provider must not
+         * be assumed to understand or protect this new record. */
+        volume_id[DTFS_ID_MAGIC_WORD_V1520] = DTFS_INTENT_MAGIC_V1550;
+        volume_id[DTFS_ID_CHECK_WORD_V1520] =
+            (~(volume_id[DTFS_ID_MAGIC_WORD_V1520] ^
+                volume_id[DTFS_ID_HIGH_WORD_V1520] ^
+                volume_id[DTFS_ID_LOW_WORD_V1520])) &
+                DTFS_ID_WORD_MASK_V1520;
+        volume_id[DTFS_INTENT_STATE_WORD_V1550] = 0;
+        volume_id[DTFS_INTENT_SEAL_WORD_V1550] =
+            (~(volume_id[DTFS_ID_MAGIC_WORD_V1520] ^
+                volume_id[DTFS_ID_HIGH_WORD_V1520] ^
+                volume_id[DTFS_ID_LOW_WORD_V1520] ^
+                DTFS_INTENT_SALT_V1550)) & DTFS_ID_WORD_MASK_V1520;
+        used_identity_words = DTFS_INTENT_USED_WORDS_V1550;
     }
     fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0600);
     if (fd < 0) {
@@ -120,7 +144,7 @@ main(int argc, char **argv)
         unsigned int position = i - DTFS_DIRECTORY_BLOCK * TSFS_BLOCK_WORDS;
 
         word = 0;
-        if (i < DTFS_ID_USED_WORDS_V1520)
+        if (i < used_identity_words)
             word = volume_id[i];
         else if (i == DTFS_DIRECTORY_BLOCK * TSFS_BLOCK_WORDS)
             word = (uint64_t)DTFS_OWNER_RESERVED << 31;
