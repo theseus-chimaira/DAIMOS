@@ -82,6 +82,10 @@
 #define SYS_DTFS_REPLACE_SLOT_V1531  2U
 
 #define SYS_FSINFO_PATH_WORDS      18U
+/* FSINFO AC2=-1 queries the boot-published mount-slot capacity.
+ * Return is a positive slot count or -1 if KINIT has not published one.
+ * The user result pointer is ignored; other slots retain the legacy ABI. */
+#define SYS_FSINFO_CAPACITY_SLOT   (~0U)
 
 struct sys_fsinfo {
         kword_t mount_id;

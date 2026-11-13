@@ -1295,12 +1295,17 @@ cmd_mounts(int argc, kword_t **argv, struct u_io *io)
 {
         struct sys_fsinfo info;
         unsigned int slot;
+        unsigned int capacity;
         int rc;
 
         (void)argv;
         if (argc != 1)
                 return cmd_err(io, "MOUNT", 0);
-        for (slot = 0U; slot < VFS_NMOUNT; ++slot) {
+        rc = dsys_fsinfo(SYS_FSINFO_CAPACITY_SLOT, 0);
+        if (rc <= 0)
+                return cmd_err(io, "MOUNT", 0);
+        capacity = (unsigned int)rc;
+        for (slot = 0U; slot < capacity; ++slot) {
                 rc = dsys_fsinfo(slot, &info);
                 if (rc < 0)
                         return cmd_err(io, "MOUNT", 0);
@@ -1327,15 +1332,20 @@ cmd_df(int argc, kword_t **argv, struct u_io *io)
         struct sys_fsinfo info;
         kword_t free_words;
         unsigned int slot;
+        unsigned int capacity;
         int rc;
 
         (void)argv;
         if (argc != 1)
                 return cmd_err(io, "DF", 0);
+        rc = dsys_fsinfo(SYS_FSINFO_CAPACITY_SLOT, 0);
+        if (rc <= 0)
+                return cmd_err(io, "DF", 0);
+        capacity = (unsigned int)rc;
         if (u_puts(io->out_fd, "FILESYSTEM MOUNT TOTAL USED FREE") != 0 ||
             u_crlf(io->out_fd) != 0)
                 return 1;
-        for (slot = 0U; slot < VFS_NMOUNT; ++slot) {
+        for (slot = 0U; slot < capacity; ++slot) {
                 rc = dsys_fsinfo(slot, &info);
                 if (rc < 0)
                         return cmd_err(io, "DF", 0);

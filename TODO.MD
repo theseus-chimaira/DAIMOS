@@ -1,3 +1,24 @@
+## 2026-11-13 v1532: dynamic FSINFO query and physical scan
+
+- [x] Preserve dynamic six-array KINIT mount slab and read-only
+  FSINFO AC2=-1 capacity query. Reject uninitialized capacity;
+  keep occupied=1/empty=0/error=-1 for ordinary slots.
+- [x] MOUNTS/DF iterate returned capacity, never fixed four,
+  and propagate provider errors. Source-linked PDP-6/native
+  ABI test and exact C consumer tests 1/4/8/17/26 PASS;
+  deliberate capacity-check mutation rejected.
+- [x] Rebuilt 256K PDP-6 real TSFS-root KCC guest accepts
+  7 boot-published slots, DTC3 physical mount/retirement,
+  root provider, empty slots 2..6 and bounds.
+- [ ] P1-D further physical acceptance: actual occupied
+  slot beyond four, distinct hardware inventories and
+  upper representational bound 26 (not implied by a
+  seven-slot TSFS-root test).
+- [ ] P0-A authoritative loss; P0-B durable old-media
+  admission; P1-C mixed provider faults; P1-E swapless
+  PURE/MM/APR; final full feature regression freeze.
+  VERSION 0.5; 32K/optimization HOLD.
+
 ## 2026-11-13 v1531: explicit poisoned-DTFS replacement accepted
 
 - [x] Implement root-only recovery UUO 077

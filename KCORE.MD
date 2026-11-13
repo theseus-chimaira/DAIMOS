@@ -1,3 +1,24 @@
+## 2026-11-13 v1532: runtime FSINFO capacity physical PASS
+
+Previously uncommitted v1492 FSINFO capacity syscall and MOUNTS/DF
+consumers now pass native PDP-6 tests: AC2=-1 queries the live
+KINIT-published `vfs_mount_limit` without mapping a user pointer;
+ordinary entries distinguish occupied, empty and invalid/provider
+error. Exact user command loops cover 1/4/8/17/26 slots and
+provider failures. The broken-capacity source mutation is rejected.
+
+Fresh 256K KCC PDP-6 TSFS-root physical guest PASS: KINIT publishes
+**7** slots from its actual root/DTC/MEMFS inventory; PID1 checks
+the TSFS root, mounts real DTC3 native DTFS, scans slots 0..6
+including empty holes 2..6, rejects out-of-range indices,
+then unmounts DTC3 and rechecks the stable capacity/root.
+`FSINFOCAP V1532 CAPACITY7`, `SCANNED7`, `RETIRED`, `PASS`.
+The physical test does not claim 26 actual mounted volumes or
+occupation beyond slot 4; those remain P1-D gates.
+
+Details: `design/kcore-fsinfo-runtime-capacity-v1532.md`.
+VERSION 0.5, strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1531: root-only poisoned-DTFS replacement PASS
 
 Full rebuilt 256K PDP-6 KCORE/DTFS/TSFS + real

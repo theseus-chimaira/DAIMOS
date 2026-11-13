@@ -747,11 +747,18 @@ native_sys_ttyctl_get:
         jrst    proc_tty_output_route_get
 
 ; FSINFO AC2=zero-based mount slot, AC3=user struct sys_fsinfo pointer.
-; Return 1 for an occupied slot, 0 for an empty slot, -1 on error.  Provider
+; AC2=-1 is a read-only mount-capacity query: return positive boot-published
+; slot count without touching AC3 or mapping user memory (0 is invalid).
+; Ordinary slots return 1 occupied, 0 empty, -1 error.  Provider
 ; accounting runs before translating the user pointer because DTFS/D6FS may
 ; sleep for media I/O and should not pin the caller's user mapping while doing
 ; so.  The existing vnode path walker then formats the active mount target.
 native_sys_fsinfo:
+        ; Dynamic KINIT mount arrays can exceed the historical four slots.
+        ; A distinct count query avoids treating the first out-of-range slot
+        ; as a provider failure, and preserves ordinary FSINFO error results.
+        camn    2,[-1]
+        jrst    native_sys_fsinfo_capacity_v1492
         ; Seven-word fixed frame:
         ;   user pointer, target vnode, mount id, provider, flags, total, used.
         ; Keeping the five public scalar fields contiguous permits one BLT
@@ -819,6 +826,11 @@ native_sys_fsinfo_empty:
         setz    1,
 native_sys_fsinfo_done:
         sub     17,kconst_7_7
+        popj    17,
+
+native_sys_fsinfo_capacity_v1492:
+        move    1,vfs_mount_limit
+        jumpe   1,kret_neg1
         popj    17,
 
 ; PID-1/root storage activation policy.  Discovery and module installation

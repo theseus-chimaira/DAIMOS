@@ -60,12 +60,10 @@ typedef kword_t vnode_t;
 #define VFS_NAME_WORDS       4U
 #define VFS_NAME_MAX_CHARS   (VFS_NAME_WORDS * 6U)
 
-/* Legacy enumeration limit for the MOUNT/DF command consumers and old tests.
- * It is NOT the live KCORE mount limit: KINIT allocates a six-array slab from
- * the verified device inventory and publishes vfs_mount_limit last.  New
- * KCORE code must use that runtime limit.  MOUNT/DF still stop after four
- * entries; a distinct runtime-capacity query/consumer fix is pending. */
-#define VFS_NMOUNT           4U
+/* KINIT allocates a runtime-sized six-array mount slab from the verified
+ * device inventory and publishes the count last.  FSINFO has a read-only
+ * capacity query; MOUNTS/DF now scan that count, not a fixed four slots.
+ * Do not reintroduce a compile-time enumeration limit. */
 extern kword_t vfs_mount_limit;
 #define VFS_ID_MASK          0777U
 #define VFS_OWNER_SHIFT      9U

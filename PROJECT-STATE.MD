@@ -1,3 +1,22 @@
+## 2026-11-13 v1532: real dynamic FSINFO inventory
+
+The v1492 source-linked FSINFO capacity syscall and MOUNTS/DF
+tests PASS for 1/4/8/17/26 slots, unavailable and provider-error
+cases, and reject the executed capacity-check mutant.
+Fresh rebuilt full KCC PDP-6 TSFS root physical test PASSes the
+actual boot-published **7** mount slots: native DTC3 mounting,
+occupied root/DTFS, empty upper slots, bounds, unmount and stable
+capacity and root. No mocked guest filesystem.
+
+P1-D runtime capacity ABI is accepted. Higher live mount IDs
+and cross-inventory (including actual 26) are not established by
+this seven-slot fixture and remain distinct acceptance tasks.
+P0-A authoritative lost critical-device classification; P0-B
+durable poisoned-media admission; P1-C mixed storage faults;
+P1-E swapless PURE/MM/APR remain open.
+VERSION 0.5, strict 32K/optimization HOLD.
+See `design/kcore-fsinfo-runtime-capacity-v1532.md`.
+
 ## 2026-11-13 v1531: owner-checked DTFS administrative replacement
 
 **PASS** full 256K KCC PDP-6 TSFS-root physical
