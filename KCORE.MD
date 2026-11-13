@@ -1,3 +1,37 @@
+## 2026-11-13 v1535: physical media gate CTY delivery repaired
+
+A newer v1527 DTC3 replacement/return physical rerun had stalled
+after a READY_* checkpoint without reporting an FSINFO error.
+The standalone test transport delivered `CONT` and `A\r`
+back-to-back on SIMH's monitor stdin; the console keyboard
+poll is a different input consumer. A v1535 guest witness
+confirmed a missing acknowledgement rather than a negative
+DTFS provider return. A trial with premature SIMH queued
+input also hung; `SHOW SEND` had drained while PID1
+was still blocked in READCHAR.
+
+The physical testkit now queues a simulated CTY keystroke
+with `SEND AFTER=200000,DELAY=20000,"A\r"` **before**
+`CONT`. Both delays are based on the actual simulator CTY
+10000-instruction/character hardware model, allowing the
+READY_* CR/LF to finish before attempting the guest read.
+No host sleeps, extra production kernel logic, retries,
+different media identity policy or relaxed checks.
+
+Full 256K PDP-6 v1527 original/different/returned physical
+media gate now PASSes on repeated independent runs, with
+the original held FILE and DTC4 isolation intact. v1528
+physical WRITE_UNCERTAIN, v1531 owner-checked administrative
+replacement, and v1534 mixed-provider failure all PASS with
+the same revised test transport. The v1529 actual partially
+written Type-551 block also PASSes with the test-only r5
+simulator: exactly one requested new 36-bit data word changed,
+the other remained old; sticky refusal after return confirmed.
+Only testkit code changed; KCORE and MRES words unchanged.
+
+Details: `design/kcore-physical-console-ack-v1535.md`.
+VERSION 0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1534: mixed TSFS/DTFS/MEMFS physical WRITE fault PASS
 
 Full 256K KCC PDP-6 KCORE/loaded MRES guest **PASS** with

@@ -1,3 +1,26 @@
+## 2026-11-13 v1535: physical-test console ACK synchronization
+
+The previously unexplained v1527 hot-swap physical stall
+was a test-harness console handoff race: `CONT` and raw
+`A\r` shared SIMH monitor stdin even though guest CTY
+keyboard polling is separate. Guest checkpoint witness
+and a subsequent `SHOW SEND`/idle-PC inspection showed
+that early input did not reach PID1 READCHAR as intended.
+The real simulator CTY output rate is one character per
+10000 instructions; the runner now uses simulated
+`SEND AFTER=200000,DELAY=20000,"A\r"` queued before CONT.
+
+The original full v1527 physical DTC3/DTC4 swap, identity
+and held-FILE rollback gates PASS in independent reruns;
+physical v1528 WRITE_UNCERTAIN, v1531 checked replacement
+and v1534 mixed-provider failure also PASS. The v1529
+test-only Type-551 simulator physically changed exactly
+one requested word in RBN0145, retained the other old
+word, and the returned tape remained WRITE_UNCERTAIN.
+This changes no KCORE, storage MRES or permanent RAM.
+See `design/kcore-physical-console-ack-v1535.md`.
+VERSION 0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1534: real mixed provider fault isolation
 
 Full 256K PDP-6 native KCORE/installed filesystem

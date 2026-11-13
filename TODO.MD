@@ -1,3 +1,31 @@
+## 2026-11-13 v1535: physical-test CTY ACK transport
+
+- [x] Diagnose v1527 READY_SWAP physical rerun stall:
+  distinguish host-console handoff from a real DTFS
+  controller/provider error. Guest ACK witness, CTY
+  source read and SIMH `SHOW SEND` identify premature
+  input before READCHAR; do not label timeout a
+  permanent critical-device loss.
+- [x] Replace back-to-back `CONT` plus raw monitor
+  `A\r` with queued SIMH console SEND before CONT,
+  delayed for 20 actual CTY output periods and spaced
+  for two periods per character. No wall-time sleep,
+  test-only kernel patch or physical assertion change.
+- [x] Repeated 256K PDP-6 v1527 original/different
+  physical return and v1528 sticky write-failure PASS.
+- [x] Repeat v1531 owner-checked administrative media
+  replacement and v1534 mixed-provider fault physical
+  guests with the queued console delivery. Both PASS
+  with unchanged KCORE/DTFS correctness assertions.
+- [x] v1529 test-only physical Type-551 interrupted
+  block WRITE: real RBN0145 contains one changed 36-bit
+  word and one unchanged old word; host media oracle
+  and PID1 sticky WRITE_UNCERTAIN PASS after same-media
+  return with the revised CTY transport.
+- [ ] Continue outstanding P0-A/B and P1-C/D/E
+  feature gates.
+  VERSION 0.5; 32K/optimization HOLD.
+
 ## 2026-11-13 v1534: mixed physical storage-provider fault
 
 - [x] Actual full PDP-6 256K KCORE with live
