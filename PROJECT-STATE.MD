@@ -1,3 +1,27 @@
+## 2026-11-13 v1536: persisted snapshot versus swap bitmap
+
+Full current-source 128K PDP-6 KCC disk-root physical v1477
+snapshot two-boot regression PASS: exact persisted MEMFS file
+data/XIP execution, both HALTs and identical AUXSTORE
+descriptor geometry. A source-linked host test compiles the
+unaltered `proc_swap_boot.c` KINIT reservation: nine v1/v2/
+invalid/offline header cases and four executed unsafe mutants
+PASS. The actual PDP-6 KCORE BACKSTORE allocator and
+complete-owner free routines separately PASS a 145-block
+five-word bitmap with reserved high-end 38-block snapshot
+and another old process owner; three unsafe assembly mutants
+are rejected. The first native fixture lacked invalid frees;
+it was strengthened to reject bypassing the owner check.
+No fixed KCORE, MRES, ABI or permanent RAM changes.
+
+Accepted: static persisted-snapshot reservation plus
+source-linked process BACKSTORE allocation/free isolation.
+Open: real concurrent swapped-process progress during
+MEMFS commit and shared LOGSTORE/device failure, P0-A/B,
+other P1-C/D/E and final feature freeze.
+See `design/kcore-snapshot-swap-reservation-v1536.md`.
+VERSION 0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1535: physical-test console ACK synchronization
 
 The previously unexplained v1527 hot-swap physical stall

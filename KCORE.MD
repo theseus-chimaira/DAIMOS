@@ -1,3 +1,30 @@
+## 2026-11-13 v1536: snapshot/swap BACKSTORE separation accepted (partial P1-C)
+
+The current-source 128K full KCC PDP-6 MEMFS PERSIST two-boot
+v1477 guest PASSes exact data/XIP cold restore, both orderly
+HALTs and unchanged AUXSTORE descriptor geometry.
+
+The *actual* KINIT `proc_swap_boot.c` reservation code is
+compiled with a host-only backing-header/MM adapter: nine
+v1/v2/invalid/offline reservation cases PASS, exact all-bit
+bitmap and accounting checks PASS, and four deliberately
+unsafe production-source mutants are rejected. Separate
+native PDP-6 tests directly execute the actual KCORE
+`backstore_alloc`, `backstore_verify_allocated_v795`
+and `backstore_free` instructions: a snapshot owns blocks
+107..144, an old process owns block 0, and process-owned
+allocations of 100 plus 6 blocks start at 1 and 101,
+never steal the snapshot. Invalid overlapping free,
+duplicate free, overlarge allocation and three unsafe
+assembly mutants are rejected. No production code/RAM
+changes. See `design/kcore-snapshot-swap-reservation-v1536.md`.
+
+This closes the static reservation/native ownership portion
+of P1-C, **not** one concurrent physical guest with actual
+swapped-process restoration during MEMFS snapshot commit
+and combined DTC/DSK/DRM I/O failure. That remains OPEN.
+VERSION 0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1535: physical media gate CTY delivery repaired
 
 A newer v1527 DTC3 replacement/return physical rerun had stalled

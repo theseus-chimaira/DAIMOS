@@ -1,3 +1,108 @@
+## CURRENT KCORE FEATURE TODO (authoritative after v1536, 2026-11-13)
+
+This block supersedes historical dated *status claims* lower
+in this file; retain those entries for acceptance evidence,
+not as an additional set of currently open tasks.
+KCORE **feature completion only**. No standalone MRES
+development, generic userland work, optimization or 32K
+shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+### Accepted, do not reimplement
+
+- [x] Root and secondary DTFS 72-bit physical identity
+  checks on error and return; non-root physical failed
+  WRITE and genuinely partial 36-bit WRITE remain
+  sticky WRITE_UNCERTAIN; owner-retaining CLOSE/UNMOUNT;
+  explicit root-only checked poisoned-slot/FD discard
+  and different-volume administrative replacement.
+  v1522-v1531, v1535 combined physical regressions PASS.
+- [x] Boot-inventoried MM-backed dynamic mount capacity:
+  FSINFO count query, occupied/empty/error distinction,
+  MOUNTS/DF consumers, real seven-slot PDP-6 and live
+  mount IDs 2..5 with holes/stable retire. v1492,
+  v1532/v1533 PASS; a physical 26-volume machine
+  was not demonstrated.
+- [x] Mixed live TSFS root, independent native DTC3/DTC4
+  DTFS and writable MEMFS under physical DTC3 failed
+  write and matching-media return. Original DTC3
+  quarantined; healthy files/read/write/retire PASS v1534.
+- [x] **v1536** committed-snapshot KINIT BACKSTORE bitmap
+  reservation: nine source-linked cases, four unsafe
+  mutants rejected; actual PDP-6 allocator/free guards
+  old process plus snapshot sector ownership, three
+  unsafe mutants rejected. Fresh 128K physical MEMFS
+  PERSIST cold two-boot data/XIP restore and untouched
+  AUXSTORE descriptor PASS. No new production code.
+- [x] SIMH physical guest CTY acknowledgments corrected
+  to instruction-delayed console SEND; strict v1527,
+  v1528, v1529, v1531 and v1534 regressions PASS v1535.
+
+### Outstanding, strictly KCORE features
+
+- [ ] **P0-A, highest safety gate:** authoritative
+  positive *permanent* device-loss evidence for active
+  TSFS root-set members and BACKSTORE physical provider.
+  Distinguish transient PI error, missing completion/PI6
+  timeout, illegal select, detached unrelated DTC and
+  actual sustained loss. Route **only confirmed** root/
+  BACKSTORE loss to v1515 distinct fail-safe HALT PCs.
+  Prove native negative controls and full physical
+  false-positive/confirmed-HALT tests. Do not reconstruct
+  missing critical owners or manufacture release.
+- [ ] **P0-B, media durability policy:** after a
+  genuinely partial WRITE_UNCERTAIN non-root DTFS
+  volume is explicitly discarded, prevent its later
+  physical reinsertion/reboot from being silently
+  admitted as a healthy filesystem just because its
+  RBN0 identity/directory still validate. Define
+  durable rejection/repair/reformat authorization
+  without inventing successful old-data recovery;
+  test old/same/replacement volumes across cold boot
+  and distinct owner/cwd/PIPE/swap lifetimes.
+  Optional strengthening: full physical multi-process
+  administrative owner scan (native and separate
+  cross-process guests already accepted).
+- [ ] **P1-C, combined storage faults:** one actual
+  full guest with concurrent process swap/restoration
+  plus MEMFS persistent snapshot commit, and independent
+  LOGSTORE work. Verify no overlapping BACKSTORE bitmap
+  sectors, MM descriptors, pinned owners or stale BCACHE.
+  Add in-flight DSK270/DRM236/DTC DEVICE vs mapped
+  VOLUME provider loss/return, shared Type-136 routing,
+  dirty/write-through failure and owner/PI retry
+  rollback. Use prior v1484/1485/1490/1511-v1514
+  gates, not duplicate storage layers. v1536 only
+  establishes reservation and native allocation
+  separately, NOT physical concurrency.
+- [ ] **P1-D, alternate hardware inventories:** extend
+  the real boot-inventoried mount table acceptance
+  beyond seven slots with different actual controller/
+  root configurations, empty/unpublished and provider
+  failure semantics. Check high mount IDs as hardware
+  allows. 26 is a *representation maximum*, not a
+  demand to invent 26 physical devices. Existing
+  1/4/8/17/26 native cases and live mount ID 5 PASS.
+- [ ] **P1-E, uncompressed swapless PURE:** integrate
+  staged inactive PURE omission into production
+  scheduler/VM/MM/APR. Retain immutable original
+  executable backing, own pinned writable suffix,
+  reconstruct all omitted PURE text within aligned
+  APR bounds before dispatch, and atomically roll
+  back on RUN/EXEC/WAIT/EXIT, OOM, provider unmount,
+  PI retry and insufficient memory. Native mutation
+  and repeated physical pressure/owner tests mandatory.
+  Ordinary physical disk/drum swap remains unchanged;
+  isolated +180 TEXT shared-DXR prototype is NOT
+  production. Optional mutable-only RAM compression
+  is conditional on successful uncompressed PURE and
+  measured whole-system peak RAM benefit.
+- [ ] **Final KCORE feature freeze:** full current-source,
+  matching-image PDP-6 native/physical matrix after
+  P0/P1 closure; report exact fixed KCORE/MRES/boot
+  state, failure/return, owners, PI and RAM footprint.
+  Do not start optimization or 32K placement until
+  feature completeness is demonstrated and authorized.
+
 ## 2026-11-13 v1535: physical-test CTY ACK transport
 
 - [x] Diagnose v1527 READY_SWAP physical rerun stall:
