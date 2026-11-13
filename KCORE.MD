@@ -1,3 +1,37 @@
+## 2026-11-13 v1534: mixed TSFS/DTFS/MEMFS physical WRITE fault PASS
+
+Full 256K KCC PDP-6 KCORE/loaded MRES guest **PASS** with
+simultaneous root TSFS, stamped writable DTC3 and DTC4
+native DTFS, and independently writable MEMFS.
+PID1 verifies exact two-word DTC4 and three-word MEMFS
+data before failure. It warms DTC3's directory **last**
+to ensure physically DETACHing DTC3 causes a real native
+metadata WRITE failure (not merely a preceding read error).
+
+While poisoned DTC3 refuses FSINFO/CLOSE/UNMOUNT,
+real TSFS root, DTC4 native file data, MEMFS RAM data
+and dynamic FSINFO count continue to pass. Physically
+reattaching the same DTC3 cannot clear WRITE_UNCERTAIN:
+FSINFO/STAT/CLOSE still refuse. A subsequent healthy
+DTC4 CHMOD performs a real successful metadata WRITE.
+Both healthy secondary mounts then retire normally;
+DTC3's original FILE/slot remain quarantined. Guest
+`MIXEDIO V1534 PASS` and host runner PASS.
+
+The first attempted mixed test suffered a *read* failure
+because its DTC4 precheck displaced shared directory
+cache; the final ordered experiment proves the desired
+failed WRITE. A stale native v1522 source extractor was
+updated for the v1531 replacement function and its
+original eight unsafe mutations again reject on PDP-6.
+No production KCORE/MRES or permanent RAM changes.
+
+**P1-C partial physical provider-isolation gate CLOSED**;
+mixed DSK/DRM/DTC mapper/backing, LOGSTORE snapshot
+plus swap concurrency and rollback remain OPEN.
+See `design/kcore-mixed-storage-physical-v1534.md`.
+VERSION 0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1533: physical mount ID 5 and stable holes PASS
 
 Real 256K PDP-6 KCORE/PID1 mounts four *distinct* native

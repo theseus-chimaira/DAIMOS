@@ -1,3 +1,30 @@
+## 2026-11-13 v1534: mixed physical storage-provider fault
+
+- [x] Actual full PDP-6 256K KCORE with live
+  TSFS root, DTC3 and DTC4 distinct 72-bit-ID
+  writable native DTFS and a writable MEMFS:
+  verify real healthy file contents and FSINFO.
+- [x] Warm DTC3 last, physically DETACH it
+  and force a real metadata WRITE failure.
+  Original DTC3 becomes WRITE_UNCERTAIN;
+  same-media return cannot repair or unpoison.
+  Healthy DTC4 native reads and fresh CHMOD
+  WRITE, MEMFS contents and TSFS root stay
+  available. Healthy mounts retire; poisoned
+  FILE and mount remain. PID1/host PASS.
+- [x] Restore stale v1522 native source-linked
+  extractor after v1531 added another physical
+  identity check. All eight executed unsafe
+  mutations reject without production edits.
+- [ ] P1-C other mixed hardware/device mapping,
+  DSK/DRM swap backing, concurrent persistent
+  LOGSTORE/MEMFS snapshot and multi-owner
+  rollback remain OPEN. P0-A critical loss,
+  P0-B durable poisoned-media admission,
+  P1-D broader inventory, P1-E swapless PURE
+  and final feature freeze unchanged.
+  VERSION 0.5, 32K/optimization HOLD.
+
 ## 2026-11-13 v1533: real high mount slot accepted
 
 - [x] Four separate, full 72-bit stamped native DTFS

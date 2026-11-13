@@ -1,3 +1,33 @@
+## 2026-11-13 v1534: real mixed provider fault isolation
+
+Full 256K PDP-6 native KCORE/installed filesystem
+providers: four concurrent mounts (TSFS root, separate
+stamped DTC3/DTC4 native DTFS, writable MEMFS).
+Real PID1 holds a DTC3 FILE and verifies exact healthy
+DTC4/MEMFS file data. After deliberately warming DTC3
+last, physically detaching only DTC3 forces a real
+metadata WRITE failure and sticky WRITE_UNCERTAIN.
+While that mount refuses FILE close and VFS unmount,
+DTC4/MEMFS contents and TSFS root remain good.
+Same stamped DTC3 return cannot clear the poison;
+independent DTC4 CHMOD still writes successfully.
+DTC4/MEMFS unmount normally; poisoned DTC3 retains
+owner and slot. `MIXEDIO V1534 PASS` physical guest.
+
+The original prewarming experiment only generated
+READ_SUSPECT and was corrected, not counted as a
+write-fault failure. Historical v1522 native source
+window was narrowed to exclude v1531's additional
+replacement validator; eight source mutants reject.
+No production KCORE/MRES/RAM growth.
+
+P1-C mixed TSFS/DTFS/MEMFS physical write-fault
+isolation accepted, **not** closure of DSK/DRM
+mapper/backing + LOGSTORE snapshot/process swap
+concurrency. P0-A/B and P1-E unchanged. Detail:
+`design/kcore-mixed-storage-physical-v1534.md`.
+VERSION 0.5, strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1533: real high-ID VFS mount inventory
 
 Actual full PDP-6 256K TSFS-root guest mounts independently
