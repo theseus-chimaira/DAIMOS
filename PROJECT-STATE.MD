@@ -1,3 +1,20 @@
+## 2026-11-13 v1533: real high-ID VFS mount inventory
+
+Actual full PDP-6 256K TSFS-root guest mounts independently
+stamped native DTFS volumes DTC3-DTC6, occupying mount IDs
+2..5. Full 72-bit media stamps are checked for distinctness
+before boot. FSINFO confirms five live mounts including root,
+stable high ID 5 after middle mount retirement, empty upper
+slots, complete cleanup, unchanged seven-slot capacity
+and working root. `FSINFOHI V1533 PASS`, host exit zero.
+The older v1532 seven-slot single-mount guest also PASSes
+on the revised physical harness. No production RAM growth.
+
+P1-D occupied mount beyond four accepted. Do not claim a
+live 26-volume machine. P0-A/P0-B/P1-C/P1-E and final
+cross-feature matrix remain OPEN. VERSION 0.5, 32K HOLD.
+Details: `design/kcore-fsinfo-high-physical-v1533.md`.
+
 ## 2026-11-13 v1532: real dynamic FSINFO inventory
 
 The v1492 source-linked FSINFO capacity syscall and MOUNTS/DF

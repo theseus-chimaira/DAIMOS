@@ -1,3 +1,19 @@
+## 2026-11-13 v1533: physical mount ID 5 and stable holes PASS
+
+Real 256K PDP-6 KCORE/PID1 mounts four *distinct* native
+72-bit-stamped physical DTFS volumes on DTC3-DTC6, obtaining
+public mount IDs 2, 3, 4, **5** in the KINIT seven-slot slab.
+FSINFO verifies every provider and pathname; two upper slots
+remain empty. Unmounting the middle ID 3 does not renumber
+or damage high ID 5. The other three mounts retire normally
+and all nonroot slots become empty. Physical guest PASS;
+v1532 FSINFO physical regression PASS on the same harness.
+No KCORE/MRES production code or RAM change.
+
+P1-D actual high slot accepted; physical 26-volume maximum
+is not implied. See `design/kcore-fsinfo-high-physical-v1533.md`.
+VERSION 0.5; 32K/optimization HOLD.
+
 ## 2026-11-13 v1532: runtime FSINFO capacity physical PASS
 
 Previously uncommitted v1492 FSINFO capacity syscall and MOUNTS/DF

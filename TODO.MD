@@ -1,3 +1,22 @@
+## 2026-11-13 v1533: real high mount slot accepted
+
+- [x] Four separate, full 72-bit stamped native DTFS
+  physical tapes on DTC3-DTC6 mounted together in
+  real 256K PDP-6 TSFS-root guest: IDs 2,3,4,5,
+  complete FSINFO path/provider and live inventory.
+- [x] Retiring middle mount ID 3 leaves high mount
+  ID 5 unchanged and readable by FSINFO; all remaining
+  secondary mounts cleanly retire. Root and capacity
+  stay stable. v1532 physical capacity regression PASS.
+- [ ] P1-D remaining: distinct hardware inventory
+  profiles and maximum representational capacity 26,
+  which is not physically available in the current
+  seven-slot DTC-root configuration.
+- [ ] P0-A critical authoritative loss; P0-B durable
+  discarded media admission; P1-C mixed faults;
+  P1-E swapless PURE/MM/APR and feature-only freeze.
+  VERSION 0.5; strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1532: dynamic FSINFO query and physical scan
 
 - [x] Preserve dynamic six-array KINIT mount slab and read-only
