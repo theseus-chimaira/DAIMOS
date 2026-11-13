@@ -241,7 +241,9 @@ tsfs_parent:
         push    17,010
         move    010,2
         pushj   17,tsfs_parent_common
-        jumpn   1,tsfs_parent_pop
+        ; The helper returns a parent VNODE, not a success status.
+        ; Every valid parent is nonzero: only a negative value means fail.
+        jumpl   1,tsfs_parent_pop
         movem   1,(010)
         setz    1,
 tsfs_parent_pop:
@@ -262,7 +264,9 @@ tsfs_parent_name:
         move    010,2                  ; parent result
         move    011,3                  ; name result
         pushj   17,tsfs_parent_common
-        jumpn   1,tsfs_parent_name_pop
+        ; A nonzero parent vnode is success, not an error code.
+        ; This also supplies getcwd/FSINFO through a TSFS mount target.
+        jumpl   1,tsfs_parent_name_pop
         movem   1,(010)
         movei   1,1(2)                 ; record NAME0 source
         move    2,011                   ; struct vfs_name *

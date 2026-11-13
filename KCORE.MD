@@ -1,3 +1,57 @@
+## 2026-11-13 v1525: actual physical mounted DTFS cwd/FILE acceptance
+
+**P0-B real 256K PDP-6 guest PASS**, using a DTC-selected
+TSFS root with the optional DTFS MRES genuinely LOADED.
+The real target PID1 process mounted a separately attached,
+host-stamped native DTC3 (both 36-bit volume-ID halves and
+checksum validated), then saw FSINFO provider 5
+at `/MOUNT/DT0`, checked STAT, entered that cwd and
+observed a refused busy-cwd UNMOUNT. After opening a real
+directory FILE on that mount and leaving cwd, UNMOUNT still
+refused because the FILE remained open. Closing the FILE
+permitted final UNMOUNT, and FSINFO correctly showed the
+mount slot empty. This is actual kernel, MRES, VFS,
+PDP-6 and Type-551/Type-136 physical I/O, not a mock
+or a STAT of an existing TSFS mountpoint. The disposable
+test root launches its compact actual KCC test executable
+as PID1 to avoid multiple long DTC0 root EXEC seeks.
+
+Two *real production correctness bugs* found and repaired:
+(1) native directory owner for RBN0144 lives at C dir[14],
+which is assembly octal `+016`, not old `+014`;
+(2) TSFS `tsfs_parent` and `tsfs_parent_name` must test
+negative helper return only: a successful parent vnode
+is **nonzero**. The latter bug had caused both FSINFO
+path reconstruction and GETCWD to fail across the
+mounted DTFS / TSFS boundary. Native source-linked
+v1519 mount-admission fixture now uses the correct index
+and rejects the original wrong-index mutant; new v1525
+TSFS parent source-linked test rejects both old `JUMPN`
+mutations. Existing v1522/v1523 boundaries remain.
+
+The old installed `mkdtfs` had been stale and emitted
+legacy zero identity. Current source rebuilt as
+`mkdtfs-v1525` from versioned `local.tar.gz`, installed
+in `PDP10_PREFIX`, now produces the full 72-bit stamp.
+The physical acceptance test verifies the entire
+stamped ID and C dir[14] owner *before* booting.
+Rebuilt full KCC image and optional DTFS/TSFS MRES
+PASS. Controlled optional MRES size unchanged:
+octal **003746 text, 000002 BSS**. **Zero new resident
+instructions and persistent data words.** VERSION 0.5;
+no optimization or strict 32K acceptance (HOLD).
+
+**Still OPEN:** P0-A authoritative permanent critical
+root/BACKSTORE/selected TSFS-member loss and qualified
+v1515 HALT; remaining P0-B real cross-process FILE/cwd
+ownership, read error/same-volume 72-bit reattach,
+different-volume rejection, sticky dirty/partial-write
+WRITE_UNCERTAIN administrative recovery; P1-C mixed
+storage faults, P1-D remaining dynamic FSINFO inventory
+validation, P1-E uncompressed swapless PURE/MM/APR
+integration and feature freeze. Complete evidence:
+`design/kcore-dtfs-physical-mount-v1525.md`.
+
 ## 2026-11-12 v1524: Type-551 physical RBN0 now works; P0-B guest still open
 
 The v1523 tape-root guest was able to boot and enter DSH, but

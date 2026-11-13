@@ -784,7 +784,10 @@ dtfs_mount_unit_media_ready:
         lsh     1,-037                  ; owner of physical block zero
         caie    1,036                   ; reserved
         jrst    dtfs_mount_unit_fail
-        move    1,fs_block_workspace+014
+        ; The native owner map stores physical RBN 0144 at dir[14]
+        ; (C decimal index 14 = PDP-6 assembly octal offset 016).
+        ; Octal +014 would inspect word 12 and reject a valid MKDTFS tape.
+        move    1,fs_block_workspace+016
         lsh     1,-025                  ; owner of physical block 0144
         andi    1,037
         caie    1,036                   ; directory is reserved

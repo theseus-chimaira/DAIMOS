@@ -1,3 +1,54 @@
+## 2026-11-13 v1525: real mounted native DTFS with cwd/FILE lifetime
+
+Actual PDP-6 256K DTC-root KCORE guest now PASSes
+physical secondary DTC3 mounted DTFS admission,
+full FSINFO provider 5 at `/MOUNT/DT0`, STAT,
+GETCWD, refused UNMOUNT with cwd owner, refused
+UNMOUNT with independently live FILE after cwd
+leaves, and final successful retirement after
+closing FILE; FSINFO slot becomes empty. The
+entire gate uses real production kernel syscalls,
+optional DTFS/TSFS MRES, MM mount tables, VFS and
+Type-551/Type-136 data transfers, with a short
+test-only KCC executable as PID1 to avoid excessive
+TSFS root EXEC seeks. KINIT reports `DTFS LOADED`.
+
+Found and fixed two actual assembler correctness bugs:
+`dtfs_mount_unit` accessed native directory C
+`dir[14]` as assembly octal `+014` instead of
+`+016`, causing real stamped media to fail mount;
+`tsfs_parent` and `tsfs_parent_name` treated
+nonzero successful parent vnodes as errors instead
+of checking for negative failures. The latter
+explained previously observed FSINFO/GETCWD
+failure after real mounting. Source-linked PDP-6
+v1519 updated and old-index mutation rejected;
+v1525 real TSFS parent decode with two negative
+mutants PASS. Physical guest confirms both fixes.
+
+Rebuilt the previously stale host `mkdtfs` from
+existing current source: versioned `mkdtfs-v1525`
+packaged as `local.tar.gz` and installed to
+`PDP10_PREFIX`, preserving the former old binary.
+Its native RBN0 contains real `DTVOL1` stamp,
+both nonzero 36-bit halves and checksum. The test
+explicitly rejects legacy zero RBN0 and wrong
+native owner position. Full isolated KCC tape-root
+image and DTFS MRES link PASS; optional MRES size
+remains octal `003746` text / `000002` BSS,
+zero additional resident words. VERSION remains
+0.5; 32K placement gate HOLD. Detail:
+`design/kcore-dtfs-physical-mount-v1525.md`.
+
+Still open: authoritative critical-device loss
+(P0-A); **cross-process** physically mounted
+FILE/cwd recovery, matched/replaced volume after
+error, and sticky WRITE_UNCERTAIN partial write
+administrative recovery (P0-B); mixed storage
+(P1-C), unfinished dynamic FSINFO physical matrix
+(P1-D), uncompressed swapless PURE/MM/APR (P1-E),
+feature freeze. No optimization yet.
+
 ## 2026-11-12 v1524: real DTC3 RBN0 simulator correction
 
 KCORE P0-B physical acceptance uncovered a Type-551 *simulator*

@@ -1,3 +1,52 @@
+## 2026-11-13 v1525: physically mounted DTFS feature state
+
+- [x] Repair actual native directory layout mismatch:
+  RBN0144 is reserved in `dir[14]` decimal, PDP-6
+  assembly `+016` octal, not old `+014`.
+  Source-linked v1519 fixture updated with an explicit
+  negative old-index mutation; native tests PASS.
+- [x] Repair TSFS parent return convention:
+  `tsfs_parent_common` returns a nonzero parent vnode
+  on success, negative on error. Both `tsfs_parent`
+  and `tsfs_parent_name` now use `JUMPL`, fixing
+  filesystem-boundary path reconstruction for FSINFO/
+  GETCWD. Native v1525 source-linked parent/name test
+  and two reverted-branch negative mutations PASS.
+- [x] Rebuild current host `mkdtfs` as `mkdtfs-v1525`,
+  install via versioned `local.tar.gz` under
+  `PDP10_PREFIX`, retaining previous stale/legacy
+  binary. Enforce correct nonzero 72-bit DTVOL1
+  stamp, checksum and native directory owner index
+  in full-guest test setup.
+- [x] Actual 256K KCC DTC-root guest: `DTFS LOADED`;
+  physical mounted native DTC3; FSINFO shows provider
+  5 `/MOUNT/DT0`; STAT/GETCWD succeed; busy-cwd
+  unmount refuses; open directory FILE alone also
+  prevents unmount after cwd leaves; closing FILE
+  permits unmount and FSINFO disappearance. The
+  short disposable test-only PID1 program avoids
+  unrelated long TSFS external EXEC loading.
+  Optional DTFS/TSFS MRES unchanged octal `003746`
+  text, `000002` BSS. Zero additional resident RAM.
+- [ ] **P0-B physical cross-process and return:** use
+  a second genuine process holding DTFS cwd/FILE;
+  verify no unmount while either owner lives,
+  actual DTC3 read error and 72-bit same-media
+  return/mismatched swap fail-closed, including
+  open FILE, FSINFO and SYNC behavior.
+- [ ] **P0-B dirty write:** partial DTC3 failure,
+  sticky WRITE_UNCERTAIN and explicit checked
+  administrative recovery without silent mount
+  replacement or stale vnode reuse.
+- [ ] **P0-A:** authoritative physical permanent
+  root/BACKSTORE/selected TSFS-member loss and
+  precisely qualified v1515 fatal HALT caller.
+- [ ] **P1:** remaining mixed-provider faults,
+  v1492 FSINFO dynamic inventory guest acceptance,
+  swapless PURE/MM/APR lifecycle, and final
+  feature-only freeze. No optimization or 32K
+  placement work yet (HOLD).
+
 ## 2026-11-12 v1524: current KCORE feature completion state
 
 - [x] Identify why physically formatted secondary DECtape
