@@ -1,3 +1,26 @@
+## 2026-11-13 v1537: guarded TSFS root-member terminal dispatch (partial P0-A)
+
+Optional TSFS provider now has the five-instruction
+`tsfs_confirmed_root_member_loss_v1537` entry. For an externally
+**authoritatively confirmed permanent** loss event, it checks the
+exact active physical TSFS root-set member mask through v1516;
+only a real member reaches fixed v1515's root HALT. Unrelated DTC
+units, a non-TSFS root and invalid root geometry return without
+HALT. Actual PDP-6 native eight-case source-linked tests and four
+unsafe source mutations PASS; v1515/v1516/v1517 regressions PASS.
+Full KCC fixed KCORE and optional DTFS/TSFS MRES links PASS.
+Controlled identical-object MRES relink: +5 TEXT words, zero BSS;
+fixed KCORE unchanged.
+
+**P0-A remains OPEN:** no original Type-551/Type-136, DSK270 or
+DRM236 driver yet provides authoritative permanent physical-loss
+evidence. The new trusted entry deliberately has no production
+caller. Generic PI, illegal select and watchdog errors remain
+recoverable and never imply confirmed loss. DSK/DRM/BACKSTORE
+critical owner routing and physical loss/negative acceptance are
+outstanding. See `design/kcore-critical-loss-dispatch-v1537.md`.
+VERSION 0.5; strict 32K and optimization HOLD.
+
 ## 2026-11-13 v1536: snapshot/swap BACKSTORE separation accepted (partial P1-C)
 
 The current-source 128K full KCC PDP-6 MEMFS PERSIST two-boot

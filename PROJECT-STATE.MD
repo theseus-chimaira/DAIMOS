@@ -1,3 +1,28 @@
+## 2026-11-13 v1537: guarded TSFS critical-owner terminal dispatch
+
+First P0-A integration stage: actual `tsfs_root_owns_dtc_unit_v1516`
+now guards the new `tsfs_confirmed_root_member_loss_v1537` internal
+TSFS entry. On an independently confirmed permanent loss of an
+active physical root member, it transfers to the fixed v1515
+root-specific no-return HALT. Nonmembers, a D6FS root and invalid
+mount/unit/mask cannot HALT. The entry is **not** a device-loss
+detector and intentionally has no production driver caller: Type-551
+illegal selection, Type-136 negative I/O, PI errors and timed-out
+requests do not prove permanent physical loss.
+
+Native source-linked PDP-6 tests: eight cases PASS; four executed
+unsafe source mutants rejected; original v1515/v1516/v1517 tests
+PASS. Full KCC KCORE link and DTFS/TSFS MRES link PASS. Controlled
+relink versus v1536 increases optional MRES TEXT by **5 words**,
+zero DATA/BSS and zero fixed KCORE growth. Source/test details in
+`design/kcore-critical-loss-dispatch-v1537.md` and daimos-testkit
+`tests/validation/daimos-tsfs-confirmed-loss-v1537.md`.
+
+P0-A remains OPEN: authoritative physical Type-551/DSK270/DRM236
+loss indication, fixed-root/BACKSTORE device-to-role attribution,
+actual full-guest positive/negative event and root/swap HALT PCs.
+VERSION 0.5; strict 32K and optimization HOLD.
+
 ## 2026-11-13 v1536: persisted snapshot versus swap bitmap
 
 Full current-source 128K PDP-6 KCC disk-root physical v1477

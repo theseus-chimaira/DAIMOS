@@ -107,6 +107,28 @@ tsfs_root_dtc_no_v1516:
 tsfs_root_dtc_bad_v1516:
         seto    1,
         popj    17,
+
+; Internal P0-A dispatch for a POSITIVELY CONFIRMED permanent loss of a
+; physical Type-551 root member. AC1=physical unit 0..7, not a logical
+; TSFS member ordinal. This entry MUST be called only after a separate,
+; hardware-compatible permanent-loss witness has been established by the
+; owning controller. A Type-551 illegal/select bit, Type-136 error, PI
+; failure, or elapsed watchdog is NOT such a witness (v1517/v1511/v1512).
+;
+; AC1=0 for an unrelated unit/root, -1 for invalid root state; neither
+; stops the machine. A verified member cannot return: the v1515 fixed
+; KCORE leaf disables PI and HALTs at its root-specific diagnostic PC.
+; No independent root-member map, error counter, or permanent data word.
+; There is deliberately no automatic driver caller until the source of
+; the physical confirmation is proven. This is not P0-A completion.
+        .globl  tsfs_confirmed_root_member_loss_v1537
+        .globl  kcore_critical_device_lost_v1515
+tsfs_confirmed_root_member_loss_v1537:
+        pushj   17,tsfs_root_owns_dtc_unit_v1516
+        caie    1,1
+        popj    17,
+        movei   1,1                     ; confirmed boot-root loss
+        jrst    kcore_critical_device_lost_v1515
         .globl  bcache_reclaim
         .globl  tsfs_file_record
         .globl  tsfs_node_record
