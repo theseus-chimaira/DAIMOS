@@ -422,6 +422,7 @@ dtfs_dtc_write_jump:
 ; by VFS unmount.  Root vnodes identify DTFS independently of media tags.
 ; No new state words, no guessed error-count threshold or lost-root HALT.
 ; Caller retains its original error on the stack; AC3..AC7 are scratch.
+        .globl  dtfs_mark_unit_suspect_v1522
         .globl  vfs_mount_root_base
         .globl  vfs_mount_limit
         .globl  dtfs_media_base
