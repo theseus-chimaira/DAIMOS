@@ -1,3 +1,38 @@
+## 2026-11-13 v1526: cross-process physical mounted DTFS gate
+
+The real PDP-6 KCORE tape-root guest now
+PASSes *cross-process* mounted DTFS lifetime
+checks: PID1 mounts a fully stamped DTC3,
+starts an independent RUN child, and uses
+two kernel pipes to synchronize child-only
+cwd ownership, child-only FILE ownership,
+and final release while the child remains
+alive and non-zombie (verified with PROCINFO).
+In both owner phases, UNMOUNT refuses and
+FSINFO continues to publish DTFS at
+`/MOUNT/DT0`; after release, UNMOUNT succeeds
+before child exit, FSINFO clears the slot
+and WAIT reaps the child cleanly. Both full
+guest runs PASS, including tightened PID
+and PROCINFO checks.
+
+The existing v1523 fixed KCORE owner guard
+required **zero** source changes, extra
+resident instructions or permanent memory.
+Optional DTFS/TSFS MRES remains v1525 octal
+`003746` text / `000002` BSS. VERSION 0.5;
+strict 32K gate HOLD. Test evidence:
+`design/kcore-dtfs-cross-process-v1526.md`.
+
+P0-B cross-process cwd/FILE ownership is
+accepted; physical read-error/72-bit
+same/different-media return and
+WRITE_UNCERTAIN partial-write cleanup remain
+OPEN. P0-A authoritative critical loss,
+P1 mixed storage, dynamic FSINFO physical
+inventory and swapless PURE remain open.
+This is feature completion, not optimization.
+
 ## 2026-11-13 v1525: real mounted native DTFS with cwd/FILE lifetime
 
 Actual PDP-6 256K DTC-root KCORE guest now PASSes

@@ -1,3 +1,33 @@
+## 2026-11-13 v1526: KCORE physical cross-process DTFS ownership
+
+- [x] Real PDP-6 DTC-root KCORE/PID1 mounts
+  stamped native DTC3, runs independent child
+  via RUN V2 and synchronizes with two actual
+  kernel pipes. The child alone owns cwd:
+  UNMOUNT refuses. The child then owns only
+  an open DTFS FILE after leaving cwd:
+  UNMOUNT again refuses. Both failures preserve
+  FSINFO provider 5. After child closes FILE,
+  verified non-zombie child remains alive while
+  unmount succeeds and FSINFO retires the slot.
+  Child then exits and WAIT reaps it. The full
+  physical test passes twice; v1523 kernel
+  owner guards needed no changes.
+- [ ] **P0-B next:** force an actual noncritical
+  DTC3 physical READ fault while an old DTFS
+  vnode/FILE remains live; verify fail-closed
+  FSINFO/read/SYNC, authenticated 72-bit
+  same-volume return, changed high/low ID
+  rejection, and preserved open ownership.
+- [ ] **P0-B:** sticky WRITE_UNCERTAIN after
+  true partial/failed DTC3 write, and explicit
+  administrator-checked recovery without
+  stale directory/FILE reuse.
+- [ ] **P0-A and P1:** unchanged remaining
+  authoritative critical-loss, mixed-provider
+  fault, FSINFO capacity and swapless PURE
+  work; strict 32K and optimization HOLD.
+
 ## 2026-11-13 v1525: physically mounted DTFS feature state
 
 - [x] Repair actual native directory layout mismatch:

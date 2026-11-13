@@ -1,3 +1,31 @@
+## 2026-11-13 v1526: physical multi-process DTFS owner acceptance
+
+Full real 256K PDP-6 DTC-root KCORE + installed
+DTFS/TSFS MRES guest **PASS**. PID1 mounts
+stamped DTC3 at `/MOUNT/DT0`, then RUNs an
+independent child with two actual kernel pipes.
+The child alone holds cwd on DTFS: PID1's UNMOUNT
+refuses, FSINFO keeps provider 5. The child
+leaves cwd but retains a real open FILE on DTFS:
+PID1's UNMOUNT again refuses. After the child
+closes FILE but remains alive, PID1 verifies
+its live non-zombie PROCINFO, successfully
+unmounts and verifies FSINFO slot empty.
+Child then exits and is reaped through WAIT.
+Two real guest runs PASS, including the stricter
+PID/PROCINFO verification; no mock VFS/driver.
+
+**P0-B cross-process cwd/FILE ownership is now
+physically accepted.** Source needed no
+additional KCORE or MRES change, zero extra
+resident RAM. Open P0-B: physical DTC3 read
+error, same/different 72-bit ID return, sticky
+write uncertainty and administrative recovery.
+P0-A permanent critical loss and P1 work remain.
+Detailed test evidence:
+`design/kcore-dtfs-cross-process-v1526.md`
+and daimos-testkit v1526 report.
+
 ## 2026-11-13 v1525: actual physical mounted DTFS cwd/FILE acceptance
 
 **P0-B real 256K PDP-6 guest PASS**, using a DTC-selected
