@@ -37,6 +37,25 @@ of WRITE_UNCERTAIN and preserved FILE/cwd
 ownership remains OPEN**. P0-A and
 P1-C/P1-D/P1-E unchanged.
 
+## 2026-11-13 v1530: eliminate shared physical guest media
+
+The v1529 actual partial-block test found
+concurrent guest jobs overwriting the same
+prebuilt KCC DTC3 file and boot do-file.
+All DTC0-DTC3 writable tape images and the
+headless SIMH script are now isolated per run;
+the KCC build and its media remain untouched.
+Host pre/postimage verification and simulated
+DETACH/ATTACH use that same private DTC3.
+
+Actual 256K PDP-6 v1529, v1528, v1527 and
+v1526 physical guests **all PASS** independently
+with this corrected fixture. No KCORE/MRES
+or simulator production change in v1530.
+P0-B checked administrative discard/repair
+remains OPEN; VERSION 0.5, 32K HOLD. Detail:
+`design/kcore-physical-test-media-isolation-v1530.md`.
+
 ## 2026-11-13 v1528: real failed DTFS write remains quarantined
 
 Booted full PDP-6 256K KCORE/DTFS/TSFS guest

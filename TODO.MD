@@ -32,6 +32,29 @@
   final feature regression freeze.
   Strict 32K / optimization HOLD.
 
+## 2026-11-13 v1530: independent physical guest media
+
+- [x] Fix overlapping v1525-v1529 physical
+  guests overwriting the same prebuilt KCC
+  DTC3 image and shared headless SIMH script.
+  Use private DTC0-DTC3 tapes and a private
+  boot do-file for every runner, including
+  the v1527 additional DTC4 and replacement
+  tapes. Do not alter the KCC build inputs.
+- [x] Revalidate the 256K PDP-6 physical
+  v1529 partial-write media oracle, v1528
+  failed-write quarantine, v1527 DTC3/DTC4
+  same/different-volume return and v1526
+  independent FILE/cwd ownership. All PASS.
+  No production code or RAM growth.
+- [ ] **Next P0-B:** explicit checked
+  WRITE_UNCERTAIN administrative repair/
+  discard and retained FILE/cwd/PIPE/swap
+  owner lifetime, without trusting only
+  RBN0's full media identity. P0-A/P1
+  outstanding feature gates unchanged;
+  32K and optimization HOLD.
+
 ## 2026-11-13 v1528: KCORE WRITE_UNCERTAIN physical containment
 
 - [x] Real booted 256K PDP-6 DTC-root KCORE

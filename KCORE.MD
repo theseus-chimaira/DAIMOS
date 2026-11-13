@@ -33,6 +33,27 @@ zero; MRES text octal 003747, BSS 000002.
 Details: `design/kcore-dtfs-partial-write-physical-v1529.md`.
 VERSION 0.5, strict 32K HOLD, no optimization.
 
+## 2026-11-13 v1530: independent physical-test media accepted
+
+The v1529 actual mixed-old/new physical DTFS block
+test exposed an unrelated fixture error: two test
+jobs sharing one prebuilt KCC image could overwrite
+the same DTC3 tape and SIMH do-file. The corrected
+runner now keeps **all** DTC0-DTC3 writable images,
+the optional DTC4 and replacement volumes, and the
+headless SIMH command file private to each run.
+No shared prebuilt boot image or DTC tape is modified.
+
+The physical v1529 partial-write/WRITE_UNCERTAIN,
+v1528 failed-write quarantine, v1527 cross-volume
+72-bit-ID return/DTC4 isolation and v1526 remote
+FILE/cwd ownership tests all PASS again using the
+isolated fixture. This is test-harness correctness,
+not a KCORE/MRES or on-media-format modification.
+P0-B checked administrative recovery remains OPEN;
+VERSION 0.5, zero RAM growth and strict 32K HOLD.
+Details: `design/kcore-physical-test-media-isolation-v1530.md`.
+
 ## 2026-11-13 v1528: physical failed-write quarantine accepted
 
 Real PDP-6 256K DTC-root KCORE/PID1 with unchanged
