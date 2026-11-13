@@ -1546,6 +1546,13 @@ dtfs_identity_revalidate_v1522:
         andi    1,7                     ; physical DTC selector
         setz    2,                      ; reserved native RBN0
         movei   3,fs_block_workspace
+        ; BCACHE slot 0 IS fs_block_workspace. A raw RBN0 read overwrites
+        ; that storage without going through bcache_fetch's tag tracking.
+        ; Invalidate the workspace tag first: otherwise a later TSFS
+        ; metadata lookup can hit a stale tag and interpret the freshly
+        ; read DTVOL1 record as a cached TSFS file record. Slot 1 remains
+        ; a valid independent clean copy; no global cache flush needed.
+        pushj   17,bcache_workspace_invalidate
         ; Raw DTC may clobber AC4..AC7. Save the MM slot across both
         ; physical I/O and full record parsing, then restore on success
         ; or failure; an unchecked AC6 could index a foreign mount.

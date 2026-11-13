@@ -1,3 +1,60 @@
+## 2026-11-13 v1527: physical mounted-media return physically accepted
+
+Full 256K KCC PDP-6 KCORE + installed DTFS
+MRES **PASS** for real secondary DTC3 detach,
+nonfatal physical read failure with old
+FILE/FSINFO fail-closed, independently
+mounted DTC4 isolation, different full
+72-bit DTVOL1 media replacement refusal,
+original media return authentication and
+successful reuse of the original live FILE.
+Both secondary mounts retire safely.
+The full corrected guest reaches
+`DTFSMEDIA V1527 RETURN_VERIFIED`,
+`PASS` with host exit code 0.
+Independent v1526 two-process cwd/FILE
+physical regression also PASSed on
+the rebuilt v1527 image.
+
+Root cause fixed in optional DTFS MRES:
+v1522 physical RBN0 revalidation bypassed
+BCACHE and wrote into its slot-0 backing
+`fs_block_workspace`, but retained the
+old clean workspace tag. Subsequent TSFS
+metadata requests could falsely reuse
+the new DTVOL1 bytes as a cached file
+record, breaking unrelated DTC4
+FSINFO/STAT. Live SIMH snapshots proved
+the DTC4 MM slot intact and unflagged
+and the filesystem provider lease free.
+Add the existing tag-only
+`bcache_workspace_invalidate` call before
+the raw physical read. The corrected
+v1522 native test now references the
+actual BCACHE state rather than shadow
+fixture variables and rejects an eighth
+executed stale-cache mutation.
+
+The full KCC build passes: optional
+DTFS/TSFS MRES text octal `003747`,
+BSS `000002`, delta **+1 optional
+instruction, +0 data**; no change
+to fixed KCORE text or resident data.
+VERSION 0.5, 32K HOLD; no optimization.
+Detailed source and physical test:
+`design/kcore-dtfs-physical-return-v1527.md`.
+
+**Remaining:** P0-B actual partial/failed
+physical WRITE and WRITE_UNCERTAIN
+administrative fail-atomic recovery;
+P0-A authoritative permanent critical
+root/BACKSTORE-loss classification;
+P1-C mixed-provider, P1-D capacity-aware
+FSINFO, P1-E swapless PURE/MM/APR,
+then feature freeze. Physical READ_SUSPECT
+and 72-bit original return are no longer
+open acceptance items.
+
 ## 2026-11-13 v1526: cross-process physical mounted DTFS gate
 
 The real PDP-6 KCORE tape-root guest now

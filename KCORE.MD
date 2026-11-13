@@ -1,3 +1,55 @@
+## 2026-11-13 v1527: physical DTC3 replacement/return and DTC4 isolation PASS
+
+**Actual 256K PDP-6 DTC-root KCORE** with the
+installed optional DTFS/TSFS MRES now PASSes
+physical native read-failure/volume-return tests:
+mount distinct stamped DTC3 and DTC4 volumes;
+retain a DTC3 FILE; physically DETACH only DTC3;
+refuse stale DTC3 FSINFO and FILE after real
+read failure while DTC4 stays available;
+ATTACH a different stamped DTC3 image and
+reject its full 72-bit identity without losing
+DTC4; DETACH replacement and ATTACH the
+original DTC3 image; verify exact RBN0 ID,
+restore the original still-open FILE, and
+unmount both cleanly. Real guest reports
+`RETURN_VERIFIED` and `PASS`; rerun of the
+v1526 cross-process physical gate also PASSes.
+
+**Assembler/BCACHE correctness bug fixed:**
+`dtfs_identity_revalidate_v1522` read physical
+RBN0 directly into `fs_block_workspace`
+without first invalidating BCACHE slot 0's
+workspace tag. That caused false TSFS metadata
+cache hits after a rejected DTC3 replacement,
+making unrelated DTC4 FSINFO/STAT fail even
+though the MM mount and provider lease were
+healthy. Add exactly one `PUSHJ` to the
+existing `bcache_workspace_invalidate` leaf
+before the raw RBN0 read. Keep the independent
+BCACHE slot 1; no global flush or workaround.
+
+The v1522 native fixture's duplicate BCACHE
+variables were corrected so the actual cache
+BSS/tag is now tested. The new executable
+stale-tag source mutation is rejected,
+alongside the old seven v1522 mutations.
+Full KCC image PASS; optional MRES text
+octal **003746 -> 003747** (+1 word),
+BSS unchanged **000002**; no fixed KCORE
+instruction or new persistent RAM words.
+VERSION remains 0.5; 32K HOLD, no optimization.
+Details: `design/kcore-dtfs-physical-return-v1527.md`.
+
+**OPEN:** P0-A authoritative permanent
+TSFS root/BACKSTORE loss evidence with
+qualified HALT; remaining P0-B actual
+partial physical write / WRITE_UNCERTAIN
+and checked administrative recovery;
+P1-C mixed-provider faults, P1-D dynamic
+FSINFO capacity, P1-E swapless PURE/MM/APR
+and final feature freeze.
+
 ## 2026-11-13 v1526: physical multi-process DTFS owner acceptance
 
 Full real 256K PDP-6 DTC-root KCORE + installed

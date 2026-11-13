@@ -1,3 +1,49 @@
+## 2026-11-13 v1527: verified physical DTFS read-fault return
+
+- [x] Fix false BCACHE slot-0 identity after
+  raw physical DTC3 RBN0 revalidation:
+  `dtfs_identity_revalidate_v1522` now calls
+  existing `bcache_workspace_invalidate`
+  **before** raw I/O into shared
+  `fs_block_workspace`. Do not discard
+  independent clean slot 1. Only +1
+  optional MRES instruction word, zero BSS
+  or fixed KCORE data/text growth.
+- [x] Correct v1522 source-linked fixture
+  to use actual BCACHE state labels instead
+  of duplicate test BSS. The real workspace
+  tag is seeded; the raw RBN0 replacement
+  must invalidate it and produce an actual
+  miss. All seven older source mutations
+  and the eighth stale-tag mutant rejected.
+- [x] Complete **real** 256K PDP-6 physical
+  DTC3/DTC4 media return: two independent
+  stamped DTFS mounts, DTC3 real DETACH
+  failure with old FILE/FSINFO refusal,
+  unchanged DTC4 access, replacement by
+  a different 72-bit stamped DTC3 and
+  strict old-volume rejection, DTC4
+  continued access, return of original
+  DTC3 with full 72-bit identity
+  revalidation, old FILE reuse and clean
+  retirement of both mounts. Full guest
+  `PASS`, v1526 cross-process regression
+  `PASS` on the corrected MRES image.
+- [ ] **P0-B next:** actual physical
+  partial/failed DTC3 **write**, sticky
+  WRITE_UNCERTAIN and an explicit checked
+  administrative recovery policy. A matching
+  volume ID must not silently clear
+  uncertain partial write state.
+- [ ] **P0-A:** authoritative physical
+  permanent TSFS-root/BACKSTORE loss,
+  precisely qualified v1515 HALT.
+- [ ] **P1:** outstanding mixed-provider
+  fault cases, v1492 dynamic FSINFO
+  physical inventory, swapless PURE/MM/APR
+  lifecycle and full feature regression
+  freeze. No 32K optimization yet (HOLD).
+
 ## 2026-11-13 v1526: KCORE physical cross-process DTFS ownership
 
 - [x] Real PDP-6 DTC-root KCORE/PID1 mounts
