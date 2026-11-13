@@ -1,3 +1,42 @@
+## 2026-11-13 v1529: physical mixed-old/new DTFS block accepted
+
+The real booted PDP-6 256K KCORE + DTFS MRES
+physical gate **PASS**. PID1 created a native
+DTC3 FILE on stamped 72-bit-ID tape and wrote
+two words. A compile-time test-only Type-551
+fault interrupted the second changed physical
+word in RBN0145; the production data path
+returned an error. Host DETACH flushed the
+genuine 36-bit DECtape image; a full 128-word
+pre/post comparison proved exactly ONE updated
+data word and the OTHER requested update still
+old, with no unrelated block changes.
+
+On matching-ID return of the actually damaged
+DTC3, FSINFO/STAT and repeated FILE CLOSE,
+normal UNMOUNT refused; root TSFS still
+accessible. Target `DTFSPART V1529 PASS`;
+host runner exit 0. Independent v1528
+one-word control, physical RBN0145 standalone
+read/write, native new-file resize, and
+v1527 hot-swap recovery regression PASS.
+
+Fault injection is optional SIMH test source,
+compiled with the full default SIMH platform
+flags. Earlier invalid builds missing flags,
+and concurrent tests sharing a mutable tape,
+were discarded. No production KCORE/MRES
+source, permanent RAM or media format change.
+Full reasoning in
+`design/kcore-dtfs-partial-write-physical-v1529.md`.
+VERSION 0.5, strict 32K HOLD.
+
+P0-B actual physical partial-write safety
+is CLOSED; **checked administrative recovery
+of WRITE_UNCERTAIN and preserved FILE/cwd
+ownership remains OPEN**. P0-A and
+P1-C/P1-D/P1-E unchanged.
+
 ## 2026-11-13 v1528: real failed DTFS write remains quarantined
 
 Booted full PDP-6 256K KCORE/DTFS/TSFS guest

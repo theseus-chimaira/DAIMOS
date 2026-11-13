@@ -1,3 +1,37 @@
+## 2026-11-13 v1529: genuinely partial physical DTFS write
+
+- [x] Native PDP-6 source-linked empty-file
+  one/two-word resize; independent physical
+  Type-551 read/write of DTC3 RBN0145.
+- [x] Compile-time simulator-only Type-551
+  fault targeting a specific unit/block after
+  one actual changed 36-bit word. Cover
+  forward/reverse transfers, preserve errors
+  across retries; use complete default SIMH
+  platform CC flags and versioned local.tar.gz.
+- [x] Full isolated 256K KCC PDP-6 root guest:
+  create/write native FILE, externally verify
+  RBN0145 seed, interrupt rewrite in mid-block,
+  compare all 128 flushed physical words,
+  require exactly one new value and one old,
+  then reattach matching damaged 72-bit tape.
+  Guest FSINFO, STAT, CLOSE, UNMOUNT refuse;
+  root TSFS remains healthy. Target and host
+  PASS; independent v1528 and v1527 physical
+  regressions PASS. No mock provider.
+- [ ] **P0-B remaining:** design and physically
+  accept a separately privileged, explicitly
+  checked administrative repair/discard path
+  for sticky WRITE_UNCERTAIN. Require complete
+  media validation/repair, and handle old
+  FILE/cwd owners before retiring mount IDs.
+  Never auto-clear on matching DTVOL1 alone.
+- [ ] P0-A root/BACKSTORE permanent-loss
+  classification; P1-C mixed faults, P1-D
+  FSINFO capacity, P1-E swapless PURE/MM/APR;
+  final feature regression freeze.
+  Strict 32K / optimization HOLD.
+
 ## 2026-11-13 v1528: KCORE WRITE_UNCERTAIN physical containment
 
 - [x] Real booted 256K PDP-6 DTC-root KCORE

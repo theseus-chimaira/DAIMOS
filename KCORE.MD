@@ -1,3 +1,38 @@
+## 2026-11-13 v1529: actual partially written physical DTC3 block PASS
+
+Full isolated 256K PDP-6 DTC-root guest, unchanged
+production v1527 KCORE + installed DTFS/TSFS MRES:
+new FILE allocated and seeded with two words on
+native DTC3 RBN0145. A versioned, compile-time
+test-only Type-551 fault interrupts the **second
+changed word** of a real replacement transfer.
+Host DETACH flushes the actual medium and verifies
+the complete physical 128-word block: exactly
+one requested word changed to its new value;
+the other remains old, header and unrelated
+words unaffected. No mocked provider or device
+callback. Guest reports WRITE_FAILED,
+STICKY_CONFIRMED and PASS.
+
+Even on return of the **same damaged** 72-bit-ID
+volume, FSINFO/STAT/CLOSE/UNMOUNT remain refused
+and original FILE ownership retained. Independent
+TSFS root continues serving. Simulator was built
+with full normal platform flags plus the opt-in
+v1529 diagnostic; prior bad-CC experimental
+builds were discarded. v1528 one-word guest
+control, independent RBN0145 physical read/write,
+native empty-file resize and v1527 different/same
+volume return regression PASSed.
+
+P0-B actual partial-write quarantine is now
+physically accepted; **explicit checked
+administrative repair/discard and owner retirement
+remain OPEN**. Production RAM and code delta
+zero; MRES text octal 003747, BSS 000002.
+Details: `design/kcore-dtfs-partial-write-physical-v1529.md`.
+VERSION 0.5, strict 32K HOLD, no optimization.
+
 ## 2026-11-13 v1528: physical failed-write quarantine accepted
 
 Real PDP-6 256K DTC-root KCORE/PID1 with unchanged
