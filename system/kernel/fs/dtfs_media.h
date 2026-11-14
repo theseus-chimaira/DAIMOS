@@ -55,5 +55,12 @@
  * They preserve the original UID/GID LH and unit/personality bits. */
 #define DTFS_MEDIA_RD_SUSPECT_V1522 0200000U
 #define DTFS_MEDIA_WR_UNCERT_V1522  0400000U
+/* v1553: provisional durable-mode transaction bits in spare media RH.
+ * DTVOL2 admission and exclusive final CLEAN/unmount are NOT yet enabled.
+ * Never set FORMAT_V2 on a DTVOL1 or all-zero legacy identity. A successful
+ * RBN0 write-ahead arm sets INTENT_ARMED only after verified readback and
+ * full MM scratch release under the exclusive provider lease. */
+#define DTFS_MEDIA_FORMAT_V2_V1553 0100000U
+#define DTFS_MEDIA_INTENT_ARMED_V1553 0040000U
 
 #endif
