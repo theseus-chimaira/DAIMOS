@@ -1,3 +1,22 @@
+## 2026-11-14 v1569: actual Type-551 partial V2 directory and cold boot PASS
+
+An isolated, source-matched full PDP-6 guest physically armed DTVOL2
+WRITE_INTENT on DTC3 after first refusing a production writable
+mount, then wrote native directory RBN0144. Two linked **test-only**
+VFS CREATE breakpoints allowed deterministic SIMH DETACH and
+`PARTIALWRITE=0144:1` at the second unchanged provider CREATE.
+Independent whole-tape byte comparison proved exactly one changed
+36-bit DIR word, no DATA/RBN0 mutation during the failed write,
+and retained on-media DIRTY. The mount remained poisoned; FSINFO,
+CHDIR and UNMOUNT refused without affecting TSFS root. Second
+fresh **unchanged production KCORE/MRES** boot rejected the exact
+damaged tape both RW and RO, and preserved complete SHA-256.
+No production code, fixed RAM or MRES growth, fixed low end
+`024364` octal. **P0-B OPEN:** removable reel-exchange/interlock
+contract and same/replacement reel return under actual RW; no
+production V2 RW cutover. VERSION 0.5, 32K optimization HOLD.
+`design/kcore-dtfs-partial-dir-v1569.md`.
+
 ## 2026-11-14 v1568: real partial V2 DATA and production cold boot PASS
 
 A source-matched isolated full 256K PDP-6 test image enabled only

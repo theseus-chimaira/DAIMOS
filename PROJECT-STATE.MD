@@ -1,3 +1,31 @@
+## 2026-11-14 v1569: physically interrupted V2 DIR + second cold boot PASS
+
+Full 256K PDP-6 KCC guest now proves a real **directory RBN0144**
+partial physical Type-551 failure. A disposable source-matched
+test image enables only exact DTC3/mount2 V2 RW after original
+72-bit identity publication and initial v1555 RW refusal; native
+v1551-v1554 DIRTY/MM physical first-write protection remains.
+Two linked test-only VFS CREATE breakpoints bracket the unchanged
+provider hardware operation. A genuine first CREATE wrote valid
+WRITE_INTENT and native RBN0144; independent whole-reel comparison
+proves only those blocks changed. `PARTIALWRITE=0144:1` then cut
+the second CREATE after one changed 36-bit directory word. The
+DIRTY RBN0 and every other tape word were untouched; VFS refused
+subsequent poisoned FSINFO/CHDIR/UNMOUNT, TSFS stayed healthy.
+
+The exact damaged tape cold-booted with entirely unmodified
+production KCORE/MRES; both RO/RW refused, mount remained absent,
+and complete SHA-256 was unchanged. v1567 actual CLEAN, v1568
+DATA and now v1569 DIR physical partial + cold-boot classes PASS.
+**P0-B remains OPEN:** Type-551 external reel-exchange and
+same/replacement media handling across live RW must have a
+defensible hardware or operating-policy guarantee; simply
+checking RBN0 cannot atomically interlock a physical reel.
+Production DTVOL2 stays READ-ONLY. Zero production code/RAM
+growth, KCORE low end `024364` octal. P0-A closed, P1-C/D/E
+unchanged, VERSION 0.5, 32K HOLD.
+`design/kcore-dtfs-partial-dir-v1569.md`.
+
 ## 2026-11-14 v1568: actual Type-551 V2 DATA partial and second cold boot PASS
 
 The real full 256K KCC PDP-6 guest physically wrote native V2

@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1568, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1569, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -359,6 +359,21 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   **P0-B OPEN:** partial V2 directory, reinsertion/replacement and
   operator-controlled reel exchange across RW remain unaccepted.
   Production V2 stays RO. `design/kcore-dtfs-partial-data-v1568.md`.
+  **v1569 physical V2 directory partial + second production cold
+  boot PASS:** exact DTC3/mount2 test-only RW after original V2
+  mount refusal, genuine physically armed DIRTY and initial native
+  RBN0144. Real Type-551 `PARTIALWRITE=0144:1` truncated second
+  CREATE after one changed 36-bit directory word; full-tape
+  comparison preserved exact RBN0 DIRTY, 72-bit ID and all other
+  blocks. Original mount remained poisoned with healthy TSFS root.
+  Separate unchanged production KCORE/MRES cold boot rejected the
+  exact damaged reel RW/RO with no public mount and full SHA
+  unchanged. Zero production RAM/code change. v1567 CLEAN, v1568
+  DATA and v1569 DIR interrupted physical transfer classes PASS.
+  **P0-B OPEN:** remaining mechanical/operator reel-exchange
+  guarantee, same/replacement volume return and authorization
+  across real RW. The production V2 read-only veto is mandatory.
+  `design/kcore-dtfs-partial-dir-v1569.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent
