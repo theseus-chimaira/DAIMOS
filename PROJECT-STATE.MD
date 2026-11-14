@@ -1,3 +1,23 @@
+## 2026-11-14 v1579: source-linked P1-C snapshot/allocator interleaving PASS
+
+A fresh native PDP-6 test runs the actual production MEMFS snapshot
+mount/shutdown and BACKSTORE allocator/free in one transaction, with
+controlled allocator calls during the invalid-header and metadata
+physical write callbacks. One original process block, 38 reserved
+snapshot blocks and two further 90/18-block process owners remain
+disjoint. Complete 512-sector bitmap, 147/39 allocated counts,
+write order, checked final commit header and process-only releases
+PASS. Three deliberately unsafe assembler source mutations execute
+and fail the exact native postflight. All injection, I/O stubs and
+test buffers are isolated to daimos-testkit. No production code/RAM,
+ABI, media or ownership model change; fixed low end remains
+`024364` octal. **P1-C remains OPEN**: this is controlled source-linked
+interleaving, not actual simultaneous physical swap and MEMFS HALT,
+nor a natural controller/PI/DEVICE/VOLUME failure. P1-D/E and final
+feature freeze also OPEN, P0-A and trusted-operator P0-B CLOSED;
+VERSION 0.5, 32K/optimization HOLD.
+`design/kcore-p1c-snapshot-interleave-v1579.md`.
+
 ## 2026-11-14 v1578: P1-C physical orphaned LOGSTORE recovery PASS
 
 The v1577 LOGSTORE torn sector is now **left unretried through HALT**.

@@ -1,3 +1,20 @@
+## 2026-11-14 v1579: P1-C native snapshot/swap bitmap interleaving
+
+The original PDP-6 `memfs_snapshot_mount`/`shutdown` and
+`backstore_alloc`/`free` now execute together in a versioned native
+test. A 512-sector BACKSTORE has one existing process owner and a
+38-sector committed MEMFS snapshot; controlled backing-I/O callbacks
+allocate two independent process runs (90 and 18 sectors) between
+invalid-header, metadata and final-header writes. All 512 bitmap
+bits, allocation totals (147 then 39), final commit geometry and
+owner-only releases PASS. Three executed unsafe source mutants
+(lost snapshot bits, skipped final commit, lost allocator owner check)
+fail at the explicit PDP-6 runtime oracle. No production source, RAM
+or ABI changed. This is **not** a full physical swap/snapshot HALT
+overlap: reads/writes are test-controlled and no user process swaps
+or PI completes. P1-C remains OPEN; P0-A/B remain CLOSED under their
+accepted contracts. `design/kcore-p1c-snapshot-interleave-v1579.md`.
+
 ## 2026-11-14 v1578: P1-C uncommitted LOGSTORE cold-boot recovery
 
 Full physical 128K KCC/PDP-6 on Type-236 drum: boot one physically

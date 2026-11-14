@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1578, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1579, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,18 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1579 source-linked snapshot/BACKSTORE interleaving:**
+  genuine native PDP-6 snapshot mount/shutdown and allocator/free run
+  together. Test-only physical I/O hooks allocate 90 and 18 process
+  blocks between invalid header, metadata and committed header;
+  original owner, 38-sector snapshot, every one of 512 bitmap bits,
+  147/39 live accounting and checked release PASS. Three executed
+  unsafe source mutations rejected. This is NOT independent real
+  process swap/PI activity or full physical snapshot HALT overlap.
+  **P1-C still OPEN** for combined physical concurrency and mapped
+  DEVICE/VOLUME/controller fault rollback. No code/RAM/ABI growth.
+  `design/kcore-p1c-snapshot-interleave-v1579.md`.
 
 - [x] **P1-C v1578 orphaned LOGSTORE record recovery:** two full
   128K physical PDP-6 boots, shared Type-236 AUXSTORE drum. Boot 1
