@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1553, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1554, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -182,6 +182,17 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   provider MM-scratch publication, mandatory write path, exclusive
   CLEAN-unmount and full-guest Type-551 cold boot remain open.
   See `design/kcore-dtfs-first-write-v1553.md`.
+  **v1554 physical already-armed revalidation PASS:** actual
+  native RBN0 DIRTY readback + both original ID halves before
+  further writes, strict WRITE_UNCERTAIN and cache invalidation
+  on missing/torn/changed records, and shared MM-pinned VERIFY
+  path. Native 17 physical-record cases/ten mutants, 23 mount
+  cases/eight mutants, real MM verify twice/four mutants PASS.
+  Existing v1552 and v1553 native suites remain PASS.
+  Still UNLINKED: mounted DTVOL2 admission, required write-path
+  gating, exclusive CLEAN-unmount and full physical Type-551
+  cold-boot/reinsertion/TOCTOU safety. P0-B remains OPEN.
+  See `design/kcore-dtfs-armed-revalidation-v1554.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

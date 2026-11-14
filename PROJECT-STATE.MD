@@ -1,3 +1,32 @@
+## 2026-11-14 v1554: DTVOL2 already-armed physical revalidation PASS
+
+Added read-only native `dtfs_intent_verify_v1554.s`: a freshly
+read real-controller RBN0 into pinned independent MM scratch must
+parse as DTVOL2/WRITE_INTENT with the original 72-bit volume ID.
+No physical/data write occurs in this verification. An absent,
+changed, CLEAN, torn or unreadable intent blocks further writes,
+invalidates BCACHE, and sets sticky WRITE_UNCERTAIN; no mere
+READ_SUSPECT revalidation can silently clear it. The v1552 MM
+wrapper shares one 128-word owner 015 pin/free implementation for
+ARM and VERIFY. v1553 already-armed mounts now call VERIFY and
+recheck both saved identity halves, mount media word and scratch
+owner after sleeping I/O.
+
+Native PDP-6 accepted: 17 actual host-media cases and ten source
+mutants for raw recheck; 23 authenticated mount-gate cases and
+eight source mutants; true MM-source allocation/pin/free twice,
+no-arena refusal and four mutants. Historical v1552 and v1553
+regression suites PASS. Raw controller I/O is still controlled
+by test oracles; no full physical Type-551 guest acceptance.
+
+**P0-B OPEN**: components remain unlinked from mounted provider;
+format mount admission, mandatory DATA/DIR gate, provider-retained
+scratch ownership, exclusive CLEAN-unmount, cold boot/reinsertion
+and residual physical tape-exchange race remain open.
+No fixed RAM, syscall ABI, default media-format or optimization
+change. `design/kcore-dtfs-armed-revalidation-v1554.md`.
+P0-A complete, P1-C separate; VERSION 0.5, strict 32K HOLD.
+
 ## 2026-11-14 v1553: authenticated DTFS first-write native gate PASS
 
 Added unlinked native PDP-6 `dtfs_intent_first_write_v1553.s`

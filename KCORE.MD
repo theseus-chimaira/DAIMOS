@@ -1,3 +1,29 @@
+## 2026-11-14 v1554: physical DTVOL2 DIRTY readback before further writes
+
+Added `dtfs_intent_verify_v1554.s`: always bypass BCACHE,
+physically read RBN0 into an independent pinned 0200-word
+scratch, validate the full v1550 DTVOL2/WRITE_INTENT seal and
+both originally admitted 36-bit ID halves. Any torn/changed/
+CLEAN/failed read refuses further writes, invalidates BCACHE
+and sets sticky WRITE_UNCERTAIN. The shared v1552 MM wrapper
+exports a VERIFY entry using the same pin/unpin/free lifetime;
+v1553 already-armed mounts call it, then recheck media, both
+saved ID halves and MM cleanup before authorizing DATA/DIR.
+
+Source-linked native PDP-6: 17 raw-media scenarios/ten mutants,
+23 mount-gate scenarios/eight mutants, and real MM verify leases
+twice/four mutants all PASS/rejected. Existing v1552 11/10 and
+v1553 18/13 native compatibility suites also PASS. Real physical
+Type-551 controller completions are still test-controlled.
+
+**Still UNLINKED from normal DTFS provider; P0-B OPEN.**
+Mandatory mount/write routing, exclusive CLEAN/unmount, real
+partial-media/reinsertion/cold-boot guest and remaining removable
+media time-of-check/time-of-use protection are not yet accepted.
+No fixed RAM, ABI or default format change. See
+`design/kcore-dtfs-armed-revalidation-v1554.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1553: native DTFS per-mount first-write gate accepted
 
 `dtfs_intent_first_write_v1553.s` now authenticates the published
