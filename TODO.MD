@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1564, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1565, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -301,6 +301,18 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   and readback, tape-generation/exchange, torn/partial RW and
   post-RW reinsertion/cold-boot acceptance.
   `design/kcore-dtfs-physical-v1564.md`.
+  **v1565 real scheduler crossover PASS:** two independently scheduled
+  physical PDP-6 guest processes, test-only 768-tick pause in a
+  disposable KCORE copy AFTER real V2 seal acquisition and BEFORE
+  original SYNC. Child observed the still-published seal via
+  FSINFO, then real OPEN/CHDIR both refused; parent retired; child
+  verified empty DTFS slot and valid underlying TSFS access.
+  Physical full-tape SHA-256 unchanged, no production source/RAM
+  change. **P0-B OPEN:** provider I/O interleavings with actual
+  Type-551 transfers, exclusive physical CLEAN write/readback,
+  removable unit-generation contract, partial data writes and
+  post-failure cold-boot/reinsertion proof. DTVOL2 stays RO.
+  `design/kcore-dtfs-owner-race-v1565.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

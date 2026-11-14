@@ -1,3 +1,19 @@
+## 2026-11-14 v1565: real PDP-6 scheduler owner race during V2 seal PASS
+
+Real full 256K KCC physical TSFS-root/DTC3 V2/CLEAN guest with
+two independently scheduled processes and real anonymous pipes.
+Testkit inserts a 768-tick scheduler delay ONLY into a disposable
+source-matched KCORE build after the actual v1562 owner barrier
+was published and before the original provider SYNC. PID2 observed
+the still-mounted but sealed slot via production FSINFO/DTFS SPACE
+refusal, then both real OPEN and CHDIR refused and cwd remained `/`.
+PID1 completed original SYNC and retirement; the child saw an empty
+DTFS slot and legitimate restored TSFS mountpoint access. Physical
+tape SHA-256 unchanged. No production KCORE/MRES source, ABI or RAM
+change. The test does not claim simultaneous physical controller
+I/O or a written CLEAN seal. **P0-B OPEN**, DTVOL2 READ-ONLY,
+32K HOLD. See `design/kcore-dtfs-owner-race-v1565.md`.
+
 ## 2026-11-14 v1564: real physical DTVOL2/CLEAN and WRITE_INTENT guests PASS
 
 Full 256K KCC PDP-6 TSFS-root guest physically mounted a native

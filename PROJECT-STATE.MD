@@ -1,3 +1,39 @@
+## 2026-11-14 v1565: real independent scheduler V2 seal/owner crossover PASS
+
+The actual full 256K KCC PDP-6 guest mounted independently stamped
+physical Type-551 DTC3 DTVOL2/CLEAN read-only and spawned PID2.
+The testkit extended the interval between *real* production VFS
+quiesce acquisition and original provider SYNC with a 768-tick
+`proc_sleep_ticks` in an **isolated compiled KCORE copy only**;
+the exported injection point was verified in the linked KCORE map.
+No production kernel/MRES, FILE or provider gate code was changed.
+
+PID2 witnessed the actual still-published but quiescent V2 slot via
+provider FSINFO refusal, then confirmed `OPEN` and `CHDIR` both
+failed and its cwd remained `/`. PID1 finished real SYNC, owner/MM
+checks and retirement. Afterward PID2 checked an empty DTFS mount
+slot and successfully accessed the original TSFS mountpoint
+directory, whose visibility must legitimately return. PID1
+reaped it successfully; full physical tape SHA-256 unchanged.
+
+Post-v1565 native regression reruns PASS: v1562 quiescence 41 cases/
+seven rejected mutations; v1562 complete unmount 12/three;
+v1563 PURE owner scans 26/six; linked KCC attach/VFS gate 11/two.
+
+The first attempt exposed an invalid test expectation that the
+underlying TSFS directory would remain inaccessible after unmount.
+After fixing that fixture assumption, all stages PASS. This is a
+deterministic real scheduler overlap, not a synthetic provider
+callback; the provider itself was not forced to sleep in I/O.
+
+**P0-B OPEN:** simultaneous physical Type-551 operations, exclusive
+DIRTY-to-CLEAN physical write/readback, stable media generation,
+partial failure/reinsertion/cold boot after RW remain unproven.
+v1555 V2 READ-ONLY remains mandatory; no production code/RAM growth,
+VERSION 0.5; strict 32K/optimization HOLD.
+See `design/kcore-dtfs-owner-race-v1565.md` and testkit
+`tests/validation/daimos-dtfs-v2-race-v1565.md`.
+
 ## 2026-11-14 v1564: two full physical DTVOL2 PDP-6 cold boots PASS
 
 The actual 256K KCC TSFS-root PDP-6 kernel and linked native DTFS
