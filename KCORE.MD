@@ -1,3 +1,22 @@
+## 2026-11-14 v1563: SIDL/EXEC PURE executable owner gap closed
+
+Production `proc_swap_attach()` now checks the real DTFS V2 owner
+admission barrier before recording a loaded executable. The native
+`proc_swap_mount_busy()` and `proc_swap_backing_busy()` scan in-flight
+SIDL owners even before stable u-area publication, using the existing
+SIDL scheduler RH high-mount-ID extension. After a u-area is attached,
+staged EXEC keeps that same bit until SRUN, and `proc_swap_detach()`
+clears it on failure. No new owner table or fixed data word.
+
+Source-linked actual KCC attach + real VFS gate: 11 native cases, two
+mutants PASS; native PURE vnode/mount scanners: 26 cases, six mutants
+PASS. C89 host attach, v960/v961, v1382, v1523/v1562, and FIFO
+mount/rollback regressions PASS. Complete KCC image PASS; +34 fixed
+TEXT words vs v1562. **P0-B remains OPEN:** real scheduler crossover,
+physical CLEAN and Type-551 failure/cold-boot acceptance are pending;
+v1555 V2 read-only veto is still active. VERSION 0.5; 32K HOLD.
+`design/kcore-dtfs-pure-owner-v1563.md`.
+
 ## 2026-11-14 v1562: DTFS final-unmount owner-admission barrier
 
 Production fixed VFS now acquires a transient V2 per-mount quiescence bit

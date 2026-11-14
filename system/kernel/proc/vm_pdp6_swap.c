@@ -71,7 +71,10 @@ proc_swap_detach(int slot)
         if (PROC_HAS_UAREA(p)) {
                 PROC_SWAP_BACKING_WORD(p) = 0UL;
                 PROC_CRED_WORD(p) &= ~PROC_SWAP_MOUNT_EXT_BIT;
-        } else if (PROC_STATE(p) == PROC_SIDL)
+        }
+        /* A staged EXEC may already have its u-area: either way clear
+         * the temporary SIDL-only mount bit when backing is detached. */
+        if (PROC_STATE(p) == PROC_SIDL)
                 p->sched &= ~PROC_SWAP_STAGE_MOUNT_EXT_BIT;
         return 0;
 }

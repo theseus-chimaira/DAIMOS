@@ -1,3 +1,33 @@
+## 2026-11-14 v1563: staged PURE owner exclusion for DTFS PASS
+
+While VFS v1562 protects FILE/cwd, a sleeping RUN/EXEC could still
+publish executable PURE backing without checking DTFS quiescence;
+the old process-swap mount scanner ignored a SIDL process lacking a
+stable u-area. v1563 fixes both sides: C executable backing attach
+checks the non-sleeping production VFS admission leaf before changing
+records or mount-bit state; native PURE vnode/mount scanners now see
+staged SIDL records and its scheduler RH fifth mount-bit before or
+after u-area MM allocation. The attach and detach paths synchronize
+the staging bit when SIDL already has a u-area. SRUN and swapped
+backing, normal PIPE creation/inheritance and other FS providers
+retain their prior ABI/ownership behaviour.
+
+Native 11 KCC C attach/VFS gate cases with two mutations, 26 real
+PDP-6 PURE scanners with six mutations, C89 host attachment,
+v960/v961, v1382, v1523/v1562 unmount, FIFO v19/v417 and v1084
+native regressions PASS. KCC full 256K KCORE/DTFS image PASS.
+The fixed KCORE low end grows **34 TEXT words** from v1562, with
+no additional persistent RAM word or process/mount record.
+
+**P0-B remains OPEN**: real scheduler/interleaving proof across
+FILE/PIPE/EXEC/provider, physical DIRTY-to-CLEAN marker/readback,
+Type-551 media-exchange safety and partial-write/reinsertion/cold boot.
+DTVOL2 remains READ-ONLY. P0-A done, P1-C/D/E unchanged; VERSION 0.5.
+Documentation `design/kcore-dtfs-pure-owner-v1563.md`; testkit native
+`daimos-dtfs-pure-native-v1563.sh`,
+`daimos-dtfs-pure-staging-v1563.sh`, plus host attach fixture.
+Strict 32K and general optimization remain on HOLD.
+
 ## 2026-11-14 v1562: native V2 DTFS unmount quiescence barrier PASS
 
 The optional DTFS v1561 first-write gateway remains under v1555's

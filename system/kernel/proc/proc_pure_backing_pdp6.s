@@ -175,6 +175,24 @@ proc_swap_backing_busy_loop:
         lsh     13,1
         add     13,11
         add     13,proc_table
+        ; v1563: SIDL RUN may be asleep with a published PURE backing
+        ; but no stable u-area, or with a newly attached zeroed u-area
+        ; whose credential slot bit has not yet been copied. In both
+        ; cases its SIDL scheduler RH is the authoritative extension.
+        hlrz    2,2(13)
+        andi    2,0700000
+        caie    2,0100000              ; PROC_SIDL
+        jrst    proc_swap_backing_stable_v1563
+        hrrz    3,2(13)
+        andi    3,1
+        came    3,14
+        jrst    proc_swap_backing_busy_next
+        skipn   1,proc_swap_records
+        jrst    proc_swap_backing_is_busy
+        add     1,11
+        move    1,(1)
+        jrst    proc_swap_backing_record_v962
+proc_swap_backing_stable_v1563:
         move    1,(13)
         trnn    1,0400000              ; SIDL may hold an entry PC, not u-area
         jrst    proc_swap_backing_busy_next
@@ -236,6 +254,24 @@ proc_swap_mount_busy_loop:
         lsh     2,1
         add     2,11
         add     2,proc_table
+        ; v1563: RUN can publish an executable PURE record before the
+        ; child's stable u-area exists, then sleep during MM allocation
+        ; and startup. The staged fifth mount bit remains in SIDL sched
+        ; RH even after its u-area is published and until SRUN. Examine
+        ; SIDL FIRST: neither PROC_F_UAREA nor credential word 066 can
+        ; be trusted to classify this in-flight executable owner.
+        hlrz    3,2(2)
+        andi    3,0700000              ; three-bit process state
+        caie    3,0100000              ; PROC_SIDL
+        jrst    proc_swap_mount_stable_v1563
+        skipn   1,proc_swap_records
+        jrst    proc_swap_mount_is_busy  ; absent owner table: fail closed
+        add     1,11
+        move    1,(1)                  ; staged resident PURE backing
+        hrrz    4,2(2)
+        andi    4,1                     ; SIDL RH fifth mount-slot bit
+        jrst    proc_swap_mount_record_v961
+proc_swap_mount_stable_v1563:
         move    1,(2)
         trnn    1,0400000
         jrst    proc_swap_mount_busy_next

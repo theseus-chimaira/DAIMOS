@@ -45,6 +45,15 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
                 text_words = 0UL;
         if (text_words > PROC_SWAP_TEXT_MASK)
                 return -1;
+        /* v1563: an executable can finish loading after the DTFS
+         * unmount preflight. Publish no new PURE dependency (or staged
+         * RUN executable) once its mount begins quiescing. No sleep
+         * occurs between this admission check and the swap-record
+         * publication below. Existing owners are found by the matching
+         * SIDL/resident/swapped scan in proc_swap_mount_busy. */
+        if (provider == DTFS_PROVIDER &&
+            vfs_dtfs_owner_admit_v1562(backing) != 0)
+                return -1;
         packed = VFS_INDEX(backing);
         packed |= (kword_t)((mount - 1U) & PROC_SWAP_MOUNT_MASK)
             << PROC_SWAP_MOUNT_SHIFT;
@@ -59,13 +68,14 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
                 else
                         PROC_CRED_WORD(&proc_table[slot]) &=
                             ~PROC_SWAP_MOUNT_EXT_BIT;
-        } else {
-                /* RUN loads the executable before allocating the child's
-                 * u-area. SIDL's unused RH link bit is its one-bit staging
-                 * register until credentials are copied and RUN publishes
-                 * the final SRUN descriptor. No added resident word. */
-                if (PROC_STATE(&proc_table[slot]) != PROC_SIDL)
-                        return -1;
+        } else if (PROC_STATE(&proc_table[slot]) != PROC_SIDL)
+                return -1;
+        /* v1563: even a SIDL with an already attached u-area can be in
+         * the middle of EXEC. The owner scan must use one authoritative
+         * staging bit in both RUN and EXEC, rather than reading a newly
+         * allocated or not-yet-copied credential word. SRUN never uses
+         * this temporary RH bit; it is its runnable-queue link. */
+        if (PROC_STATE(&proc_table[slot]) == PROC_SIDL) {
                 proc_table[slot].sched =
                     (proc_table[slot].sched &
                     ~PROC_SWAP_STAGE_MOUNT_EXT_BIT) |

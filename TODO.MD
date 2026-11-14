@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1562, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1563, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -276,6 +276,19 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   scheduler race proof, physical owner-safe CLEAN write/readback,
   media-generation safety and Type-551 cold-boot fault acceptance.
   `design/kcore-dtfs-quiesce-v1562.md`.
+  **v1563 PURE SIDL/EXEC mount ownership PASS:** before publishing
+  any DTFS executable backing, C attach now checks v1562 admission.
+  VFS process swap/PURE owner scans now see SIDL RUN/EXEC staging
+  with or without its u-area, including public mount IDs 17..26.
+  Temporary SIDL slot-extension bits are synchronized and detached;
+  resident and swapped SRUN behaviour is unchanged. 11 linked KCC
+  attachment cases/2 mutants, 26 native backing/mount cases/6
+  mutants, legacy host and native regressions, full KCC image PASS.
+  +34 KCORE TEXT words, zero persistent RAM words. FIFO creation
+  remains tied to existing FILE/PIPE owner records; cross-process
+  scheduler proof is still pending. **P0-B OPEN:** physical CLEAN,
+  generation and Type-551 fault/cold boot all remain mandatory.
+  `design/kcore-dtfs-pure-owner-v1563.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

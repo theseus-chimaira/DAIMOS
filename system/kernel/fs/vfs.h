@@ -65,6 +65,10 @@ typedef kword_t vnode_t;
  * capacity query; MOUNTS/DF now scan that count, not a fixed four slots.
  * Do not reintroduce a compile-time enumeration limit. */
 extern kword_t vfs_mount_limit;
+/* Verify publication of a DTFS vnode owner against the live mount and
+ * its transient exclusive-unmount barrier. Other provider vnodes pass.
+ * This is a non-sleeping KCORE check immediately before publication. */
+int vfs_dtfs_owner_admit_v1562(vnode_t node);
 #define VFS_ID_MASK          0777U
 #define VFS_OWNER_SHIFT      9U
 #define VFS_OWNER_PACK(uid, gid) \
