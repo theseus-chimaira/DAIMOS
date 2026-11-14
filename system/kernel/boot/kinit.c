@@ -559,7 +559,9 @@ kinit_enter(void)
                 kinit_halt();
         /* MINIT already stores the initial D6FS reader in the active-reader
          * word. Transfer that pointer into the slab before selecting it;
-         * retaining a second fixed reader-slot array is unnecessary. */
+         * retaining a second fixed reader-slot array is unnecessary.
+         * v1560: reader is the existing provider-private auxiliary slot;
+         * DTFS uses it to retain an MM scratch owner only on DTFS mounts. */
         ((kword_t *)(unsigned long)vfs_slab.reader)[0] =
             d6fs_active_reader;
         d6fs_reader_slots_base = vfs_slab.reader;

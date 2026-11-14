@@ -455,6 +455,7 @@ fs_provider_wait_event_v917:
 ; Active D6FS dispatch pointer only.  Reader state itself is dynamic/mount-owned.
 d6fs_active_reader:  .block 1
         .globl  d6fs_reader_slots_base
+        .globl  vfs_mount_aux_base_v1560
         .globl  dtfs_media_base
         .globl  tsfs_file_shape_base
         .globl  tsfs_extent_media_base
@@ -462,7 +463,15 @@ d6fs_active_reader:  .block 1
 ; KINIT publishes the MM slab reader table before the first root mount.
 ; Until then the boot reader is held by d6fs_active_reader; there is no
 ; mounted VFS volume and the slot table must not be indexed.
+; v1560: this is one provider-private owner word per published VFS slot,
+; allocated already by the six-array MM-backed mount slab. D6FS stores its
+; exact reader extent here; DTFS may store its exact retained 0200-word
+; RBN0 intent scratch extent here. A published mount has ONE provider,
+; never both. Reuse the SAME pointer word, not a second KCORE allocation.
+; Unmount/discard must refuse an outstanding DTFS scratch owner; it must
+; never be overwritten by another provider or lost on slot retirement.
 d6fs_reader_slots_base:
+vfs_mount_aux_base_v1560:
         .word   0
 ; All three mount-indexed tape tables are initially inaccessible. MINIT
 ; prepares only the shared directory cache, not mount metadata. KINIT

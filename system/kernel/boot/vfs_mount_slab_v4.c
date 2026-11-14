@@ -5,7 +5,9 @@
 /* Allocate a kernel-owned slab only after all MRES packages are installed.
  * MM keeps the non-movable KERNEL_DYNAMIC extent registered for its entire
  * lifetime; the transient descriptor is no longer needed after KINIT has
- * published the absolute table bases into KCORE. */
+ * published the absolute table bases into KCORE. Since v1560, reader is a
+ * provider-disjoint auxiliary mount word shared by D6FS reader ownership
+ * and future DTFS retained intent scratch; capacity is unchanged. */
 #define VFS_MOUNT_SLAB_V4_OWNER 020U
 
 int

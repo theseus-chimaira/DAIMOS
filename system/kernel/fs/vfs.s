@@ -919,6 +919,19 @@ vfs_mount_find_free:
         popj    17,
 
 vfs_mount_found:
+        ; v1560: a previously refused MM cleanup must not lose its exact
+        ; retained DTFS scratch base when this public slot is recycled.
+        ; The existing shared auxiliary slab stores D6FS reader ownership
+        ; on D6FS slots and DTFS intent scratch on DTFS slots; no new RAM.
+        caie    2,5                     ; DTFS_PROVIDER
+        jrst    vfs_mount_aux_checked_v1560
+        push    17,1                    ; preserve target vnode
+        move    1,7                     ; exact zero-based selected slot
+        pushj   17,vfs_dtfs_aux_empty_v1560
+        move    6,1                     ; preserve status across pop
+        pop     17,1
+        jumpn   6,kret_neg1
+vfs_mount_aux_checked_v1560:
         ; root = provider:6 | mount/kind:12 | index:18.
         move    5,2
         lsh     5,036
@@ -1070,6 +1083,18 @@ vfs_unmount_after_prepare:
         movei   1,1(2)
         pushj   17,vfs_unmount_owner_check_v1523
         jumpn   1,vfs_unmount_fail
+        ; No sleeping provider step follows the final owner check. DTFS
+        ; cannot retire while an exact MM scratch extent remains pinned or
+        ; owned following a refused physical intent transaction. D6FS uses
+        ; this same provider-private slot for its reader and is unaffected.
+        move    3,-1(17)               ; saved mounted root
+        ldb     3,[POINT 6,3,5]
+        caie    3,5                     ; DTFS only
+        jrst    vfs_unmount_aux_done_v1560
+        move    1,(17)                  ; saved zero-based slot
+        pushj   17,vfs_dtfs_aux_empty_v1560
+        jumpn   1,vfs_unmount_fail
+vfs_unmount_aux_done_v1560:
         move    2,(17)
         move    1,-1(17)
         came    1,vfs_namespace_root
@@ -1122,6 +1147,25 @@ vfs_unmount_owner_check_v1523:
 vfs_unmount_owner_return_v1523:
         pop     17,010
         popj    17,
+
+; v1560: exact provider-private MM ownership barrier for DTFS. D6FS
+; shares the physically same one-word-per-slot slab for reader extents,
+; but calls this helper ONLY for DTFS mounts. AC1 is zero-based mount
+; slot. Return 0 if its retained intent MM base is zero; -1 otherwise,
+; including missing slab or invalid slot. AC2..AC5 and AC7 preserved;
+; AC6 scratch. Never free, clear, transfer, or guess an MM owner here.
+        .globl  vfs_mount_aux_base_v1560
+        .globl  vfs_dtfs_aux_empty_v1560
+vfs_dtfs_aux_empty_v1560:
+        jumpl   1,kret_neg1
+        caml    1,vfs_mount_limit
+        jrst    kret_neg1
+        skipn   6,vfs_mount_aux_base_v1560
+        jrst    kret_neg1
+        add     6,1
+        skipn   (6)
+        jrst    kret_zero
+        jrst    kret_neg1
 
 ; Validate a zero-based, currently published non-root DTFS mount slot
 ; that has definitively entered sticky WRITE_UNCERTAIN. Never use this
@@ -1190,6 +1234,12 @@ vfs_dtfs_discard_slot_v1531:
         movei   1,1(010)
         pushj   17,vfs_unmount_owner_check_v1523
         jumpn   1,vfs_dtfs_discard_bad_v1531
+        ; A retained/pinned scratch extent also blocks initiating the
+        ; replacement's raw physical I/O: otherwise its old DMA owner
+        ; could still be unresolved on the same Type-551 unit.
+        move    1,010
+        pushj   17,vfs_dtfs_aux_empty_v1560
+        jumpn   1,vfs_dtfs_discard_bad_v1531
         move    1,010                   ; zero-based slot to authenticate
         movei   6,026                   ; private DTFS VERIFY_REPLACE
         movei   7,5
@@ -1200,6 +1250,12 @@ vfs_dtfs_discard_slot_v1531:
         jumpn   1,vfs_dtfs_discard_bad_v1531
         movei   1,1(010)
         pushj   17,vfs_unmount_owner_check_v1523
+        jumpn   1,vfs_dtfs_discard_bad_v1531
+        ; A sticky WRITE_UNCERTAIN volume may still own the pinned MM
+        ; scratch allocation which exposed its partial marker failure.
+        ; Never discard that mount and erase the only owner reference.
+        move    1,010
+        pushj   17,vfs_dtfs_aux_empty_v1560
         jumpn   1,vfs_dtfs_discard_bad_v1531
         movei   1,1(010)
         pushj   17,file_unlock_mount

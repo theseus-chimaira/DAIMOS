@@ -10,7 +10,8 @@ struct vfs_mount_slab_v4 {
         kword_t base;
         kword_t target;
         kword_t root;
-        kword_t reader;
+        kword_t reader;  /* v1560: shared provider-private auxiliary slot;
+                          * D6FS owns its reader, DTFS its intent scratch */
         kword_t media;
         kword_t shape;
         kword_t extent;
