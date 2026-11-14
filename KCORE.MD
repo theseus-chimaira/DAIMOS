@@ -1,3 +1,24 @@
+## 2026-11-14 v1570: checked physical DTVOL2 replacement PASS
+
+Real production DTFS MRES now accepts a DIFFERENT, fully CLEAN
+DTVOL2 replacement for a poisoned V2 mount through the existing
+privileged v1531 owner-checked discard, preserving the original
+V1-to-V1 replacement rules. The native PDP-6 30-case/eight-mutant
+suite, old v1558 20/six and real physical v1531 V1 regression PASS.
+In an isolated test-only RW guest, a genuine partial Type-551 V2
+DATA write left the old tape DIRTY. FILE/cwd ownership and the
+old reel's 72-bit identity blocked discard; explicit owner release
+and a different physically present V2/CLEAN allowed slot retirement.
+The new reel mounted RO and refused CREATE; both whole-tape digests
+remained unchanged. Two further unmodified production cold boots
+rejected the old DIRTY reel and mounted the new CLEAN reel RO.
+**P0-B OPEN:** real Type-551 hardware still lacks an atomic
+reel-retention/exchange interlock during WRITE. No production V2 RW
+cutover. Zero permanent KCORE RAM/lowcore TEXT/slab growth; small
+optional DTFS MRES TEXT only, low end `024364` octal.
+VERSION 0.5, P0-A CLOSED, P1-C/D/E unchanged, 32K HOLD.
+`design/kcore-dtfs-v2-replacement-v1570.md`.
+
 ## 2026-11-14 v1569: actual Type-551 partial V2 directory and cold boot PASS
 
 An isolated, source-matched full PDP-6 guest physically armed DTVOL2

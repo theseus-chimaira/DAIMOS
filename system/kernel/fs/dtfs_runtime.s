@@ -173,21 +173,44 @@ dtfs_verify_replacement_v1531:
         came    1,[0167572]
         jrst    dtfs_replace_bad_v1531
 
-        ; Verify a complete nonlegacy DTVOL1 identity physically.
-        ; Independently discard all previous directory/header words.
-        ; Replacement requires a nonempty V1 stamp; all-one sentinels
-        ; also expose any successful but incomplete raw read.
+        ; v1570: accept a DIFFERENT valid, physically CLEAN DTVOL2
+        ; replacement for a poisoned V2 mount. Never downgrade a V2
+        ; mount to V1 or upgrade a poisoned V1 through this path:
+        ; the published media FORMAT_V2 bit is the trusted origin.
+        ; The normal V1 replacement path remains byte-for-byte the
+        ; original v1531 admission rule. Both use independent physical
+        ; raw RBN0 and native directory checks (no cache reuse).
+        ; Replacing the old reel does NOT repair or reauthorize it.
         pushj   17,dtfs_workspace_poison_v1558
         move    1,011
         setz    2,                      ; reserved stamped physical RBN0
         movei   3,fs_block_workspace
         pushj   17,dtfs_dtc_read_jump
         jumpn   1,dtfs_replace_bad_v1531
+        move    4,fs_block_workspace
+        came    4,[0446466575422]      ; exact DTVOL2 header
+        jrst    dtfs_replace_v1_v1570
+        move    3,dtfs_media_base
+        add     3,010
+        move    4,(3)
+        trnn    4,0100000              ; old mount must also be V2
+        jrst    dtfs_replace_bad_v1531
+        movei   1,fs_block_workspace
+        pushj   17,dtfs_intent_validate_v1550
+        jumpn   1,dtfs_replace_bad_v1531 ; DIRTY and corrupt forbidden
+        jrst    dtfs_replace_identity_v1570
+dtfs_replace_v1_v1570:
+        move    3,dtfs_media_base
+        add     3,010
+        move    4,(3)
+        trne    4,0100000              ; no V2 -> V1 downgrade
+        jrst    dtfs_replace_bad_v1531
         pushj   17,dtfs_identity_validate_v1522
         jumpn   1,dtfs_replace_bad_v1531
         move    4,fs_block_workspace
         came    4,[0446466575421]      ; reject all-zero legacy RBN0
         jrst    dtfs_replace_bad_v1531
+dtfs_replace_identity_v1570:
         move    3,tsfs_file_shape_base
         add     3,010
         move    4,(3)

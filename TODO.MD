@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1569, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1570, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -374,6 +374,25 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   guarantee, same/replacement volume return and authorization
   across real RW. The production V2 read-only veto is mandatory.
   `design/kcore-dtfs-partial-dir-v1569.md`.
+  **v1570 poisoned V2 physical reinsertion/replacement PASS:**
+  production private verifier requires different physical CLEAN V2
+  with full salted RBN0 and structural native directory; original
+  v1531 V1-to-V1 contract and owner/MM barriers unchanged.
+  30 source-linked PDP-6 cases/eight rejected source mutations;
+  previous v1558 20/six and actual v1531 physical V1 regression
+  PASS. Disposable exact DTC3/mount2 test wrote genuine DIRTY and
+  encountered real one-word partial Type-551 DATA failure. Explicit
+  FD/cwd release could not retire reinserted SAME old damaged tape;
+  separately stamped different V2/CLEAN was physically accepted,
+  retired old owner, mounted RO and refused CREATE. Old/new tape
+  SHA-256 unchanged; two further unmodified production cold boots
+  rejected the old DIRTY reel and admitted the new CLEAN reel RO.
+  **P0-B OPEN:** the Type-551 has no atomic hardware reel-generation
+  or removal interlock. Define and prove an operational/hardware
+  media-retention contract before any production RW enablement.
+  v1555 V2 read-only veto still mandatory. Zero fixed KCORE RAM/
+  TEXT/slab growth; optional DTFS MRES TEXT only.
+  `design/kcore-dtfs-v2-replacement-v1570.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

@@ -1,3 +1,35 @@
+## 2026-11-14 v1570: real V2 poisoned-reel replacement and dual cold boots PASS
+
+The production private DTFS replacement verifier now supports a
+physically distinct, fully validated DTVOL2/CLEAN replacement of a
+poisoned DTVOL2 mounted owner. It checks old format vs new physical
+magic and full CLEAN salted RBN0; refuses same 72-bit ID, DIRTY,
+bad seal/padding, cross-format downgrade/upgrade and invalid native
+directory. Original V1 rule, privileged FILE/cwd/PIPE/swap owner
+barriers and MM scratch lifetime remain unchanged. Thirty real
+source-linked PDP-6 cases/eight unsafe mutants, prior v1558 20/6,
+and complete physical V1 v1531 administrative guest PASS.
+
+An isolated source-matched 256K PDP-6 physically marked WRITE_INTENT,
+seeded real DATA and suffered a genuine Type-551 one-word partial
+write. Old FILE/cwd blocked discard; explicit FD/cwd release still
+could not retire the same physically reinserted DIRTY reel. A
+different independently stamped V2/CLEAN physically replaced it;
+original VFS rechecked all owners, retired the poisoned slot, and
+the new V2 mounted **RO**, rejected CREATE and unmounted. Distinct
+full-tape SHA-256 values stayed unchanged. Two independent **fully
+unmodified production KCORE/MRES cold boots** then rejected the
+exact old DIRTY reel RW/RO and accepted the new CLEAN reel RO,
+with no tape mutation. Production v1555 RW veto remains untouched.
+
+**P0-B OPEN:** Type-551 cannot physically interlock reel exchange
+between checked RBN0 identity and subsequent WRITE. Hardware or a
+verified operating-media retention contract is required before RW.
+No new permanent KCORE DATA/BSS/slab, no fixed KCORE TEXT growth;
+low end `024364` octal. Small optional MRES TEXT increase only.
+P0-A CLOSED, P1-C/D/E unchanged; VERSION 0.5, 32K HOLD.
+`design/kcore-dtfs-v2-replacement-v1570.md`.
+
 ## 2026-11-14 v1569: physically interrupted V2 DIR + second cold boot PASS
 
 Full 256K PDP-6 KCC guest now proves a real **directory RBN0144**
