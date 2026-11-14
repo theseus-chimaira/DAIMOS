@@ -1,3 +1,21 @@
+## 2026-11-14 v1568: actual Type-551 V2 DATA partial and second cold boot PASS
+
+The real full 256K KCC PDP-6 guest physically wrote native V2
+directory and DATA through the genuine v1551-v1554 DIRTY/MM gate,
+after an isolated test-only exact DTC3/mount2 RW enable. The
+unmodified production v1555 RW mount veto was first verified.
+Independent DETACH/whole-tape verification proved valid physical
+WRITE_INTENT was on-media before DATA/DIR mutation, and a genuine
+Type-551 `PARTIALWRITE=0145:1` then changed exactly one requested
+DATA word, retaining the other old word and the complete valid DIRTY
+RBN0. The original mounted owner stayed poisoned; TSFS root survived.
+A second cold boot of entirely unmodified production KCORE/MRES
+refused both RO/RW mounts of the exact damaged tape, published no
+DTFS slot and retained full-tape SHA-256. Zero production code/RAM
+change. **P0-B OPEN:** V2 directory partial, same/replacement reel
+return and mechanical exchange guarantee. Production DTVOL2 RO,
+VERSION 0.5, 32K HOLD. `design/kcore-dtfs-partial-data-v1568.md`.
+
 ## 2026-11-14 v1567: actual Type-551 partial CLEAN and second cold boot PASS
 
 An audit of actual Type-551/136 production tape driver confirmed

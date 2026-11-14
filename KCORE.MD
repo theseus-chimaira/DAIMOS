@@ -1,3 +1,21 @@
+## 2026-11-14 v1568: real partial V2 DATA and production cold boot PASS
+
+A source-matched isolated full 256K PDP-6 test image enabled only
+DTC3/mount2 RW after the real provider published V2 72-bit identity;
+the production v1555 RW veto was first tested and remained unchanged.
+The real v1551-v1554 Type-551 first-write path physically armed
+valid DIRTY before native directory and two-word DATA writes.
+The diagnostic controller then interrupted RBN0145 after one changed
+36-bit word; independent DETACH/whole-tape verification proved the
+other requested word stayed old and full DIRTY RBN0 stayed intact.
+The guest retained poisoned ownership and a second cold boot with
+entirely unchanged production KCORE/MRES refused the exact damaged
+tape RO/RW with no published slot or media mutation. No production
+code/RAM growth; fixed KCORE still `024364` octal. **P0-B OPEN:**
+partial directory, reel exchange/replacement and real RW acceptance.
+Production DTVOL2 READ-ONLY, VERSION 0.5, 32K HOLD.
+`design/kcore-dtfs-partial-data-v1568.md`.
+
 ## 2026-11-14 v1567: real interrupted physical CLEAN and cold boot PASS
 
 Controller audit: Type-551 serializes Type-136 transfers but has no

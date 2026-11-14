@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1567, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1568, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -346,6 +346,19 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   and V2 DATA/DIR partial write, exchange and replacement across RW
   are not accepted. Production DTVOL2 remains RO.
   `design/kcore-dtfs-media-fault-v1567.md`.
+  **v1568 real V2 DATA partial write and cold boot PASS:** an
+  isolated source-matched test image allowed exact DTC3/mount2
+  writable admission only after published 72-bit identity; real
+  v1551-v1554 physical DIRTY/first-write/MM and native directory
+  plus two-word DATA were verified by complete tape byte diff.
+  Actual Type-551 `PARTIALWRITE=0145:1` changed exactly one
+  requested DATA word, retained the other and the complete DIRTY
+  RBN0; original owner stayed poisoned. A second cold boot of
+  unchanged production KCORE/MRES rejected the same tape both RO
+  and RW with full SHA unchanged. Zero production code/RAM change.
+  **P0-B OPEN:** partial V2 directory, reinsertion/replacement and
+  operator-controlled reel exchange across RW remain unaccepted.
+  Production V2 stays RO. `design/kcore-dtfs-partial-data-v1568.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent
