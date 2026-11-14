@@ -1,10 +1,12 @@
-; Native PDP-6 DTVOL2 record validator, not yet installed in DTFS mount.
-; The host formatter emits V2 only on explicit request in v1550.
+; Native PDP-6 DTVOL2 record validator, installed in DTFS MRES by v1555
+; for physical CLEAN/READ-ONLY admission and by v1556 for read-fault
+; recovery. The host formatter still emits V2 only on explicit request.
 ;
 ; AC1 = pointer to all 0200 physical RBN0 words in kernel memory.
 ; Return AC1 = 0 CLEAN / 1 WRITE_INTENT / -1 corrupt or unsupported.
 ; AC2..AC7 scratch; stack, buffers, owners and persistent RAM unchanged.
-; No further runtime mount/write effect until the transaction is complete.
+; V2 DATA/DIR writing remains prohibited until the durable transaction,
+; retained MM ownership and exclusive CLEAN/unmount paths are complete.
 
         .text
         .globl dtfs_intent_validate_v1550

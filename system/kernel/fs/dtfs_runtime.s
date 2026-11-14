@@ -1683,8 +1683,9 @@ dtfs_load_native_fail:
 ; AC1=public DTFS mount ID. A read fault in a mounted physical unit
 ; marks that mount in an unused bit of its existing media word. On its
 ; next operation, read RBN0 PHYSICALLY before allowing any cached vnode,
-; clean BCACHE, directory or FILE reuse. A completely valid, nonlegacy
-; DTVOL1 matching BOTH saved ID halves clears only READ_SUSPECT.
+; clean BCACHE, directory or FILE reuse. A complete DTVOL1 record,
+; or a complete DTVOL2/CLEAN record for a V2 read-only mount, matching
+; BOTH original saved ID halves may clear only READ_SUSPECT.
 ; A write failure may have partially changed directory/data: preserve
 ; WRITE_UNCERTAIN and refuse all old operations, even on an ID match,
 ; until an explicit checked recovery path is implemented. Neither
@@ -1700,10 +1701,6 @@ dtfs_identity_revalidate_v1522:
         jrst    dtfs_identity_revalidate_fail_v1522
         trnn    5,0200000              ; READ_SUSPECT
         jrst    kret_zero
-        move    1,5
-        andi    1,7                     ; physical DTC selector
-        setz    2,                      ; reserved native RBN0
-        movei   3,fs_block_workspace
         ; BCACHE slot 0 IS fs_block_workspace. A raw RBN0 read overwrites
         ; that storage without going through bcache_fetch's tag tracking.
         ; Invalidate the workspace tag first: otherwise a later TSFS
@@ -1711,14 +1708,38 @@ dtfs_identity_revalidate_v1522:
         ; read DTVOL1 record as a cached TSFS file record. Slot 1 remains
         ; a valid independent clean copy; no global cache flush needed.
         pushj   17,bcache_workspace_invalidate
-        ; Raw DTC may clobber AC4..AC7. Save the MM slot across both
-        ; physical I/O and full record parsing, then restore on success
-        ; or failure; an unchecked AC6 could index a foreign mount.
+        ; v1556: clear stale words before I/O. A short transfer reporting
+        ; success must not reuse an earlier complete RBN0 from BCACHE.
+        ; Raw DTC may clobber AC4..AC7; retain BOTH the original media
+        ; word and slot on the process stack across the sleeping read.
         push    17,6
+        push    17,5
+        movei   4,fs_block_workspace
+        movei   7,0200
+dtfs_revalidate_clear_v1556:
+        setzm   (4)
+        aoj     4,
+        sojg    7,dtfs_revalidate_clear_v1556
+        move    1,(17)
+        andi    1,7                     ; physical DTC selector
+        setz    2,                      ; reserved native RBN0
+        movei   3,fs_block_workspace
         pushj   17,dtfs_dtc_read_jump  ; no stale BCACHE hit
         jumpn   1,dtfs_identity_revalidate_pop_fail_v1522
+        move    5,(17)                  ; original media, not raw clobber
+        trnn    5,0100000              ; FORMAT_V2 on this mount
+        jrst    dtfs_revalidate_v1_v1556
+        movei   1,fs_block_workspace
+        pushj   17,dtfs_intent_validate_v1550
+        jumpn   1,dtfs_identity_revalidate_pop_fail_v1522
+        ; Only DTVOL2/CLEAN is mounted read-only. A DIRTY record, even
+        ; with the original identity, must not be treated as recovered.
+        jrst    dtfs_revalidate_valid_v1556
+dtfs_revalidate_v1_v1556:
         pushj   17,dtfs_identity_validate_v1522
         jumpn   1,dtfs_identity_revalidate_pop_fail_v1522
+dtfs_revalidate_valid_v1556:
+        pop     17,5                    ; original mount media word
         pop     17,6
         move    4,tsfs_file_shape_base
         jumpe   4,dtfs_identity_revalidate_fail_v1522
@@ -1736,10 +1757,36 @@ dtfs_identity_revalidate_v1522:
         jrst    dtfs_identity_revalidate_fail_v1522
         move    4,dtfs_media_base
         add     4,6
-        movei   5,0200000
-        andcam  5,(4)                   ; only after fully checked ID
+        move    3,(4)
+        came    3,5                     ; mount changed during sleeping I/O
+        jrst    dtfs_identity_revalidate_fail_v1522
+        trnn    5,0100000
+        jrst    dtfs_revalidate_clear_suspect_v1556
+        ; A V2 recovery is valid only for the original published native
+        ; DTFS root and a still-read-only VFS slot. Reject stale slots,
+        ; changed providers and a hypothetical unsafe RW state transition.
+        move    1,vfs_mount_root_base
+        jumpe   1,dtfs_identity_revalidate_fail_v1522
+        add     1,6
+        move    2,(1)
+        ldb     3,[POINT 6,2,5]
+        caie    3,5                     ; exact DTFS provider
+        jrst    dtfs_identity_revalidate_fail_v1522
+        ldb     3,[POINT 6,2,11]
+        movei   7,1(6)
+        came    3,7                     ; original published mount slot
+        jrst    dtfs_identity_revalidate_fail_v1522
+        move    1,vfs_mount_policy
+        movn    2,6
+        lsh     1,0(2)
+        trnn    1,1                     ; VFS_MOUNT_RDONLY still set
+        jrst    dtfs_identity_revalidate_fail_v1522
+dtfs_revalidate_clear_suspect_v1556:
+        movei   3,0200000
+        andcam  3,(4)                   ; clear ONLY the read-fault marker
         jrst    kret_zero
 dtfs_identity_revalidate_pop_fail_v1522:
+        pop     17,5
         pop     17,6
 dtfs_identity_revalidate_fail_v1522:
         jrst    kret_neg1
