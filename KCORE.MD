@@ -1,3 +1,28 @@
+## 2026-11-14 v1566: owner-exclusive physical DTVOL2 CLEAN PASS
+
+Production VFS now invokes a private DTFS MRES CLEAN seal only for
+an INTENT_ARMED, RW, QUIESCING V2 mount after full owner/MM checks.
+The provider authenticates exact root, policy and 72-bit identity,
+uses the existing v1552 pinned 0200-word dynamic MM scratch, marks
+WR_UNCERT before physical I/O, writes CLEAN RBN0, physically reads
+back and validates CLEAN and unchanged ID, and clears the volatile
+armed/uncertain bits only after MM free and owner recheck. VFS
+resamples media, FILE/cwd, PIPE, swap/PURE and MM after the sleeping
+seal; partial failure preserves mount, WR_UNCERT and QUIESCING.
+
+84 source-linked native cases and 34 rejected source mutants PASS;
+v1552/v1554/v1555/v1556/v1561/v1562/v1563 regressions and full
+256K KCC KCORE/DTFS MRES build PASS. Full physical guest V2 RO
+mount and DIRTY refusal remain PASS. A **disposable test-only image**
+successfully physically armed DIRTY and ran the original v1566
+production CLEAN/readback twice using the actual Type-551, with
+whole-tape SHA-256 unchanged. v1555's unconditional production V2
+READ-ONLY remains in force, no production RW cutover. +28 fixed
+KCORE TEXT words, zero new fixed DATA/BSS. Type-551 media exchange,
+partial DATA/CLEAN faults, reinsertion and cold-boot RW recovery
+remain OPEN. **P0-B OPEN**, VERSION 0.5, strict 32K HOLD.
+`design/kcore-dtfs-clean-seal-v1566.md`.
+
 ## 2026-11-14 v1565: real PDP-6 scheduler owner race during V2 seal PASS
 
 Real full 256K KCC physical TSFS-root/DTC3 V2/CLEAN guest with

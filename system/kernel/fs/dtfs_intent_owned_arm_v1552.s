@@ -18,12 +18,18 @@
 ; so MM compaction cannot relocate the DMA buffer while I/O sleeps.
 ; v1554 shares the EXACT same pin/owner cleanup for read-only physical
 ; DTVOL2/DIRTY revalidation, without duplicating the 128-word MM lease.
+; v1566 adds exact DIRTY->CLEAN with that SAME pinned 0200-word lease.
+; A seal may sleep; before any raw RBN0 I/O, the mounted unit is marked
+; WRITE_UNCERTAIN so an interrupted/failed cleanup cannot pass as CLEAN.
 
         .text
         .globl dtfs_intent_owned_arm_v1552
         .globl dtfs_intent_owned_verify_v1554
+        .globl dtfs_intent_owned_clean_v1566
         .globl dtfs_intent_arm_v1551
         .globl dtfs_intent_verify_v1554
+        .globl dtfs_intent_clean_v1566
+        .globl dtfs_mark_unit_suspect_v1522
         .globl mm_alloc_aligned_noreclaim
         .globl mm_pin
         .globl mm_unpin
@@ -38,6 +44,9 @@ dtfs_intent_owned_arm_v1552:
         jrst    dtfs_owned_common_v1554
 dtfs_intent_owned_verify_v1554:
         movei   5,1                     ; verify already DIRTY
+        jrst    dtfs_owned_common_v1554
+dtfs_intent_owned_clean_v1566:
+        movei   5,2                     ; final DIRTY -> CLEAN
 dtfs_owned_common_v1554:
         push    17,010
         push    17,011
@@ -85,6 +94,24 @@ dtfs_owned_arm_alloc_v1552:
         move    3,012
         move    4,014
         jumpe   015,dtfs_owned_call_arm_v1554
+        caie    015,2
+        jrst    dtfs_owned_call_verify_v1554
+        ; MM is successfully allocated and physically pinned NOW.
+        ; Publish a sticky in-RAM uncertainty marker before any raw
+        ; physical seal I/O can sleep or partially complete. If MM
+        ; allocation/pinning failed, no I/O started and no poisoning
+        ; was necessary. Only the exact mounted seal owner may later
+        ; clear this marker after CLEAN readback and MM release.
+        move    1,010
+        movei   2,0400000
+        pushj   17,dtfs_mark_unit_suspect_v1522
+        move    1,010
+        move    2,011
+        move    3,012
+        move    4,014
+        pushj   17,dtfs_intent_clean_v1566
+        jrst    dtfs_owned_after_io_v1554
+dtfs_owned_call_verify_v1554:
         pushj   17,dtfs_intent_verify_v1554
         jrst    dtfs_owned_after_io_v1554
 dtfs_owned_call_arm_v1554:
@@ -106,7 +133,9 @@ dtfs_owned_after_io_v1554:
 
 dtfs_owned_arm_release_fail_v1552:
         ; The MM refusal may still mean a pinned or owned extent.
-        ; Do not guess that it was freed. Keep *basep unchanged.
+        ; Do not guess that it was freed. Keep *basep unchanged. CLEAN
+        ; already entered the uncertainty state before raw I/O, so a
+        ; failed unpin/free cannot accidentally retire the dirty mount.
         pop     17,2                    ; discard original arm status
         jrst    dtfs_owned_arm_fail_v1552
 

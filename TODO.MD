@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1565, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1566, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -313,6 +313,23 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   removable unit-generation contract, partial data writes and
   post-failure cold-boot/reinsertion proof. DTVOL2 stays RO.
   `design/kcore-dtfs-owner-race-v1565.md`.
+  **v1566 owner-exclusive physical CLEAN prerequisite PASS:** private
+  provider op027 now authenticates published V2/RW/ARMED/QUIESCING
+  owner and saved 72-bit identity, reuses the v1552 pinned MM lease,
+  marks WRITE_UNCERTAIN before raw I/O, requires physical DIRTY,
+  writes CLEAN state/salted seal, rereads and verifies CLEAN and
+  original ID, then after MM free/owner check clears only volatile
+  ARMED/uncertain. VFS repeats all owners/MM after physical I/O and
+  retains poisoned mounted quiescence on ambiguous writes. 84 native
+  real source-linked cases, 34 rejected mutants; prior v1552-v1563
+  regressions and full production KCC image PASS. An ISOLATED
+  test-only full PDP-6 physical image executed two genuine Type-551
+  DIRTY->CLEAN cycles; original tape SHA-256 restored. Production
+  v1555 V2 READ-ONLY remains mandatory, +28 fixed KCORE TEXT,
+  zero added fixed RAM data. **P0-B still OPEN:** media exchange/
+  generation invariants, partial physical DATA/CLEAN failures,
+  reinsert/replacement and second cold-boot after actual RW.
+  `design/kcore-dtfs-clean-seal-v1566.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

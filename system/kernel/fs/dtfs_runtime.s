@@ -18,11 +18,19 @@
         .globl  dtfs_sync
         .globl  dtfs_mount_unit
         .globl  vfs_dtfs_owner_admit_v1562
+        .globl  dtfs_intent_mount_seal_v1566
 
 dtfs_mres_dispatch:
 dtfs_mres_reg_dispatch:
         cain    6,026                   ; DTFS private VERIFY_REPLACE_V1531
         jrst    dtfs_verify_replacement_v1531
+        ; Only the resident VFS final-unmount path requests this private
+        ; operation. It MUST bypass generic vnode admission because
+        ; successful v1562 quiescence intentionally denies ordinary
+        ; provider operations. The seal leaf independently authenticates
+        ; the exact published owner, RW policy, armed V2 and held bit.
+        cain    6,027                   ; PRIVATE_SEAL_CLEAN_V1566
+        jrst    dtfs_intent_mount_seal_v1566
         ; v1562: a V2 final-unmount barrier blocks provider operations
         ; which could resume after the first owner check. The internal
         ; SYNC is deliberately permitted while VFS holds this barrier.

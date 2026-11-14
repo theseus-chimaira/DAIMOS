@@ -217,6 +217,8 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/fs/dtfs_intent_owned_arm_v1552.s \
 	$(KERNEL_DIR)/fs/dtfs_intent_arm_v1551.s \
 	$(KERNEL_DIR)/fs/dtfs_intent_verify_v1554.s \
+	$(KERNEL_DIR)/fs/dtfs_intent_clean_v1566.s \
+	$(KERNEL_DIR)/fs/dtfs_intent_mount_seal_v1566.s \
 	$(KERNEL_DIR)/fs/tsfs_runtime.s \
 	$(KERNEL_DIR)/fs/dtfs_resize.s \
 	$(KERNEL_DIR)/fs/file.c \

@@ -1103,12 +1103,46 @@ vfs_unmount_after_prepare:
         pushj   17,vfs_dtfs_aux_empty_v1560
         jumpn   1,vfs_unmount_fail
 vfs_unmount_aux_done_v1560:
-        ; The v1562 barrier currently protects the already-accepted RO
-        ; V2 unmount. A future final CLEAN writer belongs HERE, with the
-        ; barrier still held, after the last owner and MM checks and before
-        ; retirement. Never clear it across a sleeping CLEAN operation.
+        ; v1566: only an already-armed writable DTVOL2 needs the final
+        ; physical CLEAN. v1555 still forbids ALL mounted V2 writes, so
+        ; today's admitted RO/CLEAN volumes skip this path entirely.
+        ; The V2 owner bit MUST remain held across the provider call,
+        ; which can sleep during MM and raw Type-551 read/write/readback.
+        ; Exact root, 72-bit ID, RW policy and pinned MM owner are checked
+        ; by the private DTFS MRES leaf before/after physical I/O.
         skipn   -2(17)
         jrst    vfs_unmount_quiesce_done_v1562
+        move    1,dtfs_media_base
+        add     1,(17)                  ; zero-based original mount slot
+        move    3,(1)
+        trnn    3,0040000              ; only prior physical INTENT_ARMED
+        jrst    vfs_unmount_seal_done_v1566
+        move    1,(17)                  ; original exact slot
+        move    2,-1(17)               ; original published root
+        movei   6,027                   ; private DTFS SEAL_CLEAN_V1566
+        movei   7,5                     ; DTFS_PROVIDER
+        pushj   17,fs_provider_reg_call
+        jumpn   1,vfs_unmount_fail
+        ; A successful return must have consumed ARMED and cleared only
+        ; its own temporary WRITE_UNCERTAIN marker. Never trust a false
+        ; provider success with either bit still set: keep the mount
+        ; published and, on WR_UNCERTAIN, retain the exclusive barrier.
+        move    1,dtfs_media_base
+        add     1,(17)
+        move    3,(1)
+        trne    3,0640000              ; RD_SUSPECT | WR_UNCERT | ARMED
+        jrst    vfs_unmount_fail
+        ; Seal I/O slept while the barrier was held. Never retire from
+        ; the PRE-seal owner/MM result. Recheck the complete owner set
+        ; and exact retained MM handle AFTER the physical readback.
+        move    2,(17)
+        movei   1,1(2)
+        pushj   17,vfs_unmount_owner_check_v1523
+        jumpn   1,vfs_unmount_fail
+        move    1,(17)
+        pushj   17,vfs_dtfs_aux_empty_v1560
+        jumpn   1,vfs_unmount_fail
+vfs_unmount_seal_done_v1566:
         move    1,(17)
         move    2,-1(17)
         pushj   17,vfs_dtfs_quiesce_end_v1562
@@ -1146,10 +1180,19 @@ vfs_mount_retire_slot:
         andcam  3,vfs_mount_policy     ; other owners cannot be retired here
         popj    17,
 vfs_unmount_fail:
-        ; No physical CLEAN attempt exists yet. Undo only our own acquired
-        ; barrier while the original mount is still published. If the
-        ; original owner changed, fail closed and leave the bit untouched.
+        ; A failed CLEAN operation may have physically written ANY prefix
+        ; of RBN0. The v1566 owned clean wrapper publishes WRITE_UNCERTAIN
+        ; BEFORE attempting physical I/O. Never clear our barrier or
+        ; retire/unlock that still-published mount when the sticky bit is
+        ; set; the explicit poisoned-volume path must decide its fate.
+        ; If the MM lease failed before I/O (no poison), restore only our
+        ; own temporary barrier so an ordinary later retry is possible.
         skipn   -2(17)
+        jrst    vfs_unmount_fail_done_v1562
+        move    1,dtfs_media_base
+        add     1,(17)
+        move    3,(1)
+        trne    3,0400000              ; partial/ambiguous physical CLEAN
         jrst    vfs_unmount_fail_done_v1562
         move    1,(17)
         move    2,-1(17)

@@ -1,3 +1,38 @@
+## 2026-11-14 v1566: physical DIRTY-to-CLEAN under owner seal PASS
+
+The production DTFS provider now links private op 027 and an exact
+mounted owner/72-bit identity/policy gate for physically writing
+the final DTVOL2 CLEAN state after VFS v1562 quiescence. It extends
+the already-linked v1552 MM pin/alloc/free helper with CLEAN mode
+and reuses its 0200 dynamic scratch. Once pinned, the wrapper sets
+WR_UNCERT *before* Type-551 I/O; the raw CLEAN leaf requires original
+physical WRITE_INTENT, writes only new RBN0 state/independent seal,
+and checks a second physical CLEAN readback. Only after verified
+MM release and original owner/ID/policy recheck does the mounted
+provider clear volatile WR_UNCERT/ARMED. VFS repeats media,
+FILE/cwd, PIPE/swap/PURE, MM checks after the sleeping seal before
+clearing QUIESCING and retiring without yield. Possible partial
+CLEAN failure retains the poisoned mount and owner barrier.
+
+Native PDP-6 source-linked raw CLEAN 18 cases/11 rejected mutants,
+mounted owner 37/10, shared pinned MM 11/7 and full VFS unmount 18/6:
+**84 cases, 34 rejected unsafe source mutations PASS**. Old v1552,
+v1554, v1555 RO mount/write veto, v1556 revalidate, v1561, v1562,
+v1563 regressions PASS. Current full 256K production KCC KCORE/DTFS
+MRES link and two physical V2 RO/CLEAN and DIRTY cold boots PASS.
+An isolated source-matched **test-only physical** PDP-6 image used
+the real Type-551 DIRTY arm + the unchanged production v1566
+CLEAN/readback, twice, retaining original full-tape SHA-256.
+
+The v1555 unconditional V2 READ-ONLY mount/write veto remains
+active in production: its writable cutover is NOT accepted. Physical
+Type-551 generation/exchange and partial DATA/CLEAN, reinsertion,
+replacement, second cold-boot after real RW all remain mandatory.
+KCORE grows +28 fixed TEXT words (024330 to 024364 octal), zero
+fixed DATA/BSS. P0-B OPEN, P0-A CLOSED, VERSION 0.5, 32K HOLD.
+See `design/kcore-dtfs-clean-seal-v1566.md` and testkit
+`tests/validation/daimos-dtfs-clean-v1566.md`.
+
 ## 2026-11-14 v1565: real independent scheduler V2 seal/owner crossover PASS
 
 The actual full 256K KCC PDP-6 guest mounted independently stamped
