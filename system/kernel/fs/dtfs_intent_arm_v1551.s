@@ -41,6 +41,10 @@ dtfs_intent_arm_v1551:
         ; Direct physical RBN0 read, never BCACHE and never the pending
         ; filesystem data buffer. Only a pristine DTVOL2/CLEAN record
         ; with BOTH exact already-admitted volume-ID halves may arm.
+        ; v1558: MM may return a reused scratch block. A raw Type-551
+        ; read with partial/zero DMA but false success must not inherit
+        ; a complete older CLEAN header and write DIRTY to wrong media.
+        pushj   17,dtfs_arm_clear_scratch_v1551
         move    1,010
         setz    2,                      ; reserved physical block 0
         move    3,013
@@ -83,12 +87,7 @@ dtfs_intent_arm_v1551:
 
         ; Clear scratch BEFORE the independent physical read. A stale
         ; record in RAM must not be mistaken for verified on-media intent.
-        move    2,013
-        movei   3,0200
-dtfs_arm_clear_scratch_v1551:
-        setzm   (2)
-        aoj     2,
-        sojg    3,dtfs_arm_clear_scratch_v1551
+        pushj   17,dtfs_arm_clear_scratch_v1551
         move    1,010
         setz    2,
         move    3,013
@@ -122,4 +121,15 @@ dtfs_arm_done_v1551:
         pop     17,012
         pop     17,011
         pop     17,010
+        popj    17,
+
+; One exact 0200-word wipe shared by initial read and final readback.
+; AC2/AC3 are scratch, AC13 remains the stable pinned MM buffer base.
+dtfs_arm_clear_scratch_v1551:
+        move    2,013
+        movei   3,0200
+dtfs_arm_clear_loop_v1558:
+        setzm   (2)
+        aoj     2,
+        sojg    3,dtfs_arm_clear_loop_v1558
         popj    17,

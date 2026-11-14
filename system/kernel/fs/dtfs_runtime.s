@@ -123,6 +123,9 @@ dtfs_verify_replacement_v1531:
 
         ; Reuse the exact native directory structural admission checks
         ; from dtfs_mount_unit; do not trust a volume ID in isolation.
+        ; v1558: a false-successful short Type-551 transfer must not
+        ; inherit a former valid directory from this shared workspace.
+        pushj   17,dtfs_workspace_clear_v1558
         move    1,011
         movei   2,0144                  ; physical native directory
         movei   3,fs_block_workspace
@@ -146,6 +149,10 @@ dtfs_verify_replacement_v1531:
         jrst    dtfs_replace_bad_v1531
 
         ; Verify a complete nonlegacy DTVOL1 identity physically.
+        ; Independently discard all previous directory/header words.
+        ; Replacement requires a nonempty V1 stamp; all-one sentinels
+        ; also expose any successful but incomplete raw read.
+        pushj   17,dtfs_workspace_poison_v1558
         move    1,011
         setz    2,                      ; reserved stamped physical RBN0
         movei   3,fs_block_workspace
@@ -911,6 +918,12 @@ dtfs_mount_unit_media_ready:
         .endif
         pushj   17,bcache_invalidate_all
         setzm   dtfs_cache_mount
+        ; v1558: physical DTC success does not necessarily prove 128
+        ; words transferred. Wipe the shared workspace before admission
+        ; of BOTH the directory and independently checked RBN0.
+        ; The native directory must contain nonzero structural metadata;
+        ; clearing stale words makes false-successful short reads invalid.
+        pushj   17,dtfs_workspace_clear_v1558
         move    1,010
         andi    1,7                     ; physical DTC unit
         movei   2,0144                  ; native directory block
@@ -943,6 +956,11 @@ dtfs_mount_unit_media_ready:
         ; remains accepted as legacy format, but provides NO identity
         ; for reattachment of live open files.  A nonempty corrupt record
         ; is always fatal to this mount admission (not to KCORE).
+        ; A complete all-zero RBN0 is a VALID legacy format. Initializing
+        ; to zero here would *accept* a zero-byte READ falsely reporting
+        ; success as a genuine legacy volume. Fill every word with a
+        ; nonzero poison; a complete legitimate legacy READ overwrites it.
+        pushj   17,dtfs_workspace_poison_v1558
         move    1,010
         andi    1,7
         setz    2,                      ; native identity RBN 0
@@ -1048,6 +1066,27 @@ dtfs_mount_unit_done_local:
 dtfs_mount_unit_fail:
         seto    1,
         jrst    dtfs_restore4
+
+; v1558: initialize one complete Type-551 transfer buffer before every
+; independent raw admission read. Nonzero poison is essential for RBN0:
+; a real all-zero legacy header is valid, so prezeroed memory combined
+; with a false-successful zero-byte DMA is otherwise indistinguishable
+; from a complete true legacy transfer. Directory admission can use zero
+; fill because its structural header is required to be nonzero.
+; Scratch AC4..AC6, preserves all mount arguments and saved ID halves.
+dtfs_workspace_clear_v1558:
+        setz    6,
+        jrst    dtfs_workspace_fill_v1558
+dtfs_workspace_poison_v1558:
+        seto    6,
+dtfs_workspace_fill_v1558:
+        movei   4,fs_block_workspace
+        movei   5,0200                 ; 128 PDP-6 data words
+dtfs_workspace_clear_loop_v1558:
+        movem   6,(4)
+        aoj     4,
+        sojg    5,dtfs_workspace_clear_loop_v1558
+        popj    17,
 
 ; Shared LEGACY native identity parser for DTVOL1/zero mount admission and
 ; post-error revalidation of an existing legacy mount. The v1555 mount
