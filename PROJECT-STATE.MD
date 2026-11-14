@@ -1,3 +1,28 @@
+## 2026-11-14 v1556: production DTVOL2 read-only fault recovery PASS
+
+The real DTFS MRES identity recovery path now admits exactly
+DTVOL2/CLEAN with both originally saved ID halves after a
+physical Type-551 read fault on a previously mounted V2
+READ-ONLY volume. It chooses the full native v1550 parser by
+the existing FORMAT_V2 mount flag, clears all 128 shared buffer
+words before the raw physical read, preserves original media/
+slot across sleeping I/O, rejects dirty or torn headers and
+stale/short reads, and verifies media word, DTFS root/mount ID
+and RO policy before clearing only READ_SUSPECT. A changed or
+WRITE_UNCERTAIN medium remains refused and retains all owners.
+
+Source-linked native PDP-6 acceptance: **29 physically formatted
+image cases PASS; 14 unsafe mutations rejected**. Historical
+v1522 mounted-media workflow plus eight mutants PASS. The
+complete KCC full-profile DTFS MRES assemble/fold/link PASS.
+
+P0-B OPEN: V2 still READ-ONLY; v1551-v1554 physical DIRTY
+gate, pinned-MM scratch ownership, mandatory DATA/DIR writes,
+exclusive CLEAN/unmount and full-guest physical Type-551 tests
+remain pending. No fixed RAM, syscall ABI or optimization.
+`design/kcore-dtfs-v2-recovery-v1556.md`; P0-A complete,
+P1-C separate; VERSION 0.5, strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1555: production DTVOL2 read-only admission PASS
 
 The production DTFS MRES now physically admits a fully valid

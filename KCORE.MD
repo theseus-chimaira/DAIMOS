@@ -1,3 +1,29 @@
+## 2026-11-14 v1556: real DTFS MRES DTVOL2/CLEAN fault recovery
+
+The production native `dtfs_identity_revalidate_v1522` now
+supports both its original DTVOL1/legacy identity and the
+v1555 physically mounted DTVOL2/CLEAN READ-ONLY format. On a
+read fault it invalidates the shared BCACHE workspace tag,
+clears all 128 words before a fresh physical RBN0 read, and
+chooses the strict v1550 parser from the saved V2 media flag.
+After full record and original 72-bit ID equality it also
+checks that the original mounted media word is unchanged; V2
+requires the same published DTFS root/mount and still-RO VFS
+policy. Only then does READ_SUSPECT clear. DIRTY, torn, wrong
+unit/ID, short false-successful reads and WRITE_UNCERTAIN fail
+closed without changing ownership or enabling any data write.
+
+Native PDP-6 **29 actual-media recovery cases PASS; 14 unsafe
+source mutations rejected**. Original v1522 fault/recovery
+regression and its eight mutations PASS. The complete KCC
+full-profile DTFS MRES build/fold/link PASS. No new fixed RAM,
+syscall ABI or default media format. Writable DTVOL2 remains
+explicitly disabled by v1555. **P0-B OPEN** pending mandatory
+write intent, MM scratch lifecycle, exclusive CLEAN/unmount and
+physical Type-551 full guest reinsertion/cold boot. See
+`design/kcore-dtfs-v2-recovery-v1556.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1555: real DTFS MRES DTVOL2/CLEAN RO admission
 
 Production `dtfs_mount_unit` now reads native directory and RBN0

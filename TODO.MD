@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1555, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1556, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -204,6 +204,16 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   Still no writable V2, required dirty gate, retained MM owner,
   exclusive CLEAN unmount or cold-boot Type-551 acceptance.
   **P0-B OPEN.** `design/kcore-dtfs-v2-ro-admission-v1555.md`.
+  **v1556 production RO read-fault recovery PASS:** DTVOL2/CLEAN
+  after READ_SUSPECT now requires a newly read physical RBN0,
+  complete parser, original 72-bit ID, unchanged media word,
+  same VFS DTFS mount and still-RO policy. Workspace is cleared
+  before raw I/O; no false short-success acceptance. PDP-6
+  29 genuine-media scenarios/14 mutants PASS, old v1522 suite
+  and KCC full DTFS MRES assemble/fold/link PASS. Writable V2,
+  retained-MM dirty write gateway, owner-safe CLEAN/unmount and
+  full-guest physical reinsertion/cold boot are STILL OPEN.
+  `design/kcore-dtfs-v2-recovery-v1556.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent
