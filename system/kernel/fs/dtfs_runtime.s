@@ -22,8 +22,8 @@
 
 dtfs_mres_dispatch:
 dtfs_mres_reg_dispatch:
-        cain    6,026                   ; DTFS private VERIFY_REPLACE_V1531
-        jrst    dtfs_verify_replacement_v1531
+        cain    6,026                   ; DTFS private DISCARD_DRAIN_V1575
+        jrst    dtfs_discard_drain_v1575
         ; Only the resident VFS final-unmount path requests this private
         ; operation. It MUST bypass generic vnode admission because
         ; successful v1562 quiescence intentionally denies ordinary
@@ -106,130 +106,18 @@ dtfs_space_failed_revalidate_v1522:
         pop     17,2
         jrst    dtfs_space_fail
 
-; Accept replacement ONLY when a genuinely different full 72-bit stamped
-; native DTFS medium is physically present on the poisoned unit, and its
-; freshly read native directory is structurally valid. Never permit the
-; same damaged medium through on an RBN0 identity match, all-zero legacy
-; block or stale BCACHE tag. Under the serialized provider lease, the
-; physical reads may sleep; caller rechecks all stable-uarea owners after
-; the lease returns and before retiring the old slot.
-;
-; This does not repair, rewrite or release any data on the damaged tape.
-; No persistent tombstone is necessary for old vnodes: all process and
-; swap/PIPE owners must be gone, and the fresh next MOUNT revalidates
-; both the new volume stamp and directory independently.
-; AC1=zero-based poisoned DTFS mount slot. 0 verified, -1 refused.
-dtfs_verify_replacement_v1531:
-        push    17,010
-        push    17,011
-        move    010,1                   ; preserve slot across raw DTC I/O
-        move    3,dtfs_media_base
-        jumpe   3,dtfs_replace_bad_v1531
-        add     3,010
-        move    4,(3)
-        trnn    4,0400000              ; WRITE_UNCERTAIN still set
-        jrst    dtfs_replace_bad_v1531
-        move    011,4
-        andi    011,7                   ; original DTC physical unit
-        ; Both old identity halves are needed to distinguish a genuinely
-        ; different replacement; a legacy zero-ID volume cannot recover.
-        move    3,tsfs_file_shape_base
-        jumpe   3,dtfs_replace_bad_v1531
-        add     3,010
-        skipn   (3)
-        jrst    dtfs_replace_bad_v1531
-        move    3,tsfs_extent_media_base
-        jumpe   3,dtfs_replace_bad_v1531
-        add     3,010
-        skipn   (3)
-        jrst    dtfs_replace_bad_v1531
+; v1575 trusted-operator poisoned-owner discard drain. The provider
+; call serializes with any in-flight DTFS operation before VFS
+; makes its FINAL owner/poison/aux recheck. No physical media
+; access is allowed here: an independent MOUNT later verifies
+; the newly selected reel and refuses DTVOL2/DIRTY. The old
+; WRITE_UNCERTAIN state is never cleared by this operation.
+; AC1=zero-based poisoned DTFS slot; VFS authenticates it.
+        .globl  dtfs_discard_drain_v1575
+dtfs_discard_drain_v1575:
         setzm   dtfs_cache_mount
         pushj   17,bcache_invalidate_all
-
-        ; Reuse the exact native directory structural admission checks
-        ; from dtfs_mount_unit; do not trust a volume ID in isolation.
-        ; v1558: a false-successful short Type-551 transfer must not
-        ; inherit a former valid directory from this shared workspace.
-        pushj   17,dtfs_workspace_clear_v1558
-        move    1,011
-        movei   2,0144                  ; physical native directory
-        movei   3,fs_block_workspace
-        pushj   17,dtfs_dtc_read_jump  ; actual Type-551 I/O
-        jumpn   1,dtfs_replace_bad_v1531
-        move    1,fs_block_workspace+0177
-        came    1,[0446446632021]
-        jrst    dtfs_replace_bad_v1531
-        move    1,fs_block_workspace
-        lsh     1,-037
-        caie    1,036
-        jrst    dtfs_replace_bad_v1531
-        move    1,fs_block_workspace+016
-        lsh     1,-025
-        andi    1,037
-        caie    1,036
-        jrst    dtfs_replace_bad_v1531
-        move    1,fs_block_workspace+0122
-        and     1,[0177776]
-        came    1,[0167572]
-        jrst    dtfs_replace_bad_v1531
-
-        ; v1570: accept a DIFFERENT valid, physically CLEAN DTVOL2
-        ; replacement for a poisoned V2 mount. Never downgrade a V2
-        ; mount to V1 or upgrade a poisoned V1 through this path:
-        ; the published media FORMAT_V2 bit is the trusted origin.
-        ; The normal V1 replacement path remains byte-for-byte the
-        ; original v1531 admission rule. Both use independent physical
-        ; raw RBN0 and native directory checks (no cache reuse).
-        ; Replacing the old reel does NOT repair or reauthorize it.
-        pushj   17,dtfs_workspace_poison_v1558
-        move    1,011
-        setz    2,                      ; reserved stamped physical RBN0
-        movei   3,fs_block_workspace
-        pushj   17,dtfs_dtc_read_jump
-        jumpn   1,dtfs_replace_bad_v1531
-        move    4,fs_block_workspace
-        came    4,[0446466575422]      ; exact DTVOL2 header
-        jrst    dtfs_replace_v1_v1570
-        move    3,dtfs_media_base
-        add     3,010
-        move    4,(3)
-        trnn    4,0100000              ; old mount must also be V2
-        jrst    dtfs_replace_bad_v1531
-        movei   1,fs_block_workspace
-        pushj   17,dtfs_intent_validate_v1550
-        jumpn   1,dtfs_replace_bad_v1531 ; DIRTY and corrupt forbidden
-        jrst    dtfs_replace_identity_v1570
-dtfs_replace_v1_v1570:
-        move    3,dtfs_media_base
-        add     3,010
-        move    4,(3)
-        trne    4,0100000              ; no V2 -> V1 downgrade
-        jrst    dtfs_replace_bad_v1531
-        pushj   17,dtfs_identity_validate_v1522
-        jumpn   1,dtfs_replace_bad_v1531
-        move    4,fs_block_workspace
-        came    4,[0446466575421]      ; reject all-zero legacy RBN0
-        jrst    dtfs_replace_bad_v1531
-dtfs_replace_identity_v1570:
-        move    3,tsfs_file_shape_base
-        add     3,010
-        move    4,(3)
-        came    4,fs_block_workspace+1 ; different high half: accepted
-        jrst    dtfs_replace_ok_v1531
-        move    3,tsfs_extent_media_base
-        add     3,010
-        move    4,(3)
-        camn    4,fs_block_workspace+2 ; both halves equal: old medium
-        jrst    dtfs_replace_bad_v1531
-dtfs_replace_ok_v1531:
-        setz    1,
-        jrst    dtfs_replace_done_v1531
-dtfs_replace_bad_v1531:
-        seto    1,
-dtfs_replace_done_v1531:
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    kret_zero
 
         .data
 dtfs_mres_vector:
@@ -448,16 +336,12 @@ dtfs_dtc_read_jump:
 
         .globl  dtfs_dtc_write
 dtfs_dtc_write:
-        ; v1555: DTVOL2 has physically admitted CLEAN only on an explicitly
-        ; read-only VFS mount. Deny *all* DATA/DIR writes to its DTC unit,
-        ; including internal callers which might bypass VFS readonly checks.
-        ; v1561 binds the existing physical marker/retained MM owner below
-        ; this unconditional RO guard. No V2 marker or DATA write occurs
-        ; until exclusive CLEAN/unmount and hardware checks permit cutover.
+        ; v1572 operator-trust contract: the operator keeps the SAME reel
+        ; physically installed for the entire live writable mount. The
+        ; v1555 unconditional V2 read-only veto is no longer needed.
+        ; The v1561 exclusive mounted owner/RO check and v1551 physical
+        ; first-write DIRTY barrier still precede EVERY DATA/DIR write.
         push    17,1
-        pushj   17,dtfs_v2_ro_write_guard_v1555
-        jumpn   1,dtfs_dtc_write_v2_refuse_v1555
-        move    1,(17)
         ; AC2=block and AC3=buffer are live across the entire physical
         ; marker/lease operation. Save both on the private process stack:
         ; the v1552 MM allocator and controller reads may sleep/clobber ACs.
@@ -490,41 +374,9 @@ dtfs_dtc_write_done_v1518:
 dtfs_dtc_write_intent_refuse_v1561:
         pop     17,3                   ; no DATA/DIR raw transfer
         pop     17,2
-        jrst    dtfs_dtc_write_v2_refuse_v1555
-dtfs_dtc_write_v2_refuse_v1555:
+dtfs_dtc_write_refuse_v1572:
         pop     17,4                   ; release saved unit, no raw I/O
         jrst    kret_neg1
-
-; The common DTFS write entry receives only the physical DTC unit, not
-; a vnode or its VFS mount slot. Check every *published* V2 mount using
-; this unit; a second mount of the same unit cannot bypass read-only.
-; No persistent state, no scratch, and no mutation of the data buffer.
-; AC1=unit, AC2/AC3 preserved, AC4..AC7 scratch; return AC1=0/-1.
-dtfs_v2_ro_write_guard_v1555:
-        move    4,vfs_mount_root_base
-        jumpe   4,dtfs_v2_write_allowed_v1555
-        move    5,dtfs_media_base
-        jumpe   5,dtfs_v2_write_allowed_v1555
-        move    6,vfs_mount_limit
-        jumple  6,dtfs_v2_write_allowed_v1555
-dtfs_v2_guard_next_v1555:
-        move    7,(4)
-        lsh     7,-036                 ; mounted vnode provider
-        caie    7,5                     ; DTFS only
-        jrst    dtfs_v2_guard_skip_v1555
-        move    7,(5)
-        trnn    7,0100000              ; DTVOL2 native format flag
-        jrst    dtfs_v2_guard_skip_v1555
-        andi    7,7                     ; actual physical Type-551 unit
-        came    7,1
-        jrst    dtfs_v2_guard_skip_v1555
-        jrst    kret_neg1               ; no physical write permitted
-dtfs_v2_guard_skip_v1555:
-        aoj     4,
-        aoj     5,
-        sojg    6,dtfs_v2_guard_next_v1555
-dtfs_v2_write_allowed_v1555:
-        jrst    kret_zero
 
         .globl  dtfs_dtc_write_jump
 dtfs_dtc_write_jump:
@@ -1031,16 +883,13 @@ dtfs_mount_unit_media_ready:
         movei   3,fs_block_workspace
         pushj   17,dtfs_dtc_read_jump
         jumpn   1,dtfs_mount_unit_fail
-        ; v1555: the default DTVOL1 and unstamped legacy rules continue
-        ; unchanged. DTVOL2 is admitted only as a fully sealed CLEAN
-        ; physical block, and only when VFS flags request READ-ONLY.
-        ; Dirty or malformed DTVOL2 never becomes a writable mount.
+        ; v1572 operator-trust: admit a valid, physically CLEAN DTVOL2
+        ; either RO or RW, with the same full parser, mount exclusivity
+        ; and persisted volume ID. A DIRTY/invalid reel is STILL refused.
+        ; Operator must not exchange a reel while a writable mount lives.
         move    1,fs_block_workspace
         came    1,[0446466575422]       ; exact SIXBIT DTVOL2
         jrst    dtfs_mount_legacy_identity_v1555
-        move    1,012
-        trnn    1,1                     ; VFS_MOUNT_RDONLY explicitly set
-        jrst    dtfs_mount_unit_fail
         movei   1,fs_block_workspace
         pushj   17,dtfs_intent_validate_v1550
         jumpn   1,dtfs_mount_unit_fail ; DIRTY and INVALID both refused
@@ -1848,9 +1697,18 @@ dtfs_revalidate_clear_v1556:
         jrst    dtfs_revalidate_v1_v1556
         movei   1,fs_block_workspace
         pushj   17,dtfs_intent_validate_v1550
+        ; v1572: the original mounted V2 can be RO/CLEAN, RW/CLEAN
+        ; (before first write), or RW/DIRTY (after verified first arm).
+        ; Do not clear an observed read fault for any inconsistent
+        ; physical state, even if both 36-bit volume-ID halves match.
+        move    5,(17)                  ; original mounted media
+        trne    5,0040000              ; successful first-write arm?
+        jrst    dtfs_revalidate_armed_v1572
         jumpn   1,dtfs_identity_revalidate_pop_fail_v1522
-        ; Only DTVOL2/CLEAN is mounted read-only. A DIRTY record, even
-        ; with the original identity, must not be treated as recovered.
+        jrst    dtfs_revalidate_valid_v1556
+dtfs_revalidate_armed_v1572:
+        caie    1,1                     ; physical WRITE_INTENT required
+        jrst    dtfs_identity_revalidate_pop_fail_v1522
         jrst    dtfs_revalidate_valid_v1556
 dtfs_revalidate_v1_v1556:
         pushj   17,dtfs_identity_validate_v1522
@@ -1879,9 +1737,10 @@ dtfs_revalidate_valid_v1556:
         jrst    dtfs_identity_revalidate_fail_v1522
         trnn    5,0100000
         jrst    dtfs_revalidate_clear_suspect_v1556
-        ; A V2 recovery is valid only for the original published native
-        ; DTFS root and a still-read-only VFS slot. Reject stale slots,
-        ; changed providers and a hypothetical unsafe RW state transition.
+        ; An observed fault may recover ONLY with the original public
+        ; root and the original VFS mount policy. Under operator trust,
+        ; RW/CLEAN before first arm and RW/DIRTY after first arm are
+        ; legitimate. An ARMED RO mount is NEVER legitimate.
         move    1,vfs_mount_root_base
         jumpe   1,dtfs_identity_revalidate_fail_v1522
         add     1,6
@@ -1896,7 +1755,9 @@ dtfs_revalidate_valid_v1556:
         move    1,vfs_mount_policy
         movn    2,6
         lsh     1,0(2)
-        trnn    1,1                     ; VFS_MOUNT_RDONLY still set
+        trnn    1,1                     ; writable mount still in effect?
+        jrst    dtfs_revalidate_clear_suspect_v1556
+        trne    5,0040000              ; cannot have ARMED on RO mount
         jrst    dtfs_identity_revalidate_fail_v1522
 dtfs_revalidate_clear_suspect_v1556:
         movei   3,0200000

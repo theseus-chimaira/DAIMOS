@@ -1,11 +1,9 @@
 ; v1553: authenticated DTFS per-mount first-write intent state transition.
 ;
-; v1561: linked into production DTFS MRES and called through the central
-; DATA/DIR veneer using the exact retained VFS MM aux[slot] as scratch.
-; However v1555 still rejects every V2 DATA/DIR WRITE BEFORE that bridge:
-; this leaf cannot make V2 writable before exclusive CLEAN/unmount and the
-; full physical Type-551 fault/reinsertion/cold-boot acceptance. All calls
-; must hold the same serialized fs_provider_reg_call lease.
+; v1572: production V2 RW is explicitly an OPERATOR-TRUST volume
+; contract. No reel replacement may occur until checked unmount.
+; This central DATA/DIR gate uses the exact retained VFS MM aux[slot]
+; as scratch; all callers hold fs_provider_reg_call's provider lease.
 ;
 ; AC1 = zero-based published VFS DTFS mount slot (NOT raw DTC unit).
 ; AC2 = pointer to the provider's retained one-word MM scratch base.
@@ -19,9 +17,10 @@
 ; The physically verified marker survives process crash, discard and boot.
 ; The ARMED bit is only an in-RAM transaction state: every subsequent
 ; write revalidates the physical RBN0 and original identity (v1554).
-; v1561 is linked and source-tested behind the read-only veto. Actual
-; media exchange between RBN0 verification and DATA/DIR transfer still
-; needs a physical generation/quiescence contract before writable V2.
+; v1572 A/B exposed an unrelated Type-136 reverse WRITE overrun,
+; repaired in tape_io.s v1574. Repeated physical v1554 verification
+; remains ENABLED in this release; eliminating it requires a separate
+; source-matched failure/recovery acceptance, not operator trust alone.
 
         .text
         .globl dtfs_intent_first_write_v1553

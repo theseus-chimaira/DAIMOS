@@ -644,8 +644,9 @@ native_sys_clock_table_word:
 ; Explicit destructive administration of a quarantined noncritical DTFS.
 ; This is deliberately *not* the retired DTFS_FORMAT UUO: there is no
 ; implicit reformat or "media looks valid" recovery.  The caller supplies
-; either a live FD to abandon or a zero-based MM mount slot to replace.
-; Slot retirement requires a fresh, differently stamped physical tape.
+; either a live FD to abandon or a zero-based MM mount slot to discard.
+; Under v1575 operator trust, retirement requires no physical new reel:
+; the operator quarantines damaged media; the next MOUNT validates it.
 ; Only uid 0 may initiate the operation. Each target helper independently
 ; checks the published VFS slot and its sticky WRITE_UNCERTAIN flag.
 native_sys_dtfs_recover_v1531:

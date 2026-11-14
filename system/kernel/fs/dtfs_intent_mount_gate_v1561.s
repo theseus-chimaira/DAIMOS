@@ -10,10 +10,11 @@
 ; AC2/AC3 are caller scratch: dtfs_dtc_write saves block/buffer around
 ; this call. AC10..AC16 are preserved. No permanent KCORE/MRES state.
 ;
-; IMPORTANT: in production v1555's earlier READ-ONLY V2 guard always
-; rejects V2 before this routine can arm an RBN0. This code is linked
-; and called for ABI/integration coverage, but V2 RW remains DISABLED
-; until an exclusive physical CLEAN unmount and full-guest fault tests.
+; v1572 OPERATOR-TRUST production RW: this is the authoritative
+; central V2 ownership and VFS read-only gate before EVERY physical
+; DATA/DIR write. No independent v1555 blanket RO veto remains.
+; The physical Type-551 reel MUST be retained throughout a writable
+; mount; the provider lease itself cannot secure the reel mechanically.
 
         .text
         .globl dtfs_intent_mount_gate_v1561

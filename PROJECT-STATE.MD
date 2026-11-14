@@ -1,3 +1,27 @@
+## 2026-11-14 v1575: P0-B closed under operator-trust DTVOL2 contract
+
+Trusted operator retains each reel for the entire writable mount,
+or explicitly discards a poisoned owner before changing it. Real
+production PDP-6 v1572 RW/DIRTY/CLEAN and cold-boot, physical DATA
+partial plus cold-boot rejection, and RW/DIRTY read-fault/return PASS.
+v1575 removes the former physical different-reel v1531/v1570
+replacement verifier: private operation 026 is now an exclusive
+provider-lease **DISCARD_DRAIN** with only cache invalidation.
+VFS preserves root-only poison, all-process FILE/cwd/PIPE/swap
+owner checks, MM pins, post-lease rechecks and atomic retirement.
+Real V2 guest discards while original DIRTY reel remains physically
+present, rejects its independent RO/RW remount, mounts a new CLEAN
+reel after operator replacement, and cold-boots the original damaged
+image with both modes refused. Whole-reel SHA-256 proves no repair
+or unrequested changes; source-linked owner and drain mutants reject.
+
+P0-B **CLOSED under this explicitly weaker operator-trust contract**,
+not a hardware reel interlock. Legacy V1 lacks persistent DIRTY
+marking and needs operator quarantine. The optional DTFS MRES shrinks
+by 89 words; fixed KCORE low end `024364` octal and permanent RAM
+unchanged. P0-A CLOSED; P1-C/D/E remain OPEN, VERSION 0.5,
+strict 32K HOLD. `design/kcore-dtfs-operator-discard-v1575.md`.
+
 ## 2026-11-14 v1574: fix physical Type-136 reverse WRITE overrun
 
 The source-linked PDP-6 reverse WRITE previously reloaded the full

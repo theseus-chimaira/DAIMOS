@@ -1,3 +1,25 @@
+## 2026-11-14 v1575: trusted-operator DTVOL2 P0-B accepted
+
+Production V2/CLEAN RW uses v1572's first-write physical DIRTY
+intent, per-write identity check, sticky WRITE_UNCERTAIN and final
+quiesced CLEAN/unmount. Full-guest normal RW/CLEAN/reboot, partial
+DATA and cold-boot refusal, and RW/DIRTY observed read error/return
+PASS. v1575 replaces v1531/v1570's physical different-reel verifier
+with a serialized cache-only DISCARD_DRAIN. No media access occurs
+until an independent subsequent MOUNT. Real guest proved an explicitly
+unowned poisoned V2 mount is retired with the original DIRTY reel
+installed; remount of it refuses RO/RW; a different CLEAN reel mounts;
+another cold boot still rejects the original damaged image.
+All-process VFS owner + two BCACHE/identity-drain mutations PASS/reject.
+
+Operator retention and quarantine are explicit site assumptions;
+no hardware mechanical interlock is asserted. DTVOL1 is legacy,
+without on-media write-fault durability. P0-B CLOSED for DTVOL2
+operator-trust profile. DTFS optional MRES -89 words, fixed KCORE
+low end `024364` octal, RAM unchanged. P1-C next, P1-D/E OPEN;
+VERSION 0.5, 32K HOLD.
+`design/kcore-dtfs-operator-discard-v1575.md`.
+
 ## 2026-11-14 v1574: Type-136 reverse-write count/ACK repair
 
 The physical Type-551 corruption seen when v1572 experimentally

@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1574, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1575, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,21 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P0-B closed v1575 under trusted operator:** no live reel
+  exchange while mounted RW; root-authorized discard and operator
+  quarantine after a poisoned volume. V2/CLEAN production RW,
+  physical first DIRTY, checked final CLEAN, actual partial DATA
+  sticky failure, old DIRTY cold-boot rejection and independent
+  replacement CLEAN mount all PASS. Physical replacement identity
+  verifier v1531/v1570 removed, replaced by cache-only serialized
+  provider DISCARD_DRAIN. VFS remote FILE/cwd/PIPE/swap/MM barriers
+  remain, with post-wait checks. Two drain and four owner mutations
+  rejected. Optional DTFS MRES -89 words, no fixed RAM growth.
+  Historical P0-B hardware-interlock TODO entries below are
+  superseded ONLY for the explicit operator-trust contract. Legacy
+  V1 has no durable poisoned-reel record; quarantine is a policy.
+  `design/kcore-dtfs-operator-discard-v1575.md`.
 
 - [x] **v1574 Type-136 physical reverse WRITE overrun fixed:**
   keep completed reverse-write count at zero until the existing two

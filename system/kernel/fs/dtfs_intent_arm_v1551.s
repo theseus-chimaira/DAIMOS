@@ -1,9 +1,9 @@
 ; dtfs_intent_arm_v1551.s -- raw on-media DTFS write-ahead barrier.
 ;
-; Linked into production DTFS MRES by v1561 behind the mandatory v1555
-; V2 READ-ONLY write veto. The physical RBN0 marker remains unreachable
-; from mounted DATA/DIR writes until final exclusive CLEAN/unmount and
-; hardware partial-write/reinsertion/cold-boot acceptance are complete.
+; v1572: production DTVOL2 may be mounted RW under the site/operator
+; contract that the physical reel is NEVER changed while mounted.
+; Every first DATA/DIR write must complete this physical RBN0 marker
+; before touching data, regardless of the trusted-operator policy.
 ;
 ; int dtfs_intent_arm_v1551(unit, id_hi, id_lo, scratch)
 ; AC1=physical DTC unit, AC2/AC3=expected nonzero volume ID halves,

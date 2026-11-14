@@ -42,12 +42,12 @@
 /* Private read-only query for VM startup/BRK: AC1=physical base;
  * 1 for a pinned MEMFS XIP extent, 0 otherwise. */
 #define FS_MRES_OP_XIP_OWNS_BASE_V1469 25U
-/* DTFS-private operation 22: invalidate RAM cache tags, read the
- * physical replacement directory and 72-bit RBN0 stamp, and reject
- * same-identity media. The operation never writes to a tape or clears
- * WRITE_UNCERTAIN; fixed VFS retains the poisoned slot on any failure.
- * Provider-specific numbering intentionally overlaps MEMFS XIP release. */
-#define FS_DTFS_VERIFY_REPLACE_V1531 22U
+/* DTFS-private operation 22: exclusive provider-lease drain and clean
+ * cache invalidation before root discards a poisoned noncritical mount.
+ * NO physical tape read/write, media replacement check or poison reset.
+ * A subsequent independent mount checks the actual physical reel.
+ * Numbering intentionally overlaps MEMFS XIP release in another MRES. */
+#define FS_DTFS_DISCARD_DRAIN_V1575 22U
 
 struct fs_mres_request {
         kword_t op;

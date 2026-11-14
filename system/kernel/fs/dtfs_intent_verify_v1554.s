@@ -1,8 +1,11 @@
 ; DTFS v1554: physical RBN0 verification for an already-armed volume.
 ;
-; Linked into production DTFS MRES by v1561 behind the v1555 read-only
-; write veto. Its physical already-armed verification remains unreachable
-; by live V2 writes until owner-safe CLEAN/unmount is accepted.
+; v1572: live production V2 RW executes this physical check before
+; each subsequent write. An A/B omission exposed an actual Type-136
+; reverse-write overrun, independently fixed at the driver in v1574.
+; This check is retained pending separate physical fault/recovery
+; acceptance of a smaller fast path; operator trust alone does not
+; authorize removing I/O correctness checks.
 ;
 ; AC1=physical DTC unit, AC2/AC3=expected 72-bit nonzero volume ID,
 ; AC4=independent PINNED 0200-word scratch owned by the caller.
@@ -14,8 +17,8 @@
 ; The caller holds the serialized DTFS provider lease from verification
 ; through the corresponding DATA/DIR write, preventing other filesystem
 ; actors from changing this unit via the provider while it is checked.
-; Hardware tape exchange between these two transfers remains a separate
-; unresolved media-generation/quiescence risk for full P0-B acceptance.
+; The v1572 operator-trust contract prohibits physical reel exchange
+; while the mount is writable. There is no hardware-enforced lock.
 
         .text
         .globl dtfs_intent_verify_v1554

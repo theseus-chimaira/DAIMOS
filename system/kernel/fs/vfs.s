@@ -1104,7 +1104,7 @@ vfs_unmount_after_prepare:
         jumpn   1,vfs_unmount_fail
 vfs_unmount_aux_done_v1560:
         ; v1566: only an already-armed writable DTVOL2 needs the final
-        ; physical CLEAN. v1555 still forbids ALL mounted V2 writes, so
+        ; physical CLEAN. v1572 admits OPERATOR-TRUST V2 RW, so
         ; today's admitted RO/CLEAN volumes skip this path entirely.
         ; The V2 owner bit MUST remain held across the provider call,
         ; which can sleep during MM and raw Type-551 read/write/readback.
@@ -1449,15 +1449,16 @@ vfs_dtfs_poisoned_slot_v1531:
         jrst    kret_neg1
         jrst    kret_zero
 
-; Explicit replacement, NOT repair: all live FILE, cwd, PIPE, swap/
-; backstore owners must be released first. There is no physical SYNC
-; and no claim of repaired old data. A serialized provider call
-; PHYSICALLY verifies a valid DIFFERENT native medium with a distinct
-; complete 72-bit ID and a valid directory, without writing it.
-; The final poison and owner checks occur AFTER the provider's I/O/wait.
-; From that last check through retirement no call can sleep or do I/O.
-; The old public slot, media word and both 72-bit identity halves are
-; cleared together without a chance for stale vnode reuse.
+; v1575 operator-trust discard, NOT media replacement or repair:
+; root deliberately abandons a poisoned noncritical DTFS mount only
+; when every FILE, cwd, PIPE, swap and MM owner has been released.
+; An exclusive provider call waits for existing DTFS operations and
+; invalidates clean cached directory/data, without accessing the reel.
+; Recheck poison, root and all owners AFTER the possible lease wait.
+; The operator quarantines the damaged reel; a subsequent MOUNT must
+; independently authenticate physical media. DTVOL2/DIRTY is refused.
+; No automatic repair or resurrection of an abandoned physical reel.
+; From the last owner check through retirement no code may sleep/I/O.
 ; AC1=zero-based MM slot; 0 on retired, -1 on any denial.
         .globl  vfs_dtfs_discard_slot_v1531
 vfs_dtfs_discard_slot_v1531:
@@ -1468,14 +1469,13 @@ vfs_dtfs_discard_slot_v1531:
         movei   1,1(010)
         pushj   17,vfs_unmount_owner_check_v1523
         jumpn   1,vfs_dtfs_discard_bad_v1531
-        ; A retained/pinned scratch extent also blocks initiating the
-        ; replacement's raw physical I/O: otherwise its old DMA owner
-        ; could still be unresolved on the same Type-551 unit.
+        ; Do not retire while a retained/pinned physical intent buffer
+        ; still belongs to an earlier outstanding Type-551 operation.
         move    1,010
         pushj   17,vfs_dtfs_aux_empty_v1560
         jumpn   1,vfs_dtfs_discard_bad_v1531
-        move    1,010                   ; zero-based slot to authenticate
-        movei   6,026                   ; private DTFS VERIFY_REPLACE
+        move    1,010                   ; zero-based poisoned slot
+        movei   6,026                   ; private DTFS DISCARD_DRAIN
         movei   7,5
         pushj   17,fs_provider_reg_call
         jumpn   1,vfs_dtfs_discard_bad_v1531

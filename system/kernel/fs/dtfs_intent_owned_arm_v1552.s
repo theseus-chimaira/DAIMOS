@@ -1,7 +1,8 @@
 ; DTFS v1552: optional MM-owned and physically pinned RBN0 scratch lease.
 ;
-; Linked behind the v1555 production read-only V2 write veto since v1561.
-; No live V2 caller may reach this physical RBN0 write-ahead service yet.
+; v1572: actual production V2 RW reaches this owner-checked physical
+; first-write service under an explicit trusted-operator no-exchange
+; contract. A read-only VFS mount is still rejected by v1561.
 ;
 ; int dtfs_intent_owned_arm_v1552(unit, id_high, id_low, basep)
 ; AC1=physical Type-551 unit, AC2/AC3=previously admitted volume ID,
