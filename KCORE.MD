@@ -1,3 +1,25 @@
+## 2026-11-14 v1562: DTFS final-unmount owner-admission barrier
+
+Production fixed VFS now acquires a transient V2 per-mount quiescence bit
+after the initial owner scan and before sleeping SYNC. The existing
+boot-MM-backed DTFS media word supplies the bit; no new mount or DATA/BSS
+word. Real FILE/cwd stores and DTFS provider dispatch refuse publication
+or normal I/O during a pending seal, and stale/recycled DTFS mount IDs
+cannot acquire FILE/cwd owners. The linked v1561 physical intent gate
+also refuses a quiescing unit. VFS releases only its own checked barrier
+after final owner/MM scans and then retires without another sleeping call,
+or aborts safely after failed SYNC. The v1555 V2 READ-ONLY veto remains.
+
+Native PDP-6: **41 helper cases/seven source mutants and 12 actual VFS
+unmount cases/three mutants PASS**, with earlier v1514/v1523/v1560,
+v1555/v1556/v1559/v1561 acceptance rechecked. Full KCC KCORE/DTFS
+MRES fold/link/image PASS. Fixed KCORE placement grows 152 TEXT words
+relative to v1561, with no new allocated table. **No physical CLEAN
+write/readback, PIPE/swap ingress proof or media-exchange guarantee:**
+P0-B remains OPEN; full Type-551 guest durability still pending.
+`design/kcore-dtfs-quiesce-v1562.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1561: linked DTFS physical DIRTY/MM owner write gateway
 
 Production optional DTFS MRES now includes actual v1551-v1554

@@ -1051,11 +1051,19 @@ vfs_unmount_slot:
         ldb     5,[POINT 5,vfs_mount_policy,4]
         camn    5,4
         jrst    kret_neg1
+        push    17,[0]                  ; v1562 quiescence acquired (0/1)
         push    17,1                    ; root
         push    17,2                    ; slot
         movei   1,1(2)                  ; public mount id is slot + 1
         pushj   17,vfs_unmount_owner_check_v1523
         jumpn   1,vfs_unmount_fail
+        ; After this owner scan there is no scheduler yield before the
+        ; admission bit is published. Subsequent provider I/O may sleep;
+        ; the v1562 barrier forbids new DTFS FILE/cwd and provider users.
+        move    1,(17)                  ; zero-based mount slot
+        pushj   17,vfs_dtfs_quiesce_begin_v1562
+        jumpl   1,vfs_unmount_fail
+        movem   1,-2(17)               ; 1 for V2, zero otherwise
         move    1,-1(17)
         pushj   17,vfs_sync
         jumpn   1,vfs_unmount_fail
@@ -1095,6 +1103,17 @@ vfs_unmount_after_prepare:
         pushj   17,vfs_dtfs_aux_empty_v1560
         jumpn   1,vfs_unmount_fail
 vfs_unmount_aux_done_v1560:
+        ; The v1562 barrier currently protects the already-accepted RO
+        ; V2 unmount. A future final CLEAN writer belongs HERE, with the
+        ; barrier still held, after the last owner and MM checks and before
+        ; retirement. Never clear it across a sleeping CLEAN operation.
+        skipn   -2(17)
+        jrst    vfs_unmount_quiesce_done_v1562
+        move    1,(17)
+        move    2,-1(17)
+        pushj   17,vfs_dtfs_quiesce_end_v1562
+        jumpn   1,vfs_unmount_fail
+vfs_unmount_quiesce_done_v1562:
         move    2,(17)
         move    1,-1(17)
         came    1,vfs_namespace_root
@@ -1108,7 +1127,7 @@ vfs_unmount_unlock:
         pushj   17,file_unlock_mount
         move    2,(17)
         pushj   17,vfs_mount_retire_slot
-        sub     17,kconst_2_2
+        sub     17,kconst_3_3
         jrst    kret_zero
 
 ; Retire exactly one unmounted slot. The caller has completed all unmount
@@ -1127,7 +1146,16 @@ vfs_mount_retire_slot:
         andcam  3,vfs_mount_policy     ; other owners cannot be retired here
         popj    17,
 vfs_unmount_fail:
-        sub     17,kconst_2_2
+        ; No physical CLEAN attempt exists yet. Undo only our own acquired
+        ; barrier while the original mount is still published. If the
+        ; original owner changed, fail closed and leave the bit untouched.
+        skipn   -2(17)
+        jrst    vfs_unmount_fail_done_v1562
+        move    1,(17)
+        move    2,-1(17)
+        pushj   17,vfs_dtfs_quiesce_end_v1562
+vfs_unmount_fail_done_v1562:
+        sub     17,kconst_3_3
         jrst    kret_neg1
 
 ; AC1=public mount ID. The underlying PIPE and process-swap checkers may
@@ -1166,6 +1194,169 @@ vfs_dtfs_aux_empty_v1560:
         skipn   (6)
         jrst    kret_zero
         jrst    kret_neg1
+
+; v1562: mount-owner publication guard for a DTFS vnode or packed FILE
+; descriptor. FILE metadata bits overlap its provider field, so strip the
+; same bits as file_node_from_fd before examining provider and mount ID.
+; No sleep between checking the barrier and storing a new FILE/cwd owner.
+; Even with no active barrier, reject retired/recycled DTFS mount IDs: a
+; provider operation suspended before unmount must not publish a stale FD.
+; AC1=vnode or packed descriptor, returns 0 or -1; AC2..AC5 preserved.
+        .globl  vfs_dtfs_owner_admit_v1562
+vfs_dtfs_owner_admit_v1562:
+        push    17,2
+        push    17,3
+        push    17,4
+        push    17,5
+        move    2,1
+        tlz     2,700070
+        ldb     3,[POINT 6,2,5]
+        caie    3,5                     ; other providers unchanged
+        jrst    vfs_dtfs_owner_allow_v1562
+        ldb     3,[POINT 6,2,11]       ; public DTFS mount ID
+        jumple  3,vfs_dtfs_owner_refuse_v1562
+        move    4,3
+        subi    4,1                     ; zero-based slot
+        caml    4,vfs_mount_limit
+        jrst    vfs_dtfs_owner_refuse_v1562
+        skipn   5,vfs_mount_root_base
+        jrst    vfs_dtfs_owner_refuse_v1562
+        add     5,4
+        skipn   2,(5)                   ; unpublished or retired slot
+        jrst    vfs_dtfs_owner_refuse_v1562
+        ldb     5,[POINT 6,2,5]
+        caie    5,5
+        jrst    vfs_dtfs_owner_refuse_v1562
+        ldb     5,[POINT 6,2,11]
+        came    5,3
+        jrst    vfs_dtfs_owner_refuse_v1562
+        skipn   2,dtfs_media_base
+        jrst    vfs_dtfs_owner_refuse_v1562
+        add     2,4
+        move    2,(2)
+        trne    2,0020000              ; exclusive V2 final-unmount barrier
+        jrst    vfs_dtfs_owner_refuse_v1562
+vfs_dtfs_owner_allow_v1562:
+        setz    1,
+        jrst    vfs_dtfs_owner_done_v1562
+vfs_dtfs_owner_refuse_v1562:
+        seto    1,
+vfs_dtfs_owner_done_v1562:
+        pop     17,5
+        pop     17,4
+        pop     17,3
+        pop     17,2
+        popj    17,
+
+; v1562: acquire a temporary per-mount V2 owner-admission barrier before
+; VFS SYNC can sleep. AC1=zero-based slot; returns 1 if acquired, 0 if
+; non-DTFS/legacy, -1 if refused. The caller already checked all owners
+; without yielding. Neither this helper nor its MM-owner check sleeps.
+; Preserve AC2..AC6 and all callee-saved registers.
+        .globl  vfs_dtfs_quiesce_begin_v1562
+vfs_dtfs_quiesce_begin_v1562:
+        push    17,2
+        push    17,3
+        push    17,4
+        push    17,5
+        push    17,6
+        push    17,1                    ; exact slot for MM check
+        jumpl   1,vfs_dtfs_quiesce_bad_v1562
+        caml    1,vfs_mount_limit
+        jrst    vfs_dtfs_quiesce_bad_v1562
+        skipn   2,vfs_mount_root_base
+        jrst    vfs_dtfs_quiesce_bad_v1562
+        add     2,1
+        skipn   3,(2)
+        jrst    vfs_dtfs_quiesce_bad_v1562
+        ldb     4,[POINT 6,3,5]
+        caie    4,5                     ; only DTFS has a V2 intent seal
+        jrst    vfs_dtfs_quiesce_legacy_v1562
+        ldb     4,[POINT 6,3,11]
+        movei   5,1(1)
+        came    4,5
+        jrst    vfs_dtfs_quiesce_bad_v1562
+        skipn   2,dtfs_media_base
+        jrst    vfs_dtfs_quiesce_bad_v1562
+        add     2,1
+        move    3,(2)
+        trnn    3,0100000              ; DTVOL1/legacy need no seal
+        jrst    vfs_dtfs_quiesce_legacy_v1562
+        trne    3,0620000              ; suspect, uncertain or sealing
+        jrst    vfs_dtfs_quiesce_bad_v1562
+        move    1,(17)
+        pushj   17,vfs_dtfs_aux_empty_v1560
+        jumpn   1,vfs_dtfs_quiesce_bad_v1562
+        move    1,(17)
+        move    2,dtfs_media_base
+        add     2,1
+        move    3,(2)
+        ; The serialized no-yield segment guarantees no owner was added
+        ; since the last checked VFS owner scan. Recheck media anyway.
+        trnn    3,0100000
+        jrst    vfs_dtfs_quiesce_bad_v1562
+        trne    3,0620000
+        jrst    vfs_dtfs_quiesce_bad_v1562
+        tro     3,0020000
+        movem   3,(2)
+        movei   1,1
+        jrst    vfs_dtfs_quiesce_done_v1562
+vfs_dtfs_quiesce_legacy_v1562:
+        setz    1,
+        jrst    vfs_dtfs_quiesce_done_v1562
+vfs_dtfs_quiesce_bad_v1562:
+        seto    1,
+vfs_dtfs_quiesce_done_v1562:
+        sub     17,kconst_1_1
+        pop     17,6
+        pop     17,5
+        pop     17,4
+        pop     17,3
+        pop     17,2
+        popj    17,
+
+; Release only the barrier on the same original published mount. This
+; stage has no physical CLEAN operation: abort after a failed SYNC is safe.
+; Future CLEAN/uncertain-write handling must not blindly call this abort.
+; AC1=zero-based slot, AC2=original root vnode. Return 0/-1.
+        .globl  vfs_dtfs_quiesce_end_v1562
+vfs_dtfs_quiesce_end_v1562:
+        push    17,2
+        push    17,3
+        push    17,4
+        push    17,5
+        jumpl   1,vfs_dtfs_quiesce_end_bad_v1562
+        caml    1,vfs_mount_limit
+        jrst    vfs_dtfs_quiesce_end_bad_v1562
+        skipn   3,vfs_mount_root_base
+        jrst    vfs_dtfs_quiesce_end_bad_v1562
+        add     3,1
+        move    4,(3)
+        came    4,2                     ; no borrowed/recycled owner
+        jrst    vfs_dtfs_quiesce_end_bad_v1562
+        ldb     5,[POINT 6,4,5]
+        caie    5,5
+        jrst    vfs_dtfs_quiesce_end_bad_v1562
+        skipn   3,dtfs_media_base
+        jrst    vfs_dtfs_quiesce_end_bad_v1562
+        add     3,1
+        move    4,(3)
+        trnn    4,0100000
+        jrst    vfs_dtfs_quiesce_end_bad_v1562
+        trnn    4,0020000
+        jrst    vfs_dtfs_quiesce_end_bad_v1562
+        trz     4,0020000
+        movem   4,(3)
+        setz    1,
+        jrst    vfs_dtfs_quiesce_end_done_v1562
+vfs_dtfs_quiesce_end_bad_v1562:
+        seto    1,
+vfs_dtfs_quiesce_end_done_v1562:
+        pop     17,5
+        pop     17,4
+        pop     17,3
+        pop     17,2
+        popj    17,
 
 ; Validate a zero-based, currently published non-root DTFS mount slot
 ; that has definitively entered sticky WRITE_UNCERTAIN. Never use this

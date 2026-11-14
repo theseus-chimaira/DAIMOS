@@ -63,5 +63,10 @@
  * full MM scratch release under the exclusive provider lease. */
 #define DTFS_MEDIA_FORMAT_V2_V1553 0100000U
 #define DTFS_MEDIA_INTENT_ARMED_V1553 0040000U
+/* v1562: transient exclusive final-unmount admission barrier. The bit is
+ * stored in the existing per-mount media RH and never written to RBN0.
+ * Only the owner-safe VFS unmount path may set/clear it. No physical
+ * CLEAN transition or writable V2 admission is enabled by this bit. */
+#define DTFS_MEDIA_QUIESCING_V1562   0020000U
 
 #endif

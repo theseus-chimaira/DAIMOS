@@ -17,15 +17,32 @@
         .globl  dtfs_write_words
         .globl  dtfs_sync
         .globl  dtfs_mount_unit
+        .globl  vfs_dtfs_owner_admit_v1562
 
 dtfs_mres_dispatch:
 dtfs_mres_reg_dispatch:
         cain    6,026                   ; DTFS private VERIFY_REPLACE_V1531
         jrst    dtfs_verify_replacement_v1531
+        ; v1562: a V2 final-unmount barrier blocks provider operations
+        ; which could resume after the first owner check. The internal
+        ; SYNC is deliberately permitted while VFS holds this barrier.
+        ; MOUNT_UNIT receives a raw physical unit, not a mounted vnode.
+        cain    6,022                   ; FS_MRES_OP_MOUNT_UNIT
+        jrst    dtfs_mres_dispatch_ready_v1562
+        cain    6,017                   ; FS_MRES_OP_SYNC
+        jrst    dtfs_mres_dispatch_ready_v1562
+        push    17,1
+        pushj   17,vfs_dtfs_owner_admit_v1562
+        jumpn   1,dtfs_mres_dispatch_refuse_v1562
+        pop     17,1
+dtfs_mres_dispatch_ready_v1562:
         cain    6,025                   ; FS_MRES_OP_SPACE
         jrst    dtfs_space
         move    7,[dtfs_mres_vector]
         jrst    fs_mres_vector_dispatch
+dtfs_mres_dispatch_refuse_v1562:
+        pop     17,1
+        jrst    kret_neg1
 
 ; Return total/used physical data words for the mounted DECtape.  Reserved
 ; directory/format blocks are already marked non-free in every supported

@@ -1332,6 +1332,11 @@ file_chdir:
         pushj   17,file_access_stat
         jumpn   1,file_chdir_fail
         move    1,-7(17)
+        ; v1562: a sleeping STAT/lookup may have completed after final
+        ; DTFS unmount quiescence began. Never publish a new cwd then.
+        pushj   17,vfs_dtfs_owner_admit_v1562
+        jumpn   1,file_chdir_fail
+        move    1,-7(17)
         move    2,file_table
         movem   1,-1(2)
         setz    1,
@@ -1512,6 +1517,7 @@ file_find:
 ; CREATE/TRUNC are OPEN-only.  APPEND is retained later in file_open_append
 ; using the DIR bit when the descriptor has nonzero regular-file state.
         .globl  file_new_fd
+        .globl  vfs_dtfs_owner_admit_v1562
 file_new_fd:
         tlne    1,700070               ; provider and local-kind high bits
         jrst    file_new_fd_fail
@@ -1535,10 +1541,19 @@ file_new_fd_fail:
         jrst    kret_neg1
 file_new_fd_store:
 ; All six mount bits are retained in the descriptor itself.
+        ; Refuse an exclusive DTFS seal or retired mount before creating
+        ; any FILE owner. The guard strips the packed FD metadata bits.
+        push    17,1
+        pushj   17,vfs_dtfs_owner_admit_v1562
+        jumpn   1,file_new_fd_admit_bad_v1562
+        pop     17,1
         movem   1,(4)
         setzm   1(4)
         move    1,5
         popj    17,
+file_new_fd_admit_bad_v1562:
+        pop     17,1
+        jrst    file_new_fd_fail
 
 ; kword_t file_seek(int fd, kword_t offset, unsigned int whence)
 ; Seekable regular files carry a full 36-bit word offset in the

@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1561, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1562, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -263,6 +263,19 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   CLEAN unmount, physical tape generation/exchange assurance,
   partial Type-551 write/reinsertion/cold-boot guest acceptance.
   **P0-B OPEN.** `design/kcore-dtfs-mounted-intent-v1561.md`.
+  **v1562 VFS quiescence prerequisite PASS:** use the existing per-mount
+  DTFS media spare bit to stop new FILE/cwd ownership and normal DTFS
+  provider access before sleeping SYNC and until final owner/MM scans.
+  Refuse stale/retired mount IDs and physical write intent on quiescing
+  volumes. Restore the checked transient barrier on failed SYNC; no
+  physical CLEAN occurs. 41 native helper cases/7 source mutants and
+  12 actual VFS unmount cases/3 mutants PASS; previous v1514/v1523/
+  v1555/v1556/v1559/v1560/v1561 and KCC image tests PASS.
+  Fixed KCORE placement +152 TEXT words, zero new data.
+  **P0-B remains OPEN:** cross-class PIPE/swap admission and actual
+  scheduler race proof, physical owner-safe CLEAN write/readback,
+  media-generation safety and Type-551 cold-boot fault acceptance.
+  `design/kcore-dtfs-quiesce-v1562.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

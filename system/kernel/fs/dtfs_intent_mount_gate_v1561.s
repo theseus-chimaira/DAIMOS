@@ -84,6 +84,8 @@ dtfs_mount_gate_skip_v1561:
         move    015,dtfs_media_base
         add     015,4
         move    015,(015)
+        trne    015,0020000            ; v1562 exclusive final unmount
+        jrst    dtfs_mount_gate_refuse_v1561
         iori    015,0040000            ; only ARMED may be newly set
 
         ; No physical RBN0 DIRTY write may occur on an RO VFS mount,

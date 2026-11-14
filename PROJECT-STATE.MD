@@ -1,3 +1,33 @@
+## 2026-11-14 v1562: native V2 DTFS unmount quiescence barrier PASS
+
+The optional DTFS v1561 first-write gateway remains under v1555's
+mandatory READ-ONLY veto. v1562 adds a separate fixed-VFS transient
+per-mount quiescence bit (existing MM-backed DTFS media word), acquired
+after first FILE/cwd, PIPE and swap owner scan but before sleeping SYNC.
+New FILE/cwd owners, stale/recycled DTFS mount IDs and normal DTFS
+provider operations now refuse during quiescence; the linked intent
+bridge also rejects the flag. VFS checks all owners and retained MM
+scratch again after SYNC, then releases the barrier and retires without
+sleep, or aborts without losing a foreign owner or a failed-sync mount.
+No on-media CLEAN operation has been implemented or enabled.
+
+Source-linked PDP-6 v1562 **41 helper cases/seven unsafe mutants** and
+**12 real VFS unmount flow cases/three unsafe mutants** PASS. v1514
+nonroot unmount, v1523 cross-process FILE/cwd, v1560 MM mount lifetime,
+v1559 coverage, v1555 physical RO admission and write guard, v1556
+recovery and v1561 intent bridge regressions PASS. Full 256K KCC KCORE
+and DTFS MRES compile/assemble/fold/link and image PASS. No new fixed
+data/mount slab; linked KCORE TEXT placement grows 152 words against
+v1561. The full 32K permanent-size gate remains HOLD, not accepted.
+
+P0-B is NOT complete: exclusive PIPE/swap admission, real physical
+CLEAN seal and readback, Type-551 media generation/exchange, partial
+write, reinsertion and cold boot are still OPEN. P0-A accepted,
+P1-C/D/E unchanged; VERSION 0.5. See
+`design/kcore-dtfs-quiesce-v1562.md` and testkit
+`tests/validation/daimos-dtfs-quiesce-v1562.sh`,
+`tests/validation/daimos-dtfs-quiesce-unmount-v1562.sh`.
+
 ## 2026-11-14 v1561: live DTFS MRES physical intent/MM binding PASS
 
 Native v1551-v1554 physically checked DIRTY-before-DATA services,
