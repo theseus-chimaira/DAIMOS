@@ -1,3 +1,27 @@
+## 2026-11-14 v1581: real Type-236 PI2 snapshot failure, swapped-owner fail-stop
+
+Full physical 128K KCC PDP-6 on actual DRM236 AUXSTORE: root created
+persistent MEMFS data/XIP, committed/read LOGSTORE, then armed four
+sleeping 24K-word children. With live original KCORE owned swap
+blocks, a disposable driver selector redirected the *actual* first
+MEMFS snapshot-header physical Type-236 DR_DONE completion into the
+original PI2 error handler. Original BACKSTORE critical gateway
+halted at linked reason-2 PC `004011` octal. Post-HALT words prove
+one PI2 error, one original DRM error-account increment, `01374`
+octal owned swap blocks, correct physical
+group `0157670`, completed/retired descriptor and no pending trigger.
+Independent 36-bit sector read confirms invalid (zero) final header
+at Type-236 block `015767`, 248 nonzero lower backing sectors and
+unchanged separate AUXSTORE layout. Seven corrupted physical/evidence
+witnesses rejected. No production KCORE/MRES/RAM/ABI change.
+
+**P1-C remains OPEN** for mapped VOLUME/controller failures,
+independent PI-driven swap-in *during* snapshot writes and natural
+device failure cases. This was selected test-induced PI2 completion,
+not naturally faulty magnetic media. Production fixed low end
+`024364` octal, VERSION 0.5, optimization/32K HOLD.
+`design/kcore-p1c-snapshot-pi2-failure-v1581.md`.
+
 ## 2026-11-14 v1580: physical swap owner at MEMFS snapshot HALT PASS
 
 Two independent full 128K KCC PDP-6 physical boots retained the

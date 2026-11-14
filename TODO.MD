@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1580, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1581, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,22 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1581 real physical direct-DEVICE snapshot PI2 error:**
+  full 128K PDP-6 with real persistent MEMFS/LOGSTORE, four sleeping
+  24K-word processes and positive original swap-block ownership.
+  Test-only selected actual Type-236 first snapshot-header DR_DONE
+  routed to original PI2 error branch. Original BACKSTORE fatal HALT
+  at linked PC `004011` octal; selected error=1, original DRM
+  error counter=1, owned=`01374`
+  octal blocks, physical group=`0157670`, retired descriptor,
+  trigger cleared. Physical 36-bit header at block `015767` remains
+  invalid, other backing payload/partition layout intact. Seven
+  intentionally corrupted evidence sets rejected. No production
+  code/RAM change and no claim of natural magnetic media failure.
+  **P1-C OPEN** for mapped VOLUME errors, separate PI swap-in during
+  synchronous snapshot DMA and remaining owner/BCACHE/MM fault
+  rollback. `design/kcore-p1c-snapshot-pi2-failure-v1581.md`.
 
 - [x] **P1-C v1580 real physical swapped owner at MEMFS HALT:**
   two independent 128K PDP-6 cold boots with a retained AUXSTORE

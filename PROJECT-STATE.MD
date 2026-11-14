@@ -1,3 +1,30 @@
+## 2026-11-14 v1581: physical PI2 failure during owned MEMFS HALT PASS
+
+Real 128K KCC PDP-6 DSK root, DRM236 AUXSTORE, persistent MEMFS and
+physical LOGSTORE; four sleeping large processes were established
+before privileged HALT with actual owned swap BACKSTORE blocks. In
+an isolated diagnostic source copy, the original first invalid
+snapshot-header WRITE was selected by its true sector/buffer and
+the real Type-236 completion was routed through the unchanged PI2
+error publication. The original fatal BACKSTORE reason-2 leaf
+halted at linked PC `004011` octal. Physical post-HALT evidence:
+one selected PI2 error, one original DRM error-account increment,
+swap-owned `01374` octal blocks, relative
+block `07777`, hardware group `0157670`, retired descriptor, cleared
+trigger, active BACKSTORE. Raw 36-bit physical block `015767`
+retained invalid snapshot commit; 248 nonzero backing sectors and
+the full AUXSTORE geometry stayed intact. Seven unsafe evidence
+mutations rejected. This is a test-induced PI2 completion failure
+following genuine physical DMA, not natural media/controller loss.
+
+**P1-C remains OPEN** for independent swap-in PI overlap during
+snapshot I/O, mapped multi-member VOLUME faults, natural hardware
+failure and exact owner/MM/BCACHE rollback checks. P1-D, P1-E and
+feature freeze remain open. P0-A/B remain closed under their
+accepted contracts. No production KCORE change, fixed low end still
+`024364` octal, VERSION 0.5 and strict 32K/optimization HOLD.
+`design/kcore-p1c-snapshot-pi2-failure-v1581.md`.
+
 ## 2026-11-14 v1580: physical MEMFS HALT with real swapped owners PASS
 
 On two actual full 128K PDP-6 KCC cold boots with one unchanged
