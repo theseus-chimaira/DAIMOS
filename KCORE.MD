@@ -1,3 +1,27 @@
+## 2026-11-14 v1553: native DTFS per-mount first-write gate accepted
+
+`dtfs_intent_first_write_v1553.s` now authenticates the published
+VFS DTFS provider/root/mount slot, exact original 72-bit ID,
+physical DTC unit and native DTVOL2 state before issuing the
+v1552 MM-pinned/v1551 write-ahead transaction. After a physically
+verified DIRTY marker and full MM release, and only if the media
+word is unchanged, it sets the spare per-mount `INTENT_ARMED` bit.
+Wrong/retired mounts, legacy/foreign media, suspect I/O, missing
+identity and retained scratch prevent any first DATA/DIR write.
+The existing 18-bit UID/GID owner is preserved.
+
+Actual PDP-6 gate source: 18 cases and 13 unsafe source mutants
+PASS/rejected. `fs_provider_reg_call` already provides a serialized
+sleeping provider lease, but the `dtfs_dtc_write` unit-only ABI
+and sleeping VFS unmount need additional authenticated hooks.
+An already-armed mount must physically revalidate its DIRTY/ID
+before future writes; the cached ARMED bit alone is insufficient.
+
+**Not linked into production DTFS**; no live DTVOL2 mount/write
+change, fixed RAM growth, ABI change or optimization. P0-B OPEN.
+See `design/kcore-dtfs-first-write-v1553.md`; VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1552: native pinned MM-owned DTVOL2 intent scratch
 
 Added standalone `dtfs_intent_owned_arm_v1552.s`: the exact

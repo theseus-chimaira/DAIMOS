@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1552, 2026-11-13)
+## CURRENT KCORE FEATURE TODO (authoritative after v1553, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -172,6 +172,16 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   the mounted provider: first-write gating, final CLEAN unmount,
   physical failed-media reinsertion/cold boot still OPEN.
   See `design/kcore-dtfs-owned-scratch-v1552.md`.
+  **v1553 per-mount first-write gate PASS:** source-linked PDP-6
+  checks published DTFS vnode, exact mount/physical unit, stored
+  72-bit identity, DTVOL2, no sticky suspect bits, and released
+  MM scratch. It sets INTENT_ARMED only after verified v1552/v1551
+  physical DIRTY marker and stable owner/media state. Eighteen
+  native cases and 13 rejected unsafe source mutants PASS.
+  Still UNLINKED: physical recheck on each subsequent write,
+  provider MM-scratch publication, mandatory write path, exclusive
+  CLEAN-unmount and full-guest Type-551 cold boot remain open.
+  See `design/kcore-dtfs-first-write-v1553.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

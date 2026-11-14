@@ -1,3 +1,26 @@
+## 2026-11-14 v1553: authenticated DTFS first-write native gate PASS
+
+Added unlinked native PDP-6 `dtfs_intent_first_write_v1553.s`
+and spare media-RH FORMAT_V2/INTENT_ARMED flags. It checks exact
+published VFS DTFS root, mount ID, 72-bit saved identity and
+physical unit, native DTVOL2 and no suspect bits, plus zero
+outstanding MM scratch, before invoking v1552/v1551 physically
+checked DIRTY RBN0 arming. It sets ARMED only after complete
+physical readback and MM cleanup, with unchanged media word and
+retained UID/GID owner. Eighteen native PDP-6 cases PASS; 13
+unsafe source mutants rejected, including skipped physical arm,
+stale provider/mount and ignored MM or media failures.
+
+No production DTFS mounting or data write has been enabled.
+The in-memory ARMED fast path requires a fresh physical DIRTY/
+ID verification before allowing subsequent production writes;
+VFS also needs exclusive unmount quiescence across sleeping
+clean-seal I/O and a retained MM scratch owner in optional MRES.
+P0-B OPEN; v1553 is not physical Type-551 full-guest acceptance.
+No permanent fixed RAM, syscall ABI or default media changes.
+Details `design/kcore-dtfs-first-write-v1553.md`; P0-A closed,
+P1-C open; VERSION 0.5, strict 32K/optimization HOLD.
+
 ## 2026-11-13 v1552: pinned MM-owned DTFS intent scratch accepted
 
 `dtfs_intent_owned_arm_v1552.s` now wraps v1551 physical RBN0
