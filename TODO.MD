@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1566, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1567, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -330,6 +330,22 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   generation invariants, partial physical DATA/CLEAN failures,
   reinsert/replacement and second cold-boot after actual RW.
   `design/kcore-dtfs-clean-seal-v1566.md`.
+  **v1567 full physical torn-media and second cold boot PASS:**
+  11 actual PDP-6 KCC Type-551 guest boots from host-generated
+  on-media crash variants (10 rejected/1 CLEAN DATA-integrity
+  negative control), each with full-image SHA unchanged. Separate
+  disposable image physically wrote genuine DIRTY then interrupted
+  production v1566 CLEAN with real Type-551 `PARTIALWRITE=0000:1`.
+  Exact KCORE instruction breakpoints and independent DTC3 DETACH/
+  tape byte-diff proved single changed CLEAN state word and old DIRTY
+  salted seal; VFS retained poisoned owner and TSFS root stayed alive.
+  Second fresh **unmodified production cold boot** rejected that
+  exact torn volume both RO/RW with slot unpublished. Original v1529
+  physical partial DATA regression PASS. NO production code/RAM change.
+  **P0-B OPEN:** Type-551 has no mechanical reel-generation interlock,
+  and V2 DATA/DIR partial write, exchange and replacement across RW
+  are not accepted. Production DTVOL2 remains RO.
+  `design/kcore-dtfs-media-fault-v1567.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

@@ -1,3 +1,43 @@
+## 2026-11-14 v1567: actual Type-551 partial CLEAN and second cold boot PASS
+
+An audit of actual Type-551/136 production tape driver confirmed
+the serialized controller has no persistent physical reel-generation
+or eject interlock. Software-only RBN0 identity reads cannot prevent
+external media exchange between verified header and subsequent I/O.
+The v1555 mandatory DTVOL2 RO guard remains untouched.
+
+Eleven real PDP-6 cold boots using production KCORE/DTFS MRES and
+physical DTC3 transfer accepted ten host-created torn/dirty rejection
+scenarios plus one explicit negative control: valid CLEAN RBN0 does
+not detect damaged unrelated DATA, so RO mount legitimately succeeds.
+Ten torn/dirty versions refuse both RO/RW with no public VFS mount,
+and all eleven tapes retain identical complete-image SHA-256.
+
+Separately, a source-matched disposable full guest physically wrote
+and verified DTVOL2/WRITE_INTENT using production v1551/v1552.
+Two linked **test-only** KCORE breakpoint labels gave deterministic
+SIMH controller pauses before the untouched v1566 CLEAN call and
+on the real VFS WRITE_UNCERTAIN failure exit. The diagnostic Type-551
+`PARTIALWRITE=0000:1` interrupted genuine RBN0 CLEAN after exactly
+one physically changed 36-bit word. Physical DETACH and independent
+whole-tape comparison proved RBN0 state became CLEAN but its salted
+seal stayed DIRTY; original 72-bit ID and ALL other tape bytes were
+unchanged. The still-mounted owner remained poisoned; FSINFO,
+CHDIR and UNMOUNT refused and TSFS root continued normally.
+
+A **second fully unmodified production KCC cold boot** then read
+the exact physically damaged image and refused RO/RW admission,
+published no DTFS mount and left the complete image SHA unchanged.
+Previous v1529 real Type-551 DATA-block partial-write regression PASS.
+
+**P0-B OPEN:** hardware/operational reel-generation interlock,
+interrupted physical V2 DATA/DIR user writes, same/replacement media
+reinsertion and post-RW recovery still mandatory. v1555 V2 remains
+READ-ONLY. Zero production code/RAM growth; lowcore end still
+`024364` octal. P0-A CLOSED, VERSION 0.5, 32K HOLD.
+`design/kcore-dtfs-media-fault-v1567.md` and testkit
+`tests/validation/daimos-dtfs-media-fault-v1567.md`.
+
 ## 2026-11-14 v1566: physical DIRTY-to-CLEAN under owner seal PASS
 
 The production DTFS provider now links private op 027 and an exact

@@ -1,3 +1,26 @@
+## 2026-11-14 v1567: real interrupted physical CLEAN and cold boot PASS
+
+Controller audit: Type-551 serializes Type-136 transfers but has no
+persistent hardware reel-generation/interlock; software RBN0 reads
+cannot rule out tape exchange before the next physical WRITE.
+No production modification or writable V2 cutover was made.
+
+Eleven full production PDP-6/Type-551 cold boots checked ten torn/
+DIRTY physical images, refusing RO/RW, and one honest negative control:
+clean RBN0 with unrelated corrupted DATA remains mountable RO.
+A source-matched **disposable** image physically armed genuine
+WRITE_INTENT using v1551/v1552, then the real production v1566 CLEAN
+writer met diagnostic `PARTIALWRITE=0000:1`. Linked KCORE breakpoints
+proved the actual failure path; the physical tape had only the first
+36-bit CLEAN state word changed, leaving old DIRTY salted seal and
+both original ID halves. Poisoned VFS refused FSINFO/CHDIR/UNMOUNT
+while TSFS stayed healthy. A SECOND unmodified production cold boot
+rejected the exact torn tape RO/RW, leaving its full SHA-256 unchanged.
+Old v1529 real partial DATA regression PASS. Zero production code,
+ABI or memory change; fixed KCORE still `024364` octal.
+**P0-B OPEN**, v1555 V2 READ-ONLY mandatory, VERSION 0.5, 32K HOLD.
+`design/kcore-dtfs-media-fault-v1567.md`.
+
 ## 2026-11-14 v1566: owner-exclusive physical DTVOL2 CLEAN PASS
 
 Production VFS now invokes a private DTFS MRES CLEAN seal only for
