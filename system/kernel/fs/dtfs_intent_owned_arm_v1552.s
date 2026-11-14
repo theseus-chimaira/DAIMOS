@@ -15,10 +15,14 @@
 ; extent is 0200 words, MM_TYPE_KERNEL_DYNAMIC and owner 015 octal.
 ; The extent is pinned across the complete physical Type-551 transaction
 ; so MM compaction cannot relocate the DMA buffer while I/O sleeps.
+; v1554 shares the EXACT same pin/owner cleanup for read-only physical
+; DTVOL2/DIRTY revalidation, without duplicating the 128-word MM lease.
 
         .text
         .globl dtfs_intent_owned_arm_v1552
+        .globl dtfs_intent_owned_verify_v1554
         .globl dtfs_intent_arm_v1551
+        .globl dtfs_intent_verify_v1554
         .globl mm_alloc_aligned_noreclaim
         .globl mm_pin
         .globl mm_unpin
@@ -29,11 +33,18 @@
         .equ    MM_TYPE_KERNEL_DYNAMIC_V1552,3
 
 dtfs_intent_owned_arm_v1552:
+        setz    5,                      ; arm CLEAN -> DIRTY
+        jrst    dtfs_owned_common_v1554
+dtfs_intent_owned_verify_v1554:
+        movei   5,1                     ; verify already DIRTY
+dtfs_owned_common_v1554:
         push    17,010
         push    17,011
         push    17,012
         push    17,013
         push    17,014
+        push    17,015
+        move    015,5                   ; operation, on private stack
         move    010,1                   ; DTC unit
         move    011,2                   ; expected high ID
         move    012,3                   ; expected low ID
@@ -72,7 +83,12 @@ dtfs_owned_arm_alloc_v1552:
         move    2,011
         move    3,012
         move    4,014
+        jumpe   015,dtfs_owned_call_arm_v1554
+        pushj   17,dtfs_intent_verify_v1554
+        jrst    dtfs_owned_after_io_v1554
+dtfs_owned_call_arm_v1554:
         pushj   17,dtfs_intent_arm_v1551
+dtfs_owned_after_io_v1554:
         push    17,1                    ; preserve exact arm success/error
 
         move    1,014
@@ -105,6 +121,7 @@ dtfs_owned_arm_pin_fail_v1552:
 dtfs_owned_arm_fail_v1552:
         seto    1,
 dtfs_owned_arm_done_v1552:
+        pop     17,015
         pop     17,014
         pop     17,013
         pop     17,012
