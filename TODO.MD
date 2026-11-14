@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1557, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1558, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -224,6 +224,18 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   scratch, mandatory DIRTY write gate, exclusive CLEAN/unmount,
   physical cold boot/reinsertion and media TOCTOU. **P0-B OPEN.**
   `design/kcore-dtfs-v2-mount-owner-v1557.md`.
+  **v1558 raw Type-551 false-success admission PASS:** real
+  production mount and poisoned-volume replacement prefill all
+  128 workspace words before each independent physical read.
+  Directory uses zero initialization; RBN0 uses **all-ones
+  sentinel** to prevent zero-byte reads looking like legitimate
+  all-zero legacy media. Standalone v1551 physical DIRTY arming
+  clears independent MM scratch before initial read and readback.
+  Native 17 arm cases/10 mutants, 28 real-image mount cases/13
+  mutants, 20 real-image replacement cases/6 mutants PASS;
+  old v1519/v1520 and full KCC MRES link PASS. Writable V2,
+  provider MM ownership, exclusive CLEAN/unmount and full-guest
+  physical acceptance STILL OPEN. `design/kcore-dtfs-raw-read-sentinel-v1558.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

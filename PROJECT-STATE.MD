@@ -1,3 +1,32 @@
+## 2026-11-14 v1558: raw Type-551 admission short-read fail-closed PASS
+
+Production `dtfs_runtime.s` now primes the shared 128-word Type-551
+workspace before every independent physical mount and poisoned-
+volume replacement RBN0144/RBN0 admission. Directory uses zero
+fill; RBN0 requires **all-one nonzero poison** because a genuine
+all-zero RBN0 is valid legacy DTFS and a false-successful zero-
+byte raw read must never masquerade as such a volume. Genuine
+complete legacy reads overwrite all 128 sentinel words. Short
+and zero-byte false-success reads now reject without VFS
+publication or replacement retirement. The standalone v1551
+physical DIRTY-arm leaf also clears its MM scratch before the
+initial RBN0 read, not only before final dirty readback.
+
+Native PDP-6 actual source tests: 17 V2 DIRTY-arm cases/10
+mutants, 28 host-image mount scenarios/13 mutants, 20 actual
+poisoned-volume replacement cases/6 mutants all PASS. Historical
+v1519/v1520 native tests and full KCC DTFS MRES build/fold/link
+PASS. The production v1555 V2 write veto remains effective.
+
+**P0-B OPEN:** V2 remains read-only, with mandatory first-write
+DIRTY and later physical revalidation gateway, provider-retained
+MM scratch, exclusive owner-safe CLEAN/unmount, full Type-551
+guest partial write/reinsertion/cold boot and media exchange
+TOCTOU still outstanding. No new fixed RAM, public ABI,
+media format or optimization. See
+`design/kcore-dtfs-raw-read-sentinel-v1558.md`.
+P0-A complete, P1-C separate; VERSION 0.5/strict 32K HOLD.
+
 ## 2026-11-14 v1557: production DTVOL2 exclusive unit owner PASS
 
 Native `dtfs_v2_mount_exclusive_v1557.s` is now part of the

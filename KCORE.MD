@@ -1,3 +1,28 @@
+## 2026-11-14 v1558: physical Type-551 false-success admission fix
+
+Production native DTFS initial mount and poisoned-volume
+replacement now initialize the shared 128-word workspace before
+each independent raw directory RBN0144 and RBN0 read. A whole
+directory buffer is zeroed, but RBN0 uses a full nonzero 36-bit
+poison sentinel: an all-zero RBN0 is LEGITIMATE legacy DTFS,
+and zero-initializing it would incorrectly accept a false-
+successful zero-byte physical read as healthy legacy media.
+Partial transfers retain poison and fail strict identity checks.
+The standalone v1551 DIRTY-arm service now zeroes its pinned
+MM scratch before initial RBN0 read AND before final readback,
+so old CLEAN data cannot authorize an actual on-media write.
+
+Native PDP-6 tests: 17 arming cases/10 mutants, 28 host-image
+production mount cases/13 mutants, 20 host-image replacement
+preflight cases/6 mutants all PASS. v1519 and v1520 regressions,
+complete KCC full-profile DTFS MRES assemble/fold/link PASS.
+No new permanent RAM, syscall ABI or default format change.
+The durable physical arm remains UNLINKED: V2 stays READ-ONLY;
+provider MM ownership, mandatory write gate, CLEAN/unmount and
+full Type-551 guest cold-boot acceptance remain **P0-B OPEN**.
+`design/kcore-dtfs-raw-read-sentinel-v1558.md`. VERSION 0.5;
+strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1557: exclusive DTVOL2 physical-unit ownership
 
 Production `dtfs_mount_unit` now refuses a DTVOL2/CLEAN mount
