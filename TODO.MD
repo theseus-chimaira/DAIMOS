@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1571, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1574, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,16 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **v1574 Type-136 physical reverse WRITE overrun fixed:**
+  keep completed reverse-write count at zero until the existing two
+  DCT acknowledgments finish; only reverse READ resets to 0200.
+  Source-linked PDP-6 forward, reverse and repeated-write physical
+  whole-reel oracles PASS; two unsafe count-reset mutations rejected.
+  Full KCC image links; +1 optional tape MRES TEXT, zero fixed RAM.
+  The uncommitted v1572 operator-trust V2 RW cutover and any proposal
+  to remove v1554's repeated physical RBN0 verification remain
+  separately subject to their own full-guest acceptance.
 
 ### Accepted, do not reimplement
 

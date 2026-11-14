@@ -180,7 +180,12 @@ tape_dct_reverse_read:
 tape_dct_reverse_advance:
         sosle storage_count
         jrst tape_dct_reverse_more
+        ; v1574: reverse WRITE completed its final data word. Keep the
+        ; count at zero so the next two PI3 requests use the DCT write-ACK
+        ; handler, not another 128-word reverse DATAO burst. A reverse
+        ; READ must still restore its count for the original completion.
         movei 1,0200
+        skipn dtc_request_write
         movem 1,storage_count
         hrrzs storage_iowd
         jrst tape_dct_count_done

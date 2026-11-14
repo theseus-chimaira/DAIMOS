@@ -1,3 +1,18 @@
+## 2026-11-14 v1574: fix physical Type-136 reverse WRITE overrun
+
+The source-linked PDP-6 reverse WRITE previously reloaded the full
+0200-word DATA count before the final two Type-136 write ACKs.
+Consequently pending PI3 requests transmitted another reverse DMA
+burst and physically overwrote unrelated DECtape blocks, even when
+the guest believed the operation succeeded. The single-instruction
+v1574 conditional count reset preserves reverse READ behavior but
+leaves WRITE at zero for the existing ACK sequence. Original forward
+and reverse tests, repeated-write/full-reel oracles and two executed
+unsafe source mutants PASS/reject as intended. Full production KCC
+KCORE+MRES image links; optional tape MRES +1 TEXT word, zero RAM,
+fixed low end `024364` octal. No unrelated v1572 DTFS operator-trust
+source was staged. See `design/kcore-type136-reverse-write-v1574.md`.
+
 ## 2026-11-14 v1571: real silent V2 reel exchange proves hardware gap
 
 Two full production PDP-6 KCC/Type-551 guest boots now reproduce

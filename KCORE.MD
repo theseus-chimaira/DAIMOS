@@ -1,3 +1,19 @@
+## 2026-11-14 v1574: Type-136 reverse-write count/ACK repair
+
+The physical Type-551 corruption seen when v1572 experimentally
+omitted a repeated RBN0 read was traced to an independent Type-136
+PI3 driver error: reverse WRITE set `storage_count` back to 0200,
+so its next two completion requests dispatched 128 more DATAO words.
+v1574 leaves WRITE at count zero and retains the old reverse READ
+count restoration. Real PDP-6 source-linked forward/reverse,
+repeated-write and complete-reel tests PASS; two unsafe reset
+mutants corrupt unrelated physical blocks and are rejected. Full
+production KCC link PASS; optional tape MRES +1 TEXT word, zero
+DATA/BSS, no fixed KCORE growth, low end `024364` octal. v1572
+operator-trust RW working-tree changes remain separate/uncommitted;
+the v1554 RBN0 check is not removed here. VERSION 0.5, 32K HOLD.
+`design/kcore-type136-reverse-write-v1574.md`.
+
 ## 2026-11-14 v1571: physical reel-retention gap reproduced (negative)
 
 Two complete unchanged-production PDP-6/Type-551 boots physically
