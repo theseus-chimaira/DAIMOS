@@ -1,3 +1,21 @@
+## 2026-11-14 v1571: physical reel-retention gap reproduced (negative)
+
+Two complete unchanged-production PDP-6/Type-551 boots physically
+mounted distinct valid CLEAN V2 reels. During a genuine blocked CTY
+read, the simulator swapped DTC3 to a DIFFERENT sealed 72-bit ID
+without any guest DTC3 error. FSINFO, STAT and CHDIR on the old
+mount still succeeded and UNMOUNT retired it. Both media SHA-256
+fingerprints unchanged. The old v1517 selected-drive CONI probe
+still PASSes but has no sticky reel-generation notification. The
+TU55 OFF->REMOTE operator sequence is not an atomic interlock.
+This is a **negative hardware capability witness**, not a reason
+to remove the v1555 DTVOL2 READ-ONLY veto. P0-B remains OPEN
+until a real physical retention/WRITE interlock is specified,
+available and adversarially tested. No production source/ABI/RAM
+changes; fixed low end `024364` octal. P0-A CLOSED, P1-C/D/E
+unchanged, VERSION 0.5, 32K HOLD.
+`design/kcore-dtfs-media-retention-v1571.md`.
+
 ## 2026-11-14 v1570: checked physical DTVOL2 replacement PASS
 
 Real production DTFS MRES now accepts a DIFFERENT, fully CLEAN

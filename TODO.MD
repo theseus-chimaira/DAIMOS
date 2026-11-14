@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1570, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1571, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -393,6 +393,22 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   v1555 V2 read-only veto still mandatory. Zero fixed KCORE RAM/
   TEXT/slab growth; optional DTFS MRES TEXT only.
   `design/kcore-dtfs-v2-replacement-v1570.md`.
+  **v1571 physical silent-reel exchange NEGATIVE PASS:** two real
+  full unmodified production KCC PDP-6 boots mounted independently
+  formatted DTC3 V2/CLEAN. Between requests, with guest PID1
+  blocked and without any physical I/O failure, SIMH DETACHed the
+  first reel and ATTACHed a different full 72-bit CLEAN V2.
+  Production FSINFO/STAT/CHDIR on the OLD mount all succeeded,
+  and ordinary UNMOUNT retired it. Exact whole-media SHA-256
+  proved both distinct tapes unchanged; v1517 immediate status
+  regression PASS. This demonstrates the missing hardware
+  generation/interlock: READ_SUSPECT and repeated pre-write RBN0
+  checks cannot prevent external exchange between transfers.
+  **P0-B OPEN and production V2 READ-ONLY mandatory** until a
+  *physical* retention/control boundary can prevent write to a
+  changed reel, not a voluntary operator agreement or software
+  epoch. See `design/kcore-dtfs-media-retention-v1571.md`.
+  Zero production kernel/MRES/driver/RAM/ABI change; 32K HOLD.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

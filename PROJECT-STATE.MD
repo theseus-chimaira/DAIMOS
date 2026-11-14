@@ -1,3 +1,27 @@
+## 2026-11-14 v1571: real silent V2 reel exchange proves hardware gap
+
+Two full production PDP-6 KCC/Type-551 guest boots now reproduce
+the outstanding P0-B **negative**: while PID1 is blocked on CTY,
+the SIMH monitor DETACHes an initially verified CLEAN DTVOL2 reel
+and ATTACHes a different independently valid CLEAN V2 72-bit ID
+without any guest DTC3 I/O between operations. Once resumed,
+unchanged production KCORE/MRES accepts FSINFO/STAT/CHDIR from the
+OLD mounted identity and unmounts normally. Independent full-reel
+SHA-256 comparisons confirm both physical files unchanged. This is
+not an acceptable media-retention guarantee. The v1517 SIMH
+selected/unattached CONI status regression still PASSes; only
+current attachment is observable, not a persistent generation.
+
+The 1966 TU55 operating manual requires the operator to switch OFF
+to remove reels, then back to REMOTE/LOCAL; original Type-551
+selection/status does not provide an atomic reel retention/write
+interlock. **P0-B OPEN:** unrestricted V2 RW is physically unsafe
+without an enforceable mechanical/controller interlock, not a new
+software-only mount flag. v1555 V2 remains READ-ONLY. No code/RAM
+change, KCORE low end `024364` octal. P0-A CLOSED, P1-C/D/E
+unchanged, VERSION 0.5, 32K HOLD.
+`design/kcore-dtfs-media-retention-v1571.md`.
+
 ## 2026-11-14 v1570: real V2 poisoned-reel replacement and dual cold boots PASS
 
 The production private DTFS replacement verifier now supports a
