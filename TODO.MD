@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1560, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1561, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -249,6 +249,20 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   connect mandatory DIRTY DATA/DIR write gate, exclusive CLEAN
   unmount, real Type-551 partial/reinsert/cold boot. **P0-B OPEN.**
   `design/kcore-dtfs-retained-aux-v1560.md`.
+  **v1561 production physical intent/MM write bridge LINKED:**
+  source-linked real optional DTFS MRES now contains v1551-v1554
+  first-write/physical DIRTY and pinned-MM helpers. Central
+  `dtfs_dtc_write` calls unique physical-unit-to-VFS V2 owner
+  bridge using exact retained `aux[slot]`, preserving UNIT/BLOCK/
+  BUFFER and rechecking root/media/policy/MM after sleeping I/O.
+  Actual V2 RO veto STILL PRECEDES BRIDGE: no V2 DATA/DIR or
+  marker writing enabled. PDP-6 35 mounted bridge cases/13
+  mutants, 12 central veneer cases/nine mutants, v1554 23 cases/
+  eight mutants, real v1552 MM, v1559 source coverage and full
+  KCC KCORE/MRES build PASS. Still open: exclusive owner-safe
+  CLEAN unmount, physical tape generation/exchange assurance,
+  partial Type-551 write/reinsertion/cold-boot guest acceptance.
+  **P0-B OPEN.** `design/kcore-dtfs-mounted-intent-v1561.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

@@ -1,3 +1,36 @@
+## 2026-11-14 v1561: live DTFS MRES physical intent/MM binding PASS
+
+Native v1551-v1554 physically checked DIRTY-before-DATA services,
+owned MM alloc/pin/free and per-mount first-write gate are now
+actually LINKED into optional DTFS MRES. The new production
+`dtfs_intent_mount_gate_v1561` binds a raw Type-551 physical unit
+to the sole published V2 mount and the exact v1560 MM-backed
+scratch `basep`; rejects wrong/duplicate mount ID, RO policy and
+unreleased owner; and rechecks original root, expected media word,
+RO/RW policy and exact zero scratch owner after sleeping I/O.
+Actual common DTFS DATA/DIR write veneer preserves AC1 unit,
+AC2 block and AC3 pending buffer across this bridge before raw
+transfer, and always refuses a failed physical/ownership gate.
+
+**The production v1555 V2 RO veto remains FIRST and mandatory.**
+As all production V2 mounts are CLEAN and read-only, no V2
+RBN0/DATA write is newly reachable until exclusive CLEAN/unmount,
+physical partial write, replacement and cold-boot acceptance.
+
+Native PDP-6 v1561 bridge **35 cases/13 unsafe mutants PASS**,
+real production veneer **12 cases/9 mutants PASS** with AC2/AC3
+deliberately clobbered in the lower oracle, v1554 already-armed
+gate **23 cases/8 mutants PASS**, v1552 real native MM pin/free
+PASS, v1559 source-veneer audit **11 sites/5 mutants PASS**.
+Full KCC KCORE/DTFS MRES assemble/fold/link PASS. No extra fixed
+KCORE RAM, per-mount word, ABI or default disk format; optional
+MRES code grows for linked feature. No optimization.
+
+P0-A closed; **P0-B OPEN** pending exclusive CLEAN/unmount,
+media-generation contract and physical Type-551 cold boot; P1-C
+separate. `design/kcore-dtfs-mounted-intent-v1561.md`; VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1560: retained DTFS scratch MM owner cannot be lost on retire
 
 Production VFS/KCORE now has a checked provider-private per-mount

@@ -1,3 +1,27 @@
+## 2026-11-14 v1561: linked DTFS physical DIRTY/MM owner write gateway
+
+Production optional DTFS MRES now includes actual v1551-v1554
+raw Type-551 RBN0 DIRTY arm/verify, native MM pin/alloc/free and
+authenticated per-mount first-write gate. The new native
+`dtfs_intent_mount_gate_v1561.s` binds the common physical DTC
+unit to the unique published VFS V2 mount and exact retained
+`&vfs_mount_aux_base_v1560[slot]`, requires writable VFS policy,
+and rechecks root/media/policy/retained MM owner after sleeping I/O.
+`dtfs_dtc_write` saves AC1/AC2/AC3 on its process-private stack
+and invokes the bridge before raw DATA/DIR writing. No extra fixed
+KCORE/slab word or public ABI. The **v1555 unconditional V2 RO
+veto still runs first**: NO live V2 marker or DATA/DIR WRITE is
+enabled, pending exclusive CLEAN/unmount and physical testing.
+
+Native PDP-6 35 mounted bridge cases/13 unsafe mutants PASS;
+central v1555 RO/stack-ABI 12 cases/nine mutants PASS; existing
+v1554 23 cases/eight mutants, v1552 real MM allocator/pin/free
+and v1559 11-source-site audit/five mutants PASS. Full KCC
+KCORE and optional DTFS MRES assemble/fold/link PASS.
+P0-B OPEN, no optimization. Details in
+`design/kcore-dtfs-mounted-intent-v1561.md`, VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1560: production DTFS retained MM owner lifetime guard
 
 The existing boot-inventoried six-array VFS MM slab already holds
