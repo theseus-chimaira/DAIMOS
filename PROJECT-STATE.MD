@@ -1,3 +1,26 @@
+## 2026-11-14 v1580: physical MEMFS HALT with real swapped owners PASS
+
+On two actual full 128K PDP-6 KCC cold boots with one unchanged
+Type-236 AUXSTORE drum, a root test produced persistent MEMFS XIP/
+data and genuine LOGSTORE LSREC1 transactions, then spawned four
+separately sleeping 24K-word private-image children and HALTed before
+releasing their owners. A disposable copy of the original MEMFS MRES
+requires live production `proc_swap_blocks_used` at the actual
+snapshot shutdown entry. Both HALTs completed physically. The new
+host oracle verified valid v2 commit headers with a 3,648-word
+effective MEMFS pool, 35-sector reserved snapshot ending at the
+BACKSTORE boundary, 248 nonzero physical sectors outside the
+snapshot and unchanged AUXSTORE descriptors. On boot two the original
+MEMFS file/XIP and first physical LOGSTORE record restored exactly;
+a second record was appended and checked before the second pressured
+HALT. KCORE low end `024364` octal and fixed RAM unchanged.
+
+**P1-C remains OPEN** for actual independent swap-in PI completion
+overlapping snapshot DMA and in-flight DEVICE/VOLUME fault/rollback
+proof. P1-D, P1-E and the full feature freeze remain OPEN. P0-A and
+operator-trust P0-B CLOSED; VERSION 0.5, optimization/32K HOLD.
+`design/kcore-p1c-physical-swap-snapshot-v1580.md`.
+
 ## 2026-11-14 v1579: source-linked P1-C snapshot/allocator interleaving PASS
 
 A fresh native PDP-6 test runs the actual production MEMFS snapshot

@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1579, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1580, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,21 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1580 real physical swapped owner at MEMFS HALT:**
+  two independent 128K PDP-6 cold boots with a retained AUXSTORE
+  drum and authentic MEMFS data/XIP, LOGSTORE append/recovery and
+  four sleeping 24K-word process children. Disposable MEMFS MRES
+  asserts original fixed KCORE `proc_swap_blocks_used` is nonzero
+  at snapshot shutdown entry; both genuine physical HALTs PASS.
+  Independent drum reads verify the actual 35-sector v2 snapshot
+  (3,648-word effective pool), 248 nonzero lower BACKSTORE sectors
+  and unchanged AUXSTORE geometry. Boot two restores data/XIP and
+  prior LOGSTORE record. **P1-C still OPEN** for demonstrated
+  PI/swap-in overlap DURING HALT DMA and mapped DEVICE/VOLUME fault
+  rollback, not merely an outstanding swapped owner. Production
+  KCORE/RAM/ABI unchanged. See
+  `design/kcore-p1c-physical-swap-snapshot-v1580.md`.
 
 - [x] **P1-C v1579 source-linked snapshot/BACKSTORE interleaving:**
   genuine native PDP-6 snapshot mount/shutdown and allocator/free run

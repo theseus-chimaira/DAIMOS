@@ -1,3 +1,24 @@
+## 2026-11-14 v1580: physical swap owner at MEMFS snapshot HALT PASS
+
+Two independent full 128K KCC PDP-6 physical boots retained the
+same Type-236 AUXSTORE backing. The root user test created a real
+persistent MEMFS file/XIP and appended/read a physical LOGSTORE
+record, then launched four 24K-word sleeping process children and
+called HALT itself. A disposable MEMFS MRES entry assertion refuses
+the original snapshot shutdown unless production KCORE's
+`proc_swap_blocks_used` is positive. Both physical HALTs succeeded;
+fresh boot two restored the exact MEMFS data/XIP and previous LOGSTORE
+event before repeating the pressure/HALT cycle. Independent 36-bit
+drum inspection showed the valid final v2 snapshot header, 3,648
+effective pool words / 35 reserved sectors and 248 nonzero
+non-snapshot backing sectors. Physical AUXSTORE layout unchanged.
+
+**P1-C remains OPEN**: the HALT is synchronous and no independent
+process swap-in PI completion is yet proved during its physical
+snapshot writes; mapped DEVICE/VOLUME failures also remain.
+No production source/RAM/ABI change, low end `024364` octal.
+`design/kcore-p1c-physical-swap-snapshot-v1580.md`.
+
 ## 2026-11-14 v1579: P1-C native snapshot/swap bitmap interleaving
 
 The original PDP-6 `memfs_snapshot_mount`/`shutdown` and
