@@ -1,3 +1,31 @@
+## 2026-11-14 v1557: production DTVOL2 exclusive unit owner PASS
+
+Native `dtfs_v2_mount_exclusive_v1557.s` is now part of the
+actual optional DTFS MRES. The production mount path uses it
+under the existing serialized provider lease to forbid a new
+DTVOL2/CLEAN mount sharing a physical unit with any existing
+DTFS mount. A new V1/legacy mount also refuses a unit already
+mounted as V2; unrelated units, other providers, retired slots
+and legacy V1/V1 mounts retain their previous behavior.
+The guard acts after physical RBN0 admission and before VFS
+publication; it does not allocate, write the medium or mutate
+the existing mount owner on refusal.
+
+Source-linked PDP-6 **26 exclusive-physical-unit cases PASS/
+eight unsafe mutations rejected**; expanded real host-image
+production `dtfs_mount_unit` fixture **24 cases PASS/11 unsafe
+mutations rejected**. v1519 and v1520 regressions PASS; full
+KCC DTFS MRES assembly, fold and link PASS. The production
+v1555 write veneer continues to refuse all DTVOL2 DATA/DIR
+writes. No fixed RAM, syscall ABI or default format change.
+
+**P0-B OPEN:** still no writable V2, provider-retained scratch
+owner, mandatory first-write DIRTY and already-armed verification
+on every mutation, exclusive CLEAN/unmount, physical Type-551
+partial-write/reinsertion/cold boot or media exchange TOCTOU
+acceptance. `design/kcore-dtfs-v2-mount-owner-v1557.md`.
+P0-A complete; P1-C separate; VERSION 0.5, strict 32K HOLD.
+
 ## 2026-11-14 v1556: production DTVOL2 read-only fault recovery PASS
 
 The real DTFS MRES identity recovery path now admits exactly

@@ -1,3 +1,26 @@
+## 2026-11-14 v1557: exclusive DTVOL2 physical-unit ownership
+
+Production `dtfs_mount_unit` now refuses a DTVOL2/CLEAN mount
+on any physical Type-551 unit already owned by another published
+DTFS mount, whether old V1 or V2. The reverse direction also
+refuses a new V1 mount of an existing V2 unit. Legacy V1/V1
+multi-mount behavior is preserved; unrelated units/providers
+and retired slots with stale media tags are ignored. Actual
+native `dtfs_v2_mount_exclusive_v1557.s` uses the published VFS
+root and MM media slabs under the existing serialized provider
+lease, before VFS mount publication. It has no extra physical
+I/O, new fixed KCORE RAM, MM allocation or syscall ABI.
+
+Native PDP-6: 26 physical-ownership cases/eight mutants PASS;
+extended actual-mount source with real host V2/V1 DECtape
+image bytes 24 cases/11 mutants PASS. Original v1519 and v1520
+mount/identity regressions and full-profile KCC DTFS MRES
+assemble/fold/link PASS. **DTVOL2 still READ-ONLY; P0-B OPEN**
+pending mandatory physical DIRTY write gate, retained MM owner,
+exclusive CLEAN/unmount and full Type-551 cold-boot acceptance.
+See `design/kcore-dtfs-v2-mount-owner-v1557.md`. VERSION 0.5;
+strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1556: real DTFS MRES DTVOL2/CLEAN fault recovery
 
 The production native `dtfs_identity_revalidate_v1522` now

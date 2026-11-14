@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1556, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1557, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -214,6 +214,16 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   retained-MM dirty write gateway, owner-safe CLEAN/unmount and
   full-guest physical reinsertion/cold boot are STILL OPEN.
   `design/kcore-dtfs-v2-recovery-v1556.md`.
+  **v1557 production unique-unit V2 admission PASS:** refuse V2
+  mounting an already DTFS-mounted physical unit, or V1 mounting
+  a unit already occupied by V2; retain legacy V1/V1 policy.
+  Source-linked PDP-6 26 physical-owner scenarios/eight mutants,
+  24 actual host-image mount cases/11 mutants, v1519/v1520
+  regressions and full KCC DTFS MRES assemble/fold/link PASS.
+  No DATA/DIR V2 write enabled. Still open: provider-retained MM
+  scratch, mandatory DIRTY write gate, exclusive CLEAN/unmount,
+  physical cold boot/reinsertion and media TOCTOU. **P0-B OPEN.**
+  `design/kcore-dtfs-v2-mount-owner-v1557.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent
