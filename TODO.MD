@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1576, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1577, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,18 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C partial v1577 LOGSTORE failure rollback:** source-linked
+  actual PDP-6 producer error/cursor/notification and same-slot retry
+  PASS, four executed unsafe mutants rejected. Two full 128K physical
+  KCC guests use real Type-236 drum storage: write an uncommitted
+  LSREC1 sector, inject completion error in *disposable MRES only*,
+  verify unchanged cursor and invalid physical media, then successful
+  same-slot retry and cold-boot previous-record/MEMFS recovery.
+  **P1-C OPEN**: genuine controller errors, abandoned torn record
+  recovery, simultaneous process swap with snapshot HALT, and mixed
+  DEVICE/VOLUME/PI fault isolation. No production RAM/code growth.
+  `design/kcore-p1c-logstore-fault-v1577.md`.
 
 - [x] **P1-C partial v1576:** full 128K PDP-6, same physical
   AUXSTORE DSK/DRM backing across two cold boots. MEMFS persist

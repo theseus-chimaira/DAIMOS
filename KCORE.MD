@@ -1,3 +1,21 @@
+## 2026-11-14 v1577: physical LOGSTORE failure and recovery P1-C slice
+
+Source-linked original LOGSTORE MRES on real PDP-6 PASSes a torn
+128-word record failure followed by same-slot retry and one producer
+wake; four executed unsafe error/cursor/wake mutants rejected.
+Two full 128K KCC PDP-6 cold boots share one 8 MiB AUXSTORE drum
+with real MEMFS persistent XIP/data and LOGSTORE. Disposable MRES
+fault creates a physically invalid (zero-trailer) LOGSTORE sector,
+returns a synthetic error, and original MRES leaves sequence/slot
+unchanged. The guest reads back the invalid real sector, retries the
+same slot and validates correct commit/cursor. Boot 2 recovers boot
+1's exact log record and MEMFS snapshot before repeating the fault.
+Geometry unchanged. **Controller did not naturally fail**; this is
+a source-matched completion-error injection. No production change,
+fixed low end `024364` octal, RAM unchanged. P0-A/B CLOSED; P1-C
+OPEN for concurrent swap/snapshot and natural device/controller loss.
+`design/kcore-p1c-logstore-fault-v1577.md`.
+
 ## 2026-11-14 v1576: physical P1-C persistent mixed-storage slice
 
 One production full 128K PDP-6 with actual DSK and AUXSTORE drum

@@ -1,3 +1,25 @@
+## 2026-11-14 v1577: P1-C LOGSTORE torn-record rollback PASS
+
+Genuine production LOGSTORE append and state/error branches executed
+on a native PDP-6 with an invalid-trailer write returning -1: next
+sequence and slot remained unchanged and no event/wake occurred;
+retry committed once at the original slot. Four executed unsafe
+source mutants rejected. Full 128K KCC/PDP-6 with actual DRM236
+and persistent MEMFS/LOGSTORE cold-booted twice using the same
+physical AUXSTORE image. A disposable optional MRES physically wrote
+a whole *uncommitted* LSREC1 sector (zero commit trailer), then
+injected a completion error to the original append path. Guest
+LOGCTL STATUS and READ_BLOCK verified both unchanged producer cursor
+and actual invalid media, then genuine same-slot retry committed.
+Next cold boot restored exact MEMFS/XIP and prior LOGSTORE record,
+and independently repeated the torn/physical retry. Full AUXSTORE
+descriptor byte-identical after both boots. **Not a naturally failing
+Type-236 controller**; error completion is test-injected after the
+physical invalid write. No production code/RAM change or 32K work.
+**P1-C still OPEN** for real simultaneous swap/snapshot commit and
+in-flight DEVICE/VOLUME/PI ownership faults; P0-A/B CLOSED. See
+`design/kcore-p1c-logstore-fault-v1577.md`. VERSION 0.5.
+
 ## 2026-11-14 v1576: P1-C physical MEMFS/LOGSTORE coexistence accepted
 
 Full production 128K-word PDP-6 disk-root guest cold-booted twice
