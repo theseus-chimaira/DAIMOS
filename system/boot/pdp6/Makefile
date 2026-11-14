@@ -210,6 +210,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/fs/dtfs_media.h \
 	$(KERNEL_DIR)/fs/dtfs_chain_walk.s \
 	$(KERNEL_DIR)/fs/dtfs_runtime.s \
+	$(KERNEL_DIR)/fs/dtfs_intent_validate_v1550.s \
 	$(KERNEL_DIR)/fs/tsfs_runtime.s \
 	$(KERNEL_DIR)/fs/dtfs_resize.s \
 	$(KERNEL_DIR)/fs/file.c \

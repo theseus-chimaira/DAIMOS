@@ -1,21 +1,25 @@
 #include "dsys.h"
 #include "dtfs_media.h"
+#include "dtfs_intent_v1550.h"
 #include "dtfs_probe.h"
 
 static kword_t probe_dir[DTFS_BLOCK_WORDS];
 static kword_t probe_block[DTFS_BLOCK_WORDS];
 
 /* The native directory's ordinary magic is not a volume identity.
- * Legacy DTFS has an entirely zero reserved physical block zero; a V1
- * identity-stamped tape instead stores a checked two-word random token
- * there.  Reject every nonempty malformed header, including nonzero
- * padding, rather than downgrading corrupt identity media to legacy.
- * This is a FORMAT probe: it does not retain live mounted identity.
+ * Legacy DTFS has an entirely zero reserved physical block zero; V1
+ * stamps a checked random 72-bit token, and V2 adds a durable state
+ * and independent seal. Probe V2 only when fully CLEAN; DIRTY is never
+ * treated as healthy. Reject malformed nonempty headers and padding
+ * rather than silently downgrading to legacy. This is only a FORMAT
+ * probe: KCORE separately reads/validates the current physical volume,
+ * and V2 is mountable only READ-ONLY until write transactions are ready.
  */
 static int
 native_identity_valid(const kword_t *record)
 {
         unsigned int i;
+        unsigned int used;
         int legacy;
 
         legacy = 1;
@@ -26,9 +30,26 @@ native_identity_valid(const kword_t *record)
                 }
         if (legacy)
                 return 1;
-        if (record[DTFS_ID_MAGIC_WORD_V1520] !=
-                DTFS_ID_MAGIC_V1520 ||
-            record[DTFS_ID_HIGH_WORD_V1520] == 0UL ||
+        /* v1555: DTVOL2/CLEAN is probeable but strictly read-only at
+         * production mount. The probe must never classify DIRTY or a
+         * torn state/seal as healthy. Final admission is in KCORE,
+         * based on a separate fresh physical RBN0 read. */
+        used = DTFS_ID_USED_WORDS_V1520;
+        if (record[DTFS_ID_MAGIC_WORD_V1520] ==
+            DTFS_INTENT_MAGIC_V1550) {
+                if (record[DTFS_INTENT_STATE_WORD_V1550] != 0UL ||
+                    record[DTFS_INTENT_SEAL_WORD_V1550] !=
+                        ((~(record[DTFS_ID_MAGIC_WORD_V1520] ^
+                           record[DTFS_ID_HIGH_WORD_V1520] ^
+                           record[DTFS_ID_LOW_WORD_V1520] ^
+                           DTFS_INTENT_SALT_V1550)) &
+                           DTFS_ID_WORD_MASK_V1520))
+                        return 0;
+                used = DTFS_INTENT_USED_WORDS_V1550;
+        } else if (record[DTFS_ID_MAGIC_WORD_V1520] !=
+                   DTFS_ID_MAGIC_V1520)
+                return 0;
+        if (record[DTFS_ID_HIGH_WORD_V1520] == 0UL ||
             record[DTFS_ID_LOW_WORD_V1520] == 0UL ||
             record[DTFS_ID_CHECK_WORD_V1520] !=
                 ((~(record[DTFS_ID_MAGIC_WORD_V1520] ^
@@ -36,7 +57,7 @@ native_identity_valid(const kword_t *record)
                    record[DTFS_ID_LOW_WORD_V1520])) &
                    DTFS_ID_WORD_MASK_V1520))
                 return 0;
-        for (i = DTFS_ID_USED_WORDS_V1520; i < DTFS_BLOCK_WORDS; ++i)
+        for (i = used; i < DTFS_BLOCK_WORDS; ++i)
                 if (record[i] != 0UL)
                         return 0;
         return 1;

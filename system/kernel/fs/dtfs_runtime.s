@@ -393,10 +393,18 @@ dtfs_dtc_read_jump:
 
         .globl  dtfs_dtc_write
 dtfs_dtc_write:
+        ; v1555: DTVOL2 has physically admitted CLEAN only on an explicitly
+        ; read-only VFS mount. Deny *all* DATA/DIR writes to its DTC unit,
+        ; including internal callers which might bypass VFS readonly checks.
+        ; The raw intent service is deliberately not linked to this module
+        ; yet; the ordinary DTFS write veneer must fail closed for V2.
+        push    17,1
+        pushj   17,dtfs_v2_ro_write_guard_v1555
+        jumpn   1,dtfs_dtc_write_v2_refuse_v1555
+        move    1,(17)
         ; Invalidate without MM release: reclaim can refuse and can clobber
         ; the raw DTC unit/block/buffer ABI in AC1..AC3.  A successful
         ; physical write must never leave an older clean cache hit behind.
-        push    17,1                   ; preserve physical unit across I/O
         pushj   17,bcache_invalidate_all
         pushj   17,dtfs_dtc_write_jump
         jumpe   1,dtfs_dtc_write_done_v1518
@@ -412,6 +420,40 @@ dtfs_dtc_write:
 dtfs_dtc_write_done_v1518:
         pop     17,4
         popj    17,
+dtfs_dtc_write_v2_refuse_v1555:
+        pop     17,4                   ; release saved unit, no raw I/O
+        jrst    kret_neg1
+
+; The common DTFS write entry receives only the physical DTC unit, not
+; a vnode or its VFS mount slot. Check every *published* V2 mount using
+; this unit; a second mount of the same unit cannot bypass read-only.
+; No persistent state, no scratch, and no mutation of the data buffer.
+; AC1=unit, AC2/AC3 preserved, AC4..AC7 scratch; return AC1=0/-1.
+dtfs_v2_ro_write_guard_v1555:
+        move    4,vfs_mount_root_base
+        jumpe   4,dtfs_v2_write_allowed_v1555
+        move    5,dtfs_media_base
+        jumpe   5,dtfs_v2_write_allowed_v1555
+        move    6,vfs_mount_limit
+        jumple  6,dtfs_v2_write_allowed_v1555
+dtfs_v2_guard_next_v1555:
+        move    7,(4)
+        lsh     7,-036                 ; mounted vnode provider
+        caie    7,5                     ; DTFS only
+        jrst    dtfs_v2_guard_skip_v1555
+        move    7,(5)
+        trnn    7,0100000              ; DTVOL2 native format flag
+        jrst    dtfs_v2_guard_skip_v1555
+        andi    7,7                     ; actual physical Type-551 unit
+        came    7,1
+        jrst    dtfs_v2_guard_skip_v1555
+        jrst    kret_neg1               ; no physical write permitted
+dtfs_v2_guard_skip_v1555:
+        aoj     4,
+        aoj     5,
+        sojg    6,dtfs_v2_guard_next_v1555
+dtfs_v2_write_allowed_v1555:
+        jrst    kret_zero
 
         .globl  dtfs_dtc_write_jump
 dtfs_dtc_write_jump:
@@ -907,8 +949,25 @@ dtfs_mount_unit_media_ready:
         movei   3,fs_block_workspace
         pushj   17,dtfs_dtc_read_jump
         jumpn   1,dtfs_mount_unit_fail
+        ; v1555: the default DTVOL1 and unstamped legacy rules continue
+        ; unchanged. DTVOL2 is admitted only as a fully sealed CLEAN
+        ; physical block, and only when VFS flags request READ-ONLY.
+        ; Dirty or malformed DTVOL2 never becomes a writable mount.
+        move    1,fs_block_workspace
+        came    1,[0446466575422]       ; exact SIXBIT DTVOL2
+        jrst    dtfs_mount_legacy_identity_v1555
+        move    1,012
+        trnn    1,1                     ; VFS_MOUNT_RDONLY explicitly set
+        jrst    dtfs_mount_unit_fail
+        movei   1,fs_block_workspace
+        pushj   17,dtfs_intent_validate_v1550
+        jumpn   1,dtfs_mount_unit_fail ; DIRTY and INVALID both refused
+        iori    010,0100000            ; runtime FORMAT_V2 only after read
+        jrst    dtfs_mount_save_id_v1555
+dtfs_mount_legacy_identity_v1555:
         pushj   17,dtfs_identity_validate_v1522
         jumpn   1,dtfs_mount_unit_fail
+dtfs_mount_save_id_v1555:
         ; Keep both 36-bit halves on our private stack across the VFS
         ; publication call.  The shared physical workspace may be reused
         ; by another provider while that call is in progress.
@@ -976,13 +1035,14 @@ dtfs_mount_unit_fail:
         seto    1,
         jrst    dtfs_restore4
 
-; Shared native identity parser for new mount admission and post-error
-; revalidation of an existing mount.  Requires a PHYSICAL RBN0 read
-; into fs_block_workspace by the caller. Returns zero for a structurally
-; valid DTVOL1 record or all-zero legacy block; -1 for every malformed
-; nonempty record. The recovery caller additionally requires a nonzero
-; previously saved 72-bit ID and an exact match of both halves.
-; No copy, persistent scratch, or second identity validator.
+; Shared LEGACY native identity parser for DTVOL1/zero mount admission and
+; post-error revalidation of an existing legacy mount. The v1555 mount
+; path selects the separate full DTVOL2/CLEAN verifier first, and forces
+; RO before publishing its format bit. Requires a PHYSICAL RBN0 read into
+; fs_block_workspace by the caller. Returns zero for structurally valid
+; DTVOL1 or all-zero legacy; -1 for other nonempty records, including V2.
+; Legacy recovery additionally requires a nonzero previously saved 72-bit
+; ID and an exact match of both halves. No added permanent scratch.
 dtfs_identity_validate_v1522:
         movei   1,fs_block_workspace
         movei   2,0200                 ; full 128-word reserved block
