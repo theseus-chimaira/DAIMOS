@@ -962,10 +962,24 @@ dtfs_mount_unit_media_ready:
         movei   1,fs_block_workspace
         pushj   17,dtfs_intent_validate_v1550
         jumpn   1,dtfs_mount_unit_fail ; DIRTY and INVALID both refused
+        ; v1557: a physical V2 volume must have one unambiguous DTFS
+        ; mount owner. Reject even an older V1 mount on this DTC unit.
+        move    1,010
+        andi    1,7
+        movei   2,1                     ; candidate DTVOL2 mount
+        pushj   17,dtfs_v2_mount_exclusive_v1557
+        jumpn   1,dtfs_mount_unit_fail
         iori    010,0100000            ; runtime FORMAT_V2 only after read
         jrst    dtfs_mount_save_id_v1555
 dtfs_mount_legacy_identity_v1555:
         pushj   17,dtfs_identity_validate_v1522
+        jumpn   1,dtfs_mount_unit_fail
+        ; Also forbid adding a V1 mount to a unit already claimed by V2.
+        ; Preserve the previous V1/V1 compatibility contract.
+        move    1,010
+        andi    1,7
+        setz    2,                      ; candidate V1 / zero legacy
+        pushj   17,dtfs_v2_mount_exclusive_v1557
         jumpn   1,dtfs_mount_unit_fail
 dtfs_mount_save_id_v1555:
         ; Keep both 36-bit halves on our private stack across the VFS
