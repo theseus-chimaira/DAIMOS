@@ -403,11 +403,23 @@ dtfs_dtc_write:
         ; v1555: DTVOL2 has physically admitted CLEAN only on an explicitly
         ; read-only VFS mount. Deny *all* DATA/DIR writes to its DTC unit,
         ; including internal callers which might bypass VFS readonly checks.
-        ; The raw intent service is deliberately not linked to this module
-        ; yet; the ordinary DTFS write veneer must fail closed for V2.
+        ; v1561 binds the existing physical marker/retained MM owner below
+        ; this unconditional RO guard. No V2 marker or DATA write occurs
+        ; until exclusive CLEAN/unmount and hardware checks permit cutover.
         push    17,1
         pushj   17,dtfs_v2_ro_write_guard_v1555
         jumpn   1,dtfs_dtc_write_v2_refuse_v1555
+        move    1,(17)
+        ; AC2=block and AC3=buffer are live across the entire physical
+        ; marker/lease operation. Save both on the private process stack:
+        ; the v1552 MM allocator and controller reads may sleep/clobber ACs.
+        push    17,2
+        push    17,3
+        move    1,-2(17)               ; original physical unit
+        pushj   17,dtfs_intent_mount_gate_v1561
+        jumpn   1,dtfs_dtc_write_intent_refuse_v1561
+        pop     17,3
+        pop     17,2
         move    1,(17)
         ; Invalidate without MM release: reclaim can refuse and can clobber
         ; the raw DTC unit/block/buffer ABI in AC1..AC3.  A successful
@@ -427,6 +439,10 @@ dtfs_dtc_write:
 dtfs_dtc_write_done_v1518:
         pop     17,4
         popj    17,
+dtfs_dtc_write_intent_refuse_v1561:
+        pop     17,3                   ; no DATA/DIR raw transfer
+        pop     17,2
+        jrst    dtfs_dtc_write_v2_refuse_v1555
 dtfs_dtc_write_v2_refuse_v1555:
         pop     17,4                   ; release saved unit, no raw I/O
         jrst    kret_neg1

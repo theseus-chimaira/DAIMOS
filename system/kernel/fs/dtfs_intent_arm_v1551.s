@@ -1,8 +1,9 @@
 ; dtfs_intent_arm_v1551.s -- raw on-media DTFS write-ahead barrier.
 ;
-; This deliberately remains UNLINKED from the production DTFS MRES until
-; the mount admission, owner-serialized dirty lifetime, MM scratch and
-; final clean-unmount transition are implemented together.
+; Linked into production DTFS MRES by v1561 behind the mandatory v1555
+; V2 READ-ONLY write veto. The physical RBN0 marker remains unreachable
+; from mounted DATA/DIR writes until final exclusive CLEAN/unmount and
+; hardware partial-write/reinsertion/cold-boot acceptance are complete.
 ;
 ; int dtfs_intent_arm_v1551(unit, id_hi, id_lo, scratch)
 ; AC1=physical DTC unit, AC2/AC3=expected nonzero volume ID halves,

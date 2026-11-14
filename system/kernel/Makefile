@@ -432,9 +432,9 @@ ${BUILD}/proc_run.s: proc/proc_run.s
 	@mkdir -p ${BUILD}
 	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; cat proc/proc_run.s; } > $@
 
-${BUILD}/dtfs_runtime.s: Makefile fs/dtfs_runtime.s fs/dtfs_intent_validate_v1550.s fs/dtfs_v2_mount_exclusive_v1557.s
+${BUILD}/dtfs_runtime.s: Makefile fs/dtfs_runtime.s fs/dtfs_intent_validate_v1550.s fs/dtfs_v2_mount_exclusive_v1557.s fs/dtfs_intent_mount_gate_v1561.s fs/dtfs_intent_first_write_v1553.s fs/dtfs_intent_owned_arm_v1552.s fs/dtfs_intent_arm_v1551.s fs/dtfs_intent_verify_v1554.s
 	@mkdir -p ${BUILD}
-	@{ echo ".set DTFS_ENABLE_TENEX,0"; echo ".set DTFS_ENABLE_ITS,0"; echo ".set DTFS_ENABLE_FOREIGN,0"; cat fs/dtfs_runtime.s fs/dtfs_intent_validate_v1550.s fs/dtfs_v2_mount_exclusive_v1557.s; } > $@
+	@{ echo ".set DTFS_ENABLE_TENEX,0"; echo ".set DTFS_ENABLE_ITS,0"; echo ".set DTFS_ENABLE_FOREIGN,0"; cat fs/dtfs_runtime.s fs/dtfs_intent_validate_v1550.s fs/dtfs_v2_mount_exclusive_v1557.s fs/dtfs_intent_mount_gate_v1561.s fs/dtfs_intent_first_write_v1553.s fs/dtfs_intent_owned_arm_v1552.s fs/dtfs_intent_arm_v1551.s fs/dtfs_intent_verify_v1554.s; } > $@
 
 COPY_ASM_SRCS = core/ret.s \
 	fs/monitorfs_dispatch_v14.s \

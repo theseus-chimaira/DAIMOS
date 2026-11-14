@@ -1,9 +1,11 @@
 ; v1553: authenticated DTFS per-mount first-write intent state transition.
 ;
-; This code is deliberately NOT linked into the production DTFS provider.
-; It cannot make DTVOL2 writable until mount admission and exclusive CLEAN
-; unmount are also in place. All data/dir paths must eventually call this
-; through the *same* serialized fs_provider_reg_call lease.
+; v1561: linked into production DTFS MRES and called through the central
+; DATA/DIR veneer using the exact retained VFS MM aux[slot] as scratch.
+; However v1555 still rejects every V2 DATA/DIR WRITE BEFORE that bridge:
+; this leaf cannot make V2 writable before exclusive CLEAN/unmount and the
+; full physical Type-551 fault/reinsertion/cold-boot acceptance. All calls
+; must hold the same serialized fs_provider_reg_call lease.
 ;
 ; AC1 = zero-based published VFS DTFS mount slot (NOT raw DTC unit).
 ; AC2 = pointer to the provider's retained one-word MM scratch base.
@@ -17,8 +19,9 @@
 ; The physically verified marker survives process crash, discard and boot.
 ; The ARMED bit is only an in-RAM transaction state: every subsequent
 ; write revalidates the physical RBN0 and original identity (v1554).
-; This remains UNLINKED; actual media-change races between the final
-; RBN0 read and the caller's DATA/DIR write need integration acceptance.
+; v1561 is linked and source-tested behind the read-only veto. Actual
+; media exchange between RBN0 verification and DATA/DIR transfer still
+; needs a physical generation/quiescence contract before writable V2.
 
         .text
         .globl dtfs_intent_first_write_v1553

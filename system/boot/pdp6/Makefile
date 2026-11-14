@@ -212,6 +212,11 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/fs/dtfs_runtime.s \
 	$(KERNEL_DIR)/fs/dtfs_intent_validate_v1550.s \
 	$(KERNEL_DIR)/fs/dtfs_v2_mount_exclusive_v1557.s \
+	$(KERNEL_DIR)/fs/dtfs_intent_mount_gate_v1561.s \
+	$(KERNEL_DIR)/fs/dtfs_intent_first_write_v1553.s \
+	$(KERNEL_DIR)/fs/dtfs_intent_owned_arm_v1552.s \
+	$(KERNEL_DIR)/fs/dtfs_intent_arm_v1551.s \
+	$(KERNEL_DIR)/fs/dtfs_intent_verify_v1554.s \
 	$(KERNEL_DIR)/fs/tsfs_runtime.s \
 	$(KERNEL_DIR)/fs/dtfs_resize.s \
 	$(KERNEL_DIR)/fs/file.c \

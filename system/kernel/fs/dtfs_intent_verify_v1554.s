@@ -1,7 +1,8 @@
 ; DTFS v1554: physical RBN0 verification for an already-armed volume.
 ;
-; NOT linked into the production DTFS provider until all first-write,
-; mount, unmount and owner-lifetime rules are implemented together.
+; Linked into production DTFS MRES by v1561 behind the v1555 read-only
+; write veto. Its physical already-armed verification remains unreachable
+; by live V2 writes until owner-safe CLEAN/unmount is accepted.
 ;
 ; AC1=physical DTC unit, AC2/AC3=expected 72-bit nonzero volume ID,
 ; AC4=independent PINNED 0200-word scratch owned by the caller.
