@@ -1,3 +1,30 @@
+## 2026-11-14 v1555: real DTFS MRES DTVOL2/CLEAN RO admission
+
+Production `dtfs_mount_unit` now reads native directory and RBN0
+physically, selects the genuine v1550 six-word DTVOL2 validator,
+and admits V2 only on explicitly READ-ONLY MOUNT with exact CLEAN
+state. DIRTY, torn, zero-ID, unreadable or RW V2 refuse before
+VFS publication. The MM media word gains FORMAT_V2 only after
+physical admission, while the original 72-bit identity still
+uses the existing SHAPE/EXTENT per-mount words. DTVOL1/legacy
+mount behavior remains unchanged.
+
+The common `dtfs_dtc_write` veneer also now fails closed on any
+physical unit with a published V2 mount, independently of VFS
+readonly checks. No directory/data write can bypass this RO
+boundary through an internal DTFS caller. The actual userspace
+native probe accepts only valid CLEAN V2, without granting write.
+The full KCC DTFS MRES with the v1550 validator linked PASSes
+assembly/fold/link. Native tests: 15 V2 physical admission cases/
+9 mutants, 12 central write-guard cases/7 mutants, 12 C89 probe
+outcomes PASS. Legacy v1519/v1520/v1522 suites all PASS.
+
+**P0-B OPEN:** writable V2 first-write/verify wiring, retained MM
+owner, exclusive CLEAN/unmount and physical cold boot remain open.
+No new fixed KCORE data or syscall ABI. Full detail:
+`design/kcore-dtfs-v2-ro-admission-v1555.md`. VERSION 0.5;
+strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1554: physical DTVOL2 DIRTY readback before further writes
 
 Added `dtfs_intent_verify_v1554.s`: always bypass BCACHE,

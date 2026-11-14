@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1554, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1555, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -193,6 +193,17 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   gating, exclusive CLEAN-unmount and full physical Type-551
   cold-boot/reinsertion/TOCTOU safety. P0-B remains OPEN.
   See `design/kcore-dtfs-armed-revalidation-v1554.md`.
+  **v1555 production RO cutover PASS:** real DTFS MRES mount
+  admission physically validates DTVOL2/CLEAN and permits only
+  READ-ONLY mounts. No DIRTY/RW/corrupt V2 can publish a slot.
+  The central DTFS write veneer refuses writes to any unit with
+  a published V2 mount, even from internal callers; C89 userspace
+  probe updated. Actual KCC full DTFS MRES build/fold/link PASS;
+  native 15 mount cases/9 mutants, 12 write cases/7 mutants,
+  12 probe outcomes and v1519/v1520/v1522 regressions PASS.
+  Still no writable V2, required dirty gate, retained MM owner,
+  exclusive CLEAN unmount or cold-boot Type-551 acceptance.
+  **P0-B OPEN.** `design/kcore-dtfs-v2-ro-admission-v1555.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

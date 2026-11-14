@@ -1,3 +1,32 @@
+## 2026-11-14 v1555: production DTVOL2 read-only admission PASS
+
+The production DTFS MRES now physically admits a fully valid
+DTVOL2/CLEAN image only with an explicit VFS READ-ONLY mount
+flag, while rejecting DIRTY and every bad seal/identity/padding.
+On success it publishes FORMAT_V2 in the MM-backed media word,
+keeps original volume ID halves in existing per-slot SHAPE/EXTENT
+storage and uses the existing VFS read-only policy. The common
+native `dtfs_dtc_write` veneer now also refuses *every* DATA/DIR
+write to a published V2 physical unit before raw controller I/O,
+even from an internal bypass. Ordinary DTVOL1 and legacy paths
+are unchanged, as is the target MKFS destructive reformat order.
+
+The C89 userland probe recognizes only complete CLEAN V2; V2
+DIRTY and malformed records cannot be misclassified as healthy.
+Generated production `dtfs_runtime.s` now includes the real v1550
+validator; the full KCC DTFS MRES assemble/fold/link PASSes.
+Native source-linked PDP-6 15 physical mount cases/9 mutations,
+12 central write-guard cases/7 mutations and 12 C89 probe checks
+PASS. Historical v1519, v1520 and v1522 native regressions PASS.
+
+**P0-B OPEN:** this is safe read-only format admission, NOT
+writable durable DTFS. Mandatory first-write gate, MM scratch
+retention, owner-safe CLEAN/unmount, full physical guest boot/
+partial-write reinsertion and media exchange TOCTOU still open.
+No fixed KCORE RAM/data, ABI or default-format change.
+`design/kcore-dtfs-v2-ro-admission-v1555.md`; P0-A closed,
+P1-C open; VERSION 0.5, strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1554: DTVOL2 already-armed physical revalidation PASS
 
 Added read-only native `dtfs_intent_verify_v1554.s`: a freshly
