@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1577, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1578, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,19 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1578 orphaned LOGSTORE record recovery:** two full
+  128K physical PDP-6 boots, shared Type-236 AUXSTORE drum. Boot 1
+  physically commits an intentionally invalid LSREC1 (zero trailer)
+  and receives test-injected -1; NO retry before MEMFS snapshot HALT.
+  External physical bytes prove the uncommitted orphan at `05374`
+  octal, sequence 3. Boot 2 production KINIT ignores it, restores
+  MEMFS XIP/data and physically reuses original LOGSTORE slot and
+  sequence; new valid sequences 3,4,5, four manipulated physical
+  oracle images rejected. Native LOGSTORE recovery PASS. **P1-C
+  OPEN**: real concurrent swap/commit and natural controller/PI/
+  DEVICE/VOLUME faults. No production RAM/code changes.
+  `design/kcore-p1c-logstore-orphan-v1578.md`.
 
 - [x] **P1-C partial v1577 LOGSTORE failure rollback:** source-linked
   actual PDP-6 producer error/cursor/notification and same-slot retry

@@ -1,3 +1,21 @@
+## 2026-11-14 v1578: P1-C uncommitted LOGSTORE cold-boot recovery
+
+Full physical 128K KCC/PDP-6 on Type-236 drum: boot one physically
+writes a deliberately invalid LSREC1, receives test-injected -1,
+does NOT retry, then commits persistent MEMFS on normal HALT.
+External physical-sector verification finds the orphan at `05374`,
+sequence 3, trailer zero. Independent cold boot restores MEMFS XIP/
+data and production LOGSTORE KINIT correctly ignores the orphan,
+reuses its physical slot/sequence and commits new valid LSREC1.
+Physical committed sequences `3,4,5`, four manipulated physical
+media negatives rejected, AUXSTORE descriptor unchanged; native
+LOGSTORE recovery suite PASS. Actual controller error not proven:
+completion injected *after* intentional invalid-sector DMA. Zero
+production code or permanent RAM, fixed low end `024364` octal.
+P1-C remains OPEN for timed real swap/snapshot and natural device
+failures; P0-A/B CLOSED, VERSION 0.5, 32K HOLD.
+`design/kcore-p1c-logstore-orphan-v1578.md`.
+
 ## 2026-11-14 v1577: physical LOGSTORE failure and recovery P1-C slice
 
 Source-linked original LOGSTORE MRES on real PDP-6 PASSes a torn

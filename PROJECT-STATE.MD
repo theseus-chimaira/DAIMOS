@@ -1,3 +1,24 @@
+## 2026-11-14 v1578: P1-C physical orphaned LOGSTORE recovery PASS
+
+The v1577 LOGSTORE torn sector is now **left unretried through HALT**.
+First real 128K PDP-6 boot physically writes a zero-commit-trailer
+LSREC1 on Type-236, injects a negative completion in a disposable
+optional MRES, and commits a separate persistent MEMFS snapshot.
+Host byte-level verification, before boot 2, found exactly one
+abandoned 36-bit record at octal block `05374`, sequence `3`,
+trailer zero. Fresh physical cold boot restores MEMFS files/XIP and
+production LOGSTORE KINIT ignores the uncommitted event. Host
+inspection proves the second boot **reused** that physical block and
+sequence, with valid committed sequences `3,4,5` and the second
+test event at 5. Four altered real image oracles rejected (two with
+recomputed valid checksum); native LOGSTORE recovery suite PASS.
+No production code/RAM change. **P1-C OPEN** for actual swap-in/
+snapshot HALT overlap and natural hardware controller/PI and mapped
+DEVICE/VOLUME loss; failure completion here is explicitly synthetic
+after real invalid-sector DMA. P0-A/B CLOSED, P1-D/E OPEN,
+VERSION 0.5, strict 32K HOLD.
+`design/kcore-p1c-logstore-orphan-v1578.md`.
+
 ## 2026-11-14 v1577: P1-C LOGSTORE torn-record rollback PASS
 
 Genuine production LOGSTORE append and state/error branches executed
