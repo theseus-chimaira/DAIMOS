@@ -1,3 +1,23 @@
+## 2026-11-14 v1564: real physical DTVOL2/CLEAN and WRITE_INTENT guests PASS
+
+Full 256K KCC PDP-6 TSFS-root guest physically mounted a native
+DTC3 DTVOL2/CLEAN image created by current source `mkdtfs`.
+Production v1555 rejected RW, admitted RO; real independently
+scheduled PID2 cwd/FILE owners prevented PID1 unmount. After release,
+unmount/retire, a second RW refused and second RO remount/retire
+both succeeded. The full physical image SHA-256 did not change.
+Separate second real guest cold-booted an independently formatted
+DTVOL2 with valid WRITE_INTENT checksum: RW/RO both refused,
+slot unpublished, full physical image unchanged. The historical
+DTVOL1 cross-process physical regression also PASS.
+
+**No production code, RAM or default format change.** This accepts
+actual physical DTVOL2 RO lifecycle and DIRTY refusal, not physical
+CLEAN writing, torn writes, media-exchange safety or a simultaneous
+SYNC/owner scheduler race. P0-B OPEN, DTVOL2 READ-ONLY, VERSION 0.5;
+strict 32K and optimization HOLD.
+`design/kcore-dtfs-physical-v1564.md`.
+
 ## 2026-11-14 v1563: SIDL/EXEC PURE executable owner gap closed
 
 Production `proc_swap_attach()` now checks the real DTFS V2 owner

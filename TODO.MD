@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1563, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1564, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -289,6 +289,18 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   scheduler proof is still pending. **P0-B OPEN:** physical CLEAN,
   generation and Type-551 fault/cold boot all remain mandatory.
   `design/kcore-dtfs-pure-owner-v1563.md`.
+  **v1564 physical DTVOL2 guest acceptance PASS:** real 256K KCC
+  PDP-6 Type-551 DTC3 DTVOL2/CLEAN RW refused, RO mounted,
+  separately scheduled PID2 cwd/FILE refused unmount, second RO
+  remount/retire succeeds, media whole-image SHA-256 unchanged.
+  Separate actual physical cold boot with valid WRITE_INTENT salted
+  seal refuses RW and RO without publishing any mount; media
+  unchanged. Original DTVOL1 cross-process physical test PASS.
+  No production code/RAM changes. **P0-B OPEN:** deliberately
+  concurrent SYNC/owner scheduler schedule, physical CLEAN write
+  and readback, tape-generation/exchange, torn/partial RW and
+  post-RW reinsertion/cold-boot acceptance.
+  `design/kcore-dtfs-physical-v1564.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent

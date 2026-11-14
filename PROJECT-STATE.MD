@@ -1,3 +1,30 @@
+## 2026-11-14 v1564: two full physical DTVOL2 PDP-6 cold boots PASS
+
+The actual 256K KCC TSFS-root PDP-6 kernel and linked native DTFS
+provider accepted independently formatted Type-551 DTC3 DTVOL2/CLEAN
+read-only media. The first physical boot rejected RW, admitted RO,
+then verified cross-process PID2 cwd and FILE owner exclusion during
+PID1 unmount, release, retirement and a second RO remount/retire.
+Before/after SHA-256 of the entire DTC3 image was identical.
+
+A second full-guest cold boot used a valid DTVOL2 WRITE_INTENT
+RBN0 seal with correct salted checksum and unique 72-bit identity.
+The real native provider refused RW and RO; the mount slot remained
+unpublished, and the physical media SHA-256 was unchanged. Previous
+v1526 DTVOL1 full-guest cross-process ownership also PASS after
+shared test-harness changes. The new tests use actual KCORE/MRES,
+PDP-6 scheduler, syscalls and Type-551 physical transfers; no
+mocked provider or owner detection.
+
+**v1564 has zero production kernel/MRES source changes, zero added
+fixed RAM and no changed default on-disk format.** P0-B remains
+OPEN pending deliberately simultaneous SYNC/owner scheduler
+interleavings, final physical DIRTY->CLEAN write/readback, media
+exchange contract, partial write/reinsert and cold boot after RW.
+DTVOL2 stays READ-ONLY; 32K optimization HOLD. VERSION 0.5.
+`design/kcore-dtfs-physical-v1564.md` and testkit
+`tests/validation/daimos-dtfs-v2-physical-v1564.md`.
+
 ## 2026-11-14 v1563: staged PURE owner exclusion for DTFS PASS
 
 While VFS v1562 protects FILE/cwd, a sleeping RUN/EXEC could still
