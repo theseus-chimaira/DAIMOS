@@ -1,3 +1,38 @@
+## 2026-11-14 v1560: retained DTFS scratch MM owner cannot be lost on retire
+
+Production VFS/KCORE now has a checked provider-private per-mount
+auxiliary word for a future retained DTFS physical RBN0 0200-word
+scratch extent. The new `vfs_mount_aux_base_v1560` aliases the
+existing D6FS reader-slot base in the MM-backed six-array VFS slab;
+the two providers occupy disjoint published slots, so zero extra
+fixed KCORE words or MM table words are needed. The exact v1552
+scratch `basep` can eventually reference this word rather than
+a transient stack location. Existing D6FS boot-reader and mount-
+reader MM ownership remains unchanged.
+
+The real VFS now refuses publication of a DTFS mount over an
+outstanding scratch owner, refuses final DTFS unmount if MM
+ownership persists after sleeping sync/preparation and all live
+owner checks, and refuses administrative poisoned-volume discard
+both before physical replacement reads and after they return,
+before FILE unlock or mount retirement. It never clears, frees or
+forges the physical MM owner on an error.
+
+Native PDP-6 **16 helper cases/5 mutants and 14 live VFS mount/
+unmount cases/5 mutants PASS**, plus 5 source-order mutations
+rejected for the mount/unmount/admin-discard lifecycle. v1514
+and v1523 native regressions PASS. Complete KCC full-profile
+KCORE and optional DTFS MRES builds PASS; the linker assigns
+the two base aliases the same address.
+
+**P0-B OPEN:** production V2 stays READ-ONLY. The v1552 MM
+service and v1553-v1554 physical DIRTY gate are not yet connected
+to mounted DTFS DATA/DIR writes, and exclusive CLEAN/unmount plus
+full physical Type-551 reinsertion/cold-boot acceptance remain
+pending. No ABI/default format/fixed RAM growth or optimization.
+`design/kcore-dtfs-retained-aux-v1560.md`; P0-A closed, P1-C
+separate, VERSION 0.5, strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1558: raw Type-551 admission short-read fail-closed PASS
 
 Production `dtfs_runtime.s` now primes the shared 128-word Type-551

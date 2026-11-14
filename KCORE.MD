@@ -1,3 +1,29 @@
+## 2026-11-14 v1560: production DTFS retained MM owner lifetime guard
+
+The existing boot-inventoried six-array VFS MM slab already holds
+one provider-private auxiliary word per slot, historically called
+`d6fs_reader_slots_base`. KCORE exports its exact alias
+`vfs_mount_aux_base_v1560` for future DTFS pinned RBN0 scratch
+ownership, with no extra KCORE or per-mount RAM word. Native VFS
+refuses DTFS mount publication if the selected slot retains an MM
+extent; refuses DTFS unmount after final sleeping SYNC/PREPARE and
+owner checks when a retained extent remains; and refuses poisoned
+DTFS administrative replacement both BEFORE physical reads and
+AFTER provider I/O before slot retirement. D6FS/TSFS mounts keep
+their provider-disjoint reader and ownership semantics.
+
+Genuine PDP-6: 16 retained-base cases/five unsafe mutants, 14
+actual VFS publication/unmount cases/five unsafe mutants, plus
+five source-order mutants for admin discard all PASS/rejected.
+v1514/v1523 regressions and complete KCC KCORE/DTFS MRES link PASS;
+the two alias names have identical addresses in `kcore.map`.
+**P0-B remains OPEN:** this retains the future v1552 `basep`, but
+does not yet connect the v1551-v1554 physical first-write gate,
+enable writable DTVOL2, or seal CLEAN during owner-safe unmount.
+No fixed RAM/ABI/media-format change or optimization. Details:
+`design/kcore-dtfs-retained-aux-v1560.md`. VERSION 0.5,
+strict 32K/optimization HOLD.
+
 ## 2026-11-14 v1558: physical Type-551 false-success admission fix
 
 Production native DTFS initial mount and poisoned-volume

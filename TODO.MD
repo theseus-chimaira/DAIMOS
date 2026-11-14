@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1558, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1560, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -236,6 +236,19 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   old v1519/v1520 and full KCC MRES link PASS. Writable V2,
   provider MM ownership, exclusive CLEAN/unmount and full-guest
   physical acceptance STILL OPEN. `design/kcore-dtfs-raw-read-sentinel-v1558.md`.
+  **v1560 production retained-MM owner lifetime guard PASS:**
+  reuse the already-MM-backed D6FS reader/provider-aux mount word
+  for exact DTFS scratch `basep` (mutually exclusive providers),
+  with no new RAM word. Reject DTFS mount/recycle, final unmount,
+  and poisoned discard when an owned MM scratch extent persists;
+  poisoned discard checks both before and after sleeping physical
+  replacement reads. Native PDP-6 16 helper scenarios/5 mutants,
+  14 VFS publication/unmount scenarios/5 mutants, 5 source-order
+  mutants, v1514/v1523 regressions and KCC full MRES link PASS.
+  Still pending: pass actual per-mount `basep` to v1552/v1553,
+  connect mandatory DIRTY DATA/DIR write gate, exclusive CLEAN
+  unmount, real Type-551 partial/reinsert/cold boot. **P0-B OPEN.**
+  `design/kcore-dtfs-retained-aux-v1560.md`.
 - [ ] **P1-C, combined storage faults:** one actual
   full guest with concurrent process swap/restoration
   plus MEMFS persistent snapshot commit, and independent
