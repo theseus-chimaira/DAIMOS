@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1575, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1576, 2026-11-14)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,17 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C partial v1576:** full 128K PDP-6, same physical
+  AUXSTORE DSK/DRM backing across two cold boots. MEMFS persist
+  commit/restore and independently marked LOGSTORE APPEND/READ_BLOCK
+  plus second-boot previous-record recovery PASS. Partition geometry
+  unchanged. v1536 KINIT bitmap and real allocator 7 unsafe mutants,
+  and v1316 real-MM swap-in 3 unsafe mutants PASS separately.
+  **P1-C remains OPEN**: simultaneous swapped-process restore with
+  MEMFS commit and in-flight DEVICE/VOLUME/LOGSTORE physical fault
+  recovery still require one actual full guest and owner/PI proof.
+  No production RAM/code change, 32K HOLD.
 
 - [x] **P0-B closed v1575 under trusted operator:** no live reel
   exchange while mounted RW; root-authorized discard and operator

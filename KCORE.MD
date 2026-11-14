@@ -1,3 +1,18 @@
+## 2026-11-14 v1576: physical P1-C persistent mixed-storage slice
+
+One production full 128K PDP-6 with actual DSK and AUXSTORE drum
+performs LOGSTORE physical commit-last append/readback during a
+persistent MEMFS lifecycle. On a new cold boot from the same physical
+media, original MEMFS file/XIP and original uniquely marked LSREC1
+are read and validated, then a new LOGSTORE record is appended and
+read. Full descriptor geometry stays unchanged. Rerun real-PDP-6
+v1536 BACKSTORE/snapshot reservation with seven rejected mutants,
+and native v1316 swap-in MM/owner rollback with three rejected mutants.
+No production changes or permanent RAM; `__kcore_low_end=024364`
+octal, VERSION 0.5, 32K HOLD. P0-A/B CLOSED. **P1-C still OPEN**:
+real *concurrent* swap and MEMFS commit plus device/provider fault
+rollback not yet tested. `design/kcore-p1c-persistent-mix-v1576.md`.
+
 ## 2026-11-14 v1575: trusted-operator DTVOL2 P0-B accepted
 
 Production V2/CLEAN RW uses v1572's first-write physical DIRTY

@@ -1,3 +1,19 @@
+## 2026-11-14 v1576: P1-C physical MEMFS/LOGSTORE coexistence accepted
+
+Full production 128K-word PDP-6 disk-root guest cold-booted twice
+with a shared 8 MiB AUXSTORE drum. Boot 1 wrote persistent MEMFS
+XIP/data and used root LOGCTL STATUS/APPEND/READ_BLOCK to commit and
+physically read back a distinct LSREC1; HALT committed the snapshot.
+Fresh boot 2 recovered exact MEMFS file/executable, found the first
+boot's committed physical LSREC1 record, appended/read back a new
+record; descriptor remained byte-identical. Both boots STATUS:0.
+v1536 snapshot/BACKSTORE bitmap seven mutants and native v1316
+swap-in rollback three mutants rerun PASS separately. No production
+code, ABI or RAM changed. **P1-C remains OPEN** for actual concurrently
+swapped process and MEMFS commit plus in-flight DEVICE/VOLUME, PI and
+LOGSTORE fault isolation. P0-A/B CLOSED, P1-D/E OPEN, VERSION 0.5,
+32K HOLD. `design/kcore-p1c-persistent-mix-v1576.md`.
+
 ## 2026-11-14 v1575: P0-B closed under operator-trust DTVOL2 contract
 
 Trusted operator retains each reel for the entire writable mount,
