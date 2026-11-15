@@ -1,3 +1,29 @@
+## 2026-11-15 v1583: full physical mapped VOLUME MEMFS snapshot PI2 PASS
+
+The genuine 128K KCC PDP-6 ran the full four-member DR0..DR3
+Type-236 D6FS root VOLUME, original BACKSTORE mapped swap tail,
+LOGSTORE and persistent MEMFS XIP with four independently sleeping
+24K-word swapped children. At the actual privileged snapshot HALT,
+original `proc_swap_blocks_used` was positive. A disposable selected
+PI2 descriptor error on the actual final invalid header WRITE
+reached original v1541/v1515 BACKSTORE reason-2 HALT at linked PC
+`004011`. Original DRM error count=1, target retired and arm cleared,
+owned `01374` octal. On-media D6FSR2 layouts from all four units
+match runtime VOLUME `075774` data/`02000` tail; final logical
+`01777` physically addresses DR3 block `017777`/hardware group
+`777770`. The physical commit header remains invalid, all member
+layouts unchanged, 248 other nonzero BACKSTORE sectors. Twelve
+intentionally corrupted evidence variants rejected. This joins the
+older physical v1547/v1548 mapped ownership failures and the direct
+snapshot v1581 acceptance; it is not the first ever mapped PI2 test.
+
+No permanent KCORE/source/RAM/ABI/media change. No natural damaged
+media or independently scheduled swap-in overlap is claimed. **P1-C
+remains OPEN** for overlap and recoverable owner/MM/BCACHE rollback.
+P1-D and P1-E remain open. VERSION 0.5, KCORE low end `024364` octal,
+strict optimization/32K HOLD. Evidence:
+`design/kcore-p1c-physical-mapped-snapshot-v1583.md`.
+
 ## 2026-11-15 v1582: real BLOCKSET mapper/native BACKSTORE gate PASS
 
 The actual native PDP-6 `blockset_dispatch.s` INTERLEAVE root mapper,

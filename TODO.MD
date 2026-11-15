@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1582, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1583, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,24 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1583 real mapped VOLUME snapshot PI2 failure:**
+  full 128K KCC/PDP-6 with real four-member DR0..DR3 D6FS root,
+  LOGSTORE and persistent MEMFS/XIP, four sleeping 24K-word swapped
+  children and original positive process swap blocks during
+  snapshot HALT. Real Type-236 DR_DONE routed one exact selected
+  snapshot invalid-header descriptor through original PI2 error and
+  original BACKSTORE HALT `004011` octal. `01374` owned blocks,
+  one driver error, target retired. Physical last logical `01777`
+  correctly maps DR3 block `017777`/hardware group `777770`;
+  all four root member layouts, 248 other nonzero backing sectors
+  and invalid snapshot header independently checked. Twelve
+  deliberately wrong evidence variants rejected. Only opt-in
+  testkit harness and disposable guest changed. **P1-C OPEN** for
+  separately scheduled swap-in completing during synchronous
+  snapshot DMA and recoverable owner/MM/BCACHE fault rollback.
+  Natural medium loss unproven. P1-D/E and optimization gate
+  unchanged. `design/kcore-p1c-physical-mapped-snapshot-v1583.md`.
 
 - [x] **P1-C v1582 real source-linked BLOCKSET VOLUME mapper:**
   original PDP-6 `blockset_dispatch.s` interleave translator, fixed

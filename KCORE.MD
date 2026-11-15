@@ -1,3 +1,23 @@
+## 2026-11-15 v1583: full physical four-member mapped MEMFS snapshot PI2 PASS
+
+The production four-way DRM236 D6FS root and actual BLOCKSET mapped
+BACKSTORE ran with persistent MEMFS data/XIP, LOGSTORE and four real
+24K-word sleeping swapped children. A test-selected real DR_DONE
+PI2 on the first invalid snapshot-header WRITE reached the original
+reason-2 BACKSTORE HALT at `004011` octal, with `01374` octal owned
+blocks, one original DRM driver error, target retired and arm cleared.
+The actual mapped VOLUME data span is `075774` octal, tail `02000`,
+and the selected final logical `01777` maps to physical DR3 block
+`017777` and hardware group `777770`. Raw 36-bit media verify the
+invalid header, 248 other nonzero tail sectors and unchanged layout
+descriptors on all four units; 12 corrupt witness controls rejected.
+Only testkit opt-in boot mode and disposable guest diagnostics changed;
+the earlier v1547/v1548 mapped swap failures remain distinct. P1-C
+remains OPEN for genuine independently scheduled snapshot/swap-in
+overlap and recoverable MM/BCACHE/owner rollback. P1-D/E OPEN;
+VERSION 0.5, 32K/optimization HOLD, production low end `024364`.
+`design/kcore-p1c-physical-mapped-snapshot-v1583.md`.
+
 ## 2026-11-15 v1582: native real BLOCKSET volume mapper with BACKSTORE PASS
 
 The real compact `blockset_dispatch.s` INTERLEAVE mapper, fixed
