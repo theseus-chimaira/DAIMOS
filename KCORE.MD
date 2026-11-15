@@ -1,3 +1,25 @@
+## 2026-11-15 v1600: independent DSK270 root plus direct DRM0 swap failure PASS
+
+Real 128K full PDP-6 boot from independent DSK270 D6FSR2
+four-member root, DR0 AUXSTORE direct DEVICE BACKSTORE
+`05770+010000`. Original `device_region_map=400000005770`,
+`volume_data_blocks=0`, no VOLUME mapper. Original PI6 timer
+wakes separate SLEEP/DISK owners 6 and 7 once; original slot-0
+service starts DR0 physical sector `006421` swap READ for
+**slot 6** (logical BACKSTORE `000431`), one authentic Type-236
+DR_DONE PI2 follows test-selected original error branch to
+original BACKSTORE reason-2 HALT **`004011`**. Real swap and
+BACKSTORE ownership retained (`01650`/`01734` octal), zero
+RESIDENT publications, uncommitted snapshot. Four distinct
+DSK270 root member headers and actual AUXSTORE RBN0 geometry
+validated. Source-linked physical oracle PASS and 27 false
+cases rejected; old mapped v1599 23 and single-owner v1586
+15 mutations still PASS. Only one READ DMA before fatal halt;
+the separate root is confirmed healthy at boot, but no successful
+post-fault service is claimed. No permanent KCORE source/RAM/ABI
+change; VERSION 0.5 and 32K optimization HOLD. P1-E KA10
+implementation HOLD. `design/kcore-p1c-direct-device-dual-owner-v1600.md`.
+
 ## 2026-11-15 v1599: two authentic PI6 disk owners on fatal mapped BACKSTORE swap READ
 
 Physical 128K full PDP-6 four-member DRM236 D6FS root VOLUME,

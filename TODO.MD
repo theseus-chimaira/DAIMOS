@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1599, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1600, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -7,11 +7,29 @@ KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
 
+- [x] **P1-C v1600 independent DEVICE root/controller fail-stop:**
+  128K PDP-6 full real DSK270 four-member D6FSR2 root, separate
+  DRM0 AUXSTORE direct DEVICE BACKSTORE (physical `05770+010000`),
+  actual `device_region_map=400000005770` and NO VOLUME mapping.
+  Original PI6 timer wakes both DISK owners 6 and 7. Slot **6**
+  selected by original scheduler for one physical DR0:`006421`
+  READ (relative `000431`), genuine DR_DONE PI2 selects original
+  driver error, required BACKSTORE reason-2 HALT `004011` octal.
+  Original positive swap/BACKSTORE allocations retained, no
+  RESIDENT publication or false persistent commit, 268 nonzero
+  other physical backing sectors, valid four distinct DSK270
+  member layouts and physical AUXSTORE RBN0. Full-guest/oracle
+  plus **27** negative controls PASS; v1599 23 and v1586 15
+  regression mutants PASS. Original v1599 source-linked post-HALT
+  also selects slot **6** (its historical prose had incorrectly
+  said slot 7; corrected without changing its actual acceptance).
+  One fatal READ, not concurrent two-DMA or postfatal recovery.
+  No permanent KCORE/MM/driver/ABI/RAM/media changes.
 - [x] **P1-C v1599 two real PI6 owners at physical fatal swap READ:**
   full 128K PDP-6 four-member Type-236 D6FS root VOLUME with
   LOGSTORE and MEMFS shutdown snapshot. Original 60 Hz timer
   wakes both separate SLEEP/DISK-backed slots **6 and 7** once.
-  Original scheduler's slot-0 starts mapped swap READ for slot 7;
+  Original scheduler's slot-0 starts mapped swap READ for slot 6;
   authentic DR_DONE PI2 and selected disposable test error enter
   unmodified driver and reason-2 BACKSTORE HALT `004011` octal.
   Exactly one selected physical read/PI2, zero RESIDENT publish;
@@ -815,19 +833,21 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   changed reel, not a voluntary operator agreement or software
   epoch. See `design/kcore-dtfs-media-retention-v1571.md`.
   Zero production kernel/MRES/driver/RAM/ABI change; 32K HOLD.
-- [ ] **P1-C, remaining combined storage faults:** v1599
+- [ ] **P1-C, remaining combined storage faults:** v1600
   physically identifies BOTH independently timed PI6 owner slots
-  and one actual fatal mapped swap READ with untouched ownership;
+  and fatal swap READ with original ownership in both the mapped
+  DRM-root VOLUME and the independent DSK-root/direct-DRM DEVICE;
   v1593 separately proves successful slot 7 RESIDENT publication.
   v1596 proves
   *genuine physical DTC6 provider loss* with unrelated writable
   MEMFS forward progress, after an independent DTC3 refusal.
-  Still add **direct DEVICE** DRM236 AUXSTORE BACKSTORE fault
-  on independent DSK270 root with active swap and provider work;
-  the mapped DRM VOLUME fatal-first/two-owner case now passes.
-  Also test the original controller's unshared ROOT/service policy,
-  shared Type-136 routing,
-  dirty/write-through failure and process/PI owner rollback.
+  Still test dirty/write-through failure and cache/owner
+  isolation on separate providers, with loaded timing regression
+  and final composite current-source ROOT/service controller matrix.
+  The original shared Type-136 error routing, both fatal DEVICE/
+  VOLUME classes and independent nonroot media-loss policy must
+  remain source-matched. Never retry a confirmed critical
+  owned-media failure or pretend postfatal process rollback.
   Continue checked physical BACKSTORE bitmap, MM pins, cache
   identity and provider isolation under multiple owner faults,
   and repeat the v1585/v1592 timing workload under load. Reuse

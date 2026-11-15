@@ -16,7 +16,7 @@ deadlines to the same next 60 Hz tick during actual MEMFS snapshot
 shutdown; no invented RUN, injected PI6, swap call or device
 completion. The original PI6 timer service wakes each **once**.
 The original independent slot-0 service enters `proc_swap_in`
-for slot **7**, issues a real physically mapped DRM swap READ,
+for slot **6**, issues a real physically mapped DRM swap READ,
 then receives one authentic Type-236 DR_DONE PI2; a test-only
 first-READ arm diverts that completion to original
 `drm236_pi_error`, and original critical BACKSTORE reason-2

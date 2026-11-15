@@ -1,3 +1,42 @@
+## 2026-11-15 v1600: independent direct DRM0 DEVICE swap fatal with DSK270 root PASS
+
+Full original 128K KCC PDP-6 guest booted **four separate DSK270
+D6FSR2 root members**, independent of physical **DR0 AUXSTORE**
+with direct BACKSTORE `05770+010000` octal, separately reserved
+LOGSTORE `05370+0400`. Original `device_region_map` is
+`400000005770` octal, `volume_data_blocks=0` and original
+`backing_region_count=010000`; the mapper is NOT a VOLUME.
+Two distinct original SLEEP/DISK swap owners **6 and 7** each
+had genuine PI6 timer wakeup. Original scheduler initiated one
+direct DRM swap READ for **slot 6**, real DR_DONE PI2 selected
+the existing original driver error leaf, original reason-2
+critical BACKSTORE HALT **octal `004011`**. Physical DR0 sector
+`006421` exactly maps to original logical BACKSTORE `000431`.
+Positive process swap ownership `01650` and total BACKSTORE
+`01734` octal retained; no RESIDENT publication or fake snapshot
+commit, 268 other nonzero physical backing sectors. Four real
+DSK270 root descriptors, four distinct member IDs, original
+DR0 AUXSTORE RBN0 and preboot geometry all checked. Entire
+guest + source-linked raw-media oracle PASS, **27** deliberately
+false owner/PI6/PI2/direct-map/physical-root cases rejected;
+v1599 mapped-VOLUME 23 mutants and v1586 15 still PASS.
+
+v1599 documentation correction from direct original post-HALT
+linked evidence: **the first v1599 swap READ also belonged to
+slot 6**, not slot 7 as its prose had stated. Both owners
+genuinely woke once; v1599's exact verifier allowed either and
+correctly accepted the physical fault. All affected historical
+descriptions are corrected; no false claim of two overlapping
+DMA READs or recovery after fatal owned-media failure.
+
+**P1-C remaining**: dirty/write-through error isolation and
+loaded repeatability, final composite matrix. **P1-D** final
+source-matched alternate controller/slot matrix and P1-E
+KA10-oriented architecture review remain open. NO permanent
+DAIMOS code/RAM/ABI/media changes; VERSION 0.5, low end
+`024364` octal and strict 32K/optimization HOLD.
+`design/kcore-p1c-direct-device-dual-owner-v1600.md`.
+
 ## 2026-11-15 v1599: two authentic PI6 swap owners during fatal BACKSTORE PI2 PASS
 
 **P1-C v1599 accepted physical 128K PDP-6 mapped BACKSTORE
@@ -8,7 +47,7 @@ process slots **6 and 7**, both owning nonzero original swap
 records, were selected during the snapshot. Original 60 Hz PI6
 timer service independently woke EACH once. Original slot-0
 scheduler initiated the first mapped BACKSTORE swap READ for
-slot 7, selected genuine Type-236 DR_DONE PI2 then followed the
+slot 6, selected genuine Type-236 DR_DONE PI2 then followed the
 existing driver-error and v1515 reason-2 BACKSTORE fatal path,
 **HALT octal `004011`**. Exactly 1 selected READ/PI2 and original
 DRM error, zero RESIDENT publications and retained real
