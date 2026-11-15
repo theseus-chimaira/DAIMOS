@@ -2,6 +2,9 @@
 PROJECT_ROOT != cd ../../.. && pwd
 KCC_REPO ?= $(PROJECT_ROOT)/../kcc
 KERNEL_DIR = $(PROJECT_ROOT)/system/kernel
+# The PDP-6 image keeps its exact historical generated object names/order.
+# Only source ownership is selected here; this is not a KA10/KI10 boot target.
+include $(KERNEL_DIR)/arch/pdp6_source_map_v1605.mk
 PICTURE_DIR ?= $(PROJECT_ROOT)/pictures
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
 BUILD ?= $(BUILD_ROOT)/system/boot/pdp6
@@ -136,6 +139,7 @@ KCORE_BUILD = $(BUILD)/kcore-asm
 KINIT_STAMP = $(BUILD)/.kinit-built
 KCORE_STAMP = $(BUILD)/.kcore-built
 KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
+	$(KERNEL_DIR)/arch/pdp6_source_map_v1605.mk \
 	$(KERNEL_DIR)/proc/proc_swap_entry_v481.s \
 	$(KERNEL_DIR)/storage/backstore_entry_v484.s \
 	$(PROJECT_ROOT)/system/stand/pdp6/common/block_decompressor_v1458.inc \
@@ -143,9 +147,9 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/boot/kinit.h \
 	$(KERNEL_DIR)/boot/kinit_boot.c \
 	$(KERNEL_DIR)/boot/kinit_diag.c \
-	$(KERNEL_DIR)/boot/kinit_io_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_KINIT_IO_SOURCE) \
 	$(KERNEL_DIR)/boot/kinit_late.c \
-	$(KERNEL_DIR)/boot/kinit_late_begin_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_KINIT_LATE_SOURCE) \
 	$(KERNEL_DIR)/boot/kinit_late_end.s \
 	$(KERNEL_DIR)/boot/root_select.c \
 	$(KERNEL_DIR)/boot/root_select.h \
@@ -153,9 +157,9 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/core/d6block_vfs_fixed_v1458.s \
 	$(KERNEL_DIR)/core/kcore.h \
 	$(KERNEL_DIR)/core/kcore_end.s \
-	$(KERNEL_DIR)/core/kcore_pi_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_PI_SOURCE) \
 	$(KERNEL_DIR)/core/kcore_pi.h \
-	$(KERNEL_DIR)/core/kfmt_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_KFMT_SOURCE) \
 	$(KERNEL_DIR)/core/ret.s \
 	$(KERNEL_DIR)/drivers/card.h \
 	$(KERNEL_DIR)/drivers/clk.h \
@@ -248,25 +252,25 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/modules/module_runtime.h \
 	$(KERNEL_DIR)/modules/module_table.s \
 	$(KERNEL_DIR)/proc/exec.h \
-	$(KERNEL_DIR)/proc/exec_lowmem_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_EXEC_LOW_SOURCE) \
 	$(KERNEL_DIR)/proc/exec_load.s \
 	$(KERNEL_DIR)/proc/mach_user.h \
-	$(KERNEL_DIR)/proc/mach_user_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_TRAP_SOURCE) \
 	$(KERNEL_DIR)/proc/proc.c \
 	$(KERNEL_DIR)/proc/proc.h \
 	$(KERNEL_DIR)/proc/proc_boot.c \
 	$(KERNEL_DIR)/proc/proc_late.c \
-	$(KERNEL_DIR)/proc/proc_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_PROCESS_SOURCE) \
 	$(KERNEL_DIR)/proc/proc_run.s \
 	$(KERNEL_DIR)/proc/proc_swap.h \
 	$(KERNEL_DIR)/proc/proc_swap_boot.c \
-	$(KERNEL_DIR)/proc/proc_swap_pdp6.s \
-	$(KERNEL_DIR)/proc/proc_pure_backing_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_VM_SWAP_SOURCE) \
+	$(KERNEL_DIR)/$(DAIMOS_VM_BACKING_SOURCE) \
 	$(KERNEL_DIR)/proc/proc_storage_runtime_v30.s \
 	$(KERNEL_DIR)/proc/proc_pure_attach.c \
 	$(KERNEL_DIR)/proc/proc_storage_map_v28.h \
 	$(KERNEL_DIR)/proc/syscall.h \
-	$(KERNEL_DIR)/proc/syscall_dispatch_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_SYSCALL_SOURCE) \
 	$(KERNEL_DIR)/proc/vm.h \
 	$(KERNEL_DIR)/proc/vm_$(VM_BACKEND).h \
 	$(if $(filter pdp6,$(VM_BACKEND)),,$(KERNEL_DIR)/proc/vm_$(VM_BACKEND).c) \
@@ -282,7 +286,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/storage/blockset_layout.h \
 	$(KERNEL_DIR)/storage/blockset_mres.h \
 	$(KERNEL_DIR)/storage/bcache.h \
-	$(KERNEL_DIR)/storage/bcache_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_BCACHE_SOURCE) \
 	$(KERNEL_DIR)/storage/bstore.h \
 	$(KERNEL_DIR)/storage/backstore.s \
 	$(KERNEL_DIR)/storage/auxstore_boot.c \

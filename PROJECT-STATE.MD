@@ -1,3 +1,57 @@
+## 2026-11-15 v1605: PDP-6/KA10/KI10 KCORE portability architecture
+
+The full KCORE machine-portability audit now includes a future
+KI10 512-word page-frame backend and 22-bit physical page addresses,
+not merely KA10 dual relocation. `arch/pdp6_source_map_v1605.mk`
+is the first compile/link-time source-selection seam; both kernel
+and PDP-6 boot builds use it with NO extra runtime calls, fixed
+state or device/ABI changes. Whole KCC full ROOT=tape image and
+symbol map match the unmodified v1603 baseline byte-for-byte.
+Initial source-map-only generated VM/EXEC/process assembly matched
+exactly; final comment-only changes modify EXEC/process assembly
+text, but the rebuilt linked machine image remains identical.
+The present MM two-word 18-bit physical extent descriptor remains
+reserved for contiguous physical KCORE/device allocations; KI10
+user page frames and mapping ownership are separate future work.
+The remaining policy/context splits, page-safe transfers and
+source-sensitive daimos-testkit gates are documented in
+`design/kcore-multi-cpu-portability-v1605.md` and TODO.
+
+No KA10/KI10 VM, paging, boot/PI mode or full guest simulation
+is implemented. P1-E still staged (v1604 policy/geometry proof
+only), RAW scheduler integration OPEN, compression deferred,
+P0-B physical Type-551 reel-retention OPEN, strict 32K/
+optimization HOLD. VERSION 0.5, existing KCORE low end
+`024364` octal.
+
+## 2026-11-15 v1604: P1-E KA10-compatible PURE source boundary STARTED
+
+P1-E's architecture review is complete as a source-level contract:
+process-lifecycle preflight must not infer PDP-6 APR placement or
+single-extent PURE geometry. The staged
+`proc_pure_lifecycle_v1604.h` checks process TRANSITION, stable
+u-area, quiescent state and held user mapping/fatal-close exclusion.
+`vm_pdp6_pure_range_v1604.h` alone computes the current PDP-6
+sector-rounded PURE prefix. The existing v1381 zero-copy RAW drop
+and v1391 bounded full restore reuse these checks. No generic
+per-process region vector, callbacks, new metadata or runtime
+compression were introduced. Future KA10 will retain private low
+state without evicting a separately shared high code segment.
+
+New daimos-testkit native v1604 policy/geometry test PASS. Existing
+native v1381 DROP/RESTORE, v1384 prefix and v1395/v1397 rollback PASS;
+the rootless PURE fixtures were updated for the current production
+storage-mode bridge's `vfs_namespace_root` reference. These are
+isolated source-linked tests, not a production scheduler or physical
+guest acceptance. No P1-E code is KCORE/MRES linked, so there is
+no change to production RAM/ABI/disk swapping or KCORE low end
+`024364` octal. Uncompressed swapless P1-E lifecycle, no-partner
+restore, checked provider guards, 32K/48K guest/high-water
+acceptance remain OPEN. Compression remains deferred.
+Architecture and implementation plan:
+`design/kcore-p1e-ka10-portable-boundary-v1604.md`. Strict
+32K/optimization HOLD; VERSION 0.5.
+
 ## 2026-11-15 v1603: P1-C combined physical storage/swap feature ACCEPTED
 
 **P1-C CLOSED** on current original PDP-6 KCORE, without any

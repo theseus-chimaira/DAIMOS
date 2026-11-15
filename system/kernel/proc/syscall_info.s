@@ -6,6 +6,12 @@
  * PDP-6 trap mechanics, so the source intentionally has no machine suffix.
  * MEMINFO reuses its destination fields as a temporary filesystem request to
  * avoid a resident scratch buffer.
+ *
+ * v1605: sys_procinfo_user_comm still reads startup strings directly from
+ * the PDP-6 vm_state RH physical base. This is a VM-backend dependency,
+ * not generic process policy. A future KI10 implementation must use
+ * bounded VM reads (possibly across page boundaries), and a KA10 variant
+ * must select the correct segment. Keep current direct path until then.
  */
         .text
         .globl  kret_zero

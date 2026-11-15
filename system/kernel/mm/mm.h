@@ -7,6 +7,14 @@
  * fragmentation prevents an otherwise affordable allocation.  Free space is
  * represented by gaps between sorted allocated extents inside up to three
  * managed arenas.
+ *
+ * Architecture boundary v1605: the two-word descriptor encodes an 18-bit
+ * physical base. This format remains valid for the current PDP-6/KA10
+ * contiguous-core implementation, but cannot describe the KI10's 22-bit
+ * page-frame addresses. A KI10 port should retain contiguous low-core
+ * allocation for KCORE/MRES/device workspaces and add a separate user-page
+ * frame allocator. Do not enlarge this hot descriptor or change PDP-6
+ * extent alignment in anticipation of paging.
  */
 #ifndef DAIMON_MM_H
 #define DAIMON_MM_H

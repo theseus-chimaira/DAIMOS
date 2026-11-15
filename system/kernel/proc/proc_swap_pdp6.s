@@ -6,6 +6,13 @@
  * need no compiler frame: the pending slot can live on the stack across the
  * swap-in call, while reclaim needs only the three callee-saved request
  * arguments.
+ *
+ * v1605 portability boundary: the pressure/retry policy is common, but
+ * the disk exchange and image transfer assume one APR-aligned 18-bit
+ * physical process extent. A KI10 paging backend needs page-map-aware
+ * preservation without changing this PDP-6 fast path. The build selects
+ * this source from arch/pdp6_source_map_v1605.mk; do not add a runtime
+ * swap-function table merely to support another processor.
  */
 
         .text

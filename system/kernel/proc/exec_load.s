@@ -28,6 +28,15 @@
  *   -005 text words
  *   -004 compressed payload words
  *   -003 nonzero if this load acquired a new RT reservation
+ *
+ * v1605 KA10/KI10 boundary: validation, executable identity, and process
+ * publication policy may stay common. The compressed DXR path below adds
+ * a PDP-6 physical VM base to EXEC_USER_ORIGIN, while the privileged MEMFS
+ * XIP path directly publishes a pinned APR image. Both physical operations
+ * must eventually be owned by the VM backend for segment/page-mapped
+ * machines. On KI10, a 512-word page can be noncontiguous or beyond a
+ * directly addressable 18-bit executive pointer. No new helper call is
+ * installed in the current PDP-6 hot path.
  */
 
         .text

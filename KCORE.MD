@@ -1,3 +1,31 @@
+## 2026-11-15 v1605: multi-CPU portability source-map, zero KCORE growth
+
+Preparatory KCORE-only design for eventual KA10 and KI10 ports,
+without enabling either processor. Kernel and PDP-6 boot Makefiles
+now share `system/kernel/arch/pdp6_source_map_v1605.mk`,
+classifying selected CPU context, PI/UUO, VM, contiguous-MM, swap,
+KINIT and module sources. Existing PDP-6 object/source output names,
+object order and P10FOLD input order stay intact. Full KCC
+`ROOT=tape` PDP-6 `kcore.dxr` and `kcore.map` are byte-identical
+to the unmodified v1603 baseline. Initial source-map-only generated
+VM/EXEC/process assembly was identical; final comments change
+EXEC/process assembly text but not the linked machine image.
+No KCORE/MRES instructions, resident RAM or process descriptor
+changes from the source-map refactor.
+
+KI10 needs distinct 512-word paged user VM and 22-bit frame address
+handling, not a new APR value. The existing 18-bit MM extent table
+remains the contiguous physical-kernel allocator; user page-frame
+management must be separate. Shared lifecycle and syscall policy
+should persist, with bounded page-aware user transfers eventually
+replacing direct `vm_state` physical reads in EXEC/MonitorFS/PROCINFO.
+KA10 starts with a single relocatable segment; optional KT10A
+protected high-segment support is later. Full per-file audit,
+deferred source splits, and tests:
+`design/kcore-multi-cpu-portability-v1605.md`. P1-E production
+RAW PURE lifecycle remains OPEN, compression deferred. Strict
+32K/optimization HOLD; VERSION 0.5.
+
 ## 2026-11-15 v1603: P1-C physical combined feature matrix CLOSED
 
 Original 128K PDP-6 four-member Type-236 D6FS-root VOLUME and

@@ -12,6 +12,13 @@
  * data is allocated.  The first block is loaded lazily and subsequent words
  * reuse it until an actual block boundary is crossed.  This rare path is
  * deliberately separate from the compact resident-image assembler fast path.
+ *
+ * v1605: the owner-checked backing reader is a disk-swap representation,
+ * not an architecture-neutral virtual-memory reader. Both this module
+ * and monitorfs_runtime.s contain single-extent VM assumptions; KI10
+ * paged resident/user bytes require a target VM read interface before
+ * they can be exposed through MonitorFS. Do not add a new table or cache
+ * to PDP-6 solely for future page support.
  */
 #include "monitorfs.h"
 #include "proc.h"

@@ -1,4 +1,45 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1603, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1605, 2026-11-15)
+
+- [x] **v1605 PDP-6/KA10/KI10 portability source-map milestone:**
+  selected CPU/PI/UUO/process/VM/contiguous-MM/swap/KINIT inputs now
+  share `arch/pdp6_source_map_v1605.mk` between the kernel and
+  PDP-6 boot Makefiles. KCC full `ROOT=tape` baseline vs new image:
+  byte-identical `kcore.dxr`, `kcore.map`, VM/EXEC/process
+  generated assembly. No KI10 or KA10 implementation or runtime
+  overhead. Hardware/ownership audit:
+  `design/kcore-multi-cpu-portability-v1605.md`.
+- [ ] **KCORE CPU split gate, before future KA10/KI10 implementation:**
+  separate only the machine context/PI6/APR leaves of
+  `proc_pdp6.s` from shared scheduler/event/TTY/WAIT/EXIT policy.
+  Keep complete `vm_pdp6.s` and `kcore_pi_pdp6.s` replaceable
+  as machine-owned source objects; no speculative extra interfaces.
+  Update source-sensitive daimos-testkit extraction/mutation tests
+  before moving code; require byte-identical KCORE and native
+  PI/context acceptance. Keep critical inline PI requests direct.
+- [ ] **KCORE machine-neutral user-memory boundary:** isolate
+  `exec_load.s` compressed destination, pinned MEMFS XIP, direct
+  `syscall_info.s`/MonitorFS reads, and single-extent disk-swap
+  transfer assumptions when the actual segment/page backend is
+  implemented. Do not add per-word dispatch, runtime vtables, page
+  state or RAM cost to PDP-6 solely for future portability.
+- [ ] **KI10 resident-only paging (future):** separate page-frame
+  allocator and 512-word VM maps with 22-bit physical addresses;
+  validate AC blocks, kernel mode, PI, page-failure paths, and
+  page-aware user-copy/EXEC/MonitorFS, before optional demand paging.
+  Keep the current 18-bit two-word MM extent descriptor for
+  contiguous kernel/device allocations; do not globally widen it.
+- [ ] **KA10 target (future):** boot/PI/trap/backend selection and
+  verified single low segment first; only then optional KT10A
+  protected high code, shared owners and segment-aware PURE.
+
+P1-E KA10-compatible source boundary v1604 is documented in
+`design/kcore-p1e-ka10-portable-boundary-v1604.md`. Generic inactive
+process ownership preflight and PDP-6-only PURE-prefix geometry are now
+separate in staged source; native component tests PASS. Production
+scheduler/PI/VM/PURE restoration is still OPEN. No KCORE/MRES, RAM,
+ABI, swap-disk or executable-format change. P1-E is no longer held
+for the architecture review, but the strict 32K/optimization HOLD
+and no-compression-before-RAW gate remain unchanged.
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -914,18 +955,18 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   matrix for alternate root/service class combinations and any
   late controller-service disappearance; 26 is only a logical
   representation maximum, not a 26-drive physical demand.
-- [ ] **P1-E, architecture review BEFORE implementation (KA10):**
-  the earlier uncompressed swapless-PURE/MM-rebase/APR integration
-  plan is **provisional**, not an approved production design.
-  Future KA10 compatibility requires revisiting processor-specific
-  address mapping, protection and restore semantics before deciding
-  what is shared or target-specific. Preserve ownership atomicity,
-  immutable executable backing and fail-closed recovery as goals,
-  but do not assume that PDP-6 APR-aligned text omission, existing
-  v1381/v1391 prototypes or the +180 TEXT common-DXR pilot can be
-  used unchanged on KA10. Keep P1-E implementation on HOLD until
-  the cross-target plan is agreed; no compression decision yet.
-  Ordinary disk/drum swap remains in production unchanged.
+- [x] **P1-E architectural boundary v1604, KA10-aware:**
+  generic lifecycle admission separate from physical PDP-6
+  PURE-prefix geometry. Stage-only source and new PDP-6 native
+  boundary test PASS, existing RAW drop/prefix/full rollback tests
+  PASS. No production KCORE link or process/MM/ABI footprint growth.
+  The design is in `design/kcore-p1e-ka10-portable-boundary-v1604.md`.
+- [ ] **P1-E production RAW integration:** no actual scheduler
+  reclaim/restore yet. Finish executable-guard admission, no-backing
+  boot gate, PI-safe transition, in-place/full bounded restore,
+  EXEC/EXIT/BRK/WAIT and source-provider failure rollback. Compare
+  whole KCORE+MRES size and 32K/48K RAM high water before enabling.
+  Keep existing disk/drum swap unchanged. Compression only afterward.
 - [ ] **Final KCORE feature freeze:** full current-source,
   matching-image PDP-6 native/physical matrix after
   P0/P1 closure; report exact fixed KCORE/MRES/boot

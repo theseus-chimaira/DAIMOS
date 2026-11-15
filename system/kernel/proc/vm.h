@@ -5,6 +5,13 @@
  * struct proc exposes only logical user-space size; the RH backend state is
  * deliberately opaque to generic code. The PDP-6 backend stores a contiguous
  * relocation base there, while future paged machines may store a map handle.
+ *
+ * Portability boundary v1605: a KI10 page map is not an APR-like physical
+ * base. In particular, a caller cannot turn a user pointer into a single
+ * 18-bit physical pointer by adding the process VM word's right half.
+ * All user reads/writes, image loading, and snapshotting need target-owned
+ * bounded transfer operations before a page-mapped backend can be enabled.
+ * The PDP-6 backend and syscall hot paths remain unchanged for now.
  */
 #ifndef DAIMON_VM_H
 #define DAIMON_VM_H
@@ -26,6 +33,10 @@
  * Paged machines may instead store a page-map/address-space handle there.
  * Generic process, exec, scheduler, MonitorFS process view, and physical-MM code must not
  * interpret the private half.
+ * Existing VM_SPACE_ACTIVE and other direct callers still depend on the
+ * current nonzero-RH residency encoding; they must be audited and converted
+ * to backend predicates during KI10 work. Do NOT introduce runtime callbacks
+ * or a new process descriptor word only for hypothetical portability.
  */
 #define VM_SPACE_WORDS(p) \
         ((kword_t)(((p)->vm_state >> PROC_HALF_SHIFT) & PROC_HALF_MASK))
