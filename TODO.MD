@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1590, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1591, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,21 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-D v1591 alternate real TSFS root inventory:** the full
+  256K KCC/PDP-6 guest boots from a genuine two-member Type-551
+  TSFS root (DTC0/DTC1), with DTC2 explicitly empty. Original
+  root discovery and KINIT MM-backed mount slab publish eight
+  FSINFO slots instead of v1532/v1533's seven. Four distinct
+  stamped native DTFS reels on DTC3..DTC6 mount at public IDs
+  2..5; original FSINFO verifies capacity 8, empty slots 5..7,
+  out-of-range slots 8/9, stable high ID after middle unmount,
+  and all nonroot owners retired. Full physical guest PASS;
+  post-run KCC source compile warning-free. No production code,
+  RAM, ABI or media changes. **P1-D remains OPEN** for actual
+  D6FS disk/drum-root inventories and provider-failure semantics;
+  the 26-slot representational maximum is not a real 26-device
+  claim. `design/kcore-p1d-two-member-tsfs-v1591.md`.
 
 - [x] **P1-C v1590 live-cache preservation during real LOGSTORE torn
   physical write and retry:** two full 128K PDP-6 cold boots on
@@ -712,28 +727,26 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   gates, not duplicate storage layers. v1536 only
   establishes reservation and native allocation
   separately, NOT physical concurrency.
-- [ ] **P1-D, alternate hardware inventories:** extend
-  the real boot-inventoried mount table acceptance
-  beyond seven slots with different actual controller/
-  root configurations, empty/unpublished and provider
-  failure semantics. Check high mount IDs as hardware
-  allows. 26 is a *representation maximum*, not a
-  demand to invent 26 physical devices. Existing
-  1/4/8/17/26 native cases and live mount ID 5 PASS.
-- [ ] **P1-E, uncompressed swapless PURE:** integrate
-  staged inactive PURE omission into production
-  scheduler/VM/MM/APR. Retain immutable original
-  executable backing, own pinned writable suffix,
-  reconstruct all omitted PURE text within aligned
-  APR bounds before dispatch, and atomically roll
-  back on RUN/EXEC/WAIT/EXIT, OOM, provider unmount,
-  PI retry and insufficient memory. Native mutation
-  and repeated physical pressure/owner tests mandatory.
-  Ordinary physical disk/drum swap remains unchanged;
-  isolated +180 TEXT shared-DXR prototype is NOT
-  production. Optional mutable-only RAM compression
-  is conditional on successful uncompressed PURE and
-  measured whole-system peak RAM benefit.
+- [ ] **P1-D, remaining alternate inventories:** validate physical
+  D6FS DSK/DRM selected-root configurations and actual available
+  provider/service failures, including empty/unpublished slot and
+  high-slot identity semantics. Already accepted: native
+  1/4/8/17/26 boundaries and root-membership profiles;
+  full physical TSFS three-member capacity 7 and two-member
+  capacity 8, real DTFS mount ID 5. Twenty-six is only the
+  representational maximum, not a physical-device requirement.
+- [ ] **P1-E, architecture review BEFORE implementation (KA10):**
+  the earlier uncompressed swapless-PURE/MM-rebase/APR integration
+  plan is **provisional**, not an approved production design.
+  Future KA10 compatibility requires revisiting processor-specific
+  address mapping, protection and restore semantics before deciding
+  what is shared or target-specific. Preserve ownership atomicity,
+  immutable executable backing and fail-closed recovery as goals,
+  but do not assume that PDP-6 APR-aligned text omission, existing
+  v1381/v1391 prototypes or the +180 TEXT common-DXR pilot can be
+  used unchanged on KA10. Keep P1-E implementation on HOLD until
+  the cross-target plan is agreed; no compression decision yet.
+  Ordinary disk/drum swap remains in production unchanged.
 - [ ] **Final KCORE feature freeze:** full current-source,
   matching-image PDP-6 native/physical matrix after
   P0/P1 closure; report exact fixed KCORE/MRES/boot

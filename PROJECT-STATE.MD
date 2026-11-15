@@ -1,3 +1,25 @@
+## 2026-11-15 v1591: physical FSINFO two-member TSFS inventory PASS
+
+Full genuine 256K KCC PDP-6 TSFS root on DTC0/DTC1, DTC2 empty,
+four stamped DTFS secondary tapes DTC3..DTC6: original root-set
+discovery and KINIT MM-backed mount slab publish capacity **8**
+(one root, six spare transports, one MEMFS). Original PID1 FSINFO
+checks root, capacity 8, public secondary mount IDs 2..5, genuine
+provider/path, empty slots 5..7, invalid 8/9, middle retirement,
+unmodified high ID 5, and complete cleanup. Full physical v1591
+guest PASS; source KCC follow-up compiler check is warning-free.
+The v1532/v1533 three-member TSFS capacity-7 case remains accepted.
+No production source/ABI/RAM/media change. P1-D stays OPEN for
+different physical controller/root choices and provider failures;
+26 is a representational maximum, not 26 actual devices.
+
+P1-E design is now explicitly **on hold pending KA10-compatible
+architecture review**. Previous PDP-6 APR/MM rebase ideas and
+experimental candidates are historical, not committed shared
+process-backend design. P1-C mixed owner/provider tests remain
+in progress. Strict 32K/optimization HOLD and VERSION 0.5 unchanged.
+`design/kcore-p1d-two-member-tsfs-v1591.md`.
+
 ## 2026-11-15 v1590: live D6FS BCACHE retained across physical LOGSTORE retry PASS
 
 Two full 128K KCC PDP-6 physical cold boots on original Type-236

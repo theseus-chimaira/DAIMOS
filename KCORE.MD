@@ -1,3 +1,21 @@
+## 2026-11-15 v1591: alternate two-member TSFS FSINFO inventory PASS
+
+Full physical 256K KCC PDP-6 TSFS root contains exactly two
+independent Type-551 members (DTC0/DTC1) rather than the former
+three, with DTC2 intentionally empty. Original root scanner/KINIT
+publishes eight MM-backed FSINFO mount slots. Four separate stamped
+native DTC3..DTC6 DTFS reels physically mount at IDs 2..5; the
+original FSINFO capacity query returns 8, holes 5..7 return empty,
+8/9 return invalid, and high ID 5 remains stable after retiring
+a middle mount. All mounts retire without disturbing root;
+original PID1 emits all required markers and full guest PASSes.
+Corrected KCC test-only source recompiles warning-free. No kernel
+code/RAM/ABI/media change. **P1-D OPEN** for other physical root
+controller inventories and provider failure. P1-C OPEN; P1-E
+planning is deferred for KA10-compatible architecture review,
+not implemented. VERSION 0.5, strict 32K/optimization HOLD.
+`design/kcore-p1d-two-member-tsfs-v1591.md`.
+
 ## 2026-11-15 v1590: live D6FS cache survives physically torn LOGSTORE PASS
 
 Two full 128K KCC PDP-6 cold boots on original DR0..DR3 Type-236
