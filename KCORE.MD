@@ -1,3 +1,19 @@
+## 2026-11-15 v1582: native real BLOCKSET volume mapper with BACKSTORE PASS
+
+The real compact `blockset_dispatch.s` INTERLEAVE mapper, fixed
+`fs_mres.s` BACKSTORE gateway and production v1515 fatal HALT were
+linked and executed together under the native PDP-6. Three member
+units with individually distinct bases mapped six logical tail
+sectors to the exact physical (unit, block) sequence. All 13 DSK/
+DRM read/write, mid-transfer failure, enabled/disabled ownership,
+missing-mapper and bounds cases passed; 7 executed unsafe source
+mutants rejected. Native controller leaves were test-controlled;
+the actual BLOCKSET mapping code was not. No production code/RAM/
+ABI changes. **P1-C remains OPEN** for physical full-guest mapped
+VOLUME, PI overlap and controller/rollback tests. VERSION 0.5;
+fixed low end `024364` octal, optimization/32K HOLD.
+`design/kcore-p1c-real-blockset-map-v1582.md`.
+
 ## 2026-11-14 v1581: real Type-236 PI2 snapshot failure, swapped-owner fail-stop
 
 Full physical 128K KCC PDP-6 on actual DRM236 AUXSTORE: root created

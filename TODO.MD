@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1581, 2026-11-14)
+## CURRENT KCORE FEATURE TODO (authoritative after v1582, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,22 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1582 real source-linked BLOCKSET VOLUME mapper:**
+  original PDP-6 `blockset_dispatch.s` interleave translator, fixed
+  BACKSTORE gateway and v1515 reason-2 fail-stop assembled/executed
+  together. Three members/6 tail sectors each verified correct
+  physical member and block for DSK/DRM read/write, exact buffer
+  stride. 13 native success/failure/refusal/range cases PASS;
+  7 executed unsafe source mutants rejected. Disabled-but-owned
+  still fatal; inactive unowned/missing-mapper probes nonfatal;
+  critical missing mapped service never turns into direct physical
+  access. Only final hardware completion was test-supplied.
+  **P1-C still OPEN** for a real physical multi-member VOLUME guest,
+  genuine controller PI errors/return, independent swap-in overlap
+  with MEMFS snapshot I/O and exact BCACHE/MM ownership rollback.
+  No production RAM/code/ABI growth.
+  `design/kcore-p1c-real-blockset-map-v1582.md`.
 
 - [x] **P1-C v1581 real physical direct-DEVICE snapshot PI2 error:**
   full 128K PDP-6 with real persistent MEMFS/LOGSTORE, four sleeping

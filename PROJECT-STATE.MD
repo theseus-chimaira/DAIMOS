@@ -1,3 +1,26 @@
+## 2026-11-15 v1582: real BLOCKSET mapper/native BACKSTORE gate PASS
+
+The actual native PDP-6 `blockset_dispatch.s` INTERLEAVE root mapper,
+fixed `fs_mres.s` physical BACKSTORE transfer gateway and original
+v1515 critical HALT were linked together. With three physical BSET
+member units and distinct bases, all six first tail blocks mapped
+to precisely correct per-unit physical addresses on both DSK/DRM
+read/write paths. The 13 executed scenarios cover second/third
+transfer controller failure, retained swap owners under a disabled
+allocation gate, inactive/unowned nonfatal return, missing-mapper
+fail-closed and boundary/zero-length checks; 7 executed unsafe
+mutations were rejected. The mapper and gateway are unchanged
+production assembly; only final controller completion is simulated
+by the native fixture. This is NOT a full physical multi-member
+boot or independent swap-in overlapping a snapshot PI transfer.
+
+**P1-C remains OPEN** for physical mapped-VOLUME controller errors,
+the true concurrent PI and owner/MM/BCACHE rollback matrix. P1-D,
+P1-E, and final feature freeze remain open. No source, RAM, ABI or
+on-drum change; KCORE low end `024364` octal, VERSION 0.5 and strict
+32K/optimization HOLD. Details in
+`design/kcore-p1c-real-blockset-map-v1582.md`.
+
 ## 2026-11-14 v1581: physical PI2 failure during owned MEMFS HALT PASS
 
 Real 128K KCC PDP-6 DSK root, DRM236 AUXSTORE, persistent MEMFS and
