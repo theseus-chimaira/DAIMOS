@@ -1,4 +1,18 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1605, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1606, 2026-11-15)
+
+- [x] **v1606 PDP-6-first portability contract:** preserve the
+  existing build-time CPU source map, but do not schedule or
+  implement KA10/KI10 at this stage. vm_state RH, VM_SPACE_ACTIVE,
+  physical user pointers and the 18-bit MM extent are explicitly
+  PDP-6-dependent; no new runtime backend dispatch or process RAM.
+  See `design/kcore-pdp6-first-cpu-contract-v1606.md`.
+- [ ] **Complete PDP-6 P1-E RAW swapless PURE:** integrate
+  lifecycle, immutable source guards, owner/PI-safe inactive
+  reclamation, full/fast restore and EXEC/EXIT/WAIT rollback in
+  genuine PDP-6 KCORE. Preserve byte-accurate mutable state,
+  existing raw disk/drum swap and tested source owner identity.
+  Only afterward measure optional mutable RAM compression.
+  Native and physical guest acceptance are mandatory.
 
 - [x] **v1605 PDP-6/KA10/KI10 portability source-map milestone:**
   selected CPU/PI/UUO/process/VM/contiguous-MM/swap/KINIT inputs now
@@ -8,29 +22,14 @@
   generated assembly. No KI10 or KA10 implementation or runtime
   overhead. Hardware/ownership audit:
   `design/kcore-multi-cpu-portability-v1605.md`.
-- [ ] **KCORE CPU split gate, before future KA10/KI10 implementation:**
-  separate only the machine context/PI6/APR leaves of
-  `proc_pdp6.s` from shared scheduler/event/TTY/WAIT/EXIT policy.
-  Keep complete `vm_pdp6.s` and `kcore_pi_pdp6.s` replaceable
-  as machine-owned source objects; no speculative extra interfaces.
-  Update source-sensitive daimos-testkit extraction/mutation tests
-  before moving code; require byte-identical KCORE and native
-  PI/context acceptance. Keep critical inline PI requests direct.
-- [ ] **KCORE machine-neutral user-memory boundary:** isolate
-  `exec_load.s` compressed destination, pinned MEMFS XIP, direct
-  `syscall_info.s`/MonitorFS reads, and single-extent disk-swap
-  transfer assumptions when the actual segment/page backend is
-  implemented. Do not add per-word dispatch, runtime vtables, page
-  state or RAM cost to PDP-6 solely for future portability.
-- [ ] **KI10 resident-only paging (future):** separate page-frame
-  allocator and 512-word VM maps with 22-bit physical addresses;
-  validate AC blocks, kernel mode, PI, page-failure paths, and
-  page-aware user-copy/EXEC/MonitorFS, before optional demand paging.
-  Keep the current 18-bit two-word MM extent descriptor for
-  contiguous kernel/device allocations; do not globally widen it.
-- [ ] **KA10 target (future):** boot/PI/trap/backend selection and
-  verified single low segment first; only then optional KT10A
-  protected high code, shared owners and segment-aware PURE.
+- [ ] **Deferred source cleanup ONLY when justified by PDP-6
+  feature work:** the process context/PI leaves of
+  `proc_pdp6.s`, single-extent transfer in `proc_swap_pdp6.s`,
+  and raw physical references in EXEC/INFO/MonitorFS are known
+  portability boundaries. Do not split these files simply to
+  anticipate a different CPU. If a genuine PDP-6 feature requires
+  touching one, keep existing generated machine code, source-based
+  testkit coverage, and PI/MM ownership acceptance intact.
 
 P1-E KA10-compatible source boundary v1604 is documented in
 `design/kcore-p1e-ka10-portable-boundary-v1604.md`. Generic inactive

@@ -10,6 +10,12 @@
 # KCORE end marker, and P10FOLD input order intact during preparation.
 # A future port gets a separate architecture-specific boot/link manifest;
 # it must not reuse the PDP-6 hardware-specific object names blindly.
+#
+# v1606 completion rule: PDP-6 P1-E/PI/MM/EXEC correctness and physical
+# acceptance come first. This map is the ONLY implemented CPU selection.
+# Leave later segmented/paged models as interface constraints in docs;
+# do not add untested CPU targets, dynamic backend dispatch, shared page
+# descriptors, or speculative per-process fields to the current image.
 
 DAIMOS_MACHINE ?= pdp6
 ifneq ($(DAIMOS_MACHINE),pdp6)

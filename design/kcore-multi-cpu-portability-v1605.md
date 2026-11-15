@@ -4,6 +4,9 @@ Date: 2026-11-15
 Status: source/build architecture audit; PDP-6-only binary-identical
 source-map integration. No KA10 or KI10 runtime implementation.
 P1-E RAW PURE integration is still separately OPEN.
+Current priority and scope are superseded by
+`design/kcore-pdp6-first-cpu-contract-v1606.md`: complete PDP-6;
+the hardware notes below are NOT an implementation roadmap.
 
 ## Accepted design constraint
 
@@ -121,21 +124,15 @@ whole files NOW. Splitting their internals would needlessly disturb
 ~54 VM source-sensitive tests and the carefully aliased PI save
 cells. `mm_pdp6.s` is also best left as one contiguous allocator.
 
-## KI10 minimal port milestones, separately gated
+## Historical KI10 compatibility issues (NOT scheduled work)
 
-1. Boot with correct low-core, supervisor/kernel, fast-AC and PI
-   handling; initial user entry with no paging of kernel policy.
-2. Resident-only 512-word user page map and frame allocation, exact
-   permissions, complete map activation, page-fault fail-stop.
-3. Page-aware logical transfer for syscall buffers, DXR payload,
-   startup, MonitorFS and ZERO/BLT; bounds and ownership survive
-   short reads and blocking operations.
-4. Swap/RAM PURE retain only mutable private state and immutable
-   executable identity; atomic restoration of a complete runnable
-   page map, no false shared owner retirement.
-5. Native full-guest regressions, MM/frame pressure/rollback,
-   page protection, separately mapped reentrant text, then only
-   consider demand paging and copy-on-write with measured benefit.
+KI10 hardware differs in low-core/executive mode, fast AC and PI
+handling, 512-word user page maps, wider physical frames and
+page-bounded logical transfers. User buffer reads, DXR loading,
+MonitorFS and PURE ownership must not rely on a PDP-6 contiguous
+physical pointer. These facts justify existing *source boundaries*;
+they are not an order of work, a release target, or a proposal to
+introduce paging, page failure handling, demand paging or COW now.
 
 ## v1605 acceptance and no-growth constraint
 

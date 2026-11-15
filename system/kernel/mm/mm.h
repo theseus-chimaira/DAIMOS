@@ -2,11 +2,18 @@
  * @file mm.h
  * @brief DAIMOS contiguous physical-core allocator interface.
  *
- * PDP-6 has relocation/protection hardware but no paged MMU.  DAIMOS therefore
+ * PDP-6 has relocation/protection hardware but no paged MMU. DAIMOS therefore
  * allocates contiguous physical extents and moves stopped process images when
- * fragmentation prevents an otherwise affordable allocation.  Free space is
+ * fragmentation prevents an otherwise affordable allocation. Free space is
  * represented by gaps between sorted allocated extents inside up to three
  * managed arenas.
+ *
+ * This is a contiguous-core allocator, not an abstract page-frame manager.
+ * Its two-word descriptor has an 18-bit physical base. Preserve it for the
+ * existing PDP-6 KCORE and contiguous device/kernel allocations; do not
+ * widen it or force page-sized allocations for a hypothetical paged machine.
+ * Noncontiguous user mappings and wider physical frame identity belong to
+ * that machine's VM backend, not to this descriptor layout.
  *
  * Architecture boundary v1605: the two-word descriptor encodes an 18-bit
  * physical base. This format remains valid for the current PDP-6/KA10

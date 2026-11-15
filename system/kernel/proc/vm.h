@@ -4,7 +4,9 @@
  *
  * struct proc exposes only logical user-space size; the RH backend state is
  * deliberately opaque to generic code. The PDP-6 backend stores a contiguous
- * relocation base there, while future paged machines may store a map handle.
+ * relocation base there. A noncontiguous backend MUST NOT assume that an
+ * 18-bit physical base or arbitrary page-map pointer fits the same encoding.
+ * Keep a backend-owned handle/descriptor if a future CPU actually needs one.
  *
  * Portability boundary v1605: a KI10 page map is not an APR-like physical
  * base. In particular, a caller cannot turn a user pointer into a single
@@ -30,9 +32,18 @@
  * for an active address simply because its RH is nonzero.
  *
  * PDP-6 stores the contiguous physical relocation base in the private RH.
- * Paged machines may instead store a page-map/address-space handle there.
- * Generic process, exec, scheduler, MonitorFS process view, and physical-MM code must not
- * interpret the private half.
+ * Other machines may require a separately owned mapping descriptor; they
+ * must define their own backend state and presence/activation semantics.
+ * Generic process, exec, scheduler, MonitorFS process view, and physical-MM
+ * code must not interpret the private half. Some existing PDP-6 assembly
+ * call sites still do so; they are portability conversion sites, NOT proof
+ * that the current VM_SPACE_ACTIVE macro is universal. In particular the
+ * present RH-nonzero active check applies only to the PDP-6 representation.
+ *
+ * Any future paged implementation must preserve logical address/permission
+ * validation while keeping user-memory transfer independent of a single
+ * physically contiguous executive pointer. No extra dispatch is introduced
+ * on PDP-6 solely to anticipate that backend.
  * Existing VM_SPACE_ACTIVE and other direct callers still depend on the
  * current nonzero-RH residency encoding; they must be audited and converted
  * to backend predicates during KI10 work. Do NOT introduce runtime callbacks

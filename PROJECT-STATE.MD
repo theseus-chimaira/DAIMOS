@@ -1,3 +1,31 @@
+## 2026-11-15 v1606: PDP-6-first CPU portability contract
+
+After the v1605 PDP-6-only source map, the scope is now explicitly
+PDP-6 completion, NOT implementation planning for other CPUs.
+The source map still selects only PDP-6, and no runtime dispatch,
+page metadata, extra call, or ABI field was added. Header comments
+now pin down what is *not* machine-independent: the vm_state RH and
+VM_SPACE_ACTIVE test, direct mapped user pointers, and the 18-bit
+physical contiguous MM extent descriptor. These must never be
+generalized to segmented/paged owners by changing the existing PDP-6
+hotpath. The mixed process/swap/EXEC policy and machine leaves
+are inventoried, but not split speculatively: many existing testkit
+fixtures depend on their source identity.
+
+The only scheduled kernel implementation remains original PDP-6,
+starting with P1-E RAW swapless PURE under real scheduler/PI/EXEC
+and physical MM acceptance. Compression remains conditional on
+net RAM savings. KA10/KI10 retain documented source compatibility
+constraints but have NO implementation plan, build, or active tests.
+P0-B Type-551 reel retention and strict 32K/optimization HOLD
+remain OPEN. See `design/kcore-pdp6-first-cpu-contract-v1606.md`.
+Full PDP-6 KCC ROOT=tape acceptance: freshly linked `kcore.dxr`
+and `kcore.map` match the pre-refactor v1603/v1605 baseline
+byte-for-byte (DXR SHA-256 `830559842b15985c986b9145437d193cffacb7b8b654a7fb14f437788ce646ae`).
+The existing daimos-testkit v1605 build-source selector check
+also PASSES, including rejection of `DAIMOS_MACHINE=ki10`.
+This is a no-code-change portability result, not P1-E acceptance.
+
 ## 2026-11-15 v1605: PDP-6/KA10/KI10 KCORE portability architecture
 
 The full KCORE machine-portability audit now includes a future
