@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1603, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1604, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,22 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-E v1604 architecture REVIEW (not implementation):**
+  audited original PDP-6 single-base APR/MM and original process
+  restore against historical KA10 optional high/low relocation
+  segments. Recommend one common RAW mutable-suffix PURE owner
+  transaction with target-specific complete APR/MM restore, initial
+  KA10 low-segment-only support conditional on verified target
+  hardware/backend, and high-segment protection as later work.
+  The three isolated old native v1381/v1384/v1395 tests initially
+  failed to link current `vfs_namespace_root`; fixed their testkit
+  dependency by linking actual production `device_state.s`. All
+  three and original production APR handoff v540 now PASS.
+  **P1-E PRODUCTION IMPLEMENTATION STILL ON HOLD** pending approved
+  design and genuine KA10/PDP-6 swapless guest acceptance. P1-C/D
+  remain CLOSED; P0-B remains OPEN; 32K/optimization HOLD.
+  `design/kcore-p1e-pdp6-ka10-architecture-review-v1604.md`.
 
 - [x] **P1-C FINAL v1603 cross-provider/swap/storage matrix CLOSED:**
   real 128K PDP-6 DRM236 four-member mapped root VOLUME, two

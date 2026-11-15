@@ -1,3 +1,21 @@
+## 2026-11-15 v1604: P1-E PDP-6/KA10 architecture boundary reviewed
+
+The original PDP-6 APR user mapping is one contiguous 02000-octal
+aligned base/limit, while KA10 may have separate low/high
+relocation/protection segments depending on its installed KT10A
+option. Do not reuse PDP-6 `vm_state` RH, APR `DATAO 0000` and
+restore implementation as a machine-neutral protocol. Recommended
+common layer is only the inactive PURE RAW-suffix owner and
+immutable-backing transaction; machine-specific MM/restore backends
+must first prove complete APR image and fail-closed publication.
+Native isolated v1381/v1384/v1395 restored PASS by testkit linkage
+to actual production `device_state.s`, not by a fake VFS root
+symbol; real MM/APR handoff v540 PASS. No current KA10 guest or
+swapless full-guest acceptance. **P1-E implementation HOLD** until
+architecture approved and target backend acceptance. No production
+KCORE/RAM/ABI changes. P1-C/D remain CLOSED; P0-B still OPEN.
+`design/kcore-p1e-pdp6-ka10-architecture-review-v1604.md`.
+
 ## 2026-11-15 v1603: P1-C physical combined feature matrix CLOSED
 
 Original 128K PDP-6 four-member Type-236 D6FS-root VOLUME and

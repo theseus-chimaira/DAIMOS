@@ -1,3 +1,32 @@
+## 2026-11-15 v1604: P1-E cross-target architecture review and native fixture repair
+
+**P1-E ARCHITECTURE REVIEW COMPLETE, IMPLEMENTATION STILL ON HOLD.**
+The original PDP-6 `vm_pdp6.s` uses one 02000-octal-word aligned
+APR relocation/protection map programmed by `DATAO 0000`, with
+kernel/user context restoration in `proc_pdp6.s`. Historical KA10
+hardware offers a distinct optional high relocation/protection
+segment (KT10A) as well as low-only configurations; PDP-6's
+base/limit word cannot be treated as the KA10 hardware ABI.
+Proposed minimal common feature: owner-checked inactive uncompressed
+PURE-text omission with complete retained RAW mutable suffix,
+immutable source guard, and *machine-specific* full-image MM/APR
+restore before runnable publication. Initial KA10 support should
+require verified low-segment-only VM/context acceptance; optional
+high-segment sharing/protection is a separate later decision.
+
+Native v1381, v1384, v1395/v1397 isolated PURE transactions PASS
+after testkit runners link the actual production `device_state.s`
+owner of `vfs_namespace_root`; v540 original MM/APR handoff PASS.
+This repairs the fixture's stale missing-symbol dependency; no
+fake root symbol, production KCORE edit or false full-guest PASS.
+Full review: `design/kcore-p1e-pdp6-ka10-architecture-review-v1604.md`.
+
+**P1-E remains OPEN/HOLD** for approved common/target-specific
+contract, KA10 backend and full swapless lifecycle; P1-C and P1-D
+stay CLOSED. P0-B physical Type-551 media retention remains OPEN;
+VERSION 0.5 and strict 32K/optimization HOLD unchanged. No new
+permanent RAM/ABI/media modification.
+
 ## 2026-11-15 v1603: P1-C combined physical storage/swap feature ACCEPTED
 
 **P1-C CLOSED** on current original PDP-6 KCORE, without any
