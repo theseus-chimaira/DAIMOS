@@ -1,3 +1,32 @@
+## 2026-11-15 v1598: real missing-controller and high-slot provider recovery PASS
+
+P1-D v1595 full 256K Type-551 TSFS two-member root: capacity 8;
+real four independent DTFS high public mounts IDs 2..5.
+Real DTC3 detach returns FSINFO error for still-published mount;
+other three owners retain exact IDs and media. Different physical
+reel fails identity, original physical reel returns and recovers.
+Five independent raw reel identities and five unsafe mutants checked.
+
+P1-C v1596: actual DTC6 highest mounted ID5 also physically fails
+during independent real writable MEMFS file work; FSINFO error
+on the missing slot, unchanged other DTFS and MEMFS slots, genuine
+MEMFS write/read progress, original high reel return and full
+retirement PASS. Eight raw-media/CTY negative controls rejected.
+Original simulator's sticky per-drive Type-551 transport fields
+had made return fail: fix simulator attach/detach correctly, not
+DAIMOS. `sims` commit `fe97912`, versioned installed PDP-6 sim
+v1598. Unmodified KCORE on same physical guest now PASS.
+
+P1-D v1597 genuine DSK270 four-disk root with Type-167 DP
+processor/DRM236 controller physically disabled: original KINIT
+FSINFO publishes capacity 2 instead of 6; D6FS root ID1/MEMFS
+ID2, invalid higher indices; original XIP/EXEC lifecycle PASS.
+Four physical D6FSR2 media members and four negative controls.
+No kernel/ABI/media/production RAM change; remaining P1-C
+combined fail-stop intersections, P1-D final service matrix and
+P1-E KA10-aware architecture remain OPEN. VERSION 0.5, 32K HOLD.
+`design/kcore-p1cd-highslot-provider-physical-v1598.md`.
+
 ## 2026-11-15 v1594: physical DSK270 four-member root FSINFO PASS
 
 128K PDP-6 physical boot from real DSK0..DSK3 D6FSR2 root set,

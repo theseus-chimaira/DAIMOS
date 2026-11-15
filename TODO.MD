@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1594, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1598, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,34 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-D v1595 real high mounted provider loss/return:**
+  full 256K PDP-6 two-member TSFS root, capacity 8, four actual
+  stamped native DTFS mounts public IDs 2..5. Physical DTC3
+  detach yields FSINFO -1 on a published mount, not empty 0;
+  unaffected DTC4/DTC5/DTC6 keep exact identities. Different
+  physical reel refused, same original revalidates, clean unmount.
+  Five raw-media negative controls rejected. No production change.
+- [x] **P1-C v1596 high DTFS provider loss with real writable MEMFS:**
+  the same real PDP-6 environment also mounts writable independent
+  MEMFS at public ID6. Physically detached **DTC6** retains its
+  published high ID5 but FSINFO fails. DTC3..DTC5 remain good,
+  MEMFS performs a genuine write and exact three-word readback
+  during absence. Original DTC6 returns and revalidates; all
+  owners retire, physical guest + eight raw-media mutant controls
+  PASS. The original simulator failed this despite valid same
+  reel; true bug was stale simulator Type-551 `CMD/DSTATE/DELAY`
+  across physical detach/attach. Independently patched simulator
+  passes exact unchanged KCORE guest; fixed and pushed `sims`
+  `fe97912` v1598; installed versionized `pdp6-v1598`.
+  **No production DAIMOS kernel workaround or RAM change**.
+- [x] **P1-D v1597 actual absent hardware service:** full 128K
+  KCC PDP-6 four-member DSK270 root; disable Type-167 `DP`
+  processor and `DR` units before original MINIT, not merely
+  DR without DP. The original KINIT now reports FSINFO 2
+  (D6FS root + MEMFS) rather than 6, no four phantom DRM slots,
+  XIP lifecycle PASS, four real D6FSR2 member identities and
+  four corrupt witnesses rejected. No production ABI/RAM change.
 
 - [x] **P1-D v1594 real DSK270 D6FS-root inventory:** full 128K
   physical PDP-6 KCC guest boots original four DSK0..DSK3
@@ -774,25 +802,27 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   Zero production kernel/MRES/driver/RAM/ABI change; 32K HOLD.
 - [ ] **P1-C, remaining combined storage faults:** v1593
   physically identifies BOTH independently timed PI6 owner slots
-  and the exact successful slot 7 RESIDENT publication, with
-  original selected owner rollback and MEMFS/LOGSTORE persistence.
-  Next add genuine in-flight DSK270/DRM236/DTC DEVICE vs mapped
-  VOLUME provider failure and return, shared Type-136 routing,
+  and exact successful slot 7 RESIDENT publication. v1596 proves
+  *genuine physical DTC6 provider loss* with unrelated writable
+  MEMFS forward progress, after an independent DTC3 refusal.
+  Still add **simultaneous** DSK270/DRM236 BACKSTORE DEVICE versus
+  VOLUME owner fault and independent process swap during failure,
+  shared Type-136 routing,
   dirty/write-through failure and process/PI owner rollback.
   Continue checked physical BACKSTORE bitmap, MM pins, cache
   identity and provider isolation under multiple owner faults,
   and repeat the v1585/v1592 timing workload under load. Reuse
   prior v1484/1485/1490/1511-v1514 acceptance, not new layers.
-- [ ] **P1-D, remaining failure inventories:** actual missing/
-  failed controller services during/after KINIT inventory and
-  subsequently unavailable mounted providers; verify no stale
-  published mount IDs, false capacity or hidden FSINFO errors.
-  Check high-slot errors on genuine attached media and validate
-  that empty/unpublished slots stay distinguishable from errors.
-  Already accepted: native 1/4/8/17/26 boundaries, physical DTC
-  TSFS roots capacity 7/8 and DTFS mount ID 5, physical D6FS
-  DRM and DSK four-member selected roots capacity 6. 26 remains
-  a representational bound, not a physical device demand.
+- [ ] **P1-D, final alternate service-matrix verification:** actual
+  Type-167/236 missing-controller profile v1597 PASSES (DSK-root
+  capacity 2 versus 6 with DRM installed), and mounted Type-551
+  provider loss/return v1595/v1596 PASSES (FSINFO error versus
+  empty, high IDs and valid same-reel return). Native 1/4/8/17/26
+  boundaries, physical TSFS 7/8 slots, physical D6FS DRM/DSK
+  capacity 6 accepted. Remaining: a final current-source matched
+  matrix for alternate root/service class combinations and any
+  late controller-service disappearance; 26 is only a logical
+  representation maximum, not a 26-drive physical demand.
 - [ ] **P1-E, architecture review BEFORE implementation (KA10):**
   the earlier uncompressed swapless-PURE/MM-rebase/APR integration
   plan is **provisional**, not an approved production design.

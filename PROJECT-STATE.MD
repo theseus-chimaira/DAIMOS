@@ -1,3 +1,56 @@
+## 2026-11-15 v1598: physical mixed-provider recovery and absent DRM controller PASS
+
+**P1-D v1595:** full genuine 256K PDP-6 boot from two-member
+Type-551 TSFS root with **8** FSINFO mount slots. Four separately
+72-bit-stamped native DTFS volumes on DTC3..DTC6 mount at public
+IDs 2..5; real physical DTC3 detach reports -1 (unavailable),
+not 0 (unpublished), while exact high mount identities survive.
+An attached different valid reel remains refused, and original
+DTC3 reel revalidates. All nonroot mounts retire cleanly. Original
+physical guest PASS; raw-media oracle authenticates five distinct
+physical identities and rejects five unsafe mutations.
+
+**P1-C v1596:** same real TSFS/DTFS environment plus independent
+writable `/MOUNT/RAM` MEMFS public ID6, with full readback.
+After a separate DTC3 detach/return, host physically DETACHes the
+highest occupied volume DTC6 at ID5. Original FSINFO fails closed
+for that slot, unchanged DTC3..DTC5 identities persist, and the
+unrelated MEMFS actually writes/re-reads three checked words.
+Original DTC6 reel returns, physically revalidates and all mounts
+retire. Full 256K real PDP-6 guest + independent raw oracle PASS,
+eight deliberately false media/identity/RAM-stage cases rejected.
+
+The original PDP-6 Type-551 simulator failed the final DTC6 return
+despite an unchanged valid 72-bit identity. Source comparison found
+the simulator detach/attach code retained stale per-drive command,
+motion and delay state across a new physical attachment. An
+isolated build clearing these fields made the **same unmodified
+DAIMOS KCORE guest and physical evidence** PASS. Proper simulator
+fix committed/pushed to `sims` as `fe97912`, simulator v1598,
+installed as versioned `$PDP10_PREFIX/bin/pdp6-v1598`; old
+`pdp6-v1524` retained. This was an emulator defect, **not a
+kernel workaround**.
+
+**P1-D v1597:** actual 128K PDP-6 four-member DSK270/D6FS root
+with the **Type-167 DP I/O processor disabled**, along with its
+DRM236 units, reports FSINFO capacity **2** rather than 6.
+The original KINIT does not install absent DRM read/write services
+or allocate four phantom mount slots; root D6FS ID1 and MEMFS ID2
+pass. Full XIP lifecycle and independent four-disk raw oracle PASS;
+four unsafe mutants rejected. The first test which disabled only
+DR while leaving DP enabled correctly failed and was fixed at the
+test's underlying probe assumption, not by changing KCORE.
+
+P1-C still OPEN for simultaneous disk/drum BACKSTORE owner and
+actual provider error intersections, dirty/write-through fault
+isolation and repeated loaded timing. P1-D's main mounted-provider
+loss and actual controller-service absence acceptance now PASS;
+remaining unusual root/service combinations and final matched
+full-source matrix are pending. No production code/RAM/ABI/media
+changes; VERSION 0.5, KCORE low end `024364` octal, strict 32K
+optimization HOLD. P1-E implementation on hold for KA10 review.
+`design/kcore-p1cd-highslot-provider-physical-v1598.md`.
+
 ## 2026-11-15 v1594: physical DSK270 selected root FSINFO capacity 6 PASS
 
 Full physical 128K KCC PDP-6 boots from four real DSK0..DSK3
