@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1592, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1594, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,41 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-D v1594 real DSK270 D6FS-root inventory:** full 128K
+  physical PDP-6 KCC guest boots original four DSK0..DSK3
+  members, original KINIT/FSINFO publishes capacity **6**.
+  D6FS root provider 6 ID 1, MEMFS `/TEMP` provider 4 ID 2,
+  four spare DRM236 slots empty, indices 6/7 invalid. Original
+  XIP EXEC/RUN/WAIT completes. Independent oracle reads each
+  real 45,056-sector DSK270 image, validates four distinct
+  D6FSR2 descriptors and identical volume geometry; three
+  unsafe mutants rejected. First run with shared default
+  DCS/GE ports was invalidated; corrected per-run isolated
+  ports and strict simulator-error check PASS. P1-D OPEN
+  only for absent/failed provider inventories and alternate
+  high-slot error semantics, not basic DSK/DRM/DTC root class.
+  No production code/RAM/ABI/format change.
+  `design/kcore-p1d-dsk-root-inventory-v1594.md`.
+
+- [x] **P1-C v1593 exact second owner RESIDENT publication:**
+  source-linked observer at original `proc_storage_publish_v30`
+  successful return confirms independently PI6-woken slot **7**
+  publishes RESIDENT exactly once on each of two actual 128K
+  PDP-6 cold boots, aligned VM `0220000`, nonzero original
+  swap record, valid u-area, TRANSITION clear and stale disk
+  backing zero. Slot 6 also has one other successful
+  transaction, despite its later selected checked-release
+  refusal; exact original post-DMA MM/bitmap/BCACHE/DISK/TERM
+  rollback remains correct. Each boot: five actual mapped
+  BACKSTORE READs/1120 real Type-236 PI2, four RESIDENT
+  publications, durable MEMFS/LOGSTORE recovery, snapshot
+  header DR3 `017777`, pool 3648, 280 other occupied sectors.
+  Ten new and 29 inherited false witnesses rejected. Physical
+  DRM236 four-member D6FS root also proves P1-D FSINFO capacity
+  **6**. **P1-C per-slot publication gap CLOSED**, remaining
+  mixed later-stage DEVICE/VOLUME/DTFS faults and loaded timing.
+  No production changes. `design/kcore-p1c-exact-owner-publication-v1593.md`.
 
 - [x] **P1-C v1592 genuine two-owner PI6/snapshot intersection:**
   two full 128K KCC PDP-6 cold boots with actual four-member
@@ -737,27 +772,27 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   changed reel, not a voluntary operator agreement or software
   epoch. See `design/kcore-dtfs-media-retention-v1571.md`.
   Zero production kernel/MRES/driver/RAM/ABI change; 32K HOLD.
-- [ ] **P1-C, remaining combined storage faults:** v1592 now
-  physically confirms TWO independently timed PI6 wakes and
-  original isolated MM/owner rollback while four other
-  swap-ins publish and MEMFS/LOGSTORE persists across boots.
-  Next identify the *specific successful counterpart slot* at
-  original RESIDENT publication, not just aggregate successes.
-  Add genuine in-flight DSK270/DRM236/DTC DEVICE vs mapped
+- [ ] **P1-C, remaining combined storage faults:** v1593
+  physically identifies BOTH independently timed PI6 owner slots
+  and the exact successful slot 7 RESIDENT publication, with
+  original selected owner rollback and MEMFS/LOGSTORE persistence.
+  Next add genuine in-flight DSK270/DRM236/DTC DEVICE vs mapped
   VOLUME provider failure and return, shared Type-136 routing,
   dirty/write-through failure and process/PI owner rollback.
   Continue checked physical BACKSTORE bitmap, MM pins, cache
   identity and provider isolation under multiple owner faults,
   and repeat the v1585/v1592 timing workload under load. Reuse
   prior v1484/1485/1490/1511-v1514 acceptance, not new layers.
-- [ ] **P1-D, remaining alternate inventories:** validate physical
-  D6FS DSK/DRM selected-root configurations and actual available
-  provider/service failures, including empty/unpublished slot and
-  high-slot identity semantics. Already accepted: native
-  1/4/8/17/26 boundaries and root-membership profiles;
-  full physical TSFS three-member capacity 7 and two-member
-  capacity 8, real DTFS mount ID 5. Twenty-six is only the
-  representational maximum, not a physical-device requirement.
+- [ ] **P1-D, remaining failure inventories:** actual missing/
+  failed controller services during/after KINIT inventory and
+  subsequently unavailable mounted providers; verify no stale
+  published mount IDs, false capacity or hidden FSINFO errors.
+  Check high-slot errors on genuine attached media and validate
+  that empty/unpublished slots stay distinguishable from errors.
+  Already accepted: native 1/4/8/17/26 boundaries, physical DTC
+  TSFS roots capacity 7/8 and DTFS mount ID 5, physical D6FS
+  DRM and DSK four-member selected roots capacity 6. 26 remains
+  a representational bound, not a physical device demand.
 - [ ] **P1-E, architecture review BEFORE implementation (KA10):**
   the earlier uncompressed swapless-PURE/MM-rebase/APR integration
   plan is **provisional**, not an approved production design.

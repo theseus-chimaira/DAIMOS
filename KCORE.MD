@@ -1,3 +1,38 @@
+## 2026-11-15 v1594: physical DSK270 four-member root FSINFO PASS
+
+128K PDP-6 physical boot from real DSK0..DSK3 D6FSR2 root set,
+not the already tested Type-236 DRM or Type-551 DTC root. Original
+KINIT inventory and FSINFO report capacity **6**: root D6FS ID1,
+MEMFS `/TEMP` ID2, four spare DRM236 slots, invalid slot 6/7.
+The original XIP EXEC/RUN/WAIT lifecycle also passes. A first
+port-collision diagnostic was rejected; corrected test gives each
+SIMH own DCS/GE listener ports and refuses simulator errors.
+Independent raw disk oracle proves four real distinct 45,056-sector
+DSK270 D6FSR2 members and consistent geometry, rejects 3 negative
+controls. P1-D remains open for failed/absent provider inventories,
+not basic DSK/DRM/DTC root capacity. No production code/RAM/ABI/
+format change, strict 32K/optimization HOLD.
+`design/kcore-p1d-dsk-root-inventory-v1594.md`.
+
+## 2026-11-15 v1593: exact physical slot 7 RESIDENT + DRM FSINFO PASS
+
+Two full 128K KCC PDP-6 Type-236 DRM root VOLUME cold boots:
+v1593 source-linked observation at the original successful
+`proc_storage_publish_v30` commits slot 7, VM `0220000` octal,
+nonzero stable image record, zero stale backing and cleared
+TRANSITION on both boots. Original slot 6 has a successful
+publication in a separate transaction despite its later selected
+post-DMA release refusal; prior v1588 rollback still passes.
+Five real swap READs/1120 physical PI2, four genuine RESIDENT
+publishes each boot, persistent MEMFS/XIP/LOGSTORE recovery,
+valid physical v2 header DR3 `017777` and 280 other nonzero
+BACKSTORE sectors. 10 new and 29 inherited unsafe witness controls
+rejected. **P1-C specific process publication complete.**
+The same real DRM-root guest proves P1-D dynamic FSINFO capacity
+6: D6FS provider 6, MEMFS provider 4, four empty DSK slots.
+No production RAM/ABI/media changes, VERSION 0.5, 32K HOLD.
+`design/kcore-p1c-exact-owner-publication-v1593.md`.
+
 ## 2026-11-15 v1592: two real PI6 owner wakeups during physical snapshot PASS
 
 Two complete real 128K KCC PDP-6 cold boots on four DR0..DR3

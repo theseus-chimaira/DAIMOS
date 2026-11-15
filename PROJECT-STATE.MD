@@ -1,3 +1,46 @@
+## 2026-11-15 v1594: physical DSK270 selected root FSINFO capacity 6 PASS
+
+Full physical 128K KCC PDP-6 boots from four real DSK0..DSK3
+DSK270 D6FSR2 images. Original root discovery/KINIT six-array
+MM-backed slab reports **6** mount slots: root D6FS provider 6
+ID 1; live MEMFS `/TEMP` provider 4 ID 2; four empty DRM236
+transport positions, invalid indices 6 and 7. Original privileged
+XIP/EXEC/RUN/WAIT succeeds. Complete corrected v1594 SIMH guest
+PASS with distinct per-run DCS/GE ports and NO device/port errors.
+Independent host oracle reads 45,056 sectors per real disk image,
+checks all four D6FSR2 roots, physically distinct member identities,
+consistent geometry and three invalid witness controls. The earlier
+port-collision test run is not counted as accepted evidence.
+No production RAM/ABI/media/kernel source changes.
+`design/kcore-p1d-dsk-root-inventory-v1594.md`.
+
+## 2026-11-15 v1593: physical per-owner RESIDENT and DRM FSINFO PASS
+
+Full two-boot 128K KCC PDP-6 on original four-member DR0..DR3
+Type-236 root VOLUME. Genuine original PI6 wakes SLEEP/DISK
+slots 6 and 7 during mapped MEMFS snapshot, with independent
+LOGSTORE persistence. Original post-`proc_storage_publish_v30`
+observer confirms **slot 7 specifically** published RESIDENT
+exactly once on BOTH cold boots, actual aligned VM `0220000`,
+authoritative stable u-area, TRANSITION clear and old disk backing
+pointer zero. Slot 6 had one other successful transaction in
+addition to the separately refused operation, whose original
+post-DMA MM/bitmap/owner/TERM rollback remains accepted.
+Five physical swap READs, 1,120 genuine Type-236 PI2 and four
+successful RESIDENT publications per boot. Both normal HALTs,
+second boot restores prior MEMFS/XIP/LOGSTORE. Snapshot physical
+header DR3 `017777`, pool 3,648 words, 280 other nonzero sectors.
+Thirty-nine unsafe mutant witnesses rejected across v1584, v1592
+and v1593. **P1-C per-slot publication gap CLOSED**; mixed physical
+provider errors and loaded-timing coverage remain open.
+
+The same original guest boots a real four-member DRM root and
+proves P1-D FSINFO capacity 6: D6FS root, MEMFS `/TEMP`, four
+empty DSK positions and invalid indices 6/7. No production source,
+RAM, ABI or media format changes. P1-E remains ON HOLD for KA10
+architecture; VERSION 0.5, strict 32K optimization HOLD.
+`design/kcore-p1c-exact-owner-publication-v1593.md`.
+
 ## 2026-11-15 v1592: independent physical PI6 two-owner snapshot PASS
 
 Full 128K PDP-6 two-boot four-member Type-236 D6FS root VOLUME
