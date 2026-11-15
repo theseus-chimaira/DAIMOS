@@ -1,3 +1,37 @@
+## 2026-11-15 v1588: recoverable post-DMA BACKSTORE release refusal PASS
+
+Two real full 128K KCC PDP-6 cold boots on physical four-member
+Type-236 DR0..DR3 root, original mapped BACKSTORE, MEMFS/XIP and
+LOGSTORE. During the original MEMFS snapshot, genuine timer PI6
+awakens a sleeping/swapped child and slot-0 independently completes
+a mapped physical swap READ and MM unpin. A disposable one-shot
+checked BACKSTORE release refusal at the actual original provider
+entry returns negative BEFORE modifying bitmap ownership.
+The original `proc_swap_in_free_fail` and `mm_free` roll back new
+MM, clear TRANSITION, retain the authoritative original DISK record,
+owner and packed storage mode, then deliver the ordinary TERM event.
+
+On BOTH boots original MM extent count changes `024->023`, new base
+`0220000` disappears, all 29 original bitmap words are identical,
+process-owned blocks `01650` octal are preserved and total backing
+allocation is unchanged across rollback (`01734`/`01713` octal).
+BCACHE slab/tags and other process descriptor words remain identical.
+Four real swap READs with 896 matched DRM236 PI2 completions occur
+per boot; only three successfully publish RESIDENT, as expected.
+Both original HALTs `022004`, second boot restores prior MEMFS
+XIP/data and LOGSTORE and commits v2 header on physical DR3
+`017777` with 3,648-word pool and 275 other nonzero backing sectors.
+Thirty-four intentionally corrupted PI/MM/bitmap/BCACHE/physical
+evidence cases rejected; v1586/v1587 original physical regressions
+still pass. Production code/RAM/ABI/format unchanged.
+
+**P1-C OPEN:** this checked release refusal is synthetic, not real
+owned-media I/O failure. The observed BCACHE slab is not allocated;
+cache DATA/valid-tag fault recovery, mixed/multi-owner scenarios and
+repeat-load stability remain unproved. P1-D/E OPEN, VERSION 0.5,
+fixed low end `024364` octal and strict 32K/optimization HOLD.
+`design/kcore-p1c-postread-mm-rollback-v1588.md`.
+
 ## 2026-11-15 v1587: recoverable MM-pin failure and exact rollback PASS
 
 Two genuine 128K KCC PDP-6 cold boots on four original Type-236

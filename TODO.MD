@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1587, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1588, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,26 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1588 post-DMA recoverable checked-release refusal:**
+  two full 128K KCC PDP-6 cold boots on real DR0..DR3 Type-236
+  mapped VOLUME. Original independent PI6/slot-0 swap-in performs
+  MM pin, genuine physical swap READ and unpin. Test-only one-shot
+  refusal at the original `backstore_free` entry causes original
+  `proc_swap_in_free_fail`, MM free, TRANSITION unlock and TERM.
+  Four physical swap READs/896 matching original Type-236 PI2 and
+  three successful resident publications EACH boot. MM `024->023`,
+  new aligned base `0220000` absent, original DISK record/mode,
+  process-owned `01650` octal, BACKSTORE count (`01734`/`01713`),
+  full 29-word bitmap and BCACHE metadata identical across cleanup.
+  Second boot recovers MEMFS XIP/LOGSTORE, physical v2 header DR3
+  `017777`, 275 other nonzero backing sectors. 34 unsafe mutants
+  rejected, original v1586/v1587 regressions pass. **P1-C OPEN**
+  for actual populated-BCACHE data/valid-tag fault behavior,
+  mixed/multi-owner failures and repeated-load stability. Synthetic
+  checked refusal is NOT a recoverable owned-media I/O failure.
+  Production KCORE/RAM/ABI unchanged, P1-D/E and 32K HOLD unchanged.
+  `design/kcore-p1c-postread-mm-rollback-v1588.md`.
 
 - [x] **P1-C v1587 exact pre-I/O MM pin-refusal rollback:** real
   full 128K PDP-6 two-boot DR0..DR3 root VOLUME, original mapped

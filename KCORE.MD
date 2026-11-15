@@ -1,3 +1,28 @@
+## 2026-11-15 v1588: recoverable POST-DMA checked-release rollback PASS
+
+Two full 128K KCC PDP-6 cold boots on genuine DR0..DR3 Type-236
+root VOLUME, mapped BACKSTORE, MEMFS v2/XIP and LOGSTORE. Original
+PI6 wakes a sleeping/swapped process at snapshot entry; independently
+scheduled swap-in executes actual MM pin, mapped READ with Type-236
+DR_DONE PI2 and MM unpin, then a controlled one-shot checked
+BACKSTORE release refusal at the original provider entry. The
+original `proc_swap_in_free_fail` cleans MM, clears TRANSITION,
+retains DISK record/owner/mode, and notifies TERM normally. EACH
+boot: four real swap READs/896 matching physical PI2, three
+successful resident publications; rollback MM extent `024->023`,
+original owner `01650` octal, backing `01734`/`01713` octal,
+all 29 bitmap words and BCACHE pointer/tags unchanged. Both HALTs
+`022004` octal, boot 2 recovers MEMFS XIP/LOGSTORE, valid physical
+v2 header DR3 `017777`, 275 other nonzero BACKSTORE sectors.
+34 corrupted physical/ownership/MM/PI/BCACHE witnesses rejected;
+v1587/v1586 original physical regressions still pass.
+**P1-C OPEN** for populated-BCACHE DATA, mixed owner/provider
+failures and timing stability. This was a test-controlled checked
+release refusal, NOT an owned-media error (which remains fatal).
+No production code/RAM/ABI change; VERSION 0.5, low end `024364`,
+strict 32K/optimization HOLD. Details:
+`design/kcore-p1c-postread-mm-rollback-v1588.md`.
+
 ## 2026-11-15 v1587: recoverable pre-I/O MM pin rollback during PI6 snapshot PASS
 
 Two real full 128K KCC PDP-6 cold boots on the original four-member
