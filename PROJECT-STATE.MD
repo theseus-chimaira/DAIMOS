@@ -1,3 +1,41 @@
+## 2026-11-15 v1590: live D6FS BCACHE retained across physical LOGSTORE retry PASS
+
+Two full 128K KCC PDP-6 physical cold boots on original Type-236
+four-member DR0..DR3 mapped root VOLUME. Real D6FS VFS reads populate
+the MM-owned BCACHE private slab `0377577`, D6FS cache key
+`100100001010`, 28 nonzero words of the full 128-word block.
+Original LOGSTORE emits an actual uncommitted physical record to
+mapped BACKSTORE, test-only returns a completion error, original
+cursor is unchanged and same-slot retry commits. Across both
+failed and successful original physical writes, the allocated cache
+slab, tag and all 128 data words remain unchanged, and two original
+BCACHE fetches HIT. Boot 2 recovers the first boot's LOGSTORE record
+and XIP/data before its own physical fault/retry.
+
+After this no-reclaim cache-retention window, original PI6 wakes an
+independently scheduled swapped child during MEMFS snapshot; real
+mapped BACKSTORE swap READs, Type-236 DR_DONE PI2 and original v1588
+post-DMA release-refusal MM rollback occur. EACH boot: four physical
+swap READs, 896 matching Type-236 PI2, three RESIDENT publications,
+MM extents `024->023`, original DISK owner `01650` octal and all 29
+bitmap words preserved. Both normal HALTs `022004`; physical v2
+snapshot header DR3 `017777`, 3,648-word pool and 280 other nonzero
+backing sectors. Independent oracle rejected 47 falsified linked/
+physical/PI/BCACHE/owner witnesses. Retained v1588 raw physical oracle
+also passes. Separate earlier v1590 native v1490 cache/DTC test
+repair source-links ORIGINAL DTFS v1561 write gate, no bypass;
+v1561's 35 native cases and 13 negatives pass.
+
+This accepts genuine populated cache *retention* under a separate
+recoverable D6FS/LOGSTORE provider failure, complementing v1589's
+genuine MM reclaim under later pressure. **P1-C remains OPEN** for
+simultaneous owner transitions, later-stage DEVICE/provider failure
+and loaded-simulator stability including isolated v1585 timeout.
+Owned BACKSTORE media I/O error remains fail-stop, not recoverable.
+P1-D/E OPEN; VERSION 0.5, low end `024364` octal and strict 32K/
+optimization HOLD unchanged. No installed code/RAM/ABI/format changes.
+`design/kcore-p1c-live-d6fs-cache-logstore-fault-v1590.md`.
+
 ## 2026-11-15 v1589: populated D6FS BCACHE reclaimed during PI6 swap PASS
 
 Two complete 128K KCC PDP-6 boots with four physical DR0..DR3

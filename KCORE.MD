@@ -1,3 +1,29 @@
+## 2026-11-15 v1590: live D6FS cache survives physically torn LOGSTORE PASS
+
+Two full 128K KCC PDP-6 cold boots on original DR0..DR3 Type-236
+root VOLUME, mapped BACKSTORE, MEMFS/XIP and LOGSTORE. Ordinary D6FS
+VFS OPEN/READ populates a real private BCACHE slab (`0377577` octal,
+key `100100001010`, 28 nonzero of 128 physical words). The original
+LOGSTORE provider physically writes a torn uncommitted Type-236 record,
+returns a controlled completion error without advancing its cursor,
+then retries the same slot and commits. After BOTH failed and
+committed physical writes, all 128 D6FS cache words/key/slab remain
+identical and original `bcache_fetch` returns HIT. Both boots also
+complete independent PI6/slot-0 mapped BACKSTORE swap READs (4, 896
+matching Type-236 PI2), v1588 original post-DMA MM/owner rollback
+and durable MEMFS snapshot. Both normal HALTs `022004`; boot 2
+recovers old XIP and LOGSTORE, raw header DR3 `017777` and 280 other
+nonzero physical backing sectors. Forty-seven negative mutations
+rejected. This complements v1589's correct cache reclaim under later
+MM pressure: it does NOT claim survival once MM has freed the slab.
+Legacy v1490 BCACHE/DTC native test also repaired with ORIGINAL v1561
+write gate and valid V1 mount; 35 v1561 native cases/13 negatives pass.
+**P1-C OPEN** for simultaneous-owner fault, later DEVICE/provider
+failure and loaded-timing stability. Actual owned-media failure
+remains fatal. No production code/RAM/ABI/format changes; VERSION
+0.5, fixed `024364` low end, strict 32K/optimization HOLD unchanged.
+`design/kcore-p1c-live-d6fs-cache-logstore-fault-v1590.md`.
+
 ## 2026-11-15 v1589: exact populated D6FS BCACHE reclaim during swap PASS
 
 Two complete 128K KCC PDP-6 physical boots using the four original

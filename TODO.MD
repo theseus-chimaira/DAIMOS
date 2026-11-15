@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1589, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1590, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,31 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1590 live-cache preservation during real LOGSTORE torn
+  physical write and retry:** two full 128K PDP-6 cold boots on
+  real four-member Type-236 mapped root VOLUME. Original D6FS
+  VFS read populates clean private cache (`0377577` octal, source
+  `100100001010`, 28 nonzero data words). Actual LOGSTORE physical
+  write persists uncommitted trailer, then returns an injected
+  completion error; original cursor remains stable and original
+  same-slot retry commits. All 128 BCACHE data words and its key/slab
+  remain identical throughout, original cache fetch HIT after BOTH
+  physical writes on BOTH boots. Next original independent PI6/slot-0
+  swap and MEMFS snapshot pass: four real mapped READs/896 Type-236
+  PI2 completions, three RESIDENT publications, exact v1588 MM/
+  DISK/29-word bitmap rollback. Both HALTs normal `022004`, boot 2
+  restores XIP/LOGSTORE, valid physical v2 header DR3 `017777`,
+  280 other nonzero BACKSTORE sectors. 47 unsafe evidence mutants
+  rejected. This complements v1589 valid cache reclaim after MM
+  pressure, not a claim that reclaimed cache data must survive.
+  The older v1490 BCACHE/DTC native fixture also repaired with
+  authentic modern DTFS write gate; no security bypass, original
+  v1561 cases/mutations pass. **P1-C OPEN** for multiple simultaneous
+  owner transitions, later-stage DEVICE/provider faults and timing
+  repeatability. Actual owned-media errors remain fatal; P1-D/E,
+  VERSION 0.5, production RAM/ABI and strict 32K HOLD unchanged.
+  `design/kcore-p1c-live-d6fs-cache-logstore-fault-v1590.md`.
 
 - [x] **P1-C v1589 genuine populated D6FS private cache reclamation:**
   two physical 128K PDP-6 cold boots on four DR0..DR3 Type-236 root
