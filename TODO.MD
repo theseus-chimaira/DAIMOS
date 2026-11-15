@@ -13,7 +13,7 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   together. Three members/6 tail sectors each verified correct
   physical member and block for DSK/DRM read/write, exact buffer
   stride. 13 native success/failure/refusal/range cases PASS;
-  7 executed unsafe source mutants rejected. Disabled-but-owned
+  8 executed unsafe source mutants rejected. Disabled-but-owned
   still fatal; inactive unowned/missing-mapper probes nonfatal;
   critical missing mapped service never turns into direct physical
   access. Only final hardware completion was test-supplied.

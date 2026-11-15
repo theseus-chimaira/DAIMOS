@@ -30,10 +30,12 @@ halt at the linker-resolved BACKSTORE reason, not the ROOT reason;
 one fatal mapped DRM test halted at octal 001342 with exactly three
 physical accesses and unchanged octal 0300 owned BACKSTORE blocks.
 
-Seven executed unsafe source mutations all FAIL the native oracle:
+Eight executed unsafe source mutations all FAIL the native oracle:
 wrong mapper block, wrong member, omitted data offset, wrong physical
 DRM route, missing fatal, bypassed missing-mapper failure, or false
-disabling of the owned-block gate. All tests live in daimos-testkit:
+disabling of the owned-block gate, or a corrupt 0100-word instead of
+0200-word transfer-buffer stride. The controller fixture now checks
+every source/destination buffer address. All tests live in daimos-testkit:
 `tests/validation/daimos-p1c-volume-realmap-v1582.sh`, companion
 `.s` fixture and `.md` report.
 

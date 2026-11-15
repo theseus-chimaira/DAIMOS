@@ -8,7 +8,7 @@ to precisely correct per-unit physical addresses on both DSK/DRM
 read/write paths. The 13 executed scenarios cover second/third
 transfer controller failure, retained swap owners under a disabled
 allocation gate, inactive/unowned nonfatal return, missing-mapper
-fail-closed and boundary/zero-length checks; 7 executed unsafe
+fail-closed and boundary/zero-length checks; 8 executed unsafe
 mutations were rejected. The mapper and gateway are unchanged
 production assembly; only final controller completion is simulated
 by the native fixture. This is NOT a full physical multi-member
