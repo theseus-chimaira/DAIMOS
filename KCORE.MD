@@ -1,3 +1,24 @@
+## 2026-11-15 v1599: two authentic PI6 disk owners on fatal mapped BACKSTORE swap READ
+
+Physical 128K full PDP-6 four-member DRM236 D6FS root VOLUME,
+independent MEMFS/LOGSTORE snapshot. Original PI6 timer service
+woke real SLEEP/DISK slots 6 and 7 independently (one each);
+original slot-0 service started actual mapped swap READ for slot
+7. Original Type-236 request completed genuine DR_DONE PI2, the
+disposable test fault selected its original driver error leaf,
+and unchanged critical BACKSTORE gateway reached reason-2 HALT
+octal `004011`. No RESIDENT publish, original swap/BACKSTORE
+owners retained, snapshot not falsely committed. Real DR1:
+`017506` physical sector and interleaved logical `000431`, 268
+other physically nonzero backing sectors, four unchanged D6FSR2
+member headers. Independent original linked-address/raw-media
+oracle PASS with **23** rejected false observations; previous
+v1586 single-owner oracle still PASS. No production source/RAM/
+ABI/media change. Only one swap DMA ran before required fatal
+halt; direct DEVICE and dirty/write-through cross-provider cases
+remain open. VERSION 0.5, 32K/optimization HOLD; P1-E KA10
+design on HOLD. `design/kcore-p1c-two-owner-fatal-v1599.md`.
+
 ## 2026-11-15 v1598: real missing-controller and high-slot provider recovery PASS
 
 P1-D v1595 full 256K Type-551 TSFS two-member root: capacity 8;

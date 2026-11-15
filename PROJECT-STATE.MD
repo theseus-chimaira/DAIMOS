@@ -1,3 +1,40 @@
+## 2026-11-15 v1599: two authentic PI6 swap owners during fatal BACKSTORE PI2 PASS
+
+**P1-C v1599 accepted physical 128K PDP-6 mapped BACKSTORE
+owner-failure intersection.** Full KCC guest on real four-member
+Type-236 DR0..DR3 D6FSR2 root VOLUME with independent MEMFS
+persistent snapshot and LOGSTORE. Two real timed SLEEP/DISK
+process slots **6 and 7**, both owning nonzero original swap
+records, were selected during the snapshot. Original 60 Hz PI6
+timer service independently woke EACH once. Original slot-0
+scheduler initiated the first mapped BACKSTORE swap READ for
+slot 7, selected genuine Type-236 DR_DONE PI2 then followed the
+existing driver-error and v1515 reason-2 BACKSTORE fatal path,
+**HALT octal `004011`**. Exactly 1 selected READ/PI2 and original
+DRM error, zero RESIDENT publications and retained real
+BACKSTORE (`01734`) / process swap (`01650`) block ownership.
+Selected physical DR1:`017506`, logical mapped `000431`, real
+Type-236 request group `0375060`; original snapshot stayed
+uncommitted. Physical D6FSR2 descriptors intact, 268 other
+nonzero backing sectors. Full source-linked raw-media verifier
+PASS; **23** deliberately false owner/PI6/PI2/bitmap/media/commit
+witnesses rejected. Original v1586 single-owner regression and
+15 negative controls still PASS. All source instrumentation and
+the selected PI2 error existed ONLY in disposable testkit copy;
+original KCORE/MM/driver/storage policy unchanged. This is a
+selected failure on a genuine hardware-simulator PI2, not proof
+of spontaneous magnetic media loss.
+
+This proves **two independently awakened, disk-backed processes at
+one fatal mapped swap READ**. Only one DMA swap READ is in flight
+when fatal HALT stops all progress; no post-fatal recovery or
+second concurrent I/O is claimed. P1-C remains OPEN for direct
+DEVICE-backed AUXSTORE on independent DSK root, dirty/write-through
+fault isolation and loaded physical repeatability. P1-D final
+matrix and P1-E KA10 review remain pending. VERSION 0.5, fixed
+low-end `024364` octal, strict 32K/optimization HOLD.
+`design/kcore-p1c-two-owner-fatal-v1599.md`.
+
 ## 2026-11-15 v1598: physical mixed-provider recovery and absent DRM controller PASS
 
 **P1-D v1595:** full genuine 256K PDP-6 boot from two-member
