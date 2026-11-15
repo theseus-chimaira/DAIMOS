@@ -1,3 +1,23 @@
+## 2026-11-15 v1601: P1-D final root/controller FSINFO matrix ACCEPTED
+
+Full 128K PDP-6 from genuine DRM236 four-member D6FSR2 root with
+physically disabled DSK270 controller: original KINIT allocates
+exactly two MM-backed FSINFO mount slots, D6FS root + MEMFS `/TEMP`.
+Original linked mount limit and both distinct slab base pointers,
+four physical root member identities, unchanged preboot root RBN0,
+normal original XIP EXEC/RUN/WAIT and **10** rejected corrupt
+physical/linked-memory witnesses PASS. Complementary fresh original
+v1597 DSK270-root boot with Type-167 DP/DRM absent also PASSes,
+capacity 2 and four rejected corrupt witnesses. Earlier accepted
+physical TSFS capacities 7/8 and DSK/DRM capacities 6, native
+service-pair asymmetry, source-linked FSINFO/MOUNTS/DF, high native
+DTFS failed published mount and valid same-media return complete
+the **P1-D feature matrix**. No implied 26 installed transports;
+26 is the FSINFO representational ceiling. No production source,
+RAM, ABI or media change. P1-C dirty/write-through and repeat-loaded
+timing still OPEN; P1-E and strict 32K optimization HOLD.
+`design/kcore-p1d-final-controller-matrix-v1601.md`.
+
 ## 2026-11-15 v1600: independent DSK270 root plus direct DRM0 swap failure PASS
 
 Real 128K full PDP-6 boot from independent DSK270 D6FSR2
@@ -26,7 +46,8 @@ Physical 128K full PDP-6 four-member DRM236 D6FS root VOLUME,
 independent MEMFS/LOGSTORE snapshot. Original PI6 timer service
 woke real SLEEP/DISK slots 6 and 7 independently (one each);
 original slot-0 service started actual mapped swap READ for slot
-7. Original Type-236 request completed genuine DR_DONE PI2, the
+6 (confirmed in original post-HALT source-linked evidence).
+Original Type-236 request completed genuine DR_DONE PI2, the
 disposable test fault selected its original driver error leaf,
 and unchanged critical BACKSTORE gateway reached reason-2 HALT
 octal `004011`. No RESIDENT publish, original swap/BACKSTORE

@@ -1,3 +1,35 @@
+## 2026-11-15 v1601: P1-D final physical controller/FSINFO matrix ACCEPTED
+
+**P1-D feature complete.** Full original 128K KCC PDP-6 root on four
+genuine DRM236 D6FSR2 members with Type-136 DSK270 disabled before
+MINIT: original FSINFO capacity **2** (D6FS ID1 + MEMFS ID2), no
+phantom DSK slots, linked original `vfs_mount_limit` and two distinct
+MM-backed mount pointers, authentic four-member physical root RBN0
+identities/geometries, full XIP EXEC/RUN/WAIT PASS. Ten corrupted
+physical/service/FSINFO/MM/lifecycle witnesses rejected; first
+diagnostic without complete preboot capture was excluded. Full test
+evidence: `$TMPDIR/daimos-fsinfo-drm-nodsk-v1601.GUnDWg`.
+
+The complementary **current-source rerun of v1597** also PASSes:
+four original DSK270 D6FSR2 members, absent upstream Type-167 DP/DRM
+hardware, original capacity 2 and XIP lifecycle; four false witnesses
+rejected. Accepted earlier P1-D real root inventories: TSFS 7/8,
+DSK/DRM D6FS 6, plus high mounted DTC3 provider failure/physical
+identity-preserving return. v1596 separately shows absent high DTC6
+with independent writable MEMFS still progressing. Source-linked
+native FSINFO and MOUNTS/DF v1492, original root planner v22 for full
+and disk-only profiles (including missing/asymmetric READ/WRITE
+service pairs), and host capacity boundary all PASS. Current modeled
+hardware maximum is 9 physical mount slots with a one-member root;
+26 is a representational limit, not an installed-controller claim.
+
+**P1-C still OPEN** for dirty/write-through provider fault isolation,
+cache/owner intersections and loaded physical timing. **P1-E** KA10
+PURE/MM/APR design HOLD. Strict 32K/optimization HOLD. No production
+kernel/driver/MM/ABI/RAM/media changes in v1601; VERSION 0.5,
+fixed KCORE low end `024364` octal. Full matrix and boundaries:
+`design/kcore-p1d-final-controller-matrix-v1601.md`.
+
 ## 2026-11-15 v1600: independent direct DRM0 DEVICE swap fatal with DSK270 root PASS
 
 Full original 128K KCC PDP-6 guest booted **four separate DSK270

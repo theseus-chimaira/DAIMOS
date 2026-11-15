@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1600, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1601, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,28 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-D FINAL v1601 dynamic FSINFO/controller/root matrix CLOSED:**
+  original physical 128K PDP-6 DRM236 four-member D6FSR2 root
+  with actual DSK270 controller disabled. Real KINIT/FSINFO returns
+  **2** mount slots, D6FS root ID1 plus MEMFS ID2, invalid slot 2/3;
+  no phantom DSK positions. Authentic linked KCORE MM slab pointers
+  and capacity after HALT, unchanged four distinct raw DRM root
+  headers and XIP EXEC/RUN/WAIT PASS; **10** rejected false physical
+  oracles. Fresh v1597 physical DSK270 root with DP/DRM absent
+  also PASSes from current source with capacity 2 and **4** false
+  oracles rejected. Existing accepted physical inventory capacities:
+  DTC/TSFS 7/8, DSK/DRM D6FS 6, plus high native DTFS mount loss,
+  identity-protected return and unaffected provider ownership.
+  Current-source native KCORE FSINFO and MOUNTS/DF v1492 PASS, v22
+  root/service planner full and disk profiles PASS including
+  **one-sided READ/WRITE service** absence, and native host capacity
+  boundary PASS. Up to 9 slots modeled with installed controllers;
+  26 is only the ABI representational ceiling, not 26 real drives.
+  No production KCORE/RAM/ABI/media change; P1-C dirty/write-through
+  isolation/repeated-load tests and P1-E KA10 review remain OPEN;
+  strict 32K and optimization HOLD. Full evidence:
+  `design/kcore-p1d-final-controller-matrix-v1601.md`.
 
 - [x] **P1-C v1600 independent DEVICE root/controller fail-stop:**
   128K PDP-6 full real DSK270 four-member D6FSR2 root, separate
