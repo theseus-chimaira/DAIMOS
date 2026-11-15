@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1586, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1587, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,27 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1587 exact pre-I/O MM pin-refusal rollback:** real
+  full 128K PDP-6 two-boot DR0..DR3 root VOLUME, original mapped
+  BACKSTORE, independent PI6/slot-0 swap-in DURING MEMFS snapshot.
+  The original MM allocator first creates real aligned process VM;
+  test-only one-shot `MM_ERR_BUSY` refuses the subsequent pin and
+  original MM free/transition unlock/TERM execute. BOTH boots:
+  MM extent count `024->023`, allocated `0220000` absent from MM,
+  full 29-word backing bitmap identical, DISK record/mode and
+  process owner `01650` octal unchanged across cleanup, BCACHE
+  pointer and both tags unchanged. Original slot-0 completes THREE
+  other swap-ins and 672 actual matching Type-236 PI2 per boot.
+  Both privileged HALTs `022004`; boot 2 restores prior XIP/LOGSTORE,
+  physical v2 commit DR3 `017777`, 275 other nonzero sectors.
+  Thirty-three intentionally falsified witnesses rejected; v1585/
+  v1586 original physical regressions pass. **P1-C still OPEN** for
+  later/post-I/O recoverable owner/MM/BCACHE rollback and multi-owner
+  failures; do not confuse test-induced pre-I/O pin refusal with
+  recoverable owned-BACKSTORE physical I/O (which is fail-stop).
+  P1-D/E and 32K HOLD unchanged; no production code/RAM/ABI change.
+  `design/kcore-p1c-preio-mm-rollback-v1587.md`.
 
 - [x] **P1-C v1586 genuine swap READ PI2 fail-stop during independent
   snapshot/swap overlap:** real 128K PDP-6 full guest on four-member

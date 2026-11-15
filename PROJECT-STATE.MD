@@ -1,3 +1,37 @@
+## 2026-11-15 v1587: recoverable MM-pin failure and exact rollback PASS
+
+Two genuine 128K KCC PDP-6 cold boots on four original Type-236
+DR0..DR3 root VOLUME images, mapped BACKSTORE, MEMFS v2/XIP,
+LOGSTORE, original PI6 and independently scheduled slot-0 swaps.
+At snapshot entry a disposable timer hook wakes one true sleeping
+DISK-backed process. Real MM allocation of its new aligned extent
+is followed by exactly one synthetic pin refusal (`MM_ERR_BUSY`);
+original `proc_swap_in_pin_fail` and `mm_free` run without changes.
+On EACH boot original MM extent count returns from `024` to `023`,
+allocated base `0220000` disappears from the real MM table, original
+process owner count `01650` octal, DISK record and all 29 full
+BACKSTORE bitmap words are preserved exactly; original transition
+clears, DISK mode remains authoritative, BCACHE slab/workspace/
+private metadata remains unchanged, and original scheduler delivers
+one TERM event. Three other independent physical swaps complete
+with 672 matched Type-236 PI2 events per boot.
+
+Both original HALTs are `022004` octal (nonfatal); boot 2 restored
+earlier MEMFS/XIP and LOGSTORE, then appended a new LOGSTORE record.
+Raw four-member physical media has a valid MEMFS v2 header on DR3
+`017777`, 3,648-word pool, 275 other nonzero backing sectors and
+four unchanged D6FSR2 member layouts. Independent oracle rejected
+33 invalid evidence mutations; retained v1585/v1586 physical
+regression oracles still pass. No permanent production source, RAM,
+ABI or media-format growth, VERSION 0.5 and fixed low end `024364`.
+
+**P1-C remains OPEN:** this proves only controlled pre-I/O MM
+rollback, NOT post-I/O owner/MM/BCACHE reconstruction, arbitrary
+multi-owner failures or the outstanding v1585 intermittent timeout.
+Owned BACKSTORE physical I/O failure remains intentionally fatal.
+P1-D/E and strict 32K/optimization HOLD unchanged.
+`design/kcore-p1c-preio-mm-rollback-v1587.md`.
+
 ## 2026-11-15 v1586: original fatal BACKSTORE swap READ PI2 DURING snapshot PASS
 
 Actual 128K KCC PDP-6 guest on genuine four-member Type-236 DR0..DR3

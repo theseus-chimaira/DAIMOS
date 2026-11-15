@@ -1,3 +1,25 @@
+## 2026-11-15 v1587: recoverable pre-I/O MM pin rollback during PI6 snapshot PASS
+
+Two real full 128K KCC PDP-6 cold boots on the original four-member
+Type-236 DR0..DR3 VOLUME, mapped BACKSTORE, MEMFS/XIP and LOGSTORE.
+Original independently scheduled slot-0 swap-in allocated new MM
+process VM; a one-shot test-only `MM_ERR_BUSY` at its pin operation
+executed the original `mm_free`, transition unlock and TERM refusal
+path. On BOTH boots original MM extent count `024->023`, new base
+`0220000` absent after free, all 29 original BACKSTORE bitmap words
+byte-exact, process swap owner `01650` octal and packed DISK record
+unchanged, original DISK mode retained; BCACHE pointer/workspace/
+private cache tags unchanged. Three OTHER physical swap-ins still
+completed with 672 matching Type-236 PI2 each; original privileged
+HALTs `022004`, boot 2 restored MEMFS XIP/data and previous LOGSTORE.
+Valid physical v2 header DR3 `017777` with 275 other nonzero backing
+sectors; 33 negative witness cases rejected. v1585/v1586 physical
+oracle regressions pass. **P1-C stays OPEN** for post-I/O recoverable
+owner/MM/BCACHE rollback, multi-owner failures and timing stability.
+No production kernel code/RAM/ABI change; VERSION 0.5, KCORE low
+end `024364` octal, strict 32K optimization HOLD.
+`design/kcore-p1c-preio-mm-rollback-v1587.md`.
+
 ## 2026-11-15 v1586: true swap READ PI2 error during snapshot overlap PASS
 
 One real full 128K PDP-6 guest with four-member DR0..DR3 Type-236
