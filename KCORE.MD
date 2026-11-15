@@ -1,3 +1,25 @@
+## 2026-11-15 v1586: true swap READ PI2 error during snapshot overlap PASS
+
+One real full 128K PDP-6 guest with four-member DR0..DR3 Type-236
+D6FS root VOLUME and original BLOCKSET mapped BACKSTORE. Test-only
+timer alignment permitted original PI6 to wake a real sleeping,
+swapped child; original slot-0 scheduler entered actual swap READ
+during the original MEMFS v2 snapshot. The selected real physical
+DR_DONE PI2 from its own descriptor was routed through original
+DRM error handling, not a fabricated syscall return. Original
+BACKSTORE reason-2 fatal HALT `004011` octal, independent start 1,
+READ 1, matched PI2 1, driver error 1, resident publications 0.
+Original process blocks `01650` octal remain owned and snapshot
+marker remains active. Physical selected DR1 `017506`, logical tail
+`000431`; final v2 header DR3 `017777` remains invalid, 268 other
+nonzero backing sectors, all four D6FSR2 layouts intact. Fifteen
+mutated false witnesses rejected; v1583/v1585 evidence reverified.
+**P1-C still OPEN** for exact recoverable owner/MM/BCACHE rollback
+and additional combined failure cases; the selected first swap
+READ/PI2 fatal-overlap case now PASS. No permanent kernel changes;
+VERSION 0.5, low end `024364` octal, strict 32K/optimization HOLD.
+`design/kcore-p1c-overlapped-swap-read-failure-v1586.md`.
+
 ## 2026-11-15 v1585: independent PI6 swap-in during physical snapshot PASS
 
 Two full 128K KCC PDP-6 cold boots on genuine four-member DR0..DR3

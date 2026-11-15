@@ -1,3 +1,36 @@
+## 2026-11-15 v1586: original fatal BACKSTORE swap READ PI2 DURING snapshot PASS
+
+Actual 128K KCC PDP-6 guest on genuine four-member Type-236 DR0..DR3
+D6FS root, production BLOCKSET INTERLEAVE, mapped BACKSTORE, original
+MEMFS v2 snapshot and LOGSTORE. A disposable test hook advanced
+the real deadline of one sleeping, swapped process at snapshot entry;
+the original PI6 woke it and original slot-0 independently started
+one physical swap READ. At the real DR_DONE of its matching original
+Type-236 descriptor, a selected test error entered the original
+DRM driver failure handler and critical BACKSTORE gate, causing the
+original reason-2 fatal HALT at `004011` octal. Original driver
+errors 1, published resident transfers 0, process-backed blocks
+`01650` octal unchanged at HALT, BACKSTORE allocation `01734`,
+snapshot marker still active. No stubbed error return or fake HALT.
+
+Raw 36-bit media and original linked KCORE symbols independently
+locate the selected swap READ at **DR1 block `017506`** / logical
+BACKSTORE block `000431`; it contains real payload. Original final
+MEMFS v2 header at DR3 `017777` is uncommitted. All four D6FSR2
+physical member descriptors unchanged and 268 other nonzero backing
+sectors present. Fifteen deliberately corrupted linked/PI/owner/
+physical witnesses rejected; retained physical v1583 and v1585
+regression oracles continue to PASS. This is an **injected** PI2
+error at a REAL physical DR_DONE, not natural damaged media.
+
+P1-C remains OPEN for exact recoverable owner/MM/BCACHE rollback,
+late fault timing and multiple simultaneous transition cases. The
+v1585 isolated 180-second timeout remains an open stability question.
+P1-D/E OPEN, VERSION 0.5, production low end `024364` octal,
+strict 32K/optimization HOLD. No permanent production KCORE/source/
+RAM/ABI/media-format changes. Full source-backed evidence:
+`design/kcore-p1c-overlapped-swap-read-failure-v1586.md`.
+
 ## 2026-11-15 v1585: actual independent PI6 swap-in DURING MEMFS snapshot PASS
 
 Two real KCC PDP-6 128K physical cold boots using the same four

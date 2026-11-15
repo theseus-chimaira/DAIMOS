@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1585, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1586, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,24 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1586 genuine swap READ PI2 fail-stop during independent
+  snapshot/swap overlap:** real 128K PDP-6 full guest on four-member
+  DR0..DR3 root VOLUME, original mapped BACKSTORE. Disposable test
+  timer advances one genuine sleeping/swapped child; independent PI6
+  wakes it and original slot-0 performs one mapped swap READ. At its
+  true Type-236 DR_DONE a selected PI2 failure reaches the original
+  driver and BACKSTORE reason-2 fatal HALT `004011`. Original driver
+  error 1, no false resident publication, process-owned blocks
+  `01650` octal remain, snapshot still active, its physical header
+  uncommitted. Actual failed DR1 `017506` / logical tail `000431`,
+  268 other nonzero backing sectors, all four D6FSR2 layouts intact.
+  Fifteen deliberately invalid physical/PI/owner witnesses rejected.
+  Original v1583/v1585 physical regressions also PASS. **P1-C OPEN**
+  for exact recoverable MM/BCACHE/owner rollback and other combined
+  failure timing cases, P1-D/E and 32K HOLD unchanged. No production
+  KCORE/RAM/ABI growth.
+  `design/kcore-p1c-overlapped-swap-read-failure-v1586.md`.
 
 - [x] **P1-C v1585 independently scheduled swap-in during snapshot:**
   two full 128K KCC PDP-6 cold boots, genuine DR0..DR3 mapped root
