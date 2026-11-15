@@ -1,3 +1,27 @@
+## 2026-11-15 v1585: independent PI6 swap-in during physical snapshot PASS
+
+Two full 128K KCC PDP-6 cold boots on genuine four-member DR0..DR3
+Type-236 root VOLUME, mapped BACKSTORE, MEMFS v2/XIP and LOGSTORE.
+One original timed sleeping disk-backed child was rearmed to the next
+clock tick at snapshot entry by a disposable test-only hook. The
+original PI6 service woke it; the original slot-0 scheduler executed
+two real swap-in transactions and two successful DISK-to-RESIDENT
+publications **during MEMFS snapshot** on EACH cold boot. Actual
+matched Type-236 swap READ PI2 completions `0700` octal and total
+snapshot DR_DONE `01311` octal per boot; 2,129/2,137 original clock
+ticks elapsed. Both normal HALTs at octal `022004`, real remaining
+process blocks `0750` octal, original storage errors zero.
+Boot 2 restored previous MEMFS XIP/data and LOGSTORE; valid v2
+physical header DR3 sector `017777` and 275 other nonzero backing
+sectors independently checked. Seventeen corrupt physical/timer
+evidence sets rejected. Corrected the v1584 strict negative-test
+oracle and reverified its healthy nonoverlap acceptance. P1-C
+remains OPEN for recoverable owner/MM/BCACHE rollback and combined
+fault/overlap tests, not for the now-proven controlled PI6 overlap.
+No installed production code/RAM/ABI change; VERSION 0.5, low end
+`024364` octal and 32K/optimization HOLD.
+`design/kcore-p1c-independent-snapshot-swap-v1585.md`.
+
 ## 2026-11-15 v1584: full physical healthy mapped snapshot/reboot PASS
 
 Two real 128K PDP-6 cold boots on the four-member Type-236 root

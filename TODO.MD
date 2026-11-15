@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1584, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1585, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,37 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1585 independently scheduled swap-in during snapshot:**
+  two full 128K KCC PDP-6 cold boots, genuine DR0..DR3 mapped root
+  VOLUME, MEMFS/XIP and LOGSTORE. One already sleeping DISK process's
+  timer is advanced to the next real clock tick by a strictly
+  disposable snapshot-boundary test hook; **real PI6** wakes it,
+  original slot-0 scheduler independently completes two swap-ins
+  and two DISK-to-RESIDENT publications during each synchronous
+  snapshot. Original mapped DRM236 swap READ PI2=`0700` octal and
+  all snapshot PI2=`01311` octal in each boot, 2,129/2,137 original
+  clock ticks. Both original HALTs `022004`, retained actual process
+  blocks `0750` octal, zero original storage errors. Boot 2 recovers
+  MEMFS/XIP and LOGSTORE; valid physical v2 header DR3 `017777`,
+  275 other nonzero backing sectors, unchanged four descriptors.
+  Seventeen corrupt physical/PI/timer/ownership witnesses rejected.
+  Fixed inherited v1584 strict-negative oracle defect without
+  weakening old healthy/zero-overlap acceptance. **P1-C still OPEN**
+  for exact recoverable owner/MM/BCACHE rollback and combined
+  fault/overlap; P1-D/E and strict 32K HOLD unchanged. No permanent
+  production KCORE code/RAM/ABI change.
+  `design/kcore-p1c-independent-snapshot-swap-v1585.md`.
+
+- [ ] **P1-C v1585 repeated-load timing stability:** an additional
+  first-boot probe exceeded the old 180-second command limit after
+  starting physical snapshot writes. No stopped CPU-state trace was
+  captured; slow SIMH execution versus a rare scheduler stall cannot
+  yet be distinguished. A following complete two-boot run and all
+  17 negative controls PASSed. The v1585-only probe now has a bounded
+  300-second limit and captures SIMH CPU/PC on timeout. Exercise this
+  repeatedly before declaring the overlap/fault matrix fully stable;
+  do not claim a production deadlock or silently discard the timeout.
 
 - [x] **P1-C v1584 healthy four-member snapshot/reboot:** two real
   full 128K PDP-6 cold boots on DR0..DR3 root VOLUME, original
