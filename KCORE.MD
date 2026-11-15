@@ -1,3 +1,29 @@
+## 2026-11-15 v1589: exact populated D6FS BCACHE reclaim during swap PASS
+
+Two complete 128K KCC PDP-6 physical boots using the four original
+DR0..DR3 Type-236 root VOLUME members, mapped BACKSTORE, MEMFS/XIP,
+LOGSTORE, original PI6/slot-0 and post-DMA checked-release rollback.
+Ordinary userland physical D6FS reads populated the original private
+BCACHE slab at `0307577`, key `100100001010` octal, 28 nonzero data
+words. On EACH boot original `bcache_reclaim` matched the exact slab
+after one independently scheduled swap-in began: **all 128 cached
+words still matched before invalidate**, original MM freed the slab,
+and subsequent old-key BCACHE fetches correctly MISSED. The separate
+process rollback preserved original DISK owner `01650` octal, all 29
+bitmap words, original MM and BCACHE ownership. Four real swap READs,
+896 matched Type-236 PI2, three successful resident publishes per
+boot. Both normal HALTs `022004` octal; boot 2 restored MEMFS XIP and
+LOGSTORE, valid v2 physical header DR3 `017777`, 282 other nonzero
+backing sectors. Forty-eight false physical/rollback/cache witnesses
+rejected, v1588 physical oracle rechecked. **P1-C OPEN** for cache
+retention when reclaim is unnecessary, mixed providers/multi-owner
+faults and repeated-load timing. Separate obsolete standalone v1490
+BCACHE/DTC test cannot link its current DTFS write-intent gate; no
+fake gate or production workaround was added. All installed code,
+RAM and ABI unchanged; VERSION 0.5, low end `024364` octal, strict
+32K/optimization HOLD.
+`design/kcore-p1c-physical-d6fs-bcache-reclaim-v1589.md`.
+
 ## 2026-11-15 v1588: recoverable POST-DMA checked-release rollback PASS
 
 Two full 128K KCC PDP-6 cold boots on genuine DR0..DR3 Type-236

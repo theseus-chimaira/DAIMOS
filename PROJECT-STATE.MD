@@ -1,3 +1,38 @@
+## 2026-11-15 v1589: populated D6FS BCACHE reclaimed during PI6 swap PASS
+
+Two complete 128K KCC PDP-6 boots with four physical DR0..DR3
+Type-236 root VOLUME members, original BLOCKSET INTERLEAVE, mapped
+BACKSTORE, MEMFS/XIP and LOGSTORE. An opt-in XIP guest uses ordinary
+VFS OPEN and READ to populate an original D6FS private clean BCACHE
+slab. The original v1585 PI6 scheduler wakes a genuinely sleeping
+disk-backed child during snapshot I/O, while v1588 checks independent
+post-DMA MM/owner rollback. At the original `bcache_reclaim` boundary,
+the source-linked test verifies the exact private slab `0307577`,
+D6FS key `100100001010`, 128 complete words (28 nonzero), zero data
+differences and one independently started slot-0 swap-in. Original
+BCACHE invalidation and MM free succeed once on EACH boot, without
+resurrecting a stale source/tag or returning a false BCACHE hit.
+
+Both normal HALTs `022004` octal, four real mapped swap READs/896
+matching genuine Type-236 PI2 and three RESIDENT publications per
+boot. The original checked-release refusal and MM free preserve all
+29 actual backing bitmap words and process-owned `01650` octal.
+Boot 2 restores previous MEMFS/XIP and LOGSTORE, commits physical
+v2 header DR3 `017777`, with 3,648-word pool and 282 other nonzero
+backing sectors. Independent oracle rejects 48 bad physical/PI/
+process/BCACHE/ownership/reclaim witness cases; retained v1588 full
+physical oracle also passes. No production code/RAM/ABI/media changes.
+
+This **passes actual cache reclamation and stale-identity exclusion**,
+not retention of a populated clean entry when MM reclaim is unnecessary.
+P1-C remains OPEN for that no-reclaim provider rollback, concurrent
+multi-owner transitions, mixed DEVICE/VOLUME faults and the isolated
+v1585 load/timing observation. An unrelated native v1490 BCACHE/DTC
+fixture has a stale linker dependency on the modern DTFS write gate;
+no dummy gate was substituted. P1-D/E remain OPEN; VERSION 0.5,
+production low end `024364` octal and strict 32K/optimization HOLD.
+`design/kcore-p1c-physical-d6fs-bcache-reclaim-v1589.md`.
+
 ## 2026-11-15 v1588: recoverable post-DMA BACKSTORE release refusal PASS
 
 Two real full 128K KCC PDP-6 cold boots on physical four-member

@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1588, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1589, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,27 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1589 genuine populated D6FS private cache reclamation:**
+  two physical 128K PDP-6 cold boots on four DR0..DR3 Type-236 root
+  VOLUME members. Ordinary D6FS OPEN/READ loads real BCACHE slab
+  `0307577`, source/block `100100001010` (28 nonzero data words).
+  Original `bcache_reclaim` matches the exact slab during independent
+  slot-0 swap-in; 128 complete data words match pre-invalidate,
+  original MM frees slab and later fetch of old key correctly MISSES.
+  The separate original post-DMA checked-release rollback preserves
+  process DISK owner `01650` octal and all 29 backing bitmap words.
+  Four real mapped swap READs/896 matching Type-236 PI2, three
+  RESIDENT publishes per boot. Both normal HALTs `022004`; boot 2
+  restores prior XIP/LOGSTORE; physical v2 header DR3 `017777` and
+  282 other nonzero backing sectors. Forty-eight invalid witness
+  mutations rejected. **P1-C OPEN** for live/populated cache retention
+  without reclaim, mixed providers, multiple simultaneous owners and
+  loaded-simulator timing. The old standalone v1490 cache/DTC native
+  test must link the modern DTFS write gate; no production gate stub.
+  P1-D/E, VERSION 0.5 and strict 32K HOLD unchanged, no production
+  code/RAM/ABI growth.
+  `design/kcore-p1c-physical-d6fs-bcache-reclaim-v1589.md`.
 
 - [x] **P1-C v1588 post-DMA recoverable checked-release refusal:**
   two full 128K KCC PDP-6 cold boots on real DR0..DR3 Type-236
