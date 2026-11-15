@@ -22,7 +22,7 @@ write gate and valid V1 mount; 35 v1561 native cases/13 negatives pass.
 failure and loaded-timing stability. Actual owned-media failure
 remains fatal. No production code/RAM/ABI/format changes; VERSION
 0.5, fixed `024364` low end, strict 32K/optimization HOLD unchanged.
-`design/kcore-p1c-live-d6fs-cache-logstore-fault-v1590.md`.
+`design/kcore-p1c-live-d6fs-cache-logstore-retry-v1590.md`.
 
 ## 2026-11-15 v1589: exact populated D6FS BCACHE reclaim during swap PASS
 

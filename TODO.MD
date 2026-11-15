@@ -30,7 +30,7 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   owner transitions, later-stage DEVICE/provider faults and timing
   repeatability. Actual owned-media errors remain fatal; P1-D/E,
   VERSION 0.5, production RAM/ABI and strict 32K HOLD unchanged.
-  `design/kcore-p1c-live-d6fs-cache-logstore-fault-v1590.md`.
+  `design/kcore-p1c-live-d6fs-cache-logstore-retry-v1590.md`.
 
 - [x] **P1-C v1589 genuine populated D6FS private cache reclamation:**
   two physical 128K PDP-6 cold boots on four DR0..DR3 Type-236 root

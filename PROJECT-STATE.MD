@@ -34,7 +34,7 @@ and loaded-simulator stability including isolated v1585 timeout.
 Owned BACKSTORE media I/O error remains fail-stop, not recoverable.
 P1-D/E OPEN; VERSION 0.5, low end `024364` octal and strict 32K/
 optimization HOLD unchanged. No installed code/RAM/ABI/format changes.
-`design/kcore-p1c-live-d6fs-cache-logstore-fault-v1590.md`.
+`design/kcore-p1c-live-d6fs-cache-logstore-retry-v1590.md`.
 
 ## 2026-11-15 v1589: populated D6FS BCACHE reclaimed during PI6 swap PASS
 
