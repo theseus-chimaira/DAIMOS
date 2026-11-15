@@ -21,6 +21,8 @@
 #include "mm_internal.h"
 #include "mm_pure_rebase_v1381.h"
 #include "fs_mres.h"
+#include "proc_pure_lifecycle_v1604.h"
+#include "vm_pdp6_pure_range_v1604.h"
 
 #if !defined(DAIMOS_SWAPLESS_PURE_RAM_V1381) || \
     DAIMOS_SWAPLESS_PURE_RAM_V1381 != 1
@@ -32,8 +34,6 @@
 #else
 #define PRAM_PTR(x) ((kword_t *)(unsigned long)(x))
 #endif
-
-#define PRAM_SECTOR 0200UL
 
 /* Reuse the already linked assembler's exact two-bit mode operations. */
 extern int proc_storage_expect_v30(unsigned int, unsigned int);
@@ -84,32 +84,16 @@ pram_prepare(unsigned int slot, unsigned int terminal,
     kword_t *skipp)
 {
         struct proc *p;
-        kword_t backing, words, text, skip;
-        kword_t *u;
+        kword_t backing, words, skip;
+        int rc;
 
-        if (!slot || !proc_table || !proc_swap_records ||
-            !proc_storage_runtime_v29.words ||
-            slot >= proc_storage_runtime_v29.slots)
-                return MM_ERR_INVAL;
-        p = &proc_table[slot];
-        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
-            !PROC_UAREA_BASE(p) ||
-            (terminal && PROC_STATE(p) == PROC_FREE) ||
-            (!terminal && PROC_STATE(p) != PROC_SLEEP &&
-             PROC_STATE(p) != PROC_STOP))
-                return MM_ERR_INVAL;
-        u = PRAM_PTR(PROC_UAREA_BASE(p));
-        if (!terminal && (u[PROC_FDCTL_OFFSET] &
-            (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT)))
-                return MM_ERR_BUSY;
-        backing = proc_swap_records[slot].state;
-        words = VM_SPACE_WORDS(p);
-        text = (backing >> PROC_SWAP_TEXT_SHIFT) & PROC_SWAP_TEXT_MASK;
-        if (!text || !words || text > MM_HALF_MASK - EXEC_USER_ORIGIN)
-                return MM_ERR_INVAL;
-        skip = (text + EXEC_USER_ORIGIN) & ~(PRAM_SECTOR - 1UL);
-        if (!skip || skip >= words)
-                return MM_ERR_INVAL;
+        rc = pure_life_prepare_v1604(slot, terminal, &p, &backing,
+            &words);
+        if (rc != MM_OK)
+                return rc;
+        rc = pdp6_pure_skip_v1604(backing, words, &skip);
+        if (rc != MM_OK)
+                return rc;
         *pp = p;
         *backingp = backing;
         *wordsp = words;
