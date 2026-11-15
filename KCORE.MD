@@ -1,3 +1,24 @@
+## 2026-11-15 v1608: P1-E source admission staged
+
+The first P1-E implementation increment adds a true swapless
+storage and live executable-mount identity preflight to existing
+source-linked v1381 DROP and bounded v1391 FULL restore.
+It refuses enabled/owned disk backing, absent/mismatched roots,
+invalid providers and high-slot identity errors before MM
+pin/rebase/allocation; terminal discard can still retire a
+PACKED owner when the executable source is missing.
+
+Native PDP-6 v1381/v1384/v1385/v1395/v1604 PASS; v1608
+admission-bypass mutation is rejected by the original guest.
+Native high-slot v1382 backing and shared FULL v1390 PASS
+after correcting their outdated testkit fixtures.
+The actual source guard is machine-neutral; PDP-6 APR
+geometry remains VM-backend-specific. No production P1-E
+transaction is linked or scheduler-enabled yet. Actual
+swapless physical boot and immutable-file hold, E2-E5,
+optional compression and final feature freeze remain OPEN.
+See `design/kcore-p1e-source-admission-v1608.md`.
+
 ## 2026-11-15 v1607: current KCORE feature-completion inventory
 
 The current authoritative detailed checklist is

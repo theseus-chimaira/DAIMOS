@@ -1,4 +1,21 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1607, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1608, 2026-11-15)
+
+- [x] **P1-E1 source admission v1608, staged implementation:**
+  RAW DROP and bounded FULL RESTORE now reject any nonzero/
+  still-owned BACKSTORE, absent executable mount slab,
+  invalid provider, wrong published public mount ID and
+  mismatched fifth mount-slot bit before any MM mutation.
+  Terminal PACKED teardown still releases its MM owner after
+  source loss. KCC native DROP/prefix/FULL/rollback and
+  negative admission mutant all PASS in daimos-testkit.
+  `design/kcore-p1e-source-admission-v1608.md`.
+- [ ] **P1-E1 production gate still OPEN:** no real swapless
+  boot, VFS executable-content/lifetime concurrency, physical
+  source loss/unmount or privileged XIP interaction is yet
+  accepted. The v1608 checks are source-linked staging only.
+- [ ] **P1-E2 next:** integrate the complete RAW drop/restore
+  lifecycle with the real PDP-6 slot-0 scheduler and PI6
+  publication without speculative extra persistent state.
 
 **Detailed, reconciled KCORE execution checklist:**
 `design/kcore-remaining-work-v1607.md`. This is the sole

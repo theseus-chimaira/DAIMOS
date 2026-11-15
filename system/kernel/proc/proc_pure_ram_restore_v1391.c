@@ -24,6 +24,7 @@
 #include "mm_pure_rebase_v1381.h"
 #include "fs_mres.h"
 #include "proc_pure_lifecycle_v1604.h"
+#include "proc_pure_admit_v1608.h"
 #include "vm_pdp6_pure_range_v1604.h"
 
 #if !defined(DAIMOS_SWAPLESS_PURE_RAM_RESTORE_V1391) || \
@@ -93,6 +94,11 @@ pram_prepare(unsigned int slot, unsigned int terminal,
             &words);
         if (rc != MM_OK)
                 return rc;
+        if (!terminal) {
+                rc = pure_admit_source_v1608(p, backing);
+                if (rc != MM_OK)
+                        return rc;
+        }
         rc = pdp6_pure_skip_v1604(backing, words, &skip);
         if (rc != MM_OK)
                 return rc;

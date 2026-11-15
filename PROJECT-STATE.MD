@@ -1,3 +1,36 @@
+## 2026-11-15 v1608: P1-E1 source admission implemented in staging
+
+P1-E RAW DROP v1381 and bounded FULL RESTORE v1391 now use
+`proc_pure_admit_v1608.h` after the v1604 quiescent-owner check.
+Both reject any enabled or owned BACKSTORE, an absent/mismatched
+published executable mount root, unsupported provider or invalid
+fifth mount-ID bit before physical MM operations. The common
+source check does not interpret the PDP-6 APR mapping.
+Terminal RAW PACKED discard still tolerates a vanished source.
+
+The original v1381, v1384, v1385, v1395/v1397 and v1604
+source-linked PDP-6 tests PASS with updated authenticated
+mount fixtures; v1608 adds actual refused DROP/RESTORE
+cases and a deliberately unsafe bypass mutation rejected
+by the native executable. DAIMOS-testkit:
+`tests/validation/pure-ram-admission-v1608/run-v1608.sh`.
+Additional native v1382 high-slot backing guards and v1390
+shared FULL decoder PASS with corrected obsolete test fixtures
+only (published mount 18, original device-state root and
+test-only old-decoder ABI alias). No kernel decoder workaround.
+Full evidence and still-open scheduler/VFS/guest requirements:
+`design/kcore-p1e-source-admission-v1608.md`.
+
+This is NOT production KCORE P1-E support: no scheduler path
+calls these transactions and the v1608 helper has no linked
+runtime footprint. E1 executable source lifetime under a
+physical no-swap boot remains unproved. E2-E5, compression
+decision and final KCORE freeze remain OPEN. PDP-6 only;
+strict 32K/optimization HOLD, VERSION 0.5.
+Full KCC PDP-6 ROOT=tape KCORE DXR and map are byte-identical
+to v1606 (DXR SHA-256
+`830559842b15985c986b9145437d193cffacb7b8b654a7fb14f437788ce646ae`).
+
 ## 2026-11-15 v1607: authoritative KCORE remaining-work audit
 
 Full source/document inventory reconciles the current v1606
