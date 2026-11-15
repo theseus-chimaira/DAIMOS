@@ -1,3 +1,50 @@
+## 2026-11-15 v1603: P1-C combined physical storage/swap feature ACCEPTED
+
+**P1-C CLOSED** on current original PDP-6 KCORE, without any
+permanent KCORE/MM/BCACHE/controller/ABI/media changes. New final
+composite full 128K KCC PDP-6 DR0..DR3 mapped-root VOLUME two-boot
+guest executes a real physical LOGSTORE torn uncommitted WRITE and
+same-slot committed retry while a real D6FS clean 128-word BCACHE
+entry remains populated and TWO independently SLEEP/DISK-backed
+process slots **6/7** each receive one genuine original PI6 wakeup.
+Each boot: five physical mapped swap READ attempts, **1120 real
+Type-236 PI2**, one checked post-DMA original MM/bitmap/BCACHE/
+process owner rollback, exact 128-word cache difference **0/0**
+after physical torn/retried LOGSTORE, original HIT/HIT, persistent
+MEMFS snapshot DR3:`017777`, genuine subsequent cold-boot restore.
+MM slab `0377577` octal, 28 nonzero cached words, actual mapped
+BACKSTORE pool 3648 with 283 other occupied sectors, original
+process backing 936 blocks unchanged. Full source-linked/raw-media
+oracle PASS and **44** corrupted owner/PI6/cache/LOGSTORE/MM/
+physical swap witnesses rejected. Physical original evidence:
+`$TMPDIR/daimos-p1c-composite-v1603.Z4dCmb`.
+
+**v1602 native** exact original D6FS clean-only WRITE-through and
+original BCACHE/full FS_BACKING/root error classifier PASS for
+DSK270 and DRM236, failed/successful authoritative WRITE (4
+cases), every word of unaffected 128-word private cache, five
+executed unsafe source mutations rejected. There is **no dirty
+cache/writeback queue** to flush. Current-source v1592 repeated
+physical 2-boot dual PI6/rollback run under separate concurrent
+host load PASS; v1590 repeated physical 2-boot populated BCACHE/
+LOGSTORE torn+retry run PASS. Original native v1544 24-case/six-
+mutation root/nonroot adapter, v1490 BCACHE/DTFS authenticated
+write gate, v1538 genuine root fatal HALT PC/nonroot return PASS.
+The historic v1518 DTFS native fixture has a pre-v1561 source
+mutation anchor and does not pass current fixture generation; it
+is NOT reported as a successful current regression.
+
+Existing **v1599 mapped VOLUME** and **v1600 direct DEVICE**
+original physical BACKSTORE error acceptance remain fatal reason-2
+HALT `004011` after ONE real selected READ (slot 6), two authentic
+PI6-woken owners and retained allocation records. No post-fatal
+service or overlapping DMA is claimed. Independent v1596 physical
+Type-551 DTC6 loss with actual healthy writable MEMFS also PASS.
+P1-D closed by v1601. **P0-B physical Type-551 reel-retention**
+policy remains separately OPEN; P1-E KA10 architecture and strict
+32K/optimization HOLD. VERSION 0.5; KCORE low end `024364` octal.
+`design/kcore-p1c-final-physical-acceptance-v1603.md`.
+
 ## 2026-11-15 v1601: P1-D final physical controller/FSINFO matrix ACCEPTED
 
 **P1-D feature complete.** Full original 128K KCC PDP-6 root on four

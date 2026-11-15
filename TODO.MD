@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1601, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1603, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,36 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C FINAL v1603 cross-provider/swap/storage matrix CLOSED:**
+  real 128K PDP-6 DRM236 four-member mapped root VOLUME, two
+  complete independent KCC boots, persistent MEMFS snapshot and
+  real LOGSTORE uncommitted physical torn WRITE + selected completion
+  refusal + same-slot committed retry. Each guest has TWO original
+  PI6-woken DISK owner slots **6/7** (one wake each), five actual
+  swap READs/**1120** original Type-236 PI2, one original checked
+  post-DMA MM/bitmap/BCACHE/process owner rollback. Populated D6FS
+  128-word clean cache unchanged (0/0 differences) and HIT/HIT after
+  each physical LOGSTORE write; real pool 3648 blocks, 283 occupied
+  other sectors, persisted restore. **44** deliberately corrupted
+  source-linked owner/timer/cache/LOGSTORE/PI2/media cases rejected.
+  Fresh v1592 dual PI6 physical two-boot run under concurrent host
+  build/load and v1590 physical two-boot live D6FS cache/LOGSTORE
+  retry run PASS. Native v1602 original D6FS WRITE-through,
+  original BCACHE and physical DSK/DRM adapter 4 cases and 5
+  corrupt executable source mutants PASS. BCACHE is clean-only:
+  no dirty-list or writeback daemon. v1544 native root/nonroot
+  DSK/DRM 24 cases/six mutants and v1490/v1538 root/cache source
+  tests PASS. Existing v1599 mapped VOLUME and v1600 direct DEVICE
+  critical BACKSTORE read error PI2 each demand original fatal
+  reason-2 HALT `004011`; no postfatal service or concurrent DMA
+  claimed. Independent physical v1596 DTFS outage with writable
+  healthy MEMFS PASS. Historical v1518 DTFS test is stale versus
+  later original v1561 security gate, not a current PASS.
+  **P1-C CLOSED**, P1-D CLOSED v1601; separate **P0-B Type-551
+  physical media-retention** still OPEN, **P1-E** KA10 and strict
+  32K/optimization HOLD. No production code, RAM, ABI or media
+  change. `design/kcore-p1c-final-physical-acceptance-v1603.md`.
 
 - [x] **P1-D FINAL v1601 dynamic FSINFO/controller/root matrix CLOSED:**
   original physical 128K PDP-6 DRM236 four-member D6FSR2 root

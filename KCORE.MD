@@ -1,3 +1,37 @@
+## 2026-11-15 v1603: P1-C physical combined feature matrix CLOSED
+
+Original 128K PDP-6 four-member Type-236 D6FS-root VOLUME and
+physical LOGSTORE/MEMFS: two complete KCC cold boots, each with
+original PI6-awakened independently disk-backed slots **6/7**
+(one wake each), **five** real swap READ attempts/**1120** original
+DR_DONE PI2, one original checked MM/bitmap/BCACHE/DISK owner
+rollback, and a genuinely physical LOGSTORE torn uncommitted WRITE
+and same-slot committed retry. Original 128-word populated D6FS
+clean private cache stays exact (0/0 word differences, HIT/HIT),
+persistent snapshot written/restored, 44 corrupt source-linked
+physical witness cases rejected. Fresh v1592 two-boot loaded
+PI6/rollback and v1590 two-boot physical cache/LOGSTORE PASS.
+
+Native v1602 full original D6FS write-through/BCACHE/direct DSK/DRM
+and owner-error routing passes four failed/successful controller
+completion cases and five corrupt source mutants with exact
+128-word independent private cache preservation. BCACHE is
+clean-only; there is no dirty writeback/flush path. Native v1544
+DSK/DRM root/secondary 24-case/six-mutant, v1490 authenticated
+DTFS/BCACHE and v1538 root-fatal/nonroot-return PASS. Historical
+v1518 DTFS fixture needs rebaselining to v1561 before it can be
+run, and was **not** counted as passing. Physical v1596 high-DTFS
+provider loss with independent writable MEMFS, fatal physical
+v1599 mapped VOLUME and v1600 direct DEVICE BACKSTORE owner/PI2
+reason-2 HALT `004011` complete the owner matrix. NO postfatal
+recovery or two simultaneous DMA READs claimed.
+
+**P1-C CLOSED**; P1-D already CLOSED by v1601. Distinct P0-B
+physical Type-551 reel-retention remains OPEN. P1-E KA10 review
+and strict 32K size optimization HOLD. VERSION 0.5, KCORE low end
+`024364` octal, no permanent KCORE/MM/ABI/media changes.
+`design/kcore-p1c-final-physical-acceptance-v1603.md`.
+
 ## 2026-11-15 v1601: P1-D final root/controller FSINFO matrix ACCEPTED
 
 Full 128K PDP-6 from genuine DRM236 four-member D6FSR2 root with
