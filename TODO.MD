@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1591, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1592, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,28 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1592 genuine two-owner PI6/snapshot intersection:**
+  two full 128K KCC PDP-6 cold boots with actual four-member
+  DR0..DR3 Type-236 mapped VOLUME, persistent MEMFS/XIP and
+  LOGSTORE. Test-only observer retimes TWO distinct original
+  disk-backed timer-tagged SLEEP owners (slots 6/7) to the same
+  real PI6 tick during snapshot; original timer service wakes
+  each once. Original independent slot-0 runs five physical
+  swap READs/1120 matching Type-236 PI2 and four RESIDENT
+  publications EACH boot. Slot 6 encounters one controlled
+  post-DMA checked-release refusal; original MM cleanup,
+  DISK record/bitmap/BCACHE preservation and TERM pass. Both
+  normal HALTs, second boot restores prior XIP/LOGSTORE,
+  physical v2 header DR3 `017777` and 277 other nonzero
+  backing sectors. Sixteen new owner/PI6/failure mutants
+  plus 13 original v1584 physical mutants rejected.
+  **P1-C still OPEN** for exact per-slot RESIDENT publication
+  of independently awakened slot 7 (only aggregate four
+  successes were observed), true DEVICE/VOLUME provider
+  fault timing and repeated-loaded-simulator stability.
+  No production source/RAM/ABI/media change.
+  `design/kcore-p1c-two-owner-physical-v1592.md`.
 
 - [x] **P1-D v1591 alternate real TSFS root inventory:** the full
   256K KCC/PDP-6 guest boots from a genuine two-member Type-551
@@ -715,18 +737,19 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   changed reel, not a voluntary operator agreement or software
   epoch. See `design/kcore-dtfs-media-retention-v1571.md`.
   Zero production kernel/MRES/driver/RAM/ABI change; 32K HOLD.
-- [ ] **P1-C, combined storage faults:** one actual
-  full guest with concurrent process swap/restoration
-  plus MEMFS persistent snapshot commit, and independent
-  LOGSTORE work. Verify no overlapping BACKSTORE bitmap
-  sectors, MM descriptors, pinned owners or stale BCACHE.
-  Add in-flight DSK270/DRM236/DTC DEVICE vs mapped
-  VOLUME provider loss/return, shared Type-136 routing,
-  dirty/write-through failure and owner/PI retry
-  rollback. Use prior v1484/1485/1490/1511-v1514
-  gates, not duplicate storage layers. v1536 only
-  establishes reservation and native allocation
-  separately, NOT physical concurrency.
+- [ ] **P1-C, remaining combined storage faults:** v1592 now
+  physically confirms TWO independently timed PI6 wakes and
+  original isolated MM/owner rollback while four other
+  swap-ins publish and MEMFS/LOGSTORE persists across boots.
+  Next identify the *specific successful counterpart slot* at
+  original RESIDENT publication, not just aggregate successes.
+  Add genuine in-flight DSK270/DRM236/DTC DEVICE vs mapped
+  VOLUME provider failure and return, shared Type-136 routing,
+  dirty/write-through failure and process/PI owner rollback.
+  Continue checked physical BACKSTORE bitmap, MM pins, cache
+  identity and provider isolation under multiple owner faults,
+  and repeat the v1585/v1592 timing workload under load. Reuse
+  prior v1484/1485/1490/1511-v1514 acceptance, not new layers.
 - [ ] **P1-D, remaining alternate inventories:** validate physical
   D6FS DSK/DRM selected-root configurations and actual available
   provider/service failures, including empty/unpublished slot and

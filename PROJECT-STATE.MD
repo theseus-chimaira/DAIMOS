@@ -1,3 +1,31 @@
+## 2026-11-15 v1592: independent physical PI6 two-owner snapshot PASS
+
+Full 128K PDP-6 two-boot four-member Type-236 D6FS root VOLUME
+with mapped BACKSTORE, real LOGSTORE and persistent MEMFS/XIP.
+Two authentic SLEEP/DISK owners (slots 6, 7) have original timer
+deadlines set to the same next PI6 tick during MEMFS snapshot.
+Each is independently woken once by unchanged timer service;
+the original slot-0 service performs five genuine physical swap
+READs and 1120 matching original controller PI2 EACH boot.
+One selected slot 6 post-DMA checked-release refusal executes
+original MM rollback with exact DISK/bitmap/BCACHE ownership,
+transition unlock and TERM. Four other swap-ins publish
+RESIDENT per boot. Both privileged HALTs normal; second reboot
+restores first boot's MEMFS/XIP/LOGSTORE, physical snapshot
+DR3 `017777` with 3,648-word pool and 277 other nonzero
+BACKSTORE sectors. Original physical oracle and 29 unsafe
+negative witness mutations reject false owner/PI/bitmap/MM
+claims. **P1-C remains OPEN**: resident-publish identity of
+nonfailed timer-woken slot 7 was not individually observed;
+later DEVICE/VOLUME/DTFS faults and sustained timing also
+remain to test. No production code/RAM/ABI/media growth.
+
+P1-D v1591 two-member TSFS physical capacity-8 accepted; other
+root hardware still open. P1-E implementation is on HOLD for
+later KA10-aware architectural design. VERSION 0.5, low end
+`024364` octal, strict 32K/optimization HOLD.
+`design/kcore-p1c-two-owner-physical-v1592.md`.
+
 ## 2026-11-15 v1591: physical FSINFO two-member TSFS inventory PASS
 
 Full genuine 256K KCC PDP-6 TSFS root on DTC0/DTC1, DTC2 empty,

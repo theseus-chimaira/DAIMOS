@@ -1,3 +1,28 @@
+## 2026-11-15 v1592: two real PI6 owner wakeups during physical snapshot PASS
+
+Two complete real 128K KCC PDP-6 cold boots on four DR0..DR3
+Type-236 root VOLUME, mapped BACKSTORE, MEMFS/XIP and LOGSTORE.
+Disposable observer retimes TWO distinct original SLEEP/DISK owners
+to the same original PI6 tick at snapshot entry: slots 6/7 each
+receive one real scheduler timer-service wake. Five independently
+scheduled slot-0 physical swap READs/1120 matching Type-236 DR_DONE
+PI2 and four RESIDENT publications occur EACH boot. Slot 6's
+genuine post-DMA checked-release request is refused once by the
+test hook: original MM rollback frees new extent, keeps original
+DISK record and authoritative bitmap/BCACHE owners, clears
+TRANSITION and delivers TERM. Both normal HALTs; boot 2 recovers
+first-boot XIP/LOGSTORE, commits physical snapshot DR3 `017777`,
+3,648-word MEMFS pool and 277 other nonzero backing sectors.
+Strict linked/physical verifier rejects 29 false witnesses (16
+new two-owner/PI6/rollback plus 13 v1584 physical). No production
+source/ABI/RAM/media changes. **P1-C OPEN** for proving which exact
+nonfailed timer-woken slot published RESIDENT (current publication
+count is aggregate), mixed DEVICE/VOLUME later faults and repeat
+timing. P1-D alternate physical inventory v1591 accepted; P1-E
+on hold for KA10-aware architecture decision. VERSION 0.5,
+strict 32K/optimization HOLD.
+`design/kcore-p1c-two-owner-physical-v1592.md`.
+
 ## 2026-11-15 v1591: alternate two-member TSFS FSINFO inventory PASS
 
 Full physical 256K KCC PDP-6 TSFS root contains exactly two
