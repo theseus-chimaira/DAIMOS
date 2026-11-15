@@ -1,3 +1,32 @@
+## 2026-11-15 v1607: authoritative KCORE remaining-work audit
+
+Full source/document inventory reconciles the current v1606
+PDP-6 implementation and the acceptance status of historical
+KCORE TODOs. Detailed actionable, prioritized E1-E5 P1-E RAW
+swapless PURE gates, real-guest and rollback matrices, optional
+compression decision, final feature freeze and explicitly
+deferred non-KCORE work are in
+`design/kcore-remaining-work-v1607.md`.
+
+P0-A CLOSED v1548; P0-D/E/F OOM accepted in their v1298
+release profile and v1348/v1351 physical evidence. P1-C
+CLOSED v1603 and P1-D CLOSED v1601, notwithstanding unchecked
+historical v1585/controller matrix tasks still appearing
+lower in TODO.MD. P0-B DTVOL2 writable durability was accepted
+v1575 **only with a trusted operator preventing reel exchange
+while mounted**; v1571 physical Type-551 silent exchange
+remains a separate UNPROVEN hardware-interlock property.
+Production P1-E remains entirely staged; zero scheduler-linked
+PURE RAM reclamation, and no compression activation. Final
+matched-source feature freeze remains OPEN. The v1518 historical
+DTFS source-mutation fixture is stale versus v1561 and is not
+counted as a PASS. No new KA10/KI10/32K work is scheduled.
+
+This is a documentation-only increment, no source/MM/ABI/CPU
+or runtime footprint change. DAIMOS VERSION 0.5, baseline
+fixed KCORE low end `024364` octal, strict 32K/optimization
+HOLD. Next production work: implement PDP-6 P1-E E1-E5.
+
 ## 2026-11-15 v1606: PDP-6-first CPU portability contract
 
 After the v1605 PDP-6-only source map, the scope is now explicitly

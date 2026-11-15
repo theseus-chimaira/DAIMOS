@@ -1,4 +1,59 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1606, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1607, 2026-11-15)
+
+**Detailed, reconciled KCORE execution checklist:**
+`design/kcore-remaining-work-v1607.md`. This is the sole
+current source of open/closed KCORE gates; historical unchecked
+tasks below preserve older evidence and are not additive.
+
+- [x] **P0-A:** critical selected ROOT/BACKSTORE fail-stop
+  accepted v1548 and later physical matrices.
+- [x] **P0-B for trusted operators:** production DTVOL2 RW,
+  physical WRITE_INTENT/CLEAN, partial-write refusal, explicit
+  root-only discard and DIRTY cold-boot rejection accepted v1575.
+  Operator must prevent DECtape reel exchange during RW mount.
+- [ ] **P0-B strict physical retention (separate hardware policy):**
+  v1571 proves undetected external reel exchange; there is no
+  Type-551 mechanical interlock. Do not equate accepted
+  trusted-operator operation with unrestricted RW media safety;
+  hardware enforcement would require a separate requirement
+  and adversarial physical proof, not a software-only flag.
+- [x] **P0-D/E/F:** requester-only OOM release profile accepted
+  v1298 F12/F13; full F07 no-partner/owner evidence v1348/v1351.
+- [x] **P1-C:** combined physical storage/swap/clean BCACHE/
+  LOGSTORE and independent PI6 owner failure matrix CLOSED
+  v1603. Older unchecked v1585 timing/combined-fault entries
+  are superseded, not remaining KCORE feature work.
+- [x] **P1-D:** root/controller service inventory and dynamic
+  FSINFO CLOSED v1601. Older unchecked alternate-matrix tasks
+  are superseded.
+- [ ] **P1-E RAW swapless PURE (MAIN CODING TASK):** production
+  no-backing gate and immutable executable hold, stop/quiesce
+  ownership, v1381 zero-copy MM rebase, fast v1384 and full
+  v1391 restoration, PI6/slot-0 transitions, EXEC/EXIT/WAIT/
+  BRK, rollback and native/physical guest matrix. Keep PDP-6
+  geometry in its backend, preserve raw disk/drum swap and XIP.
+  See `design/kcore-remaining-work-v1607.md` E1-E5.
+- [ ] **Optional mutable RAM compression decision:** only after
+  accepted RAW P1-E, measure whole-system peak and net RAM.
+  Use v1451 codec only if a real benefit survives full
+  source/target ownership and restoration costs; NO COMPRESSION
+  is an acceptable final result.
+- [ ] **Final KCORE feature freeze:** fresh matched-source
+  compile/link + native/physical owner, PI6, failure/return,
+  VM/MM/OOM, DTFS, VFS, swap, XIP, persistence, FSINFO and
+  P1-E tests; measure complete KCORE/MRES/per-process and
+  transient peak RAM. Do not count the stale v1518 testkit
+  fixture as passing.
+- [ ] **After feature freeze, only by separate authorization:**
+  32K placement and permanent-memory/speed optimization.
+  CPU ports, paging, dynamic MRES unload/reload and unrelated
+  filesystem/userland plans are NOT current KCORE tasks.
+
+The current `VERSION` remains 0.5, and the pre-P1-E fixed
+`__kcore_low_end` is `024364` octal. New documentation does
+not alter the production machine image. The v1606 portability
+contract and source selector stay in place without new runtime
+calls or speculative page/segment state.
 
 - [x] **v1606 PDP-6-first portability contract:** preserve the
   existing build-time CPU source map, but do not schedule or
@@ -637,6 +692,14 @@ shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
   See `design/kcore-p0a-failstop-acceptance-v1548.md`.
 
 ### Outstanding, strictly KCORE features
+
+**HISTORICAL v1549-v1600 CHECKPOINT ONLY.** The current
+authoritative v1607 inventory at the top of this file supersedes
+these checkboxes: P1-C CLOSED v1603, P1-D CLOSED v1601, and
+P0-B CLOSED under v1575 trusted-operator DTVOL2 but its
+hardware-enforced reel-retention guarantee remains unproved.
+Do not reopen accepted features solely because an older entry
+below remains unchecked.
 
 - [ ] **P0-B, media durability policy:** after a
   genuinely partial WRITE_UNCERTAIN non-root DTFS

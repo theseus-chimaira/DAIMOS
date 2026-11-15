@@ -1,3 +1,33 @@
+## 2026-11-15 v1607: current KCORE feature-completion inventory
+
+The current authoritative detailed checklist is
+`design/kcore-remaining-work-v1607.md`, reflected in the
+top of `TODO.MD` and `PROJECT-STATE.MD`. It supersedes
+unchecked historical tasks in dated records rather than adding
+them all together.
+
+Closed: P0-A critical ROOT/BACKSTORE; P0-D/E/F requester OOM
+for the specified 256K release profile; P1-C physical mixed
+storage and cache v1603; P1-D dynamic FSINFO v1601.
+P0-B writable DTVOL2 is **accepted under v1575's trusted-
+operator contract**, but v1571's undetectable physical
+Type-551 reel exchange is NOT a solved hardware interlock.
+
+The remaining PDP-6 KCORE implementation task is production
+P1-E RAW swapless PURE: immutable source ownership, real
+scheduler/PI6 quiesce, zero-copy suffix rebase, complete fast/
+full image restore and failure-atomic EXEC/EXIT/BRK/WAIT. The
+v1604 stage passes native component tests but is not linked
+into production. Native and physical KCORE guests and peak-RAM
+measurements are required. Mutable RAM compression is a
+conditional later yes/no choice; the v1451 codec is test-only.
+After P1-E, perform the full current-source feature freeze.
+Strict 32K/optimization, KA10/KI10, paging and dynamic
+MRES unload/reload are not current feature implementation.
+
+Documentation-only v1607; DAIMOS VERSION 0.5. Pre-P1-E
+fixed `__kcore_low_end` `024364` octal, no runtime change.
+
 ## 2026-11-15 v1605: multi-CPU portability source-map, zero KCORE growth
 
 Preparatory KCORE-only design for eventual KA10 and KI10 ports,
