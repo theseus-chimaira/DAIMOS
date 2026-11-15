@@ -1,3 +1,21 @@
+## 2026-11-15 v1584: full physical healthy mapped snapshot/reboot PASS
+
+Two real 128K PDP-6 cold boots on the four-member Type-236 root
+VOLUME and original mapped BACKSTORE persisted and restored MEMFS
+XIP/data and LOGSTORE, with actual swapped process owners. Both
+native privileged HALTs reached `021777` octal after `051` octal
+real snapshot DR_DONE PI2 events; a valid v2 header is on DR3 block
+`017777` for the 3,648-word pool and 271 other nonzero backing
+sectors. Ten corrupt evidence cases rejected. Actual process swap
+ownership `01310` octal remained at both HALTs. **Independently
+scheduled slot-0 swap-in, completed restoration and matching swap
+PI2 were all ZERO during the snapshot on both boots.** An overlap
+claim is correctly rejected. P1-C remains OPEN for independent
+swap-in overlap and nonfatal MM/BCACHE/owner rollback; P1-D/E OPEN.
+No production code/RAM/ABI change, low end `024364` octal,
+VERSION 0.5 and strict 32K/optimization HOLD.
+`design/kcore-p1c-mapped-snapshot-success-v1584.md`.
+
 ## 2026-11-15 v1583: full physical four-member mapped MEMFS snapshot PI2 PASS
 
 The production four-way DRM236 D6FS root and actual BLOCKSET mapped

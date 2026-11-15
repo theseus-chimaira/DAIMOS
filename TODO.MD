@@ -1,4 +1,4 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1583, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1584, 2026-11-15)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -6,6 +6,23 @@ not as an additional set of currently open tasks.
 KCORE **feature completion only**. No standalone MRES
 development, generic userland work, optimization or 32K
 shrink. VERSION 0.5; strict 32K/optimization gate HOLD.
+
+- [x] **P1-C v1584 healthy four-member snapshot/reboot:** two real
+  full 128K PDP-6 cold boots on DR0..DR3 root VOLUME, original
+  mapped BACKSTORE, positive swap ownership and MEMFS/XIP/LOGSTORE.
+  Both native HALTs at `021777`, each with `051` octal actual DR_DONE
+  events; original process-owned blocks `01310` octal. Physical v2
+  header valid at DR3 `017777`, real MEMFS pool 3,648 words, 271
+  nonzero additional backing sectors and four intact member layouts.
+  Boot 2 restored MEMFS data/XIP and the prior LOGSTORE record.
+  Ten negative evidence cases rejected. Original independently
+  scheduled swap-in starts, successful publication and physical
+  matching swap PI2 were **all zero** in both boots, and the strict
+  overlap oracle correctly rejected the same evidence. **P1-C
+  OPEN** for independently scheduled swap-in DURING snapshot and
+  exact recoverable MM/BCACHE/owner rollback. P1-D/E and 32K
+  optimization HOLD unchanged. No production KCORE/RAM/ABI change.
+  `design/kcore-p1c-mapped-snapshot-success-v1584.md`.
 
 - [x] **P1-C v1583 real mapped VOLUME snapshot PI2 failure:**
   full 128K KCC/PDP-6 with real four-member DR0..DR3 D6FS root,

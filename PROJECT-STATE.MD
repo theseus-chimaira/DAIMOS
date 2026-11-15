@@ -1,3 +1,25 @@
+## 2026-11-15 v1584: healthy mapped VOLUME snapshot and cold boot PASS
+
+Two independent 128K KCC PDP-6 CPU/RAM cold boots on unchanged
+four-member Type-236 D6FS root VOLUME, mapped BACKSTORE, real
+MEMFS XIP/data and LOGSTORE. Four 24K-word sleeping private
+children created original positive swap ownership at snapshot.
+Both native HALTs finished at `021777` octal with `01310` octal
+original process swap blocks still owned, `051` octal genuine
+Type-236 snapshot DR_DONE events and no observed storage errors.
+The second boot recovered earlier MEMFS XIP/data and LOGSTORE,
+and committed a valid v2 header at DR3 `017777`. The actual pool
+is 3,648 words; 271 other tail sectors are nonzero, all four
+D6FSR2 member descriptors unchanged. Ten unsafe evidence cases
+rejected. **No independently scheduled process swap-in occurred
+during snapshot in either boot**: started, committed and matching
+physical swap PI2 witnesses all zero. The optional strict overlap
+mode correctly rejects the two-boot data. P1-C remains OPEN for
+genuine overlap and recoverable owner/MM/BCACHE rollback. P1-D/E
+remain OPEN; no production source, RAM, ABI or disk-format changes,
+fixed KCORE low end `024364`, VERSION 0.5, 32K/optimization HOLD.
+Evidence: `design/kcore-p1c-mapped-snapshot-success-v1584.md`.
+
 ## 2026-11-15 v1583: full physical mapped VOLUME MEMFS snapshot PI2 PASS
 
 The genuine 128K KCC PDP-6 ran the full four-member DR0..DR3
