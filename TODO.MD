@@ -1,4 +1,27 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1617, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1618, 2026-11-16)
+
+- [x] **v1618 Type-551 search timeout correctness:**
+  45s could expire before a 60s rewind/reversal;
+  extend to 120s (016040 octal ticks at 60 Hz).
+  Both original rearm sites recompile; no linked
+  tape size or fixed KCORE growth. Type-516
+  15-minute control and data watchdogs unchanged.
+- [x] **v1618 physical 48K tape progress:** three
+  same-guest DECtape search samples show clock
+  increments 4 and 5 ticks, RBN mark change
+  0341 -> 0133 -> 0126 octal and correctly
+  rearmed 120s negative search countdown.
+  Reject old compiled timeout and unsafe
+  old-count physical mutation. Historical v1617
+  trace remains tied to its own 45s DXR.
+- [ ] **Next P1-E physical gate:** prove
+  successful tape RBN transfer or bounded
+  I/O failure, PREFIX claim commit/rollback
+  and MM pin release, slot-0 READY_ONCE,
+  PIPE/WAIT/EXIT, immutable backing, peak/net
+  RAM. Do not infer restoration from the
+  initialized countdown. PURE stays OFF.
+  design/kcore-p1e-dtc-timeout-v1618.md.
 
 - [x] **v1617 identify blocked physical instruction:**
   scheduler trampolines and linked DXR prove

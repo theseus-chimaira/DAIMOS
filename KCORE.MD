@@ -24,6 +24,34 @@ Completed SLOT0 restore, WAIT and net memory
 savings remain OPEN; PURE default stays OFF.
 See `design/kcore-p1e-linker-pure-address-v1614.md`.
 
+## 2026-11-16 v1618: DECtape full-rewind search timeout
+
+Increase the optional PURE restore's underlying
+Type-551 DECtape per-search timeout from 45
+to 120 seconds: a physical rewind/reversal can
+take a full minute, so the old value could
+fail a healthy transport prematurely.
+The 016040-octal tick bound includes 60s
+headroom and is rearmed on genuine PI3 block
+marks, never imposed as a minimum wait.
+
+Both native tape MRES search rearm immediates
+change; 000607 image, 000017 BSS and
+000013 relocation sizes (octal) are unchanged.
+Fixed GCC 48K KCORE DXR is byte-identical,
+low end remains 024254 octal. Type-516
+control and tape-data watchdog bounds unchanged.
+
+A full physical 48K PDP-6 no-AUX guest
+shows the new negative timeout and three
+consecutive DECtape search samples with
+both clock and RBN-mark progression. Current
+source/native and old-image/mutant tests
+PASS. No completed immutable-prefix reload,
+slot-0 RUN/WAIT or net RAM benefit is
+claimed. Experimental PURE default OFF.
+See design/kcore-p1e-dtc-timeout-v1618.md.
+
 ## 2026-11-16 v1617: physical prefix restore waits on DECtape
 
 The exact PDP-6 physical scheduler trampolines

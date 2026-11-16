@@ -1,3 +1,40 @@
+## 2026-11-16 v1618: give DECtape full-rewind search 120s
+
+The Type-551 DECtape search's original 45-second
+per-mark/reversal timeout could expire before a
+legitimate full-minute rewind. Increased it to
+120 seconds (016040 octal 60-Hz ticks), with
+one minute of additional headroom. Both the
+initial search command and PI3 RBN-mark rearm
+use the same constant. Matching blocks still
+complete immediately; Type-516 rewind retains
+its 15-minute limit. Data watchdogs unchanged.
+
+GCC 48K TAPE MRES source-built old/new image
+comparison PASS: exactly two timeout immediates
+changed at offsets 000343 and 000405; linked
+image/BSS/relocation sizes unchanged. Fixed
+KCORE DXR byte-identical to v1617 at low end
+024254 octal; no process/MM state added.
+
+New physical 48K PDP-6 no-AUX TSFS guest
+three-sample timer/mark probe PASS. The clock
+advanced 015435 -> 015441 -> 015446 octal,
+last RBN mark changed 0341 -> 0133 -> 0126,
+and search_count was rearmed to signed
+-016040 ticks (777777761740). Historical
+v1617 physical 45s audits remain tied to
+their original linked DXR. The testkit
+also rejects the old compiled timeout and
+an old-count physical mutation.
+
+This proves corrected timer setup and active
+PI6/PI3 progress, not completed RBN transfer,
+slot-0 restoration, RUN/WAIT or positive net
+physical RAM savings. PURE remains default OFF;
+full physical restoration gate remains OPEN.
+See design/kcore-p1e-dtc-timeout-v1618.md.
+
 ## 2026-11-16 v1617: locate real DECtape restoration wait
 
 Real physical scheduler trampolines show PURE MRES
