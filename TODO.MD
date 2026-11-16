@@ -1,3 +1,18 @@
+## 2026-11-16 v1634: P1-E compiler-only size candidates rejected
+
+- [x] Source/assembler/link-accurate original PURE MRES -Os image
+  reproduced byte-for-byte at 1758 words, including `das -F`.
+  Eight GCC 3.2 optimization profiles measured by original link:
+  best alternative 1757 words, far below required 389-word saving.
+  Rejected experimental harness's missing -F (spurious +4 words).
+  No compiler flag change accepted or deployed.
+- [ ] Investigate correctness-preserving PURE MRES helper sharing
+  and other genuine low-core reductions, or a source/owner-safe
+  alternate full-APR geometry. Measure actual code and validate
+  original PDP-6 guests before changing any resident code.
+- [ ] FULL physical relocation, source life, PI6/rollback and
+  matched peak/net RAM remain open. PURE OFF; strict 32K HOLD.
+
 ## 2026-11-16 v1633: 48K physical APR alignment bound
 
 - [x] Original physical MM proof: low-core dynamic end 046605

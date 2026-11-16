@@ -1,3 +1,20 @@
+## 2026-11-16 v1634: baseline-equivalent PURE MRES compiler matrix
+
+An isolated source-identical testkit compile/link experiment
+reproduces the original GCC `-Os` `003336` octal /1758 decimal
+PURE MRES DXR **byte-for-byte**, using correct `das -F -C -O`
+and original KCORE map/fold/exports. An initially missed `-F`
+caused spurious +4 words and was corrected as a TEST HARNESS
+error (no compiler/assembler production bug). `-O1` +39 words,
+`-O2` +48, `-Os -fno-cse-follow-jumps` +13, no-inline/no-builtin/
+omit-frame 0, `-Os -fno-strength-reduce` -1. A 1-word size
+reduction cannot reach the physical fixed-parent admission
+threshold of 389 words from v1633. No candidate was deployed or
+physically tested for execution; standard -Os remains unchanged.
+P1-E source consolidation and legitimate APR geometry work OPEN;
+PURE default OFF, strict 32K optimization HOLD. Report:
+`design/kcore-p1e-mres-compiler-size-v1634.md`.
+
 ## 2026-11-16 v1633: source-matched APR corridor capacity bound
 
 From original 48K physical five-owner PURE-ON/OFF MM table:

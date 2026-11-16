@@ -1,3 +1,16 @@
+## 2026-11-16 v1634: compiler flags cannot repair PURE APR capacity
+
+Testkit-only rebuild of original optional PURE MRES uses unchanged
+GCC 3.2 source, KCORE symbols, `p10fold` and real `das -F` flags:
+the -Os DXR is byte-identical to original and 1758 words long.
+Other compiler flag variants range from 1757 words (not deployed)
+to 1806; none saves the 389 decimal words required for a sixth
+simultaneously runnable child APR under the v1633 fixed parent.
+No production code/flag change; future work is genuinely shared
+source/placement, physical restore and RAM proof, not unsafe RUN
+retry or PAPER-only reduction. Full report:
+`design/kcore-p1e-mres-compiler-size-v1634.md`.
+
 ## 2026-11-16 v1633: real 48K APR corridor threshold identified
 
 Original source-matched v1629/v1632 MM owner tables show PURE-on
