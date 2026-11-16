@@ -1,3 +1,20 @@
+## 2026-11-16 v1625: P1-E next physical MM geometry and acceptance
+
+- [x] Original 48K PDP-6 six-child guest's sixth RUN fails in
+  `exec_load_process` at `vm_space_create`: original breakpoint
+  `proc_run_claimed_bad` PC `017725`, AC1=-2
+  (`EXEC_LOAD_NOMEM`). Five child `a` markers and genuine MM/slot
+  sample; process table not saturated. Exact source/linked map and
+  two hostile mutated physical witnesses PASS/reject in testkit.
+- [ ] Capture why VM creation refused by inspecting original MM
+  live contiguous alignment/free-run and requested image size;
+  differentiate genuine capacity/fragmentation from an allocator
+  correctness defect BEFORE any production change.
+- [ ] With an admissible 48K/64K owner population, complete a
+  positive RAW reclamation, every PIPE/WAIT/EXIT and immutable-
+  backing/rollback test; measure real net and peak installed RAM.
+  No success claimed from v1624/v1625 negative diagnostics.
+
 ## 2026-11-16 v1624: P1-E next physical RUN/BRK gate
 
 - [x] The typed six-child source-backed 48K PURE guest proves the

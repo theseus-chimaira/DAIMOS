@@ -1,3 +1,22 @@
+## 2026-11-16 v1625: P1-E sixth RUN denied by VM creation
+
+Same original v1624 48K PDP-6 no-AUX TSFS/PURE six-child
+physical image, without a production source change: original RUN
+error-stage breakpoints source-linked to actual `kcore.map` stop
+at `proc_run_claimed_bad` `017725`, with AC1 =
+`777777777776` (-2). The genuine `exec_load.s` emits that
+`EXEC_LOAD_NOMEM` only on failed `vm_space_create`. Five children
+were previously admitted; the sixth is refused before stable
+u-area/startup or PROC_SLEEP polling. Current slot 1, high slot
+010, total slots 014, 022 MM extents and one arena from original
+machine memory. Not a process-slot limit. Two hostile falsified
+source-linked breakpoint/error controls rejected by testkit.
+Physical MM geometry and actual allocator refusal reason remain
+unclassified, as do fitting RAW pressure, PIPE/WAIT/EXIT, source
+lifetime, peak/net RAM. No production code/MM/MRES/RAM/ABI change.
+P1-E still OPEN, PURE OFF by default, 32K optimization HOLD.
+`design/kcore-p1e-exec-load-nomem-v1625.md`.
+
 ## 2026-11-16 v1624: P1-E sixth child is failed RUN, not stalled SLEEP
 
 Testkit-only, exact 48K PDP-6 TSFS/no-AUX PURE source-built guest:

@@ -1,3 +1,19 @@
+## 2026-11-16 v1625: exact physical sixth RUN VM creation refusal
+
+Source-linked replay of the unchanged v1624 six-child 48K
+TSFS/no-AUX PDP-6 guest stops at original `proc_run_claimed_bad`
+PC `017725` octal immediately after five child `a` markers.
+AC1 `777777777776` is `EXEC_LOAD_NOMEM` (-2), returned by original
+`exec_load_process` only when `vm_space_create` fails. MM/u-area
+startup and sleep-poll refusal are excluded as the immediate error
+stage. Live `proc_high_slot=010`, `proc_slots=014`, MM extent count
+`022` octal, one arena; not slot-array saturation. Physical source-
+linked testkit audit and two falsified-stage/AC1 controls PASS.
+Exact MM free-space/fragmentation cause, successful pressure BRK,
+full WAIT/EXIT and net RAM remain OPEN. No production changes;
+PURE default OFF, 32K optimization HOLD. Details:
+`design/kcore-p1e-exec-load-nomem-v1625.md`.
+
 ## 2026-11-16 v1624: genuine six-child RUN refusal classified
 
 New testkit-only diagnostic on full 48K PDP-6/TSFS/no-AUX PURE
