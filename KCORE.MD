@@ -1,3 +1,23 @@
+## 2026-11-16 v1637: six real 48K PACKED restores after seventh RUN denial
+
+With the unchanged v1636 low-BCACHE production code, an original
+source-backed 48K PDP-6 TSFS/no-AUX/PURE guest admits six sleeping
+children, attempts a seventh RUN that is honestly refused, keeps
+the parent alive, and completes original PIPE/two mutable-data
+sentinels/EXIT-057 and all six exact PID/WAIT/status checks.
+Console `aaaaaax[B013470/042501]<010000+010000>[A013470/042501]{013470-013470}LwwwwwwZ`, normal HALT.
+Same compiled guest's original physical MM B/A snapshots have
+six unpinned PACKED suffixes, owners 7..2, each 007000 words,
+parent still 130000..140000. Final Z has ZERO PACKED/child
+PROCESS extents, BCACHE is legitimately reclaimed at pressure
+and returns low. Source/owner auditor and forged-owner/false-WAIT
+mutants PASS/reject. This physically closes the high-BCACHE
+sixth-RUN admission regression without sacrificing RAW packing.
+Exact FAST-vs-FULL restore, source-loss/PI6 rollback, 32K/64K
+and whole-system peak/net RAM are still OPEN. No new production
+code in v1637; PURE default OFF and strict 32K HOLD. Details:
+`design/kcore-p1e-bcache-pressure-restoration-v1637.md`.
+
 ## 2026-11-16 v1636: physical 48K sixth APR admission restored
 
 Corrected one general-purpose BCACHE allocation preference:

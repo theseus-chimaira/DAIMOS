@@ -1,3 +1,23 @@
+## 2026-11-16 v1637: low-BCACHE preserves six real RAW PACKED restores
+
+Physical 48K PDP-6 TSFS/no-AUX/GCC/PURE with v1636 low-BCACHE:
+six admitted/sleeping children, expected seventh RUN refusal,
+parent survives no-growth BRK, releases pipe and verifies all
+six child PIPE/read/private-data/EXIT-057 and PID/WAIT/status-
+057 checks. Full console ends `LwwwwwwZ`, normal HALT. Read-only
+same-image SIMH MM B/A snapshots contain SIX unpinned PACKED
+mutable suffixes 007000 words each (owners 7..2), parent APR
+130000..140000. At final parent Z all child PACKED/PROCESS owners
+are gone; the clean BCACHE owner is low when reallocated, and
+legitimately reclaimed under pressure. Source-matched MM auditor
+and two forged owner/WAIT controls PASS/reject. This demonstrates
+that repaired 48K six-child admission still supports genuine RAW
+PACKED -> user execution -> EXIT/WAIT. No additional production
+code change in v1637. Full relocated v1391, source lifetime,
+PI6/rollback, 32K/64K general regressions and matched physical
+peak/net RAM remain OPEN. PURE OFF by default, strict 32K HOLD.
+See `design/kcore-p1e-bcache-pressure-restoration-v1637.md`.
+
 ## 2026-11-16 v1636: actual physical low-BCACHE 48K six-child pass
 
 A single production BCACHE placement change puts its same 0201-

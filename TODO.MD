@@ -1,3 +1,20 @@
+## 2026-11-16 v1637: P1-E six PACKED child restores physically accepted
+
+- [x] Genuine 48K PDP-6 TSFS/no-AUX/PURE low-BCACHE guest admits
+  six children, seventh RUN refuses under real memory pressure,
+  parent survives, all six original PIPE/mutable-data/EXIT-057
+  and PID/WAIT/status-057 checks complete. Original `LwwwwwwZ`
+  and normal HALT.
+- [x] Same physical guest source-matched MM B/A: SIX unpinned
+  PACKED suffixes 007000 words each, owners 7..2, parent at
+  130000..140000. Z: no child PACKED/PROCESS owners, no pin leaks.
+  Two fake source/MM owner and final-WAIT witnesses rejected.
+- [ ] Test actual forced v1391 FULL relocated restore, immutable
+  backing source/unmount failure, concurrent PI6/MM owner/rollback
+  and matched peak/net RAM. Validate general BCACHE placement
+  on 32K/64K additional profiles. Optional PURE default OFF;
+  strict 32K whole-KCORE optimization HOLD.
+
 ## 2026-11-16 v1636: P1-E 48K sixth child APR restored
 
 - [x] Replace BCACHE's private 0201-word MM_ALLOC_HIGH request
