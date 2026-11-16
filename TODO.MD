@@ -1,3 +1,24 @@
+## 2026-11-16 v1629: P1-E actual PACKED lifecycle accepted on 48K
+
+- [x] Original PDP-6 48K PURE child/PIPE/WAIT guest: five children
+  reach SLEEP, sixth RUN refuses at VM capacity, parent survives,
+  keeps no-growth BRK and confirms five original PIPE/mutable-data/
+  EXIT-057, PID/WAIT/status-057 checks. Full console `aaaaax...`
+  ends `LwwwwwZ` then real simulator HALT.
+- [x] Same source-built exact 48K guest physical B/A MM table:
+  five unpinned PACKED owners 6..2, each 007000 words, 022 octal
+  MM extents, occupied/free `057023/016173`. Final Z has 010
+  extents, zero PACKED or surviving child PROCESS owner, occupied/
+  free `011536/063460`. Foreign-owner and false-WAIT mutants
+  rejected. This proves actual PACKED -> restored user execution
+  -> EXIT/WAIT cleanup under a live parent.
+- [ ] Check fast prefix versus relocated full restore and all
+  failure-atomic MM/PI6/immutable-source transitions. Measure
+  source-matched no-PURE/PURE physical net and transient peak RAM;
+  do NOT credit 2560 gross omitted words without the 1758-word
+  resident module and full other costs. PURE default OFF, strict
+  32K optimization HOLD until full feature acceptance.
+
 ## 2026-11-16 v1628: next P1-E physical PACKED lifecycle
 
 - [x] Original v1627 64K full PIPE/WAIT/EXIT guest has exact

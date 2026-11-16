@@ -1,3 +1,27 @@
+## 2026-11-16 v1629: genuine 48K PACKED restore and parent WAIT complete
+
+The source-built original 48K PDP-6 TSFS/no-AUX PURE guest now
+keeps its parent alive after expected sixth RUN refusal. Five
+sleeping children become real PACKED physical owners, and parent
+brk 010000 -> 010000 leaves their physical storage untouched.
+Original full console:
+`aaaaax[B013060/042502]<010000+010000>[A013060/042502]{013060-013060}LwwwwwZ`.
+All original child PIPE/mutable sentinels/EXIT 057 and parent
+five PID/EXITED/status-057 WAITs pass, followed by normal HALT.
+
+Exact original physical MM B/A: 022 extents, five unpinned PACKED
+owners 6..2, 007000 retained words each, occupied/free
+057023/016173 octal. At Z: 010 extents, zero PACKED/child PROCESS,
+occupied/free 011536/063460. Source-matched tests and two mutated
+foreign-owner/false-WAIT witnesses PASS/reject. Thus the actual
+PACKED->user-run->EXIT/WAIT lifecycle is accepted in physical 48K,
+not inferred from a larger resident-only profile. Gross omitted
+PURE is 2560 decimal words versus 1758 installed PURE MRES, but
+physical whole-system net/peak, fast/full path and failure rollback
+remain unproved. No production KCORE/ABI/MM/MRES changes; PURE OFF
+by default, 32K optimization HOLD.
+`design/kcore-p1e-48k-packed-lifecycle-v1629.md`.
+
 ## 2026-11-16 v1628: 64K lifecycle has zero simultaneous RAW owners
 
 Original v1627 completed six-child TSFS/no-AUX/PURE guest replayed

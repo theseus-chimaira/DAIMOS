@@ -1,3 +1,28 @@
+## 2026-11-16 v1629: complete real 48K five-PACKED child lifecycle
+
+New testkit-only physical PDP-6 48K TSFS/no-AUX/GCC PURE guest
+starts five sleeping children, attempts a sixth RUN that returns
+expected -1 from resource pressure, and keeps the parent alive.
+Its no-growth BRK preserves the necessary fragmented MM layout.
+Actual original guest prints
+`aaaaax[B013060/042502]<010000+010000>[A013060/042502]{013060-013060}LwwwwwZ`
+and HALTs. Parent Z follows all five exact child PIPE/read/two
+private-data sentinel/EXIT-057 and PID/WAIT/EXITED/status checks.
+
+Source-linked original MM B/A snapshots each have 022 octal
+extents, exactly five unpinned PACKED suffix owners 6..2, each
+007000 words, occupied/free `057023/016173` octal. At terminal
+Z, MM has 010 extents, no PACKED or remaining child PROCESS
+owners, occupied/free `011536/063460`. User execution, five
+WAITs and physical cleanup are accepted. Original physical
+audit and forged foreign-owner/false-Z tests PASS/reject.
+Five omitted 001000-word prefixes provide 2560 decimal gross
+words vs 1758 installed PURE MRES, but no net/peak claim yet.
+Fast-vs-full restore, source-loss/PI6 failure rollback and true
+whole-system RAM are OPEN. No production changes, PURE OFF by
+default and 32K optimization HOLD. Full source-backed report:
+`design/kcore-p1e-48k-packed-lifecycle-v1629.md`.
+
 ## 2026-11-16 v1628: physical 64K owner matrix contains no PACKED
 
 Replayed the same genuinely successful v1627 six-child 64K PDP-6
