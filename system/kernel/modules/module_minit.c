@@ -466,6 +466,13 @@ extern kword_t backstore_init;
 extern kword_t backstore_alloc;
 extern kword_t backstore_free;
 extern kword_t backstore_verify_allocated_v795;
+#if !D6FS_FS_ENABLED && DAIMOS_PURE_MRES_ENABLED
+/* Only the source-selected no-BACKSTORE PDP-6 MRES is installed here.
+ * The original DISK MRES remains unchanged for any real AUXST1 backing.
+ * Both packages occupy KINIT input space; at runtime install exactly one.
+ */
+extern const kword_t proc_pure_mres_package_v1611[];
+#endif
 
 void
 proc_swap_minit_v481(void)
@@ -478,9 +485,24 @@ proc_swap_minit_v481(void)
          * provisioned AUXST1 storage using transient KINIT code. Driver
          * services were installed earlier in MINIT order. No device is
          * formatted or written by discovery. */
-        if (auxstore_boot_discover() != 0 ||
-            auxstore_backstore_blocks == 0UL)
+        if (auxstore_boot_discover() != 0)
                 return;
+        if (auxstore_backstore_blocks == 0UL) {
+#if DAIMOS_PURE_MRES_ENABLED
+                const kword_t *pure = proc_pure_mres_package_v1611;
+                unsigned int reclaim, service;
+
+                if (mres_install(pure, &base) != 0)
+                        minit_fatal(name);
+                reclaim = mres_export(pure, base, 0U);
+                service = mres_export(pure, base, 1U);
+                if (!reclaim || !service)
+                        minit_fatal(name);
+                storage_patch_jump(&proc_swap_reclaim, reclaim);
+                storage_patch_jump(&proc_swap_service_one, service);
+#endif
+                return;
+        }
         auxstore_post_minits();
 #endif
         base = minit_install(name);

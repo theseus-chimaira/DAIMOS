@@ -1,4 +1,23 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1610, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1611, 2026-11-16)
+
+- [x] **P1-E v1611 experimental PURE MRES, default OFF:**
+  separate source-selected PDP-6 no-BACKSTORE MRES, actual
+  SLEEP/STOP zero-copy DROP and RUN slot-0 prefix/FULL
+  restore, exact MM retry safety, KINIT no-AUX vs DISK
+  selection. KCC native DROP/prefix/FULL/rollback PASS;
+  default KINIT excludes PURE and linked KCORE remains
+  byte-identical to v1610 (`024534` octal).
+- [x] **KINIT source dependency bug:** moved stack-watermark
+  default before versioned stamp expansion, restoring
+  direct KINIT GCC compile test (v490 PASS).
+- [ ] **P1-E experimental RAM/guest acceptance:** PURE MRES
+  costs 2275 KCC or 1864 GCC physical words; the aggregate
+  single-root placement gate fails with it enabled.
+  Actual no-AUX physical guest, immutable VFS source
+  hold, PI6/EXEC/WAIT/EXIT/BRK, fault matrix, net
+  reclaimed RAM and transient peak remain OPEN.
+  Keep `DAIMOS_PURE_MRES_ENABLED=0` by default.
+  `design/kcore-p1e-swapless-service-v1611.md`.
 
 - [x] **P1-E slot-0 mode split v1610, real removable MRES:**
   DISK continues to the original restore, exchange and fatal

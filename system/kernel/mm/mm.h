@@ -45,9 +45,9 @@
 #define MM_TYPE_KERNEL_DYNAMIC  3U
 /**
  * Evicted writable state stored in core, not a runnable APR process image.
- * v1609 accepts exact terminal cleanup of a PACKED_PROCESS owner,
- * but creation and runnable restoration are still staged, not
- * production-linked. Do not treat this as live swapless support.
+ * v1609 accepts exact terminal cleanup of a PACKED_PROCESS owner.
+ * v1611 adds creation/restore in an opt-in experimental MRES only,
+ * not in the default KCORE or accepted physical boot profile.
  * In particular, mm_compact() must not treat it as a movable VM extent:
  * relocation of packed data requires updating the owner's packed descriptor.
  */

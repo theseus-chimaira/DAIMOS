@@ -1,3 +1,31 @@
+## 2026-11-16 v1611: opt-in PURE memory service
+
+PDP-6 has a separately source-linked and relocatable
+swapless PURE MRES, selected at TSFS KINIT only in the
+absence of AUXST1. The service executes existing v1381
+zero-copy inactive DROP, v1384 in-place prefix restore,
+and v1391 capacity-bounded FULL fallback from slot 0,
+with exact MM ownership preflights and rollback checks.
+DISK swap is selected unchanged when AUXST1 exists.
+
+The build flag `DAIMOS_PURE_MRES_ENABLED` defaults to **0**:
+the code is experimentally tested but lacks physical
+source-lifetime, 16K placement, full-guest and net RAM
+acceptance. Opt-in KCC KINIT and PURE MRES link; native
+KCC DROP/RESTORE/refusal tests PASS. PURE module words:
+2275 KCC or 1864 GCC, no BSS or per-process words.
+Permanent KCORE DXR/map remain byte-identical to v1610,
+`__kcore_low_end=024534` octal.
+
+The aggregate placement gate sums mutually exclusive
+DISK and PURE packages and fails for the opt-in profile;
+it is not proof of actual installed-runtime fit.
+Further full PDP-6 no-AUX physical evidence and
+whole-system RAM measurements are mandatory before
+switching the default. The KINIT stack-watermark stamp
+definition-order bug was fixed, with v490 GCC regression
+PASS. See `design/kcore-p1e-swapless-service-v1611.md`.
+
 ## 2026-11-16 v1610: mode-aware slot-0 swap service
 
 The real removable PDP-6 SWAP MRES now distinguishes the

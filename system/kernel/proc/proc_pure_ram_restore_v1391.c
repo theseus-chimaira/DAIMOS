@@ -12,8 +12,8 @@
  * exact capacity through the loader ABI, and overlays retained mutable
  * words only after the file read succeeds.
  *
- * NOT production-linked: a real scheduler, mount lifetime and teardown
- * owner still have to qualify every transition before activation.
+ * v1611: linked only by the opt-in experimental PURE MRES, which
+ * is not an accepted physical-guest or peak-RAM production profile.
  */
 #include "proc_pure_ram_restore_v1391.h"
 #include "proc_swap.h"
@@ -27,8 +27,7 @@
 #include "proc_pure_admit_v1608.h"
 #include "vm_pdp6_pure_range_v1604.h"
 
-#if !defined(DAIMOS_SWAPLESS_PURE_RAM_RESTORE_V1391) || \
-    DAIMOS_SWAPLESS_PURE_RAM_RESTORE_V1391 != 1
+#if !defined(DAIMOS_PURE_FULL_V1391) || DAIMOS_PURE_FULL_V1391 != 1
 #error proc_pure_ram_restore_v1391_requires_swapless_build
 #endif
 

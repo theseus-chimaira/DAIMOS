@@ -1,4 +1,5 @@
-; Staged, nonresident MM primitive. NOT linked to production KCORE.
+; Source-linked by the experimental v1611 PURE MRES only.
+; The default boot does not install it; no permanent KCORE words.
 ; Convert a pinned APR process extent to the owner-identical raw suffix.
 ; No data is copied: preserving the original high-address suffix already
 ; preserves every mutable word. Only the now-reconstructible PURE prefix

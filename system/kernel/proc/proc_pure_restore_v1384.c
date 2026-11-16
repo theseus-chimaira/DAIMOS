@@ -8,8 +8,8 @@
  * and un-runnable, and every reader/allocator sees an occupied full span.
  * The final PROCESS descriptor plus VM/mode publication is PI-atomic.
  *
- * Not production linked. Caller must hold PROCESS TRANSITION and executable
- * immutability/unmount exclusion for the entire operation.
+ * v1611: linked only in experimental opt-in PURE MRES. The caller must
+ * hold PROCESS TRANSITION and executable unmount exclusion throughout.
  */
 #include "proc_pure_restore_v1384.h"
 #include "proc_swap.h"

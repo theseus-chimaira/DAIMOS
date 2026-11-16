@@ -36,6 +36,12 @@ DAIMOS_VM_BACKING_SOURCE = proc/proc_pure_backing_pdp6.s
 # v1609: machine-private, compact terminal PACKED_PROCESS MM owner scan.
 # The common proc_swap_detach policy does not interpret an APR base.
 DAIMOS_VM_PURE_DETACH_SOURCE = proc/proc_pure_packed_detach_v1609.s
+# v1611: exclusively PDP-6 contiguous-core PURE service policy.
+# A later CPU backend replaces these source owners at build time.
+DAIMOS_VM_PURE_SERVICE_SOURCE = proc/proc_pure_service_pdp6_v1611.c
+DAIMOS_VM_PURE_REBASE_SOURCE = mm/mm_pure_rebase_v1381.s
+DAIMOS_VM_PURE_EXPAND_SOURCE = mm/mm_pure_expand_v1384.s
+DAIMOS_VM_PURE_IMAGE_SOURCE = proc/exec_image_common_v1386.s
 
 # Startup, image loading and other target-specific support.
 DAIMOS_CPU_EXEC_LOW_SOURCE = proc/exec_lowmem_pdp6.s

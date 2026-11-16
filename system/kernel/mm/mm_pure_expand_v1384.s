@@ -1,4 +1,4 @@
-; Staged, not production linked.
+; Source-linked by the opt-in experimental v1611 PURE MRES only.
 ; Claim a free PURE prefix beside an inactive raw suffix, without copying it.
 ; The claim stays typed PACKED_PROCESS for the whole potentially fallible
 ; VFS read, and therefore cannot be scheduled. A failed read reverses the

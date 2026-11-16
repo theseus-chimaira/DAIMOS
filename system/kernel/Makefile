@@ -27,13 +27,13 @@ MKBOOTBANNER ?= mkbootbanner
 MKBOOTBANNER_DEP != command -v "${MKBOOTBANNER}" 2>/dev/null || echo "${MKBOOTBANNER}"
 KINIT_DEBUG ?= 0
 KINIT_STACK_RESERVE_WORDS ?= 0400
+KINIT_STACK_WATERMARK ?= 0
 KINIT_STACK_MODE_STAMP = ${BUILD}/.kinit-stack-v655-${KINIT_STACK_RESERVE_WORDS}-${KINIT_STACK_WATERMARK}
 
 ${KINIT_STACK_MODE_STAMP}:
 	@mkdir -p ${BUILD}
 	@rm -f ${BUILD}/.kinit-stack-v655-*
 	@touch $@
-KINIT_STACK_WATERMARK ?= 0
 KINIT_BADMAP ?= 1
 KINIT_FULL ?= 1
 KINIT_DRM_ENABLED ?= $(KINIT_FULL)
@@ -49,6 +49,15 @@ BLOCKSET_FS_ENABLED ?= 1
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 PROC_SWAP_VERIFY_PURE ?= 0
+DAIMOS_PURE_MRES_ENABLED ?= 0
+ifneq ($(filter $(DAIMOS_PURE_MRES_ENABLED),0 1),$(DAIMOS_PURE_MRES_ENABLED))
+$(error DAIMOS_PURE_MRES_ENABLED must be 0 or 1)
+endif
+KINIT_PURE_MODE_STAMP = ${BUILD}/.pure-mres-mode-v1611-${DAIMOS_PURE_MRES_ENABLED}
+${KINIT_PURE_MODE_STAMP}:
+	@mkdir -p ${BUILD}
+	@rm -f ${BUILD}/.pure-mres-mode-v1611-*
+	@touch $@
 VM_BACKEND ?= pdp6
 # Source selection is a compile/link-time choice, never runtime dispatch.
 # No KA10 or KI10 backend has been validated yet.
@@ -331,9 +340,9 @@ ${BUILD}/backstore_mres_v484.s: storage/backstore.s Makefile
 	      -e 's/\<backstore_free\>/backstore_mres_free_v484/g' \
 	      -e 's/\<backstore_verify_allocated_v795\>/backstore_mres_verify_allocated_v880/g' > $@
 
-${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE} ${MONITORFS_MODE_STAMP} ${KINIT_TAPE_MODE_STAMP} ${KINIT_STACK_MODE_STAMP}
+${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE} ${MONITORFS_MODE_STAMP} ${KINIT_TAPE_MODE_STAMP} ${KINIT_STACK_MODE_STAMP} ${KINIT_PURE_MODE_STAMP}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DKINIT_DRM_ENABLED=${KINIT_DRM_ENABLED} -DKINIT_TAPE_BOOT=${KINIT_TAPE_BOOT} -DMONITORFS_MRES_ENABLED=${MONITORFS_MRES_ENABLED} -DD6FS_FS_ENABLED=${D6FS_FS_ENABLED} -DBLOCKSET_FS_ENABLED=${BLOCKSET_FS_ENABLED} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DKINIT_DRM_ENABLED=${KINIT_DRM_ENABLED} -DKINIT_TAPE_BOOT=${KINIT_TAPE_BOOT} -DMONITORFS_MRES_ENABLED=${MONITORFS_MRES_ENABLED} -DD6FS_FS_ENABLED=${D6FS_FS_ENABLED} -DDAIMOS_PURE_MRES_ENABLED=${DAIMOS_PURE_MRES_ENABLED} -DBLOCKSET_FS_ENABLED=${BLOCKSET_FS_ENABLED} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/bootbanner_generated.s: ${VERSION_FILE} ${MKBOOTBANNER_DEP}
 	@mkdir -p ${BUILD}
@@ -387,6 +396,40 @@ ${BUILD}/proc_swap_mres_v481.s: ${DAIMOS_VM_SWAP_SOURCE}
 	{ printf '.equ PROC_SWAP_VERIFY_PURE,%s\n' '${PROC_SWAP_VERIFY_PURE}'; \
 	  cat ${DAIMOS_VM_SWAP_SOURCE}; } > $@
 MRES_ASM += $(BUILD)/proc_swap_mres_v481.s
+
+# v1611: PURE MRES is a *separate* compile-time PDP-6 service.
+# Its source transactions do not add a single fixed KCORE word.
+ifeq ($(DAIMOS_PURE_MRES_ENABLED),1)
+MRES_ASM += $(BUILD)/proc_pure_service_v1611.s \
+    $(BUILD)/proc_pure_drop_v1611.s \
+    $(BUILD)/proc_pure_prefix_v1611.s \
+    $(BUILD)/proc_pure_full_v1611.s
+# The kcore target's prerequisites were expanded before these late rules.
+# Explicitly include every new generated source in that target.
+kcore: $(BUILD)/proc_pure_service_v1611.s \
+    $(BUILD)/proc_pure_drop_v1611.s \
+    $(BUILD)/proc_pure_prefix_v1611.s \
+    $(BUILD)/proc_pure_full_v1611.s
+endif
+
+$(BUILD)/proc_pure_service_v1611.s: $(DAIMOS_VM_PURE_SERVICE_SOURCE) $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_drop_v1611.s: proc/proc_pure_ram_v1381.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_SWAPLESS_PURE_RAM_V1381=1 \
+	    -DDAIMOS_PURE_DROP_ONLY_V1611=1 $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_prefix_v1611.s: proc/proc_pure_restore_v1384.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_SWAPLESS_PREFIX_V1384=1 \
+	    $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_full_v1611.s: proc/proc_pure_ram_restore_v1391.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_FULL_V1391=1 \
+	    $(INCLUDES) -S $< -o $@
 
 ${BUILD}/proc_swap_entry_v481.s: proc/proc_swap_entry_v481.s
 	@mkdir -p ${BUILD}

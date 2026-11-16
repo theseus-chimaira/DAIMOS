@@ -10,8 +10,8 @@
  * allocation is needed. MM rebases the existing pinned process extent to
  * its high-address writable suffix without copying a single data word.
  *
- * NOT production-linked: a real scheduler, mount lifetime and teardown
- * owner still have to qualify every transition before activation.
+ * v1611: DROP is linked only in the explicit experimental swapless MRES.
+ * Default KCORE and the accepted disk-swap profile remain unaffected.
  */
 #include "proc_pure_ram_v1381.h"
 #include "proc_swap.h"
@@ -178,6 +178,12 @@ proc_pure_ram_drop_v1381(unsigned int slot)
         return MM_OK;
 }
 
+/* v1611: the resident swapless MRES only needs the zero-copy DROP.
+ * The historical unbounded restore and staged terminal cleanup are
+ * retained for native regression, but neither is linked into that MRES.
+ * Production FULL restoration uses the capacity-bounded v1391 path;
+ * production terminal cleanup is already handled by v1609 KCORE. */
+#ifndef DAIMOS_PURE_DROP_ONLY_V1611
 int
 proc_pure_ram_restore_v1381(unsigned int slot,
     proc_pure_ram_reload_v1381 reload)
@@ -285,3 +291,4 @@ proc_pure_ram_discard_v1381(unsigned int slot)
         /* Teardown owns TRANSITION until the complete slot is retired. */
         return MM_OK;
 }
+#endif /* !DAIMOS_PURE_DROP_ONLY_V1611 */

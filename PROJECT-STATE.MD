@@ -1,3 +1,37 @@
+## 2026-11-16 v1611: experimental diskless PURE MRES, default OFF
+
+Implemented the separate PDP-6 `proc_pure_service_pdp6_v1611.c`
+reclaim/wakeup module, using v1381 zero-copy DROP, v1384 prefix
+restore and v1391 capacity-bounded FULL fallback, exact owner
+retry checks and the existing slot-0 scheduler trampolines.
+Dedicated TSFS KINIT uses the PURE package only when no
+AUXST1 backing exists; a backed machine retains original DISK
+MRES. The implementation is gated by explicit
+`DAIMOS_PURE_MRES_ENABLED=1`; **default 0**, because physical
+guest/placement/immutable executable ownership are not accepted.
+Default KCC KCORE is byte-identical to v1610 (`024534`
+octal), and default KINIT contains no PURE package.
+
+Native original KCC PURE service DROP, prefix/FULL wakeup
+and refusal tests PASS. Experimental ROOT=tape KINIT/MRES
+link PASS; PURE installed MRES = 2275 KCC or 1864 GCC words,
+no BSS or process slots added. Aggregate 16K placement
+gate (which sums mutually exclusive DISK+PURE packages)
+does not pass the experimental build. Default KCC full is
+already 4814 words above the strict 16K limit; opt-in
+full is 7089 above, exactly 2275 more. Net physical RAM gain
+remains unproved, not inferred from link success.
+Also fixed the KINIT Makefile late stack-watermark default
+which broke direct KINIT source compilation; historical
+v490 GCC MINIT regression now PASS.
+
+This does NOT close P1-E production acceptance: source
+lifetime, no-AUX full physical PDP-6 guest, PI6 wake,
+rollback and whole-system peak/net RAM remain OPEN.
+Full evidence, size accounting and follow-up scope:
+`design/kcore-p1e-swapless-service-v1611.md`.
+VERSION 0.5, strict 32K/optimization HOLD; no KA10/KI10.
+
 ## 2026-11-16 v1610: source-matched slot-0 mode ownership boundary
 
 The removable PDP-6 swap MRES service now consults the
