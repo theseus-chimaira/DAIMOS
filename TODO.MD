@@ -1,3 +1,20 @@
+## 2026-11-16 v1635: source-backed high-cache APR obstruction
+
+- [x] Physical original 48K first-VM breakpoint: BCACHE's
+  0201-word owner6 already occupies 137577..140000, matching
+  source MM_ALLOC_HIGH. It forces parent APR at 126000 vs
+  otherwise possible 130000. v1633's 389-word bound applies
+  only when parent remains fixed at 126000. False owner/length
+  machine witnesses rejected in testkit, no production edits.
+- [ ] Physically test general-purpose low placement of this
+  tiny reclaimable clean cache (NOT an allocator retry hack).
+  Must preserve correct cache/source/MM state and gain six
+  child RUNs under 48K PURE, then test true PACKED restore,
+  all WAITs and other memory profiles before acceptance.
+- [ ] Relocated FULL restore, source-life/PI6 rollback and
+  complete temporal peak/net RAM are still open. Default PURE
+  OFF; strict 32K size work HOLD.
+
 ## 2026-11-16 v1634: P1-E compiler-only size candidates rejected
 
 - [x] Source/assembler/link-accurate original PURE MRES -Os image

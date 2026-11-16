@@ -1,3 +1,19 @@
+## 2026-11-16 v1635: BCACHE high allocation blocks original parent APR
+
+Source-linked original v1629 PDP-6 48K breakpoint at first
+`vm_space_create` PC 022472 shows before owner-slot-1 VM creation:
+un-pinned MM KERNEL_DYNAMIC owner6 `137577..140000` (0201 words)
+is the BCACHE private clean slab. Original assembler explicitly
+uses MM_ALLOC_HIGH. Parent logical request 007067 rounds to
+010000 APR words; high slab forces highest legal base 126000,
+where original later B snapshot finds parent. Without a high
+slab, same arena would allow 130000..140000. Thus parent
+placement, not necessarily MRES size, may explain the lost APR
+cell. Two physical owner/span forgeries rejected by testkit.
+No production edit in v1635. Candidate low-placed cache requires
+real six-child physical testing and no source/rollback changes.
+`design/kcore-p1e-bcache-parent-placement-v1635.md`.
+
 ## 2026-11-16 v1634: compiler flags cannot repair PURE APR capacity
 
 Testkit-only rebuild of original optional PURE MRES uses unchanged

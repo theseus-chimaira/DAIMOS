@@ -1,3 +1,22 @@
+## 2026-11-16 v1635: original first-VM high cache ownership found
+
+Original v1629 source-built 48K PDP-6 no-AUX PURE guest was
+replayed with a source-authentic `vm_space_create` breakpoint
+at PC 022472 before parent slot 1's initial VM. Physical MM
+contains unpinned KERNEL_DYNAMIC owner6 `137577..140000`, the
+0201-word high-priority BCACHE slab (one tag plus 0200 data).
+The parent requests 007067 -> aligned 010000 words. BCACHE
+occupies the highest arena tail and forces top legal VM base
+126000; later original parent remains at exactly that base.
+Without BCACHE at the top, the same arena permits parent base
+130000, a complete 02000 higher. This is a source-matched
+physical cause for the 48K lost APR corridor, independent of
+compiler flags. Original machine/testkit audit and false owner/
+size controls PASS/reject. No production change yet; candidate
+cache low-placement must survive real process/restoration/other
+profile tests before acceptance. PURE default OFF, 32K HOLD.
+See `design/kcore-p1e-bcache-parent-placement-v1635.md`.
+
 ## 2026-11-16 v1634: baseline-equivalent PURE MRES compiler matrix
 
 An isolated source-identical testkit compile/link experiment
