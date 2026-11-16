@@ -24,6 +24,31 @@ Completed SLOT0 restore, WAIT and net memory
 savings remain OPEN; PURE default stays OFF.
 See `design/kcore-p1e-linker-pure-address-v1614.md`.
 
+## 2026-11-16 v1617: physical prefix restore waits on DECtape
+
+The exact PDP-6 physical scheduler trampolines
+place the optional PURE MRES at 032027 octal.
+The interrupted CPU PC 030762 is outside it:
+the original linked tape DXR identifies this
+instruction as SKIPN storage_count at offset
+000331 of tape MRES base 030431. A new real
+simulator breakpoint at that address confirms
+an active DECtape RBN search, storage_state
+0200 and the initialized negative 05214-tick
+search timeout.
+
+At the same instant three 007000-word PACKED
+suffixes were unpinned and a fourth full-sized
+PACKED owner carried one valid prefix-claim pin.
+This is physical I/O wait and MM ownership
+evidence, not a committed RUN or permanent leak.
+Testkit source/DXR/physical audit and two unsafe
+mutant refusals PASS; no fixed/removable kernel
+code or RAM changed. Clock progress, VFS read
+completion, BRK return, slot-0 RESTORE and net
+physical RAM acceptance remain OPEN. Default OFF.
+See design/kcore-p1e-physical-dtc-wait-v1617.md.
+
 ## 2026-11-16 v1616: real RAW PACKED physical owner publication
 
 The PDP-6 48K no-AUX experimental PURE MRES now has

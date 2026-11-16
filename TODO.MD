@@ -1,4 +1,28 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1616, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1617, 2026-11-16)
+
+- [x] **v1617 identify blocked physical instruction:**
+  scheduler trampolines and linked DXR prove
+  PURE MRES at 032027, TAPE MRES at 030431;
+  interrupted PC 030762 is DECtape RBN
+  SKIPN storage_count, not a PURE service
+  instruction. Physical source/link audit PASS.
+- [x] **v1617 actual DECtape wait sample:** a
+  deferred breakpoint captures storage_state
+  0200 and initial negative 05214-tick timeout,
+  on slot 0 with three unpinned RAW suffixes
+  and one pinned full-size PACKED prefix claim.
+  Unsafe service-export and timeout mutants
+  are rejected by the testkit.
+- [ ] **v1618 next physical acceptance:** prove
+  line-clock aging of DTC search timeout and
+  RBN/data transfer completion (or bounded
+  I/O failure), then real prefix commit/rollback,
+  pin release, scheduler READY_ONCE and PIPE/
+  WAIT/EXIT. Only then measure peak/net RAM.
+  Do not alter the driver merely because a
+  single wait snapshot was observed. P1-E
+  remains default OFF.
+  design/kcore-p1e-physical-dtc-wait-v1617.md.
 
 - [x] **Physical RAW PACKED publication v1616:** real
   48K TSFS no-AUX guest captures two PACKED MM

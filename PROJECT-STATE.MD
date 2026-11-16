@@ -1,3 +1,36 @@
+## 2026-11-16 v1617: locate real DECtape restoration wait
+
+Real physical scheduler trampolines show PURE MRES
+installed at octal 032027: reclaim 023554 ->
+032237 (offset 000210), service 023555 ->
+032375 (offset 000346). The previously observed
+interrupted PC 030762 is NOT in PURE MRES.
+The linked tape DXR has the identical
+SKIPN 0,storage_count instruction at offset 000331;
+the installed tape base is 030431. This resolves
+the v1616 removable-module ambiguity.
+
+An independently executed 48K no-AUX PDP-6 replay
+stopped at this actual DECtape RBN search wait.
+Physical storage_state=0200, storage_count is
+negative 05214 octal ticks (initial 45-second
+timeout), current slot 0. MM contains three
+unpinned 007000-word PACKED suffixes (slots
+5,4,3) and one full 010000-word PACKED prefix
+claim with one pin (slot 2). No PROCESS owner
+or completed BRK/RUN is demonstrated.
+
+Testkit v1617 physical map/DXR/source attribution
+and live tape-state tests PASS. Unsafe one-word
+PURE export and altered tape countdown mutants
+are rejected. A single clock-count snapshot
+does not prove timer progress or VFS completion:
+the next task is to trace DTC timer/PI3 activity
+through successful prefix commit or rollback.
+No production code, permanent KCORE, MRES size
+or process state changed. PURE default OFF.
+See design/kcore-p1e-physical-dtc-wait-v1617.md.
+
 ## 2026-11-16 v1616: physical PDP-6 RAW PACKED owners observed
 
 The 48K TSFS no-AUX physical guest now has a repeatable
