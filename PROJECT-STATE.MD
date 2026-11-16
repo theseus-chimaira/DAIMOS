@@ -1,3 +1,41 @@
+## 2026-11-16 v1613: real PDP-6 64K TSFS no-AUX PURE boot
+
+Fixed the v1611 KINIT selection error: actual absent AUXST1
+causes `auxstore_boot_discover()` to return -1, formerly
+skipping optional PURE installation. Now either no validated
+AUX descriptor or a valid zero BACKSTORE selects the PURE
+MRES on an explicitly enabled dedicated TSFS boot; a
+validated nonzero BACKSTORE retains historical DISK SWAP.
+The transient KINIT diagnostic prints `PURE LOADED`
+after successful install and both scheduler-hook patches.
+The default-off build retains its former no-SWAP behavior.
+
+Native source-matched C89 selection tests PASS for absent,
+zero and positive backing, disabled PURE and D6FS root,
+including a deliberately unsafe early-return mutation.
+The full 64K PDP-6 SIMH physical boot with no DSK/DRM
+media attached reaches `MEM 64 K`, `DTC OK`,
+`PURE LOADED`, `INIT V1` and remains alive until
+controlled timeout. KINIT image end: `0113622` octal.
+GCC fixed KCORE is byte-identical to v1612, low end
+`024254` octal; PURE MRES remains 1758 words, no BSS.
+
+The real-guest pressure test has **not** been accepted:
+the adapted historical large-image DISK workload twice
+failed on admission of its third large child before a
+RAW reclaim/wakeup assertion. Those results and octal
+MEMINFO snapshots are preserved in daimos-testkit
+`tests/diagnostics/pure-pressure-v1613`. MEMINFO's
+mapped-process counter omits retained physical PACKED
+suffixes, so cannot prove net physical savings.
+
+Production P1-E remains OFF; correct physical BRK-driven
+pressure, PI6/WAIT/EXEC/EXIT, immutable backing lifetime
+and peak/net RAM proof are OPEN. No codec or other CPU
+porting begun. Detail:
+`design/kcore-p1e-noaux-boot-v1613.md`.
+VERSION 0.5, strict 32K/optimization HOLD.
+
 ## 2026-11-16 v1612: smaller experimental PURE MRES, still OFF
 
 The opt-in PDP-6 PURE service is now source-selected from

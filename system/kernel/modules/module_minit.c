@@ -485,9 +485,16 @@ proc_swap_minit_v481(void)
          * provisioned AUXST1 storage using transient KINIT code. Driver
          * services were installed earlier in MINIT order. No device is
          * formatted or written by discovery. */
-        if (auxstore_boot_discover() != 0)
-                return;
-        if (auxstore_backstore_blocks == 0UL) {
+        /*
+         * v1613: an absent AUXST1 returns -1, not a successful
+         * descriptor with zero BACKSTORE blocks. Both are valid
+         * no-BACKSTORE configurations for the optional PURE MRES.
+         * Only a positively validated nonzero BACKSTORE allocation
+         * may select the original disk-swap service. Discovery
+         * resets the published count before trying each controller.
+         */
+        if (auxstore_boot_discover() != 0 ||
+            auxstore_backstore_blocks == 0UL) {
 #if DAIMOS_PURE_MRES_ENABLED
                 const kword_t *pure = proc_pure_mres_package_v1612;
                 unsigned int reclaim, service;
@@ -500,6 +507,10 @@ proc_swap_minit_v481(void)
                         minit_fatal(name);
                 storage_patch_jump(&proc_swap_reclaim, reclaim);
                 storage_patch_jump(&proc_swap_service_one, service);
+                /* Transient boot witness: an actual no-BACKSTORE
+                 * installation, not merely a linkable PURE package.
+                 * No resident KCORE or MRES diagnostic state. */
+                minit_diag_loaded((kword_t)SIXBIT("PURE  "));
 #endif
                 return;
         }

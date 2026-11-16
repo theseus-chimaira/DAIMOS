@@ -1,4 +1,26 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1612, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1613, 2026-11-16)
+
+- [x] **P1-E v1613 no-AUXST1 KINIT selection corrected:**
+  absent/unvalidated descriptor returns -1, which now
+  enables opt-in PURE rather than skipping it; valid
+  zero BACKSTORE also selects PURE. A validated nonzero
+  BACKSTORE still selects DISK SWAP. C89 source-linked
+  3-mode selection test and unsafe mutant PASS.
+- [x] **First physical 64K PDP-6 TSFS no-AUX PURE boot:**
+  all DSK/DRM media unattached, real DTC root, `PURE
+  LOADED` then `INIT V1` accepted by repeatable
+  simulator test. Fixed KCORE unchanged from v1612,
+  installed PURE MRES 1758 GCC words; default OFF.
+- [ ] **Physical RAW pressure/PI6 wake still OPEN:**
+  two diagnostic runs with oversized historical DISK
+  workload reached child allocation failure before
+  RAW DROP/RESTORE acceptance. Next use sleeping owners
+  followed by small BRK-based MM pressure. The present
+  MEMINFO counter omits retained PACKED suffix physical
+  words; do not mistake it for a net RAM measurement.
+  Immutable executable lifetime, RUN/EXEC/WAIT/EXIT,
+  MM rollback and peak/net RAM remain OPEN.
+  `design/kcore-p1e-noaux-boot-v1613.md`.
 
 - [x] **P1-E experimental MRES v1612 size reduction:** one
   strict MM scan for PACKED retryable owner, plus the

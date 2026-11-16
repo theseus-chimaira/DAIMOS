@@ -1,3 +1,30 @@
+## 2026-11-16 v1613: physical no-AUX TSFS boot acceptance
+
+KINIT now installs opt-in PURE on the actual no-AUXST1
+case (`auxstore_boot_discover() == -1`) as well as a
+validated zero BACKSTORE descriptor; a real, nonzero
+BACKSTORE still selects original DISK swap. The boot
+diagnostic `PURE LOADED` is printed only after both
+real scheduler-hook patches have been installed.
+
+Native C89 selection tests, including a negative source
+mutation, PASS. The 64K SIMH PDP-6 with three TSFS root
+tapes and *no DSK/DRM media attached* boots to
+`PURE LOADED` and `INIT V1`; the guest remains
+alive. GCC KCORE is byte-identical to v1612
+(`__kcore_low_end=024254` octal), and the
+PURE module still costs 1758 GCC words.
+
+This proves installation and boot only. Two physical
+diagnostic stress variants could not admit the third
+oversized child, before proving RAW reclaim/restore.
+The resident-process MEMINFO counter omits physical
+PACKED suffixes, so net RAM is still unmeasured.
+P1-E remains default OFF until smaller BRK-driven
+pressure, exact MM accounting, PI6/WAIT/EXEC and
+immutable-source acceptance PASS. See
+`design/kcore-p1e-noaux-boot-v1613.md`.
+
 ## 2026-11-16 v1612: minimized experimental PURE service
 
 The optional PDP-6 PURE MRES now costs **2196 KCC words**
