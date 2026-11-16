@@ -1,4 +1,29 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1619, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1620, 2026-11-16)
+
+- [x] **v1620 genuine 48K physical PURE prefix commit:**
+  source/DXR exact PC 034614 entered for
+  slot 2 (APR 116000, prefix 001000, size
+  010000 octal). Machine MM write-watch
+  proves PACKED pin1 -> PROCESS pin1 ->
+  PROCESS pin0, without moving suffix.
+- [x] **v1620 genuine scheduler publication:**
+  machine cursor write 001002 (READY_ONCE|2)
+  from PURE MRES at PC 032477, followed by
+  fixed KCORE current-slot write 000002
+  at PC 016770. Restored MM owner remains
+  PROCESS, pin0. Native source-map audit
+  and wrong-owner/missing-pin/retained-pin
+  negative mutations PASS.
+- [ ] **v1621 next acceptance:** verify actual
+  user-mode instruction after restored slot 2
+  selection; complete PIPE/WAIT/EXIT with a
+  fitting pressure geometry, exact executable
+  backing lifetime and physical peak/net RAM.
+  Current snapshot omits only 1536 decimal
+  words across three RAW suffixes while the
+  installed GCC PURE MRES costs 1758. This
+  is NOT yet positive net RAM. Default OFF.
+  design/kcore-p1e-physical-prefix-commit-v1620.md.
 
 - [x] **v1619 real Type-551 root RBN read:** the
   actual TSFS DTC0 root, copied read-only,

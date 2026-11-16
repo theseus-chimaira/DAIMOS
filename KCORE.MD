@@ -1,3 +1,33 @@
+## 2026-11-16 v1620: physical PURE commit, unpin and scheduler restore
+
+The original opt-in PURE MRES in the 48K
+no-AUX PDP-6 guest reaches MM commit at
+PC 034614, with slot 2, base 116000,
+001000-word immutable prefix and
+010000-word complete APR. Two MM write
+watchpoints prove the exact in-place
+PACKED pin1 -> PROCESS pin1 -> PROCESS
+pin0 sequence at physical 024307.
+No mutable suffix copy or MM relocation.
+
+Two further native write-watchpoints
+prove READY_ONCE|slot2 cursor 001002
+at 032477 and subsequent current slot
+2 at fixed KCORE PC 016770. Every
+observed post-unpin slot-2 descriptor
+is full PROCESS, pin0. Testkit v1620
+executes source/DXR-backed audits and
+unsafe owner/pin mutations. No KCORE
+or MRES code changes, PURE default OFF.
+
+Physical user-context return, fitting
+PIPE/WAIT/EXIT, immutable source lifetime
+and net/peak RAM still open. The snapshot
+has 1536 decimal gross omitted words
+versus 1758 decimal words installed PURE
+MRES; no net savings asserted.
+See design/kcore-p1e-physical-prefix-commit-v1620.md.
+
 ## 2026-11-16 v1614: correct PURE linker source validation
 
 The real physical pressure test exposed a host

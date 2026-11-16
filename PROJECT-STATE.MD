@@ -1,3 +1,43 @@
+## 2026-11-16 v1620: physical VFS/MM commit and READY_ONCE proved
+
+The genuine v1618-built, 48K PDP-6 TSFS/no-AUX
+PURE pressure guest now reaches the original
+mm_pure_commit_prefix_v1384 at physical
+PC 034614. The correct immutable prefix loader
+has returned successfully: AC1=116000, AC2=slot
+2, AC3=001000 PURE prefix, AC4=010000 full APR.
+The MM table at entry has a full 010000-word
+PACKED owner 2 with one pin and three other
+007000-word unpinned RAW suffix owners.
+
+The second physical replay uses MM descriptor
+write-watchpoints at 024307. It proves the
+actual transitions 000014000002 (PACKED, pin 1)
+to 000011000002 (PROCESS, pin 1) to
+000001000002 (PROCESS, pin 0). The third
+replay also catches the original scheduler
+cursor publication 001002 (READY_ONCE|2) at
+PC 032477 and subsequent fixed KCORE
+proc_current_slot=2 at PC 016770. The owner
+is still unpinned PROCESS. This is direct
+physical commit, pin release and restored
+scheduler selection, not inferred from a
+static source call.
+
+Testkit v1620 exact linked-MRES/physical
+audits PASS with unsafe wrong-owner,
+missing-initial-pin, and false-unpin
+mutations rejected. No production KCORE,
+MRES, driver, process or MM layout changed.
+Full user-mode PIPE/WAIT/EXIT, immutable
+source lifetime and positive peak/net
+physical RAM remain OPEN. Three other
+omitted prefixes total 1536 decimal
+words, below the 1758-word installed GCC
+PURE MRES cost; no positive net claim.
+Default PURE OFF, 32K HOLD.
+See design/kcore-p1e-physical-prefix-commit-v1620.md.
+
 ## 2026-11-16 v1619: PDP-6 Type-551 RBN match and DCT read proved
 
 The genuine v1618 48K PDP-6 TSFS/no-AUX
