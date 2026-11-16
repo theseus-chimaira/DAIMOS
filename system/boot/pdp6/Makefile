@@ -266,6 +266,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/proc/proc_swap_boot.c \
 	$(KERNEL_DIR)/$(DAIMOS_VM_SWAP_SOURCE) \
 	$(KERNEL_DIR)/$(DAIMOS_VM_BACKING_SOURCE) \
+	$(KERNEL_DIR)/$(DAIMOS_VM_PURE_DETACH_SOURCE) \
 	$(KERNEL_DIR)/proc/proc_storage_runtime_v30.s \
 	$(KERNEL_DIR)/proc/proc_pure_attach.c \
 	$(KERNEL_DIR)/proc/proc_storage_map_v28.h \

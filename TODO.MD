@@ -1,4 +1,23 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1608, 2026-11-15)
+## CURRENT KCORE FEATURE TODO (authoritative after v1609, 2026-11-16)
+
+- [x] **P1-E terminal PACKED ownership v1609, production linked:**
+  `vm_space_destroy` now accepts mode 2 only with a zero APR
+  base, and `proc_swap_detach` calls a PDP-6-only exact
+  MM_TYPE_PACKED_PROCESS cleanup leaf instead of disk-run
+  deletion. Refused type/owner/pin/size/backing/free retains
+  its owner for retry; successful free retires storage mode,
+  backing and VM_NONE. Native original VM/detach + unsafe
+  identity mutation PASS; historic DISK/VM_NONE PASS.
+  +104 KCORE code words, zero permanent DATA/BSS or slot RAM.
+  `design/kcore-p1e-packed-terminal-v1609.md`.
+- [x] **Staged fast-prefix source admission v1609:** v1384
+  restore now checks original v1608 no-BACKSTORE and live
+  executable mount before prefix MM claims. Native 1384/1385/
+  1395 rollback PASS, including missing source refusal.
+- [ ] **P1-E still OPEN:** source lifetime and physical no-swap
+  boot, real scheduler RAW DROP, complete fast/full restore,
+  PI6/WAIT/EXIT/EXEC/BRK, owner pressure and physical guest
+  acceptance; compression only after RAW acceptance.
 
 - [x] **P1-E1 source admission v1608, staged implementation:**
   RAW DROP and bounded FULL RESTORE now reject any nonzero/

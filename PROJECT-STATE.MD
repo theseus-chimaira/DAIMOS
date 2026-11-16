@@ -1,3 +1,36 @@
+## 2026-11-16 v1609: production P1-E PACKED terminal teardown
+
+The EXIT-side prerequisite for P1-E is now linked in KCORE:
+`vm_space_destroy` admits a nonresident PACKED/RAW owner with
+zero APR base, and `proc_swap_detach` dispatches mode 2 to the
+exact PDP-6 `pdp6_pure_detach_v1609` assembly MM owner scan.
+It validates TRANSITION, u-area and identical backing, original
+sector-rounded PURE geometry, exact unpinned single
+MM_TYPE_PACKED_PROCESS descriptor, then frees and publishes
+PACKED->RESIDENT, retiring backing and VM_SPACE_NONE. Refusal
+retains its original owner; no disk block run is touched.
+The physical leaf is selected through the v1605 architecture
+source map rather than baked into common process policy.
+
+Real KCC PDP-6 v1609 native teardown/negative tests and a
+deliberately unsafe source-identity mutant PASS in daimos-testkit.
+Historical v880/v957 disk detach and v1129 VM_NONE tests PASS;
+staged v1384 in-place PURE prefix restore now also enforces
+the v1608 source-admission check, and its native regressions
+PASS. Full KCC ROOT=tape KCORE builds and links successfully.
+The final `__kcore_low_end` moves from `024364` to `024534`
+octal (+104 code words); no new DATA/BSS or per-process RAM.
+The first C implementation would have cost 169 words and was
+replaced with the compact correct assembly.
+
+This is only **terminal cleanup**, not production scheduler
+reclamation. Nothing creates a PACKED owner in the live service
+yet. E1 live source lifetime, E2 zero-copy drop, E3 full/prefix
+restoration, E4 PI6/EXEC/WAIT and E5 complete physical tests
+remain OPEN. No compression or other CPU support. Strict
+32K/optimization HOLD and VERSION 0.5. See
+`design/kcore-p1e-packed-terminal-v1609.md`.
+
 ## 2026-11-15 v1608: P1-E1 source admission implemented in staging
 
 P1-E RAW DROP v1381 and bounded FULL RESTORE v1391 now use

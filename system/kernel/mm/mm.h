@@ -45,7 +45,9 @@
 #define MM_TYPE_KERNEL_DYNAMIC  3U
 /**
  * Evicted writable state stored in core, not a runnable APR process image.
- * This type is reserved until the packed-process transaction is implemented.
+ * v1609 accepts exact terminal cleanup of a PACKED_PROCESS owner,
+ * but creation and runnable restoration are still staged, not
+ * production-linked. Do not treat this as live swapless support.
  * In particular, mm_compact() must not treat it as a movable VM extent:
  * relocation of packed data requires updating the owner's packed descriptor.
  */

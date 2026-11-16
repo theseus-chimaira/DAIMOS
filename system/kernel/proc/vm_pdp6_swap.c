@@ -7,6 +7,10 @@
  * word is saved in the stable u-area and the record is reused for first-block
  * and block-count. Swap-in runs from slot-0 executive context so synchronous
  * storage I/O never suspends on a process stack whose user extent is absent.
+ * v1609: terminal PACKED_PROCESS cleanup also lives here. It uses a
+ * PDP-6-specific source-selected MM leaf instead of ever interpreting
+ * the resident PURE record as a disk block range. This code does not
+ * itself activate RAW PURE memory reclamation.
  */
 #include "proc_swap.h"
 #include "vm_pdp6.h"
@@ -32,7 +36,16 @@ kword_t proc_swap_blocks_used;
 /* The assembly swap transactions own mode publication under TRANSITION. */
 extern int proc_storage_publish_v30(unsigned int slot,
     unsigned int old_state, unsigned int new_state);
+extern int proc_storage_expect_v30(unsigned int slot, unsigned int mode);
 extern void proc_swap_storage_invariant_v30(void);
+
+/* PDP-6 physical owner scan is a small assembly leaf. It validates the
+ * full PURE size and exactly one unpinned PACKED_PROCESS descriptor,
+ * frees it, then publishes the RESIDENT mode under TRANSITION. No
+ * generic process policy reads the APR base or searches the MM table.
+ * It intentionally works when the executable mount is already lost. */
+extern int pdp6_pure_detach_v1609(int slot, struct proc *p,
+    kword_t backing);
 
 /** Release only validated nonresident disk backing, then clear ownership.
  *
@@ -49,7 +62,11 @@ proc_swap_detach(int slot)
 
         p = &proc_table[slot];
         state = proc_swap_records[slot].state;
-        if (VM_PDP6_BASE(p) == 0UL && state != 0UL) {
+        if (proc_storage_expect_v30((unsigned int)slot,
+            PROC_STORAGE_PACKED) == 0) {
+                if (pdp6_pure_detach_v1609(slot, p, state) != 0)
+                        return -1;
+        } else if (VM_PDP6_BASE(p) == 0UL && state != 0UL) {
                 first = (state >> 18U) & MM_HALF_MASK;
                 blocks = state & MM_HALF_MASK;
                 /* The same checked release handles both ownership and

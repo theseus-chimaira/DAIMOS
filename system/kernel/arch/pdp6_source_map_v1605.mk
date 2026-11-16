@@ -33,6 +33,9 @@ DAIMOS_CPU_SYSCALL_SOURCE = proc/syscall_dispatch_pdp6.s
 DAIMOS_VM_CONTIG_MM_SOURCE = mm/mm_pdp6.s
 DAIMOS_VM_SWAP_SOURCE = proc/proc_swap_pdp6.s
 DAIMOS_VM_BACKING_SOURCE = proc/proc_pure_backing_pdp6.s
+# v1609: machine-private, compact terminal PACKED_PROCESS MM owner scan.
+# The common proc_swap_detach policy does not interpret an APR base.
+DAIMOS_VM_PURE_DETACH_SOURCE = proc/proc_pure_packed_detach_v1609.s
 
 # Startup, image loading and other target-specific support.
 DAIMOS_CPU_EXEC_LOW_SOURCE = proc/exec_lowmem_pdp6.s

@@ -19,6 +19,7 @@
 #include "mm_internal.h"
 #include "mm_pure_expand_v1384.h"
 #include "fs_mres.h"
+#include "proc_pure_admit_v1608.h"
 
 #if !defined(DAIMOS_SWAPLESS_PREFIX_V1384) || \
     DAIMOS_SWAPLESS_PREFIX_V1384 != 1
@@ -83,6 +84,14 @@ proc_pure_restore_v1384(unsigned int slot,
             (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT))
                 return MM_ERR_BUSY;
         backing = proc_swap_records[slot].state;
+        /* v1609: fast in-place prefix restore must observe the SAME
+         * executable source admission as the bounded full restore.
+         * Check before pinning or claiming a physical MM gap. A missing
+         * mount cannot be replaced with stale or unrelated executable
+         * text; the inactive writable suffix stays intact for retry.
+         */
+        if (pure_admit_source_v1608(p, backing) != MM_OK)
+                return MM_ERR_INVAL;
         words = VM_SPACE_WORDS(p);
         pure = (backing >> PROC_SWAP_TEXT_SHIFT) & PROC_SWAP_TEXT_MASK;
         if (!pure || pure > MM_HALF_MASK - EXEC_USER_ORIGIN ||

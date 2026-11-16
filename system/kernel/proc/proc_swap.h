@@ -63,6 +63,8 @@ int proc_swap_boot_init(unsigned int slots);
 int proc_swap_attach(int slot, vnode_t backing,
     kword_t text_words, unsigned int pure);
 /** Detach swap backing only after validating the complete live disk run. */
+/* A PACKED RAW process uses the existing mode map and a separate exact
+ * PDP-6 MM-owner release, never the disk-run free path (v1609). */
 int proc_swap_detach(int slot);
 /** Write one resident process image to swap-tail storage and release its VM. */
 int proc_swap_out(int slot);

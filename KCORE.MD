@@ -1,3 +1,30 @@
+## 2026-11-16 v1609: production PACKED terminal owner teardown
+
+The first P1-E production-linked cleanup is the terminal
+RAW PACKED_PROCESS owner release. `vm_space_destroy` accepts
+mode 2 only with VM base zero, then the existing
+`proc_swap_detach` invokes machine-owned
+`pdp6_pure_detach_v1609` to verify the exact saved backing,
+original PURE geometry and one unpinned suffix MM descriptor.
+This leaves original DISK mode release unchanged. Failed MM
+release leaves mode/backing/extent intact; successful release
+retires the mode, record and VM_SPACE_NONE even if the
+executable mount vanished.
+
+The v1609 native assembly VM/C detach, exact ownership
+refusals and unsafe mutant PASS. Earlier v880/v957 disk
+and v1129 VM_NONE acceptance PASS. Staged v1384 fast
+restore now enforces the same v1608 source admissibility
+as FULL restore and passes its prefix/rollback suites.
+
+Full KCC ROOT=tape `__kcore_low_end`: `024534` octal
+versus `024364` v1608, +104 code words, no new DATA/BSS
+or per-process state. No production scheduler path creates
+PACKED mode yet; P1-E remains OPEN until real DROP and
+fast/full restore, source lifetime, PI6 and physical
+guest/peak RAM proof are accepted.
+`design/kcore-p1e-packed-terminal-v1609.md`.
+
 ## 2026-11-15 v1608: P1-E source admission staged
 
 The first P1-E implementation increment adds a true swapless
