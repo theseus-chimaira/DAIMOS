@@ -1,3 +1,16 @@
+## 2026-11-16 v1623: P0-B no longer an open KCORE task
+
+The accepted v1575 DTVOL2 writable profile explicitly relies on
+trusted operators retaining the same physical DECtape reel while
+mounted writable. Stock Type-551 hardware cannot enforce reel
+retention, so the stronger v1571 unattended/no-trust requirement is
+not implementable in software. The corresponding active P0-B TODO
+is retired, not deferred to KCORE optimization. Preserve historical
+physical evidence and the operator-trust release condition; do not
+represent the missing hardware interlock as a pending kernel bug.
+P1-E and the final KCORE feature freeze remain open. Documentation
+only; no kernel, media, ABI or RAM change.
+
 ## 2026-11-16 v1622: opt-in mutable bitmap compression design (TODO only)
 
 The existing 30-word v1451 zero-presence bitmap codec is

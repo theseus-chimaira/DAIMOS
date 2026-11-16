@@ -1,4 +1,15 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1622 design note, 2026-11-16)
+## 2026-11-16 v1623: final DECtape policy, no outstanding retention TODO
+
+The accepted v1575 writable DTVOL2 release profile requires trusted
+operators who do not exchange a reel while it is mounted writable.
+Stock Type-551 hardware provides no physical reel-retention interlock;
+the stronger unattended policy cannot be implemented in software.
+There is no further P0-B implementation task or KCORE feature-freeze
+gate. Older unchecked P0-B items in dated checklists below are
+historical and must not be resumed as active work. Keep the operator
+trust requirement explicit in release documentation.
+
+## CURRENT KCORE FEATURE TODO (authoritative after v1623, 2026-11-16)
 
 - [x] **v1622 mutable-RAM compression policy documented:**
   existing PDP-6 v1451 30-word zero-bitmap codec is
@@ -387,16 +398,6 @@ tasks below preserve older evidence and are not additive.
 
 - [x] **P0-A:** critical selected ROOT/BACKSTORE fail-stop
   accepted v1548 and later physical matrices.
-- [x] **P0-B for trusted operators:** production DTVOL2 RW,
-  physical WRITE_INTENT/CLEAN, partial-write refusal, explicit
-  root-only discard and DIRTY cold-boot rejection accepted v1575.
-  Operator must prevent DECtape reel exchange during RW mount.
-- [ ] **P0-B strict physical retention (separate hardware policy):**
-  v1571 proves undetected external reel exchange; there is no
-  Type-551 mechanical interlock. Do not equate accepted
-  trusted-operator operation with unrestricted RW media safety;
-  hardware enforcement would require a separate requirement
-  and adversarial physical proof, not a software-only flag.
 - [x] **P0-D/E/F:** requester-only OOM release profile accepted
   v1298 F12/F13; full F07 no-partner/owner evidence v1348/v1351.
 - [x] **P1-C:** combined physical storage/swap/clean BCACHE/
@@ -1081,7 +1082,7 @@ hardware-enforced reel-retention guarantee remains unproved.
 Do not reopen accepted features solely because an older entry
 below remains unchecked.
 
-- [ ] **P0-B, media durability policy:** after a
+- (Historical, superseded) **P0-B, media durability policy:** after a
   genuinely partial WRITE_UNCERTAIN non-root DTFS
   volume is explicitly discarded, prevent its later
   physical reinsertion/reboot from being silently
@@ -1440,7 +1441,7 @@ below remains unchecked.
   word and one unchanged old word; host media oracle
   and PID1 sticky WRITE_UNCERTAIN PASS after same-media
   return with the revised CTY transport.
-- [ ] Continue outstanding P0-A/B and P1-C/D/E
+- (Historical, superseded) Continue outstanding P0-A/B and P1-C/D/E
   feature gates.
   VERSION 0.5; 32K/optimization HOLD.
 
@@ -1485,7 +1486,7 @@ below remains unchecked.
   profiles and maximum representational capacity 26,
   which is not physically available in the current
   seven-slot DTC-root configuration.
-- [ ] P0-A critical authoritative loss; P0-B durable
+- (Historical, superseded) P0-A critical authoritative loss; P0-B durable
   discarded media admission; P1-C mixed faults;
   P1-E swapless PURE/MM/APR and feature-only freeze.
   VERSION 0.5; strict 32K/optimization HOLD.
@@ -1506,7 +1507,7 @@ below remains unchecked.
   slot beyond four, distinct hardware inventories and
   upper representational bound 26 (not implied by a
   seven-slot TSFS-root test).
-- [ ] P0-A authoritative loss; P0-B durable old-media
+- (Historical, superseded) P0-A authoritative loss; P0-B durable old-media
   admission; P1-C mixed provider faults; P1-E swapless
   PURE/MM/APR; final full feature regression freeze.
   VERSION 0.5; 32K/optimization HOLD.
@@ -1543,7 +1544,7 @@ below remains unchecked.
   acceptance (native all-process owner scan
   and v1526 physical cross-process ownership
   are already separately proven).
-- [ ] **P0-B durability:** decide and implement
+- (Historical, superseded) **P0-B durability:** decide and implement
   the required cross-reboot/physical-reinsertion
   policy for previously WRITE_UNCERTAIN media.
   v1531 retains no durable blacklist and
@@ -1581,7 +1582,7 @@ below remains unchecked.
   root TSFS remains healthy. Target and host
   PASS; independent v1528 and v1527 physical
   regressions PASS. No mock provider.
-- [ ] **P0-B remaining:** design and physically
+- (Historical, superseded) **P0-B remaining:** design and physically
   accept a separately privileged, explicitly
   checked administrative repair/discard path
   for sticky WRITE_UNCERTAIN. Require complete
@@ -1609,7 +1610,7 @@ below remains unchecked.
   same/different-volume return and v1526
   independent FILE/cwd ownership. All PASS.
   No production code or RAM growth.
-- [ ] **Next P0-B:** explicit checked
+- (Historical, superseded) **Next P0-B:** explicit checked
   WRITE_UNCERTAIN administrative repair/
   discard and retained FILE/cwd/PIPE/swap
   owner lifetime, without trusting only
@@ -1631,10 +1632,10 @@ below remains unchecked.
   Target and host v1528 gate PASS; Type-551
   CONO diagnostic repeat PASS. No production
   bytes or persistent RAM added.
-- [ ] **P0-B:** prove a real partially completed
+- (Historical, superseded) **P0-B:** prove a real partially completed
   DTC3 physical block/transaction WRITE,
   not only failure with media already detached.
-- [ ] **P0-B:** implement and verify explicit
+- (Historical, superseded) **P0-B:** implement and verify explicit
   administrator-checked uncertain-media
   repair/replacement and owner cleanup,
   retaining fail-atomic VFS slot protection.
@@ -1678,7 +1679,7 @@ below remains unchecked.
   retirement of both mounts. Full guest
   `PASS`, v1526 cross-process regression
   `PASS` on the corrected MRES image.
-- [ ] **P0-B next:** actual physical
+- (Historical, superseded) **P0-B next:** actual physical
   partial/failed DTC3 **write**, sticky
   WRITE_UNCERTAIN and an explicit checked
   administrative recovery policy. A matching
@@ -1708,13 +1709,13 @@ below remains unchecked.
   Child then exits and WAIT reaps it. The full
   physical test passes twice; v1523 kernel
   owner guards needed no changes.
-- [ ] **P0-B next:** force an actual noncritical
+- (Historical, superseded) **P0-B next:** force an actual noncritical
   DTC3 physical READ fault while an old DTFS
   vnode/FILE remains live; verify fail-closed
   FSINFO/read/SYNC, authenticated 72-bit
   same-volume return, changed high/low ID
   rejection, and preserved open ownership.
-- [ ] **P0-B:** sticky WRITE_UNCERTAIN after
+- (Historical, superseded) **P0-B:** sticky WRITE_UNCERTAIN after
   true partial/failed DTC3 write, and explicit
   administrator-checked recovery without
   stale directory/FILE reuse.
@@ -1753,13 +1754,13 @@ below remains unchecked.
   unrelated long TSFS external EXEC loading.
   Optional DTFS/TSFS MRES unchanged octal `003746`
   text, `000002` BSS. Zero additional resident RAM.
-- [ ] **P0-B physical cross-process and return:** use
+- (Historical, superseded) **P0-B physical cross-process and return:** use
   a second genuine process holding DTFS cwd/FILE;
   verify no unmount while either owner lives,
   actual DTC3 read error and 72-bit same-media
   return/mismatched swap fail-closed, including
   open FILE, FSINFO and SYNC behavior.
-- [ ] **P0-B dirty write:** partial DTC3 failure,
+- (Historical, superseded) **P0-B dirty write:** partial DTC3 failure,
   sticky WRITE_UNCERTAIN and explicit checked
   administrative recovery without silent mount
   replacement or stale vnode reuse.
@@ -1794,7 +1795,7 @@ below remains unchecked.
   treating the existing D6FS mountpoint STAT as
   proof of mounted DTFS; require real FSINFO
   publication and successful UNMOUNT retirement.
-- [ ] **P0-B physical mounted acceptance:** use a
+- (Historical, superseded) **P0-B physical mounted acceptance:** use a
   truly DTC-selected root with installed DTFS MRES,
   mount verified native DTC3, test open FILE/cwd,
   same-volume error/return and mismatched replacement,
@@ -1805,7 +1806,7 @@ below remains unchecked.
   guest PASS confirmed MKFS/FSCK, MOUNT.DTFS refusal,
   and D6FS/MEMFS-only MOUNT inventory. It does not
   establish actual mounted DTFS recovery.
-- [ ] **P0-B policy:** explicit failure-atomic handling of
+- (Historical, superseded) **P0-B policy:** explicit failure-atomic handling of
   sticky WRITE_UNCERTAIN and zero-ID legacy volumes;
   no silent automatic reattachment, forged identity or
   forced FILE owner invalidation.
@@ -1868,7 +1869,7 @@ below remains unchecked.
   Controlled +86 optional MRES text, no new fixed KCORE or
   per-mount data. Independent strict single-root size gate
   remains FAILED (32K HOLD).
-- [ ] **P0-B remains open:** full booted multi-process guest
+- (Historical, superseded) **P0-B remains open:** full booted multi-process guest
   with genuine open FILE/vnode, dirty write, repeated medium
   error/return, mismatched replacement, mount retirement and
   independent root progress. Define safe explicit recovery for
@@ -1894,7 +1895,7 @@ existing acceptance and exact verification limits.
   v1515 HALT caller. Physical confirmed-loss and false-positive
   negative tests, exact root/swap HALT PC mandatory. Do not attempt
   root/BACKSTORE reconstruction or forced owner release (v1513).
-- [ ] **P0-B non-root media:** on DTFS observed error/return, physically
+- (Historical, superseded) **P0-B non-root media:** on DTFS observed error/return, physically
   match v1520 saved identity before old FILE/vnode/BCACHE reuse.
   Reject changed or unauthenticated legacy zero-ID volume safely;
   account for dirty/partial writes, mount-slot lifecycle and
@@ -5440,7 +5441,7 @@ software/device deadlocks remain kernel correctness requirements.
 - [x] Rerun v1077 disposable 256K physical-OOM provider/MM guest on the
   updated production tree: two injected D6FS SYNC refusals, one MM_BUSY
   refusal, correct requester/witness recovery and exit accounting PASS.
-- [ ] P0-B still requires classification of arbitrary software-stalled
+- (Historical, superseded) P0-B still requires classification of arbitrary software-stalled
   provider calls and permanent refusal. A healthy clock plus a driver
   watchdog is not a general cancellation or forced resource-release proof.
 

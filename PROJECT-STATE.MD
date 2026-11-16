@@ -1,3 +1,15 @@
+## 2026-11-16 v1623: retire strict P0-B hardware-retention backlog
+
+The v1575 trusted-operator DTVOL2 RW policy is the final supported
+release contract. Genuine physical v1571 testing showed why stock
+Type-551 cannot enforce reel continuity after a silent exchange.
+There is no software-only solution, so the strict no-operator-trust
+hardware-interlock item is removed from the authoritative KCORE TODO.
+Historical evidence remains unchanged; the operator must prevent
+exchange during writable mounts. Do not block the P1-E feature freeze
+or subsequent optimization on physical retention hardware that does
+not exist. No kernel, driver, ABI, media or RAM change.
+
 ## 2026-11-16 v1622: mutable bitmap compression design recorded (docs only)
 
 KCORE.MD and the authoritative TODO.MD now specify
