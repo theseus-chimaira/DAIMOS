@@ -107,7 +107,9 @@ d6fs_provider_free_fcb:
 d6fs_provider_free_fcb_loop:
         move    5,d6fs_active_reader
         jumpe   5,d6fs_provider_free_fcb_fail
-        caml    011,011(5)
+        ; Reader word 6 is fcb_count, not word 011 (super_block[0]).
+        ; The on-media superblock position is unrelated to FCB capacity.
+        caml    011,6(5)
         jrst    d6fs_provider_free_fcb_fail
         move    1,d6fs_active_reader
         move    2,011

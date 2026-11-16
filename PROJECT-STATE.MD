@@ -1,3 +1,15 @@
+## 2026-11-16: native DAS acceptance and D6FS free-FCB bound v1
+
+**Native PDP-6 DAS guest acceptance PASS.** D6FS previously failed
+MKDIR/OPEN(O_CREAT) on a writable root with 295 populated nodes and
+360 FCB slots. `d6fs_provider_free_fcb` used reader word `011`
+(superblock address) instead of reader word `6` (`fcb_count`) to bound
+its scan. Correcting that one operand restores CREATE with no KCORE
+code-word or data-word growth. A production-assembler PDP-6 unit test
+and the complete native DAS1/DAS2 assemble/compare/execute guest both
+PASS. See `design/d6fs-native-free-fcb-bound-v1.md`. Crash-atomic
+D6FS CREATE/recovery remains open.
+
 ## 2026-11-15 v1604: P1-E cross-target architecture review and native fixture repair
 
 **P1-E ARCHITECTURE REVIEW COMPLETE, IMPLEMENTATION STILL ON HOLD.**
