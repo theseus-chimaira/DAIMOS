@@ -20,6 +20,7 @@
 #include "mm_pure_expand_v1384.h"
 #include "fs_mres.h"
 #include "proc_pure_admit_v1608.h"
+#include "proc_pure_lifecycle_v1604.h"
 
 #if !defined(DAIMOS_SWAPLESS_PREFIX_V1384) || \
     DAIMOS_SWAPLESS_PREFIX_V1384 != 1
@@ -70,20 +71,13 @@ proc_pure_restore_v1384(unsigned int slot,
         kword_t pi_state;
         int rc;
 
-        if (!loader || !slot || !proc_table || !proc_swap_records ||
-            !proc_storage_runtime_v29.words ||
-            slot >= proc_storage_runtime_v29.slots)
+        if (!loader)
                 return MM_ERR_INVAL;
-        p = &proc_table[slot];
-        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
-            !PROC_UAREA_BASE(p) ||
-            (PROC_STATE(p) != PROC_SLEEP && PROC_STATE(p) != PROC_STOP))
-                return MM_ERR_INVAL;
+        rc = pure_life_prepare_v1604(slot, PURE_LIFE_RESTORE_V1610,
+            &p, &backing, &words);
+        if (rc != MM_OK)
+                return rc;
         u = PRP_PTR(PROC_UAREA_BASE(p));
-        if (u[PROC_FDCTL_OFFSET] &
-            (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT))
-                return MM_ERR_BUSY;
-        backing = proc_swap_records[slot].state;
         /* v1609: fast in-place prefix restore must observe the SAME
          * executable source admission as the bounded full restore.
          * Check before pinning or claiming a physical MM gap. A missing
@@ -92,7 +86,6 @@ proc_pure_restore_v1384(unsigned int slot,
          */
         if (pure_admit_source_v1608(p, backing) != MM_OK)
                 return MM_ERR_INVAL;
-        words = VM_SPACE_WORDS(p);
         pure = (backing >> PROC_SWAP_TEXT_SHIFT) & PROC_SWAP_TEXT_MASK;
         if (!pure || pure > MM_HALF_MASK - EXEC_USER_ORIGIN ||
             !words || (words & (VM_PDP6_ALIGN_WORDS - 1UL)))

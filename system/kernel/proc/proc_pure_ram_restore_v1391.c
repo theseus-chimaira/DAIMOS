@@ -82,7 +82,7 @@ pram_extent(unsigned int slot, unsigned int type, kword_t words,
  * nonresident guard scan. No new kernel word is needed.
  */
 static int
-pram_prepare(unsigned int slot, unsigned int terminal,
+pram_prepare(unsigned int slot, unsigned int action,
     struct proc **pp, kword_t *backingp, kword_t *wordsp,
     kword_t *skipp)
 {
@@ -90,11 +90,11 @@ pram_prepare(unsigned int slot, unsigned int terminal,
         kword_t backing, words, skip;
         int rc;
 
-        rc = pure_life_prepare_v1604(slot, terminal, &p, &backing,
+        rc = pure_life_prepare_v1604(slot, action, &p, &backing,
             &words);
         if (rc != MM_OK)
                 return rc;
-        if (!terminal) {
+        if (action != PURE_LIFE_TERMINAL_V1610) {
                 rc = pure_admit_source_v1608(p, backing);
                 if (rc != MM_OK)
                         return rc;
@@ -130,7 +130,8 @@ proc_pure_ram_restore_v1391(unsigned int slot,
 
         if (!loader)
                 return MM_ERR_INVAL;
-        rc = pram_prepare(slot, 0U, &p, &backing, &words, &skip);
+        rc = pram_prepare(slot, PURE_LIFE_RESTORE_V1610,
+            &p, &backing, &words, &skip);
         if (rc != MM_OK)
                 return rc;
         if (proc_storage_expect_v30(slot, PROC_STORAGE_PACKED) != 0)

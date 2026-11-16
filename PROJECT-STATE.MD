@@ -1,3 +1,38 @@
+## 2026-11-16 v1610: source-matched slot-0 mode ownership boundary
+
+The removable PDP-6 swap MRES service now consults the
+authoritative two-bit storage mode before any swap-in.
+DISK mode follows the existing disk/MM/READY_ONCE path;
+PACKED mode retains its exact RAW suffix/executable owner
+without DISK I/O, exchange or TERM and defers the request
+for the existing 0100-octal PI6 cooldown. Invalid mode 3
+also refuses without disk interpretation. No runtime code
+currently creates PACKED. This is a **safety boundary**,
+not a functioning RAW wake service.
+
+Staged PURE lifecycle preflight now distinguishes DROP (0),
+TERMINAL (1) and RESTORE (2); slot-0 RUN can enter RESTORE
+only while the target owns TRANSITION, but RUN remains
+ineligible for DROP. v1381/v1391 FULL and v1384 prefix
+staging share the new preflight; immutable backing, PACKED
+mode and PDP-6 MM geometry remain independently checked.
+No new runtime table, field, CPU interface or codec.
+
+Native PDP-6 v1610 actual service and unsafe routing mutant,
+v1604 lifecycle, v1384/v1385 fast prefix, v1395 bounded
+FULL/rollback, v1608 admission, v1609 terminal MM owner,
+and v1316/v1317 real DISK swap PASS. Full KCC
+`ROOT=tape` KCORE and swap MRES package build/link PASS.
+The KCORE DXR/map remain byte-identical to v1609:
+`__kcore_low_end = 024534` octal. The new mode check
+costs 11 instructions in removable SWAP MRES only.
+
+E1 immutable-source lifetime, actual no-BACKSTORE service
+installation, E2 live RAW DROP, E3 real prefix/FULL wake,
+E4 PI6/EXEC/WAIT, E5 complete physical acceptance remain
+OPEN. Strict 32K/optimization HOLD, VERSION 0.5.
+See `design/kcore-p1e-slot0-mode-v1610.md`.
+
 ## 2026-11-16 v1609: production P1-E PACKED terminal teardown
 
 The EXIT-side prerequisite for P1-E is now linked in KCORE:

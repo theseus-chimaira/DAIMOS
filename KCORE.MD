@@ -1,3 +1,32 @@
+## 2026-11-16 v1610: mode-aware slot-0 swap service
+
+The real removable PDP-6 SWAP MRES now distinguishes the
+authoritative two-bit DISK and PACKED modes **before**
+attempting swap-in. DISK continues along the original
+READ/MM/exchange/READY_ONCE path. An inactive PACKED
+owner must never be passed as a disk block run, and v1610
+therefore preserves its record/suffix, issues no TERM or
+READY_ONCE, and defers the current request for the existing
+0100-octal cooldown. Invalid mode 3 is also rejected.
+This is a fail-closed preparatory branch, not an accepted
+production RAW restore.
+
+Shared staged lifecycle preflight now explicitly separates
+DROP, TERMINAL and RESTORE. The latter admits RUN only when
+slot 0 executes with the target TRANSITION-held; DROP remains
+SLEEP/STOP-only. v1384 fast-prefix and v1391 bounded FULL
+native tests PASS for slot-0 RUN wakeup and non-slot-0
+refusal. v1610 MRES service positive/mutant and v1316 disk
+transaction/rollback PASS.
+
+Full KCC PDP-6 KCORE and SWAP MRES link PASS. The KCORE
+DXR and map are byte-identical to v1609; low end stays
+`024534` octal, permanent RAM growth zero. This
+increment adds 11 removable MRES instructions.
+Real no-BACKSTORE installation, executable lifetime, live
+RAW DROP/restore and full physical guest acceptance remain
+OPEN. `design/kcore-p1e-slot0-mode-v1610.md`.
+
 ## 2026-11-16 v1609: production PACKED terminal owner teardown
 
 The first P1-E production-linked cleanup is the terminal

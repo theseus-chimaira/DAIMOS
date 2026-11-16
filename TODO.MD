@@ -1,4 +1,23 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1609, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1610, 2026-11-16)
+
+- [x] **P1-E slot-0 mode split v1610, real removable MRES:**
+  DISK continues to the original restore, exchange and fatal
+  I/O; PACKED preserves its owner and defers for the existing
+  0100-tick cooldown without DISK I/O, TERM or READY_ONCE.
+  Invalid mode 3 refuses. Native source-linked positive and
+  bypass-mutant tests PASS, plus v1316/v1317 real disk swap.
+  +11 removable MRES instructions; permanent KCORE DXR/map
+  unchanged from v1609 (`024534` octal low end).
+- [x] **P1-E RESTORE role v1610, staged:** slot-0 RUN may
+  enter a TRANSITION-held RAW restore; DROP remains
+  SLEEP/STOP-only. v1384/v1391 prefix/full source-linked
+  KCC native tests confirm non-slot-0 refusal and successful
+  mode/VM/data publication. `design/kcore-p1e-slot0-mode-v1610.md`.
+- [ ] **P1-E production reclaim/wakeup still OPEN:** real
+  immutable source lifetime and no-BACKSTORE PURE MRES,
+  zero-copy DROP, complete fast/FULL slot-0 restore,
+  PI6/EXEC/WAIT/EXIT and full physical guest tests. The
+  current PACKED branch only defers, it does NOT restore.
 
 - [x] **P1-E terminal PACKED ownership v1609, production linked:**
   `vm_space_destroy` now accepts mode 2 only with a zero APR

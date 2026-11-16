@@ -2053,6 +2053,26 @@ proc_swap_mres_service_v481:
         trne    3,PROC_TRANSITION_RH
         jrst    proc_swap_service_pop_clear
 
+        ; v1610: the zero VM base does not identify the storage owner.
+        ; DISK's record is a block run; PACKED's record remains an
+        ; executable vnode. Never pass the latter to proc_swap_in,
+        ; or a valid inactive PURE suffix could be treated as a failed
+        ; disk read and incorrectly given a fatal TERM event.
+        ; Until a complete RAW restore service is accepted, leave
+        ; PACKED's owner intact and defer only this request. No new
+        ; per-process queue or resident KCORE instruction is needed.
+        move    1,(17)
+        movei   2,1                    ; PROC_STORAGE_DISK
+        pushj   17,proc_storage_expect_v30
+        jumpe   1,proc_swap_service_disk_v1610
+        move    1,(17)
+        movei   2,2                    ; PROC_STORAGE_PACKED
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,proc_swap_service_pop_clear
+        movei   1,0100
+        movem   1,proc_swap_pressure_ticks
+        jrst    proc_swap_service_pop_clear
+proc_swap_service_disk_v1610:
         move    1,(17)
         pushj   17,proc_swap_in
         jumpg   1,proc_swap_service_pressure
