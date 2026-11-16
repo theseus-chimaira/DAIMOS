@@ -1,3 +1,20 @@
+## 2026-11-16 v1624: P1-E sixth child is failed RUN, not stalled SLEEP
+
+Testkit-only, exact 48K PDP-6 TSFS/no-AUX PURE source-built guest:
+six-child `016000` experiment prints `aaaaa!rwwwww` and HALTs
+before parent BRK. A source-authentic split of old `!c` proves the
+sixth RUN returned invalid PID, rather than a PROC_SLEEP wait
+failure. Independent five-child `017000` test reaches
+`aaaaa[B063060/042502]<010000+017000>wwwww`, then HALT with no
+successful BRK return. Current-source physical negative auditors
+and falsified-trace rejection PASS. Old fatal-close breakpoint replay
+timed out and does not classify BRK failure; actual RUN refusal
+stage, successful parent PIPE/WAIT/EXIT, immutable backing lifetime,
+net/peak RAM, physical MM rollback and full P1-E remain OPEN.
+No KCORE or removable MRES production code/ABI/RAM change; PURE
+OFF by default and 32K optimization HOLD. Details in
+`design/kcore-p1e-physical-run-admission-v1624.md`.
+
 ## 2026-11-16 v1623: retire strict P0-B hardware-retention backlog
 
 The v1575 trusted-operator DTVOL2 RW policy is the final supported

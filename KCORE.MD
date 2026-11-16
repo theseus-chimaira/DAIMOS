@@ -1,3 +1,19 @@
+## 2026-11-16 v1624: genuine six-child RUN refusal classified
+
+New testkit-only diagnostic on full 48K PDP-6/TSFS/no-AUX PURE
+guest splits the old sixth-child `!c` into RUN-failure `!r` and
+failure-to-reach-SLEEP `!s`. The exact six-child physical result is
+`aaaaa!rwwwww` and HALT before BRK: the sixth RUN returned invalid
+PID, NOT a sleep timeout. Five-child target 017000 reaches real
+`[B063060/042502]<010000+017000>`, then five `w` completions
+without parent BRK return or success. Both source-authentic negative
+physical auditors and corrupted-trace rejection PASS. A separate
+old fatal-close breakpoint replay timed out, hence the exact RUN and
+BRK failure stages, parent WAIT, physical net/peak RAM and complete
+P1-E remain OPEN. No production KCORE/MRES/ABI/driver/RAM changes;
+PURE OFF by default. Report:
+`design/kcore-p1e-physical-run-admission-v1624.md`.
+
 ## 2026-11-16 v1623: P0-B no longer an open KCORE task
 
 The accepted v1575 DTVOL2 writable profile explicitly relies on

@@ -1,3 +1,20 @@
+## 2026-11-16 v1624: P1-E next physical RUN/BRK gate
+
+- [x] The typed six-child source-backed 48K PURE guest proves the
+  sixth child was refused by RUN (`!r`), not a PROC_SLEEP wait
+  timeout. Five preexisting children print their valid `w` markers.
+  Five-child `017000` BRK experiment also produces five ready/w
+  markers, but no completed parent BRK. Testkit physical negative
+  auditors and deliberately falsified trace rejection PASS.
+- [ ] Stop the sixth RUN at its actual source-linked error stage;
+  capture authoritative MM and process occupancy before cleanup.
+  Do not assume MM exhaustion rather than another RUN failure.
+- [ ] Construct a physically fitting RAW-pressure workload that
+  completes full parent BRK and PIPE/WAIT/EXIT, all owner/pin/
+  immutable backing checks, and positive net/peak physical RAM.
+  Old five-child fatal-close replay timed out and proves neither
+  an allocator defect nor an accepted recovery path.
+
 ## 2026-11-16 v1623: final DECtape policy, no outstanding retention TODO
 
 The accepted v1575 writable DTVOL2 release profile requires trusted
