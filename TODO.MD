@@ -1,4 +1,43 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1620, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1621, 2026-11-16)
+
+- [x] **v1621 physical user-mode return:** following
+  original MM unpin, READY_ONCE and restored
+  slot-2 selection, native PDP-6 console
+  prints 'w' from the exact booted PURE
+  child. Source requires successful PIPE
+  read and intact private data first.
+  Original manifest/DXR/source and physical
+  scheduler states checked; unsafe missing-
+  marker and wrong-source mutants rejected.
+- [x] **v1621 pressure geometry negative
+  control:** a direct 48K physical BRK
+  010000 -> 016000 fits but logical process
+  words also grow by the full 006000 octal.
+  The original four-child guest correctly
+  rejects with !R. This is NOT an accepted
+  RAW-savings workload. Testkit refuses a
+  mutated growth counter.
+- [x] **v1621 six-child capacity negative
+  control:** five children reach sleep
+  before the next child triggers !c,
+  *before* any parent BRK pressure.
+  The existing guard combines invalid
+  RUN pid and wait-for-sleep refusal,
+  so no cause is assigned yet.
+  Unsafe refusal mutation rejected.
+- [ ] **Next P1-E physical end-to-end:**
+  find an allocatable but genuine RAW
+  pressure geometry; complete and check
+  all child PIPE/WAIT/EXIT statuses,
+  immutable executable backing lifetime
+  and physical peak/net RAM including
+  1758-word GCC PURE MRES. Do not infer
+  net RAM savings from user markers or
+  MEMINFO alone. Default PURE OFF.
+  A five-child fitting profile and
+  classification of the sixth child's
+  RUN-vs-SLEEP refusal are candidates.
+  design/kcore-p1e-physical-user-resume-v1621.md.
 
 - [x] **v1620 genuine 48K physical PURE prefix commit:**
   source/DXR exact PC 034614 entered for

@@ -1,3 +1,53 @@
+## 2026-11-16 v1621: restored user code runs; fitting BRK needs pressure
+
+The genuine v1620 48K PDP-6 PURE guest was
+continued after the real slot-2 MM commit,
+unpin and READY_ONCE/current-slot writes.
+Actual user source code printed its unique
+'w' marker *after* slot 2 was selected
+and before two bounded CPU continuation
+steps expired. The booted /SYSTEM/INIT
+manifest, preserved compiled source and
+DXR2 PURE executable agree. This child
+printed the marker only after its pipe
+read returned and both private mutable
+data sentinels were verified. Thus an
+actual restored child executes user code;
+complete parent WAIT/EXIT remains OPEN.
+
+An independently rebuilt 48K/no-AUX
+four-child test with target BRK 016000
+fits, but process words grow 052450 ->
+060450 octal, exactly matching the
+original BRK 010000 -> 016000 growth
+of 006000 octal words. The original
+guest correctly emits !R and refuses
+to credit that as RAW reclaim. Its
+four child 'w' markers follow parent
+failure/pipe cleanup, not a successful
+parent WAIT. A smaller BRK alone does
+not create an accepted RAM saving.
+
+With six children and the same 016000
+target, a separate actual 48K guest
+reports five ready children and then
+!c before reaching BRK. The original
+code combines invalid RUN pid and
+bounded failure to reach PROC_SLEEP
+under this one refusal. No cause
+is classified without more evidence.
+
+v1621 testkit physical source/DXR audit
+and unsafe marker/source mutations PASS;
+the four-child fitting negative control
+and unsafe growth mutation PASS. The
+six-child early refusal and mutated
+refusal marker tests also PASS. No
+production changes, and positive peak/
+net RAM and full PIPE/WAIT/EXIT acceptance
+remain open. PURE default OFF.
+See design/kcore-p1e-physical-user-resume-v1621.md.
+
 ## 2026-11-16 v1620: physical VFS/MM commit and READY_ONCE proved
 
 The genuine v1618-built, 48K PDP-6 TSFS/no-AUX

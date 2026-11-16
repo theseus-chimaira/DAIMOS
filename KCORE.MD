@@ -1,3 +1,43 @@
+## 2026-11-16 v1621: physical restored user execution
+
+The v1620 source-matched PDP-6 physical
+slot-2 MM commit/unpin and READY_ONCE
+current-slot sequence was followed by
+real user CPU execution. The original
+booted TSFS PURE child prints its unique
+'w' after its PIPE read and both private
+mutable sentinels succeed, before the
+first of two bounded post-scheduling
+CPU intervals ends. The real PURE DXR2,
+guest source and manifest were checked;
+unsafe marker/source mutations rejected.
+This proves restored *user code* actually
+runs, not full parent WAIT/EXIT.
+
+With four sleeping children, a new
+48K physical BRK 010000 -> 016000
+fits but logical process words grow
+by the same 006000 octal; the existing
+guest rightly emits !R rather than
+claiming RAW reclamation. Testkit
+negative-control auditor PASS.
+Another 48K guest with six requested
+children reports five ready, then
+!c before any BRK attempt. That
+could be RUN or bounded sleep-check
+refusal; the exact cause is OPEN.
+
+The installed GCC PURE MRES costs 1758
+decimal RAM words; four simultaneously
+omitted 512-word prefixes provide at
+most 290 words gross advantage before
+other costs. Successful complete
+PIPE/WAIT/EXIT, backing lifetime and
+positive peak/net physical RAM are
+still unverified. No production change,
+default PURE OFF. Details in
+design/kcore-p1e-physical-user-resume-v1621.md.
+
 ## 2026-11-16 v1620: physical PURE commit, unpin and scheduler restore
 
 The original opt-in PURE MRES in the 48K
