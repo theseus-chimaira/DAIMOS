@@ -1,3 +1,17 @@
+## 2026-11-16 v1632: five-owner physical sampled RAM comparison
+
+Matched original 48K PDP-6 INIT DXR and KCORE map, with PURE ON
+(five PACKED children after a refused sixth RUN) and PURE OFF
+(five full PROCESS children before sixth RUN). Physical MM free
+ON=016173, OFF=014330 octal; sampled ON advantage is 001643
+octal / 931 decimal words, already accounting for installed
+1758-word PURE MRES through managed-arena start. Largest aligned
+free APR gap ON=007000, OFF=012000, but another process needs
+010000. Same live owner count, slightly different RUN history;
+not a matched peak or full-workload net saving. Original physical
+testkit audit and forged-owner mutants PASS/reject. No production
+change. See `design/kcore-p1e-equal-five-memory-v1632.md`.
+
 ## 2026-11-16 v1631: matched 48K PURE admission regression
 
 Independent physical 48K PDP-6 TSFS/no-AUX control uses the EXACT

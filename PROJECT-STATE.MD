@@ -1,3 +1,19 @@
+## 2026-11-16 v1632: equal-five-owner physical sampled RAM
+
+Original source-identical PDP-6 48K no-AUX TSFS DXR/KCORE with
+five children in both modes. PURE ON B snapshot after sixth RUN
+refusal has five PACKED owners, occupied/free=057023/016173;
+PURE OFF before sixth RUN has five PROCESS owners, occupied/free
+=064224/014330. Measured free delta ON-OFF = 001643 octal or
++931 decimal words, with 1758-word resident PURE MRES included
+by arena-start delta 003336 octal. Aligned largest free run ON
+007000 vs OFF 012000; required next VM 010000, explaining why
+only the OFF image admits child six. Not comparable transient
+peaks: preceding failed-RUN history differs. Source-linked MM
+auditor and two forged owner tests PASS/reject. No production
+code changed, PURE OFF by default, strict 32K HOLD. Report:
+`design/kcore-p1e-equal-five-memory-v1632.md`.
+
 ## 2026-11-16 v1631: 48K PURE module incurs real admission regression
 
 Genuine matched PDP-6 48K no-AUX/TSFS builds: compiled C89

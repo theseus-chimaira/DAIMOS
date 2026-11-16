@@ -1,3 +1,19 @@
+## 2026-11-16 v1632: measured five-owner physical RAM
+
+- [x] Physically sample source-identical 48K guest with equal five
+  child owners: ON five PACKED vs OFF five PROCESS. Free ON
+  016173, OFF 014330 octal, +001643 octal / 931 decimal words
+  ON with PURE module cost included. Two corrupt physical owner
+  witnesses rejected. Different prior failed-RUN histories mean
+  this is a sample, not a true matched temporal peak.
+- [ ] Resolve fragmented contiguous APR process admission: largest
+  aligned free ON 007000 but OFF 012000, next VM needs 010000.
+  No allocator retry workaround or unsafe MM reclassification.
+  Prove correct physical owner/restore/rollback geometry first.
+- [ ] Measure complete matched peak/net RAM, full relocated v1391
+  restore, source lifetime and concurrent PI6/failure paths before
+  P1-E freeze. PURE OFF by default; strict 32K HOLD.
+
 ## 2026-11-16 v1631: P1-E PURE-on capacity regression, net RAM OPEN
 
 - [x] Source-identical 48K PDP-6 INIT DXR and KCORE map, PURE on
