@@ -24,6 +24,26 @@ Completed SLOT0 restore, WAIT and net memory
 savings remain OPEN; PURE default stays OFF.
 See `design/kcore-p1e-linker-pure-address-v1614.md`.
 
+## 2026-11-16 v1615: BRK pressure MM geometry and fatal OOM path
+
+Real 48K no-AUX PURE test, controlled `014000` BRK
+HALT: actual MM table shows five PROCESS owners,
+zero PACKED, one arena `042562..140000` and only
+`02000` APR-aligned words available before the
+parent. This BRK success is not RAW reclamation.
+
+Stepped growth to `020000` does not reach a controlled
+HALT or typed error. Parent disappears and children
+print `wwww`; later MM snapshot has current slot
+zero and no process owners. Source shows the
+`MM_ERR_NOMEM` BRK branch calls fatal close before
+the test veneer can capture AC2. A fatal OOM is
+consistent with the trace but not independently
+confirmed at the failing instruction. Next use
+pre-cleanup source-mapped breakpoint and MM read.
+No KCORE/MRES growth; PURE still default OFF.
+See `design/kcore-p1e-brk-geometry-v1615.md`.
+
 ## 2026-11-16 v1613: physical no-AUX TSFS boot acceptance
 
 KINIT now installs opt-in PURE on the actual no-AUXST1

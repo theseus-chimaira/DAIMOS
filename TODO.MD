@@ -1,4 +1,19 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1614, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1615, 2026-11-16)
+
+- [x] **v1615 exact physical baseline:** 48K no-AUX
+  PURE guest, controlled `014000` BRK HALT, five
+  exact PROCESS owners, zero PACKED, MM arena/gap
+  decoded from actual simulator memory.
+- [x] **v1615 failure-path distinction:** stepped
+  `020000` BRK loses the requester before its
+  test-only cause veneer can report. Production
+  BRK terminates on MM_ERR_NOMEM; post-cleanup
+  SIMH MM dump is not live refusal geometry.
+- [ ] **Capture live typed refusal:** breakpoint
+  before `proc_fatal_close_current_v879`, record
+  AC2 and exact MM owners before cleanup; then
+  establish RAW publication/restore and net RAM.
+  Do not alter the kernel OOM policy to test it.
 
 - [x] **v1614 compiler/linker defect (priority P0):**
   host and native DLINK `--pure` now distinguish

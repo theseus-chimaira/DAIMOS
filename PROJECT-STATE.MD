@@ -1,3 +1,29 @@
+## 2026-11-16 v1615: real 48K BRK/MM geometry diagnosis
+
+Using a genuine `--pure` DXR and the actual no-AUX
+PDP-6, test-only HALT/SIMH MM snapshots confirmed
+one arena `042562..140000` and five PROCESS owners
+at a successful BRK `014000`; zero PACKED owners.
+The adjacent APR-aligned lower gap is only `02000`.
+
+The stepped `014000`, `016000`, `020000` physical
+guest did not reach controlled BRK success or typed
+nonfatal refusal. The requester disappeared, its
+pipe readers printed `wwww`, and the simulator
+halted after cleanup with current slot zero and
+no PROCESS/PACKED owners. The existing production
+BRK syscall fatally closes the requester for
+`MM_ERR_NOMEM`; the test veneer cannot record AC2
+after that path. This is consistent with fatal OOM,
+but AC2 was not independently captured at failure.
+
+No kernel, MRES or process format change. v1615
+diagnostic scripts and exact MM decoder remain in
+daimos-testkit. Next stop at the fatal branch before
+cleanup to measure AC2 and live MM state. P1-E
+default OFF, RAW/restore/net RAM still OPEN.
+See `design/kcore-p1e-brk-geometry-v1615.md`.
+
 ## 2026-11-16 v1614: host/native DLINK PURE range bug fixed
 
 Corrected a genuine linker defect exposed by the PDP-6
