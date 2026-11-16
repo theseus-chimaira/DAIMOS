@@ -1,3 +1,19 @@
+## 2026-11-16 v1633: real 48K APR corridor threshold identified
+
+Original source-matched v1629/v1632 MM owner tables show PURE-on
+low-core dynamic high 046605, PURE-off high 043247, exactly
+003336 octal/1758 decimal words apart for installed PURE MRES.
+The unchanged parent APR is 126000..136000 and leaves 002000
+upper tail. Six complete 010000-word child APRs below that parent
+require low-core boundary <=046000. PURE-on exceeds that limit
+by precisely 000605 octal = 389 decimal words. Merely moving
+PACKED suffixes cannot create six simultaneous runnable APRs
+in this fixed-parent corridor. Source-authenticated physical
+v1633 audit and forged dynamic/parent extent controls PASS/reject.
+Candidate MRES reduction is NOT implemented or proven; no fixed
+KCORE/MM/process change, PURE OFF, 32K HOLD. Details:
+`design/kcore-p1e-apr-corridor-bound-v1633.md`.
+
 ## 2026-11-16 v1632: five-owner physical sampled RAM comparison
 
 Matched original 48K PDP-6 INIT DXR and KCORE map, with PURE ON

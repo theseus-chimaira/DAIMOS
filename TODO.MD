@@ -1,3 +1,21 @@
+## 2026-11-16 v1633: 48K physical APR alignment bound
+
+- [x] Original physical MM proof: low-core dynamic end 046605
+  with PURE and 043247 without; parent APR 126000..136000.
+  For six complete 010000 child APRs below that parent, low-core
+  allocation must end <=046000. Current PURE needs a reduction
+  of >=000605 octal/389 decimal words to cross that boundary.
+  Two fabricated dynamic/parent owner witnesses rejected by
+  source-matched testkit. This is not a completed capacity fix.
+- [ ] Investigate a correct removable PURE MRES reduction of at
+  least 389 words (or a proven different geometry), retaining
+  fast/FULL restore, rollback and all immutable-source contracts.
+  No PACKED-owner metadata relocation workaround or unsafe
+  allocation retry. Prove in an actual fresh linked 48K guest.
+- [ ] Full v1391 relocated restore, source/unmount and PI6/MM
+  rollback, physical peak/net memory, final feature acceptance.
+  PURE OFF by default and strict 32K size optimization HOLD.
+
 ## 2026-11-16 v1632: measured five-owner physical RAM
 
 - [x] Physically sample source-identical 48K guest with equal five

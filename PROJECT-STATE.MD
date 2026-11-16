@@ -1,3 +1,20 @@
+## 2026-11-16 v1633: source-matched APR corridor capacity bound
+
+From original 48K physical five-owner PURE-ON/OFF MM table:
+low-core necessary dynamic high ON=046605, OFF=043247;
+parent APR fixed 126000..136000, tail 002000. First aligned
+child APR slot ON 050000, OFF 044000; five slots ON, six OFF.
+The six-child full-APR corridor requires low-core high <=046000;
+ON is 000605 octal/389 decimal words too high. Module footprint
+003336 octal=1758 decimal drives original low-core shift.
+This is a source-matched fixed-parent geometry bound, not a
+universal impossibility result or a proven module-shrink fix.
+Original MM auditor and corrupted dynamic/parent witnesses
+PASS/reject. Do not relocate PACKED descriptors without contents
+and owner/PI6 guarantees. No production edit; PURE remains OFF
+by default, strict 32K optimization HOLD. Report:
+`design/kcore-p1e-apr-corridor-bound-v1633.md`.
+
 ## 2026-11-16 v1632: equal-five-owner physical sampled RAM
 
 Original source-identical PDP-6 48K no-AUX TSFS DXR/KCORE with
