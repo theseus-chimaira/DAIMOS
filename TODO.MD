@@ -1,4 +1,70 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1621, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1622 design note, 2026-11-16)
+
+- [x] **v1622 mutable-RAM compression policy documented:**
+  existing PDP-6 v1451 30-word zero-bitmap codec is
+  independently tested but NOT yet in production P1-E.
+  Compress mutable RAM ONLY for executables explicitly
+  marked COMPRESSIBLE_MUTABLE; default uncompressed.
+  PURE text omission stays independent. Eligibility
+  must survive fork and be replaced on EXEC; actual
+  RAW/BITMAP representation must be tracked separately.
+  KCORE.MD v1622 is the design contract, NOT a claim
+  that the feature is implemented.
+- [ ] **v1622 executable admission/header audit:** the
+  DXR flags field currently uses COMPRESSED, PURE and
+  RT_REQUIRED above the 15-bit BSS field. Design an
+  unused backward-compatible DXR2 admission encoding
+  without reusing the on-disk COMPRESSED payload bit,
+  changing BSS interpretation or admitting unmarked
+  executables. Test invalid/legacy headers, fork/EXEC
+  replacement and privileged admission as applicable.
+- [ ] **v1622 overlap-safe bitmap codec:** read-only
+  preflight of exact nonzero count/output length and
+  worst-case temporary spill; preserve RAW for non-
+  shrinking payloads. Prove bounded forward/backward
+  overlap encoding and decoding, including decoding
+  from the end when needed. The existing 36-word
+  presence bitmap is NOT RLE. Keep v1451 disjoint
+  native codec as the bit-exact reference. Do not
+  assume ceil(N/36) alone is sufficient for every
+  overlapping geometry without a proof.
+- [ ] **v1622 borrow existing scratch, no new resident
+  slab by default:** prefer the process's own still-
+  owned/pinned PURE prefix during encoding, releasing
+  it only after the last spill read. For restoration
+  reacquire scratch independently. Evaluate the shared
+  VFS fs_block_workspace (0200 octal words) ONLY with
+  an explicit exclusive lease, BCACHE invalidation and
+  proof that TSFS/VFS/controller callbacks cannot
+  overwrite it or deadlock a restoration. Otherwise
+  use a bounded pinned, no-reclaim MM scratch extent
+  and preserve RAW on failure. Never borrow previously
+  freed process memory without regaining ownership.
+- [ ] **v1622 physical overlap/ownership transactions:**
+  MM alone decides which words are free, including
+  partially reused PURE-prefix and mutable-tail gaps.
+  Claim and pin the complete decode destination before
+  writing; reject overlaps with another MM owner.
+  Use an overlap-safe direction/staging path only when
+  proven, else disjoint full-APR relocation. Keep the
+  sole compressed source intact and pinned until the
+  restored image and executable backing are validated.
+  Atomic RAW/COMPRESSED publication, retry and exact
+  pin/owner/source-lifetime rollback are required.
+  In-place encoding overwrites source words, so prove
+  a no-fail completion region or recoverable partial
+  transaction BEFORE allowing the first source write.
+  Never publish a partially encoded mutable image.
+- [ ] **v1622 functional acceptance in daimos-testkit:**
+  full bitmap roundtrip and in-place overlap matrices,
+  zero/dense/alternating and 35/36/37-word boundaries,
+  real DSH captures, scratch/lease failure, source-
+  destination overlap and partial external reuse,
+  simulated interruption, repeated sleep/wake,
+  RUN/EXEC/EXIT/WAIT and mixed marked/unmarked images,
+  then a real PDP-6 no-AUX compressed-child resume.
+  Focus on functional safety, not standalone codec
+  efficiency benchmarks. Production remains OFF.
 
 - [x] **v1621 physical user-mode return:** following
   original MM unpin, READY_ONCE and restored

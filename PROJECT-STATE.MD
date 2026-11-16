@@ -1,3 +1,37 @@
+## 2026-11-16 v1622: mutable bitmap compression design recorded (docs only)
+
+KCORE.MD and the authoritative TODO.MD now specify
+the next optional P1-E mutable-RAM compression work.
+Only executables explicitly admitting
+COMPRESSIBLE_MUTABLE may encode mutable data;
+PURE omission is independent. DXR header admission
+must be backward-compatible and distinct from
+the COMPRESSED on-disk-payload flag, whose three
+allocated flag bits share a word with BSS.
+
+The existing v1451 zero-bitmap codec remains
+test-only. Proposed in-place encoding must first
+prove exact output and overlap scratch bounds;
+prefer the still-owned/pinned PURE prefix for
+scratch during encoding. Restoration independently
+acquires scratch: any earlier freed memory may
+have been reused in part by unrelated owners.
+The existing 0200-octal fs_block_workspace is
+NOT currently leased for compression; any reuse
+requires exclusive VFS/BCACHE ownership and a
+deadlock-free provider contract. Otherwise use a
+bounded pinned transient MM workspace, never
+new permanent scratch by default.
+
+MM must own every destination word before forward/
+backward or relocated restoration; partial input,
+pin/ownership failure and interrupted in-place
+encoding must remain recoverable. Prioritize
+functional/native and real PDP-6 tests in
+daimos-testkit, not standalone efficiency tests.
+No implementation or production KCORE/MRES change;
+default PURE/BITMAP OFF and 32K HOLD unchanged.
+
 ## 2026-11-16 v1621: restored user code runs; fitting BRK needs pressure
 
 The genuine v1620 48K PDP-6 PURE guest was

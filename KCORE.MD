@@ -1,3 +1,75 @@
+## 2026-11-16 v1622: opt-in mutable bitmap compression design (TODO only)
+
+The existing 30-word v1451 zero-presence bitmap codec is
+native-tested but not linked into production RAW PURE packing.
+Mutable-RAM compression is a distinct, explicitly opt-in step:
+ONLY an executable that authorizes COMPRESSIBLE_MUTABLE may
+compress its mutable suffix. Unmarked executables still permit
+independent PURE omission when admitted, but retain mutable
+RAM verbatim. EXEC sets/replaces eligibility, fork inherits it,
+and the actual RAW-versus-BITMAP representation has separate
+authoritative storage/MM state. The existing DXR COMPRESSED
+bit describes the file payload, NOT mutable-RAM eligibility.
+Audit the existing DXR1/DXR2 header bits before choosing a
+backward-compatible encoding: COMPRESSED, PURE and RT_REQUIRED
+already occupy all three currently allocated flag bits above
+the 15-bit BSS count. Do not silently reuse any of them.
+
+Prefer ownership-preserving, in-place mutable encoding and
+overlap-aware decode, not a second full-size data extent.
+First count nonzero words without mutation, derive exact
+encoded length and overlap/spill requirement, and reject
+non-shrinking input as RAW. The first scratch candidate is
+the process's own still-owned/pinned reconstructible PURE
+prefix, BEFORE releasing it. Spill data must be completely
+consumed and no longer live before releasing those words.
+For restoration, independently reacquire scratch; the old
+PURE interval may have been partly reused by other owners.
+
+The preexisting 0200-octal (128-decimal)-word
+fs_block_workspace in VFS is a possible secondary scratch
+resource ONLY under an explicit exclusive lease spanning
+the whole operation, with the BCACHE slot-0 tag invalidated
+and no nested/interrupting VFS, TSFS or DECtape transfer use.
+Do not assume that 128 words suffice for arbitrary overlap
+or that existing provider serialization protects a sleeping
+PURE restore. Alternatively lease a small pinned dynamic MM
+extent without recursive reclamation; preserve RAW on refusal.
+Do not add a permanent private buffer unless these choices
+are proven unsafe or insufficient. Derive and prove the exact
+forward, backward and partially overlapping scratch bounds;
+the 36-bit bitmap format is not RLE.
+
+On wake, MM is authoritative for all physical occupancy.
+Freed PURE and encoded-tail intervals may be partly or wholly
+owned by unrelated processes. Claim/pin every destination
+word before writing; never cross another owner. Select
+direction and staging for verified overlapping ranges,
+including decoding from the end where needed. If in-place
+expansion is unsafe, relocate to a disjoint full APR extent,
+keeping the compressed source pinned until a fully validated
+image is ready. Refuse safely if neither route has sufficient
+owned storage. Publication, pin/unpin, EXIT/EXEC/WAIT and
+failure rollback must preserve the sole valid mutable image,
+executable backing lifetime and existing scheduler ABI.
+In-place encoding necessarily changes source words: before the
+first write, prove either non-failing completion under the
+exclusive process/MM lease or a bounded, verifiable recovery
+path for interruption. A partial encoded stream is NEVER
+published as a valid packed process.
+
+Develop this as a testkit-first FUNCTIONAL task: native PDP-6
+roundtrip and overlap tests (all zero/nonzero, alternating,
+35/36/37-word boundaries, real DSH mutable captures),
+partial reuse of both former prefix and tail, scratch leases,
+allocation/pin/encoding/decoding failures, interrupted
+transactions, relocation, repeated wake/sleep and mixed
+eligible/ineligible processes. No separate codec efficiency
+benchmark is needed in this phase. Leave installed module
+size and default PURE/BITMAP activation unchanged. The
+implementation and all positive end-to-end acceptance remain
+OPEN; this is a documented design decision, not code.
+
 ## 2026-11-16 v1621: physical restored user execution
 
 The v1620 source-matched PDP-6 physical
