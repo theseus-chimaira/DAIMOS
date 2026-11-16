@@ -1,3 +1,45 @@
+## 2026-11-16 v1619: PDP-6 Type-551 RBN match and DCT read proved
+
+The genuine v1618 48K PDP-6 TSFS/no-AUX
+root DTC0 tape is now tested directly:
+source-authentic Type-551 near block-4
+read and high block-0341 -> reverse
+block-4 read both PASS. The destination
+is nonzero and the read-only TSFS media
+remain byte-identical.
+
+The full physical PURE pressure guest,
+with its unmodified 120s tape MRES,
+also reaches the PI3 *matching* RBN
+for DTC0 block 000004, at PC 031046.
+The exact original driver then arms
+the read at PC 031106 and reaches its
+Type-136 DCT reverse-read completion
+at PC 030555. There storage_state=-1,
+storage_count=0200 and event=0
+before completion publication.
+
+The initial attempt at a PI5 completion
+breakpoint was a test error: genuine
+DECtape READ completion is through
+tape_dct_done_keep_dtc, not tape_pi_done.
+Corrected the diagnostic, not the driver.
+
+Test-only exported assembler labels
+leave every installed tape DXR IMAGE
+word unchanged. Physical source-linked
+audits PASS with unsafe RBN-mark and
+DCT-state mutations rejected.
+
+This establishes RBN matching and entry
+to the actual read-completion path, not
+VFS executable-prefix commit/rollback,
+MM pin release, READY_ONCE, complete
+PIPE/WAIT/EXIT or positive net physical
+RAM. No production KCORE, MRES or driver
+change; PURE remains default OFF.
+See design/kcore-p1e-physical-dct-read-v1619.md.
+
 ## 2026-11-16 v1618: give DECtape full-rewind search 120s
 
 The Type-551 DECtape search's original 45-second

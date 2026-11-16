@@ -1,4 +1,30 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1618, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1619, 2026-11-16)
+
+- [x] **v1619 real Type-551 root RBN read:** the
+  actual TSFS DTC0 root, copied read-only,
+  passes block-4 near and block-0341 to 4
+  long reverse reads in the original PDP-6
+  driver; buffers contain data and images
+  stay byte-identical.
+- [x] **v1619 actual physical PURE/PI3/DCT path:**
+  full 48K no-AUX guest reaches matched
+  reverse RBN 000004 at PC 031046, arms
+  DTC read at 031106, and reaches the
+  0200-word DCT read-completion branch at
+  030555. Test-only label exports preserve
+  the complete production tape image.
+  Physical auditor rejects unsafe
+  RBN-mark and DCT-state mutants. PI5
+  probe error corrected in testkit.
+- [ ] **v1620 next transaction boundary:**
+  observe original mm_pure_commit_prefix_v1384
+  at physical PC 034614 or rollback
+  mm_pure_release_prefix_v1384 at 034612,
+  pin release, PROCESS publication and
+  slot-0 READY_ONCE/PIPE/WAIT. Physical
+  net and peak RAM still OPEN. Default
+  P1-E OFF; no feature creep.
+  design/kcore-p1e-physical-dct-read-v1619.md.
 
 - [x] **v1618 Type-551 search timeout correctness:**
   45s could expire before a 60s rewind/reversal;

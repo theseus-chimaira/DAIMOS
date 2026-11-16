@@ -24,6 +24,41 @@ Completed SLOT0 restore, WAIT and net memory
 savings remain OPEN; PURE default stays OFF.
 See `design/kcore-p1e-linker-pure-address-v1614.md`.
 
+## 2026-11-16 v1619: real PURE DECtape RBN and DCT completion
+
+The actual 48K TSFS/no-AUX root
+DECtape image now passes native DTC0
+near block-4 and high-block-0341
+reverse-to-block-4 reads, including
+real 0200-word transfer and no
+media mutation.
+
+The full PURE pressure guest also
+reaches the matched Type-136 PI3
+RBN branch (031046, target 4, mark
+4, reverse), the read-arming branch
+(031106), and original DECtape
+reverse-read DCT completion (030555,
+storage_state -1, count 0200).
+The first PI5 completion diagnostic
+was wrong for DTC READ; corrected
+test-only instrumentation to observe
+the actual DCT completion path.
+Test-only symbol exports yield an
+identical native tape DXR. Physical
+audits and two unsafe mutants PASS.
+
+The DCT probe stops before its
+completion event is published.
+VFS prefix commit/rollback, MM pin
+release, scheduler RUN/WAIT and
+positive net RAM remain OPEN.
+No KCORE/MRES/driver code growth.
+Default PURE OFF; next inspect
+PURE commit 034614 or rollback
+034612. Details in
+design/kcore-p1e-physical-dct-read-v1619.md.
+
 ## 2026-11-16 v1618: DECtape full-rewind search timeout
 
 Increase the optional PURE restore's underlying
