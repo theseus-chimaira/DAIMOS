@@ -1,4 +1,31 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1613, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1614, 2026-11-16)
+
+- [x] **v1614 compiler/linker defect (priority P0):**
+  host and native DLINK `--pure` now distinguish
+  PDP-10 accumulator addresses AC0..17 from
+  relocated immutable TEXT, using absolute
+  image-base bounds and safe subtraction. C89
+  host actual-DOBJ tests and original native
+  predicate on PDP-6 PASS; unsafe mutant rejected,
+  historical XIP regression PASS. Versioned
+  corrected linker installed in `$PDP10_PREFIX`.
+- [x] **v1614 pressure test source correctness:**
+  earlier v1613 exploratory workload and first
+  v1614 image were erroneously `purity=UNKNOWN`,
+  not valid P1-E candidates. The fixed linker
+  builds a real DXR2 PURE/TX2 image. A real 48K
+  no-AUX PDP-6 enters the production reclaim
+  trampoline and original DROP/rebase code.
+- [ ] **Physical P1-E completion still OPEN:**
+  first genuine PURE BRK target was too large
+  to complete despite actual DROP/rebase entry.
+  Need a bounded, physically satisfiable
+  sleeping-owner pressure test with exact
+  MM owner validation, subsequent slot-0
+  RUN/WAIT/EXIT/EXEC, immutable source lifetime
+  and peak/net RAM benefit. The default stays
+  `DAIMOS_PURE_MRES_ENABLED=0`.
+  `design/kcore-p1e-linker-pure-address-v1614.md`.
 
 - [x] **P1-E v1613 no-AUXST1 KINIT selection corrected:**
   absent/unvalidated descriptor returns -1, which now

@@ -93,13 +93,21 @@ static int opcode_writes_ea(unsigned long op)
 }
 
 /*
- * Prove only the easy case: an instruction with an unindexed, non-indirect
- * effective address which is a memory-writing operand in the final TEXT
- * range.  Failure to find such an instruction is deliberately not a proof
- * of purity; computed/indirect stores and block/byte operations can hide a
- * text write.
+ * Prove only the easy case: an unindexed, non-indirect writing operand
+ * whose effective address is inside the *relocated* TEXT range.
+ *
+ * v1614: EA is an absolute 18-bit machine address, while image[] is
+ * indexed relative to the link base. Comparing EA with text_words alone
+ * wrongly rejects writes to AC0..AC17, e.g. POP 17,10, for a DXR linked
+ * at 020, and misses writes to the last image-base words of real TEXT.
+ * Machine addresses 0..017 always select the PDP-10 accumulators, not
+ * user TEXT, including when the link base itself is zero.
+ *
+ * Failure to find a direct store is deliberately not a general proof of
+ * purity: computed/indirect stores and block/byte operations may write.
  */
 static int definite_text_write(const struct dobj_word *image,
+                               unsigned long image_base,
                                unsigned long text_words,
                                unsigned long *where)
 {
@@ -110,7 +118,8 @@ static int definite_text_write(const struct dobj_word *image,
         indirect = (image[i].lh >> 4) & 1UL;
         index = image[i].lh & 017UL;
         ea = image[i].rh & HALF_MASK;
-        if (!indirect && index == 0UL && ea < text_words &&
+        if (!indirect && index == 0UL && ea >= 020UL &&
+            ea >= image_base && ea - image_base < text_words &&
             opcode_writes_ea(op)) {
             if (where != NULL)
                 *where = i;
@@ -1068,7 +1077,8 @@ static int write_dxr(const char *name, struct linker *l, int purity_request,
         free(image); free(relmap); return -1;
     }
     flags = rt_required ? DXR_F_RT_REQUIRED : 0UL;
-    if (definite_text_write(image, tw, &text_write_at)) {
+    if (definite_text_write(image, l->image_base, tw,
+                            &text_write_at)) {
         if (purity_request == PURITY_PURE) {
             fprintf(stderr,
                     "dlink: --pure contradicted by definite TEXT write at %06lo\n",

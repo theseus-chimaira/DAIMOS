@@ -1,3 +1,40 @@
+## 2026-11-16 v1614: host/native DLINK PURE range bug fixed
+
+Corrected a genuine linker defect exposed by the PDP-6
+P1-E BRK pressure test. Host `dlink --pure` was
+comparing an absolute machine EA against the relative
+TEXT *length* instead of the linked TEXT interval,
+and was mistaking direct accumulator writes like
+`POP 17,10` for modifications to immutable code.
+It could also miss definite direct writes in the last
+`020` octal relocated TEXT words. The native target
+`userland/toolchain/dlink.c` needed the same
+AC0..17 register exclusion for base-zero images.
+Both now check the true absolute TEXT interval
+and skip the PDP-10 accumulator bank.
+
+Strict C89 host linker, source-built host PURE
+positive/negative/relocation regression, and the
+original native linker predicate executed on the
+PDP-6 (including an unsafe mutant) all PASS.
+The historical raw-XIP host linker tests also PASS.
+Fixed host dlink installed in `$PDP10_PREFIX/bin`
+with a versioned old executable backup.
+
+Actual v1613 exploratory pressure images were linked
+as `purity=UNKNOWN`, not eligible for RAW P1-E;
+this was a *test construction* error. With the
+corrected host `--pure` linker, `dxrcheck -d`
+proves `purity=PURE`; real 48K PDP-6 TSFS
+breakpoints confirmed production reclaim twice
+and v1381 DROP/rebase four times each. The first
+large BRK attempt still returned `!G`; completed
+physical restoration and net RAM gains remain
+UNACCEPTED. No permanent KCORE, MRES, process
+format, CPU backend or P1-E default flag changed.
+
+See `design/kcore-p1e-linker-pure-address-v1614.md`.
+
 ## 2026-11-16 v1613: real PDP-6 64K TSFS no-AUX PURE boot
 
 Fixed the v1611 KINIT selection error: actual absent AUXST1

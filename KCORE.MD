@@ -1,3 +1,29 @@
+## 2026-11-16 v1614: correct PURE linker source validation
+
+The real physical pressure test exposed a host
+`dlink --pure` bug: its direct-TEXT-write check
+mistook an accumulator write `POP 17,10`
+for writable code because it compared absolute
+effective addresses to TEXT *length*. Both host
+and native DAIMOS DLINK now use the relocated
+TEXT base and exclude AC0..17, with direct
+relocated-TEXT write refusal preserved. The
+original native predicate executes correctly
+on a PDP-6; host strict C89 and unsafe mutation
+tests PASS. No fixed KCORE or removable MRES
+changes are required.
+
+The old physical pressure images were not
+`--pure` linked. Their DXR `purity=UNKNOWN`
+invalidates any claim about RAW prefix omission.
+A corrected DXR2 TX2 `purity=PURE` image now
+reaches original reclaim and actual v1381 DROP/
+MM rebase under physical 48K TSFS, though the
+first large BRK allocation returns `!G`.
+Completed SLOT0 restore, WAIT and net memory
+savings remain OPEN; PURE default stays OFF.
+See `design/kcore-p1e-linker-pure-address-v1614.md`.
+
 ## 2026-11-16 v1613: physical no-AUX TSFS boot acceptance
 
 KINIT now installs opt-in PURE on the actual no-AUXST1
