@@ -1,4 +1,26 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1615, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1616, 2026-11-16)
+
+- [x] **Physical RAW PACKED publication v1616:** real
+  48K TSFS no-AUX guest captures two PACKED MM
+  owners after BRK pressure, one retained suffix
+  007000 octal words unpinned and one full-size
+  PACKED extent with one pin. The latter matches
+  the legal v1384 prefix-claim intermediate state;
+  it is NOT a verified permanent pin leak.
+- [x] **Source-verified physical debug gates:** SIMH
+  execution breakpoint at vm_space_brk_current
+  022104 captures actual BRK(0). Console EXPECT
+  stops before 020000 BRK with five PROCESS
+  owners, no PACKED; deferred post-call trap at
+  020761 is sourced from the exact KCORE DXR.
+  Physical snapshot auditor PASS, no kernel edits.
+- [ ] **P1-E actual completion still OPEN:**
+  deferred BRK return trap not reached, AC1/AC2
+  failure cause unknown. Confirm slot-0 restore
+  commit/rollback, no stranded pins, RUN/PIPE/
+  WAIT/EXIT, immutable source hold, peak and
+  net physical RAM; default PURE remains OFF.
+  design/kcore-p1e-physical-packed-v1616.md.
 
 - [x] **v1615 exact physical baseline:** 48K no-AUX
   PURE guest, controlled `014000` BRK HALT, five

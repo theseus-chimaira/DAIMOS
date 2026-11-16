@@ -1,3 +1,36 @@
+## 2026-11-16 v1616: physical PDP-6 RAW PACKED owners observed
+
+The 48K TSFS no-AUX physical guest now has a repeatable
+console-triggered, pre-BRK MM snapshot and a separately
+replayed, later interrupted PACKED-owner snapshot.
+The initial source-mapped vm_space_brk_current breakpoint
+at 022104 was verified by execution on the initial BRK(0)
+query. The pre-020000 BRK physical table contains five
+resident PROCESS extents, zero PACKED, and only 011577
+octal words in its largest aligned free gap.
+
+The deferred source-DXR-verified BRK return breakpoint
+at 020761 was not reached before simulator termination.
+The later physical table DOES contain two actual PACKED
+extents: child 5 suffix 007000 words, unpinned; child 4
+full 010000 words, one pin. The latter is the explicitly
+permitted v1384 prefix-claim intermediate state during
+VFS reload, not sufficient evidence of a pin leak.
+The current slot was zero, no PROCESS owner survived,
+and the stopped CPU PC was 030762 in removable space.
+
+This advances P1-E from DROP-entry evidence to genuine
+physical RAW PACKED owner publication. Complete BRK
+return/fatal cause, RUN restoration, WAIT/EXIT and net
+physical RAM acceptance remain OPEN. No production
+KCORE/MRES code or ABI was changed. Testkit v1616
+replay and exact physical-owner audit PASS on the
+preserved traces, including rejection of a mutated
+MM pin. Historical v1609/v1610/v1612 native
+regressions PASS. Default PURE OFF, no compression,
+strict 32K HOLD. See
+design/kcore-p1e-physical-packed-v1616.md.
+
 ## 2026-11-16 v1615: real 48K BRK/MM geometry diagnosis
 
 Using a genuine `--pure` DXR and the actual no-AUX

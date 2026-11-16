@@ -24,6 +24,29 @@ Completed SLOT0 restore, WAIT and net memory
 savings remain OPEN; PURE default stays OFF.
 See `design/kcore-p1e-linker-pure-address-v1614.md`.
 
+## 2026-11-16 v1616: real RAW PACKED physical owner publication
+
+The PDP-6 48K no-AUX experimental PURE MRES now has
+an observed physical PACKED result, not just a DROP
+entry or inferred logical resident-process count.
+A console-triggered pre-BRK snapshot has five
+PROCESS extents, no PACKED and a largest aligned
+free run 011577 versus a 020000-word second-image
+requirement. The later interrupted snapshot shows
+one unpinned 007000-word PACKED child suffix and
+one pinned 010000-word PACKED child. A full-size,
+one-pin PACKED extent is the documented in-place
+prefix-reload intermediate state, not proof of
+a permanent leak.
+
+The exact native BRK entry was breakpoint-verified;
+the deferred BRK return breakpoint was not hit.
+No RUN/WAIT success or fatal AC2 classification is
+claimed. The v1616 source-map MM audit PASSes on
+the saved physical traces. No resident or removable
+kernel code/format changed, PURE default OFF.
+See design/kcore-p1e-physical-packed-v1616.md.
+
 ## 2026-11-16 v1615: BRK pressure MM geometry and fatal OOM path
 
 Real 48K no-AUX PURE test, controlled `014000` BRK
