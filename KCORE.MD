@@ -1,3 +1,21 @@
+## 2026-11-16 v1628: physical 64K owner matrix contains no PACKED
+
+Replayed the same genuinely successful v1627 six-child 64K PDP-6
+TSFS/no-AUX guest, with source-linked SIMH MM owner snapshots at
+before-BRK B, after-BRK A and terminal parent-WAIT Z. The unchanged
+arena is `042602..200000` octal. B: 025 extents, occupied/free
+`074654/040322`; A: 025, `104654/030322`; Z: 010,
+`021556/113420`. **All three physical snapshots have ZERO PACKED
+owners** and correct non-overlapping MM extents. The parent remains
+slot 1, six WAITs complete, and post-WAIT child MM ownership is
+released. Source-matched physical audit and two unsafe overlap/
+missing-final-stage mutants PASS/reject. The replay's original
+SIMH ECHO line-start guard was corrected; actual captured snapshots
+and HALT were unchanged. This 64K lifecycle is NOT a RAW/PACKED
+restore proof and establishes no peak/net RAM savings. 48K genuine
+PACKED lifecycle remains OPEN. See
+`design/kcore-p1e-64k-physical-owner-matrix-v1628.md`.
+
 ## 2026-11-16 v1627: complete real six-child 64K PURE lifecycle
 
 Separate testkit-only v1627 guest uses the same 64K no-AUX TSFS

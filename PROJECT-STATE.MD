@@ -1,3 +1,23 @@
+## 2026-11-16 v1628: 64K lifecycle has zero simultaneous RAW owners
+
+Original v1627 completed six-child TSFS/no-AUX/PURE guest replayed
+with SIMH physical MM memory snapshots at B/A/Z. Same parent slot1,
+arena `042602..200000`. Live MM counts B=025, A=025, Z=010;
+occupied/free B `074654/040322`, A `104654/030322`, Z
+`021556/113420` octal words. All three have **zero MM PACKED**
+owners, even while six children sleep; no physical text omission
+occurs in this 64K profile. The ordinary six-child WAIT/EXIT PASS
+remains valid but cannot count as a true RAW restore proof or RAM
+benefit. MM source-linked auditor rejects overlapping metadata
+and missing terminal snapshots; literal SIMH inline ECHO guard
+fixed, underlying physical trace/HALT unchanged.
+
+Next physical test must use actual 48K PACKED ownership with
+parent surviving expected VM resource refusal and collecting all
+five child EXIT statuses. Immutable backing fault and peak/net RAM
+remain OPEN; PURE default OFF, 32K optimization HOLD.
+`design/kcore-p1e-64k-physical-owner-matrix-v1628.md`.
+
 ## 2026-11-16 v1627: six-child 64K physical PIPE/WAIT/EXIT passes
 
 Separate original-source-derived physical 64K PDP-6 TSFS/no-AUX

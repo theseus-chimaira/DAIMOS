@@ -1,3 +1,21 @@
+## 2026-11-16 v1628: next P1-E physical PACKED lifecycle
+
+- [x] Original v1627 64K full PIPE/WAIT/EXIT guest has exact
+  physical source-linked MM owner snapshots at B/A/Z. Arena stays
+  `042602..200000`; all three stages contain **ZERO PACKED**.
+  Extents B/A/Z = 025/025/010, with physical occupied/free
+  `074654/040322`, `104654/030322`, `021556/113420` octal.
+  Testkit rejects corrupted overlapping MM owner and missing
+  post-WAIT snapshot. This is a resident-only functional PASS.
+- [ ] Create an actual 48K pressure guest where the original
+  sixth RUN returns its expected VM resource refusal after five
+  sleepers become PACKED, but the parent **does not exit**.
+  Verify five real PACKED -> RESIDENT restores, exact parent
+  WAIT/EXIT and source/owner/pin cleanup in physical MM.
+- [ ] Finish immutable source-loss and rollback cases, physical
+  net/peak RAM including installed PURE MRES and strict 32K
+  feature-freeze gate. PURE stays OFF by default.
+
 ## 2026-11-16 v1627: P1-E functional lifecycle accepted on 64K
 
 - [x] Real 64K PDP-6 TSFS/no-AUX PURE six-child PIPE/WAIT/EXIT
