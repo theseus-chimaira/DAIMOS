@@ -397,22 +397,22 @@ ${BUILD}/proc_swap_mres_v481.s: ${DAIMOS_VM_SWAP_SOURCE}
 	  cat ${DAIMOS_VM_SWAP_SOURCE}; } > $@
 MRES_ASM += $(BUILD)/proc_swap_mres_v481.s
 
-# v1611: PURE MRES is a *separate* compile-time PDP-6 service.
+# v1612: PURE MRES is a *separate* compile-time PDP-6 service.
 # Its source transactions do not add a single fixed KCORE word.
 ifeq ($(DAIMOS_PURE_MRES_ENABLED),1)
-MRES_ASM += $(BUILD)/proc_pure_service_v1611.s \
+MRES_ASM += $(BUILD)/proc_pure_service_v1612.s \
     $(BUILD)/proc_pure_drop_v1611.s \
     $(BUILD)/proc_pure_prefix_v1611.s \
     $(BUILD)/proc_pure_full_v1611.s
 # The kcore target's prerequisites were expanded before these late rules.
 # Explicitly include every new generated source in that target.
-kcore: $(BUILD)/proc_pure_service_v1611.s \
+kcore: $(BUILD)/proc_pure_service_v1612.s \
     $(BUILD)/proc_pure_drop_v1611.s \
     $(BUILD)/proc_pure_prefix_v1611.s \
     $(BUILD)/proc_pure_full_v1611.s
 endif
 
-$(BUILD)/proc_pure_service_v1611.s: $(DAIMOS_VM_PURE_SERVICE_SOURCE) $(KERNEL_HEADERS)
+$(BUILD)/proc_pure_service_v1612.s: $(DAIMOS_VM_PURE_SERVICE_SOURCE) $(KERNEL_HEADERS)
 	@mkdir -p $(BUILD)
 	$(PDP10_CC) $(PDP10_CFLAGS) $(INCLUDES) -S $< -o $@
 

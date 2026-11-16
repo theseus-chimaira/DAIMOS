@@ -1,3 +1,26 @@
+## 2026-11-16 v1612: minimized experimental PURE service
+
+The optional PDP-6 PURE MRES now costs **2196 KCC words**
+instead of 2275, and **1758 GCC words** instead of 1864.
+The v1612 service validates exactly one
+retained MM owner with one scan (including duplicate,
+pinned, wrong-type and size refusals). A 49-word
+relocation-safe, zero-cost `p10fold` equivalence between
+DROP and FULL saves the rest without additional jumps.
+Permanent KCORE DXR is byte-identical to v1611,
+`__kcore_low_end=024534` octal (GCC `024254`),
+zero added BSS or
+per-process storage.
+
+The attempted shared C helper object grew the overall
+module to 2356 words and was rejected on RAM cost;
+the underlying checks remain semantically valid.
+Native PDP-6 source-linked service and MM owner failure
+tests PASS. Default boot still omits PURE; actual physical
+no-AUXST1 placement, source lifetime, PI6/full-guest
+correctness, transient peak and net RAM savings remain
+OPEN. See `design/kcore-p1e-pure-mres-minimize-v1612.md`.
+
 ## 2026-11-16 v1611: opt-in PURE memory service
 
 PDP-6 has a separately source-linked and relocatable

@@ -1,4 +1,21 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1611, 2026-11-16)
+## CURRENT KCORE FEATURE TODO (authoritative after v1612, 2026-11-16)
+
+- [x] **P1-E experimental MRES v1612 size reduction:** one
+  strict MM scan for PACKED retryable owner, plus the
+  existing reloc-safe zero-cost 49-word `p10fold`
+  between DROP and FULL. KCC installed PURE MRES
+  **2275 -> 2196 words** (-79); GCC lowmem
+  **1864 -> 1758** (-106). Permanent KCORE
+  remains byte-identical, no new per-process RAM/BSS.
+  Native positive/refusal, duplicate/pinned owners and
+  unsafe READY_ONCE mutation PASS. A shared C helper
+  alternative cost 2356 words and was rejected.
+- [ ] **Production P1-E still OPEN:** optional PURE
+  stays OFF by default. Full physical no-AUX boot,
+  immutable executable lifetime, PI6 RUN/EXEC/EXIT/WAIT/
+  BRK, MM/source rollback and actual net/peak RAM
+  acceptance. No speculative KA10/KI10 work or codec.
+  `design/kcore-p1e-pure-mres-minimize-v1612.md`.
 
 - [x] **P1-E v1611 experimental PURE MRES, default OFF:**
   separate source-selected PDP-6 no-BACKSTORE MRES, actual

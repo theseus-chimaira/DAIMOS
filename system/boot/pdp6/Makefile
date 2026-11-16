@@ -341,12 +341,14 @@ MRES_NAMES = cty_io clk_io ptr_io ptp_io lpt_io cr_io cp_io dcs_io ge_io dpy_io 
 	dpy_text tty_io wcnsls_io ocnsls_io dsk_io drm236_io tape_io slv_io memfs_runtime \
 	dtfs dtfs_runtime tsfs tsfs_runtime blockset_dispatch badmap_dispatch fs_backing d6fs_provider d6fs_validate d6fs_runtime
 MRES_ASM = $(KCORE_BUILD)/cty_io.s $(KCORE_BUILD)/clk_io.s $(KCORE_BUILD)/ptr_io.s $(KCORE_BUILD)/ptp_io.s $(KCORE_BUILD)/lpt_io.s $(KCORE_BUILD)/cr_io.s $(KCORE_BUILD)/cp_io.s $(KCORE_BUILD)/dcs_io.s $(KCORE_BUILD)/ge_io.s $(KCORE_BUILD)/dpy_io.s $(KCORE_BUILD)/dpy_text.s $(KCORE_BUILD)/tty_io.s $(KCORE_BUILD)/wcnsls_io.s $(KCORE_BUILD)/ocnsls_io.s $(KCORE_BUILD)/dsk_io.s $(KCORE_BUILD)/drm236_io.s $(KCORE_BUILD)/tape_io.s $(KCORE_BUILD)/slv_io.s $(KCORE_BUILD)/memfs_data.s $(KCORE_BUILD)/memfs_snapshot.s $(KCORE_BUILD)/memfs_runtime.s $(KCORE_BUILD)/dtfs.s $(KCORE_BUILD)/dtfs_runtime.s $(KCORE_BUILD)/tsfs.s $(KCORE_BUILD)/tsfs_runtime.s $(KCORE_BUILD)/blockset_dispatch.s $(KCORE_BUILD)/badmap_dispatch.s $(KCORE_BUILD)/fs_backing.s $(KCORE_BUILD)/logstore_runtime.s $(KCORE_BUILD)/d6fs_provider.s $(KCORE_BUILD)/d6fs_validate.s $(KCORE_BUILD)/d6fs_runtime.s
-PURE_MRES_ASM_V1611 = $(KCORE_BUILD)/proc_pure_service_v1611.s \
+# v1612 changes only the service policy; retain the accepted v1611
+# transaction objects and their standalone native regression coverage.
+PURE_MRES_ASM_V1612 = $(KCORE_BUILD)/proc_pure_service_v1612.s \
 	$(KCORE_BUILD)/proc_pure_drop_v1611.s \
 	$(KCORE_BUILD)/proc_pure_prefix_v1611.s \
 	$(KCORE_BUILD)/proc_pure_full_v1611.s
 ifeq ($(DAIMOS_PURE_MRES_ENABLED),1)
-MRES_ASM += $(PURE_MRES_ASM_V1611)
+MRES_ASM += $(PURE_MRES_ASM_V1612)
 endif
 
 KCORE_DXR = $(BUILD)/kcore.dxr
@@ -401,7 +403,8 @@ LOGSTORE_MRES_OBJ = $(BUILD)/logstore-mres.dobj
 D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MONITORFS_MRES_OBJ = $(BUILD)/monitorfs-mres.dobj
 SWAP_MRES_OBJ_V481 = $(BUILD)/swapv481-mres.dobj
-PURE_MRES_OBJ_V1611 = $(BUILD)/purev1611-mres.dobj
+PURE_MRES_OBJ_V1612 = $(BUILD)/purev1612-mres.dobj
+PURE_MRES_FOLD_PLAN_V1612 = $(BUILD)/pure-mres-v1612.fold
 ifeq ($(BOOT_PROFILE),lowmem)
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PCLK_MRES_OBJ) $(SOFTCLOCK_MRES_OBJ) $(MONITORFS_MRES_OBJ) $(DCS_MRES_OBJ) \
 	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(TAPE_MRES_OBJ)) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) $(SWAP_MRES_OBJ_V481) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(DTFS_MRES_OBJ)) \
@@ -420,7 +423,7 @@ endif
 ifeq ($(DAIMOS_PURE_MRES_ENABLED)$(D6FS_FS_ENABLED),10)
 # Only the no-disk TSFS path can install the PURE module. Its source
 # package must be linked into KINIT but is never fixed KCORE memory.
-MRES_PACKAGE_OBJS += $(PURE_MRES_OBJ_V1611)
+MRES_PACKAGE_OBJS += $(PURE_MRES_OBJ_V1612)
 endif
 KINIT_DRM_ENABLED = 1
 
@@ -785,7 +788,7 @@ KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/vfs_mount_slab_v4.dobj $(BUILD)/v
 KERNEL_ASM_OBJS += $(BUILD)/proc_swap_entry_v481.dobj $(BUILD)/proc_swap_mres_v481.dobj
 KERNEL_ASM_OBJS += $(BUILD)/backstore_entry_v484.dobj $(BUILD)/backstore_mres_v484.dobj
 ifeq ($(DAIMOS_PURE_MRES_ENABLED),1)
-KERNEL_ASM_OBJS += $(BUILD)/proc_pure_service_v1611.dobj \
+KERNEL_ASM_OBJS += $(BUILD)/proc_pure_service_v1612.dobj \
 	$(BUILD)/proc_pure_drop_v1611.dobj \
 	$(BUILD)/proc_pure_prefix_v1611.dobj \
 	$(BUILD)/proc_pure_full_v1611.dobj
@@ -808,18 +811,34 @@ $(BUILD)/pure-expand-v1611.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_EXPAND_SOURCE) |
 $(BUILD)/pure-image-v1611.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_IMAGE_SOURCE) | $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
-$(PURE_MRES_OBJ_V1611): $(BUILD)/proc_pure_service_v1611.dobj \
+PURE_MRES_PARTS_V1612 = $(BUILD)/proc_pure_service_v1612.dobj \
+	$(BUILD)/proc_pure_drop_v1611.dobj \
+	$(BUILD)/proc_pure_prefix_v1611.dobj \
+	$(BUILD)/proc_pure_full_v1611.dobj \
+	$(BUILD)/pure-rebase-v1611.dobj \
+	$(BUILD)/pure-expand-v1611.dobj \
+	$(BUILD)/pure-image-v1611.dobj
+
+# A KCORE-safe, relocation-verified donor equivalence. The v1611
+# source-identical v1381/v1391 helper region saves 49 words without an
+# added JRST; keep the minimum run high to avoid fragile hotpath folds.
+$(PURE_MRES_FOLD_PLAN_V1612): $(PURE_MRES_PARTS_V1612) $(P10FOLD_DEP)
+	$(P10FOLD) -m 20 -P $@ $(PURE_MRES_PARTS_V1612) >/dev/null
+
+$(PURE_MRES_OBJ_V1612): $(BUILD)/proc_pure_service_v1612.dobj \
 	$(BUILD)/proc_pure_drop_v1611.dobj \
 	$(BUILD)/proc_pure_prefix_v1611.dobj \
 	$(BUILD)/proc_pure_full_v1611.dobj \
 	$(BUILD)/pure-rebase-v1611.dobj $(BUILD)/pure-expand-v1611.dobj \
-	$(BUILD)/pure-image-v1611.dobj $(KCORE_MAP)
-	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/pure-mres-v1611.dxr \
-	    -M $(BUILD)/pure-mres-v1611.map -R $@ \
-	    -N proc_pure_mres_package_v1611 \
-	    -X proc_pure_mres_reclaim_v1611 \
-	    -X proc_pure_mres_service_v1611 \
-	    $(BUILD)/proc_pure_service_v1611.dobj \
+	$(BUILD)/pure-image-v1611.dobj $(KCORE_MAP) $(PURE_MRES_FOLD_PLAN_V1612)
+	$(DLINK) -b 0 -A $(KCORE_MAP) \
+	    --fold-plan $(PURE_MRES_FOLD_PLAN_V1612) \
+	    -o $(BUILD)/pure-mres-v1612.dxr \
+	    -M $(BUILD)/pure-mres-v1612.map -R $@ \
+	    -N proc_pure_mres_package_v1612 \
+	    -X proc_pure_mres_reclaim_v1612 \
+	    -X proc_pure_mres_service_v1612 \
+	    $(BUILD)/proc_pure_service_v1612.dobj \
 	    $(BUILD)/proc_pure_drop_v1611.dobj \
 	    $(BUILD)/proc_pure_prefix_v1611.dobj \
 	    $(BUILD)/proc_pure_full_v1611.dobj \

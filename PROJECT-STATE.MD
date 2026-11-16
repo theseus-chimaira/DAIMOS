@@ -1,3 +1,34 @@
+## 2026-11-16 v1612: smaller experimental PURE MRES, still OFF
+
+The opt-in PDP-6 PURE service is now source-selected from
+`proc_pure_service_pdp6_v1612.c`: the PACKED retryable
+owner proof requires one exact MM extent scan instead of
+two. The existing `p10fold` applies a relocation-safe
+zero-cost 49-word fold between v1381 DROP and v1391 FULL;
+there is no extra JRST or permanent KCORE dependency.
+
+Measured KCC PURE MRES shrinks **2275 -> 2196 words**
+(-79); GCC lowmem shrinks **1864 -> 1758 words**
+(-106), with zero MRES BSS and no additional process fields.
+The standalone new policy shrinks 412 -> 382 TEXT
+words. Fixed KCORE DXR is byte-identical to v1611 and
+low end remains `024534` octal (GCC `024254` octal,
+also unchanged). A separate C helper
+experiment was valid but cost 2356 MRES words, so was
+discarded in favor of the one-scan policy and zero-cost
+fold. The historical DISK MRES path remains unchanged.
+
+Native source-linked v1612 DROP/prefix/FULL/refusal and
+unsafe READY_ONCE mutation PASS; duplicate and pinned
+PACKED owner failures retain TRANSITION and cannot
+publish RUN. The opt-in package remains build-gated by
+`DAIMOS_PURE_MRES_ENABLED=1` (default 0). Physical
+no-AUXST1 guest, PI6/EXEC/WAIT/EXIT, immutable source
+lifetime, peak RAM and positive whole-system net savings
+remain OPEN. See
+`design/kcore-p1e-pure-mres-minimize-v1612.md`.
+VERSION 0.5, strict 32K HOLD, no KA10/KI10 implementation.
+
 ## 2026-11-16 v1611: experimental diskless PURE MRES, default OFF
 
 Implemented the separate PDP-6 `proc_pure_service_pdp6_v1611.c`

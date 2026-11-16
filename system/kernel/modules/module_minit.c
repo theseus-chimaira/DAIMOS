@@ -471,7 +471,7 @@ extern kword_t backstore_verify_allocated_v795;
  * The original DISK MRES remains unchanged for any real AUXST1 backing.
  * Both packages occupy KINIT input space; at runtime install exactly one.
  */
-extern const kword_t proc_pure_mres_package_v1611[];
+extern const kword_t proc_pure_mres_package_v1612[];
 #endif
 
 void
@@ -489,7 +489,7 @@ proc_swap_minit_v481(void)
                 return;
         if (auxstore_backstore_blocks == 0UL) {
 #if DAIMOS_PURE_MRES_ENABLED
-                const kword_t *pure = proc_pure_mres_package_v1611;
+                const kword_t *pure = proc_pure_mres_package_v1612;
                 unsigned int reclaim, service;
 
                 if (mres_install(pure, &base) != 0)
