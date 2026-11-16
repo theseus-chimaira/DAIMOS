@@ -1,3 +1,23 @@
+## 2026-11-16 v1636: physical 48K sixth APR admission restored
+
+Corrected one general-purpose BCACHE allocation preference:
+the reclaimable private 0201-word MM dynamic slab requests LOW
+instead of HIGH; owner6, cache/data and reclaim behavior stay
+unchanged, and user APRs still allocate HIGH. An original fresh
+48K no-AUX TSFS/GCC PURE guest with six child RUNs, no-growth
+parent BRK, six original PIPE/data/EXIT-057 and exact WAITs now
+completes `aaaaaa[B073470/042501]<010000+010000>[A073470/042501]{073470-073470}LwwwwwwZ`
+and HALTs. Source-matched physical MM B/A/Z replay proves parent
+at top `130000..140000` instead of former `126000..136000`,
+BCACHE low, six PROCESS children at B/A, none after six WAITs.
+At B/A there are ZERO PACKED owners, so this fixes admission and
+resident lifecycle but does NOT prove additional RAW restore or
+physical RAM peak/net. BCACHE native source tests and physically
+forged owner/final-WAIT controls PASS/reject. v1637 pressure,
+other memory profiles, source/rollback gates remain OPEN. Optional
+PURE stays OFF by default, strict 32K HOLD. Full report:
+`design/kcore-p1e-bcache-low-physical-v1636.md`.
+
 ## 2026-11-16 v1635: BCACHE high allocation blocks original parent APR
 
 Source-linked original v1629 PDP-6 48K breakpoint at first

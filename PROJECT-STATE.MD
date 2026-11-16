@@ -1,3 +1,25 @@
+## 2026-11-16 v1636: actual physical low-BCACHE 48K six-child pass
+
+A single production BCACHE placement change puts its same 0201-
+word owner6 reclaimable clean slab at MM_ALLOC_LOW, never wasting
+the physical top APR; no change to owner/cache invalidation,
+no-reclaim allocation, buffer or release semantics. Original
+PDP-6 48K no-AUX TSFS/GCC PURE guest admitted SIX sleeping
+children, completed parent no-growth BRK 010000 -> 010000 and
+all six original child PIPE/mutable-data/EXIT-057 parent exact
+PID/EXITED/status-057 WAITs with normal terminal HALT:
+`aaaaaa[B073470/042501]<010000+010000>[A073470/042501]{073470-073470}LwwwwwwZ`.
+Source-matched physical MM B/A/Z replay confirms parent APR
+`130000..140000`, BCACHE low, six PROCESS owners at B/A and
+none at Z after WAIT. Physical owner and forged parent/final
+success audits PASS; BCACHE v1490 and multisource source tests
+PASS. Original high-BCACHE v1631 rejected sixth RUN; v1636
+recovers admission without shrinking PURE MRES. ZERO PACKED
+owners in this six-child workload: v1637 seventh-RUN pressure
+and full restore/PI6/source/failure/32K/64K/net/peak tests remain
+OPEN. PURE default OFF, strict 32K optimization HOLD. Report:
+`design/kcore-p1e-bcache-low-physical-v1636.md`.
+
 ## 2026-11-16 v1635: original first-VM high cache ownership found
 
 Original v1629 source-built 48K PDP-6 no-AUX PURE guest was

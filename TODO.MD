@@ -1,3 +1,21 @@
+## 2026-11-16 v1636: P1-E 48K sixth child APR restored
+
+- [x] Replace BCACHE's private 0201-word MM_ALLOC_HIGH request
+  with correct LOW preference, preserving the same MM type/owner,
+  no-reclaim path, fetch/store/invalidation/cleanup. New original
+  48K no-AUX/TSFS PURE guest admits six children and passes exact
+  PIPE/mutable data/EXIT-057 and six WAITs through final HALT.
+- [x] Original source-linked physical MM B/A/Z replay: parent
+  130000..140000 rather than 126000..136000, BCACHE low, six
+  resident PROCESS owners before/after no-growth parent BRK,
+  none after WAIT. False parent and final-success witnesses
+  rejected, BCACHE v1490 and multisource tests PASS.
+- [ ] Force extra RAW pressure and prove physical PACKED owner
+  restoration under the new placement (six-child guest had ZERO
+  PACKED). Validate 32K/64K BCACHE and all full/relocated /
+  source/PI6/failure scenarios, then matched net/peak RAM.
+  PURE default OFF and strict 32K optimization HOLD.
+
 ## 2026-11-16 v1635: source-backed high-cache APR obstruction
 
 - [x] Physical original 48K first-VM breakpoint: BCACHE's
