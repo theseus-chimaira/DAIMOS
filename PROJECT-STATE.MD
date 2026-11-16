@@ -1,3 +1,25 @@
+## 2026-11-16 v1631: 48K PURE module incurs real admission regression
+
+Genuine matched PDP-6 48K no-AUX/TSFS builds: compiled C89
+INIT DXRs and linked KCORE maps byte-identical; only
+DAIMOS_PURE_MRES_ENABLED differs. PURE-on v1629 admits five
+sleeping children, packs their 007000-word suffixes, then rejects
+the sixth RUN. PURE-OFF v1631 prints `aaaaa!uwwwwww` and HALTs,
+confirming the SIXTH RUN actually succeeded and six child
+executions followed original parent's intentional negative exit.
+Original physical MM snapshot before OFF parent exit has seven
+unpinned contiguous full 010000 PROCESS owners `046000..136000`,
+no PACKED, arena `037224..140000`, occupied/free
+`074634/003720` octal. ON five-PACKED arena starts 042562,
+delta exactly 003336 octal (=1758 decimal installed PURE MRES).
+ON five-owner free=016173 but best aligned gap=007000, too
+small for a complete 010000 child. Module has higher aggregate
+free RAM after packing yet worse admission capacity in this test.
+Matched physical testkit audit and unsafe owner/admission mutations
+PASS/reject. Equal-five-child and peak/net memory remain unmeasured;
+no kernel/MM/MRES changes. Default PURE OFF, 32K optimization
+HOLD. See `design/kcore-p1e-matched-capacity-regression-v1631.md`.
+
 ## 2026-11-16 v1630: physical first restored owner enters v1384 COMMIT
 
 Replayed the unchanged true 48K five-PACKED-child v1629 PDP-6

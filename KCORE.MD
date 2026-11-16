@@ -1,3 +1,26 @@
+## 2026-11-16 v1631: matched 48K PURE admission regression
+
+Independent physical 48K PDP-6 TSFS/no-AUX control uses the EXACT
+same C89 guest DXR and KCORE map as v1629 but disables PURE MRES.
+PURE-on five children become PACKED, sixth RUN refuses. PURE-OFF
+prints `aaaaa!uwwwwww` and HALTs: the sixth RUN SUCCEEDS (`!u`
+is the original guest's intentionally failed expectation), and
+six children execute their `w` path. Source-authenticated physical
+OFF MM snapshot before parent exit shows seven contiguous full
+PROCESS APR extents `046000..136000`, no PACKED, one arena
+`037224..140000`, 025 extent entries, occupied/free
+`074634/003720` octal. Enabled five-PACKED snapshot is arena
+`042562..140000`, occupied/free `057023/016173`, but largest
+aligned free extent only `007000` (required complete `010000`).
+Arena-low delta `003336` octal equals 1758 decimal resident PURE
+MRES words. This is an actual process-admission regression for the
+current 48K workload despite MORE aggregate free words in PURE-on;
+live process counts at snapshots differ, so not a net/peak-RAM
+comparison. Physical testkit audit and forged owner/sixth-RUN
+mutants PASS/reject. No production code change; PURE default OFF
+and 32K optimization HOLD. Report:
+`design/kcore-p1e-matched-capacity-regression-v1631.md`.
+
 ## 2026-11-16 v1630: first true 48K PACKED child takes fast PURE path
 
 The original v1629 complete 48K PDP-6 TSFS/no-AUX PURE guest was

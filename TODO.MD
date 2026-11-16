@@ -1,3 +1,24 @@
+## 2026-11-16 v1631: P1-E PURE-on capacity regression, net RAM OPEN
+
+- [x] Source-identical 48K PDP-6 INIT DXR and KCORE map, PURE on
+  versus off. ON: five PACKED children, sixth RUN refused. OFF:
+  original `aaaaa!uwwwwww` and HALT; sixth RUN actually succeeds,
+  six children execute. In OFF physical MM seven full 010000
+  PROCESS owners occupy contiguous `046000..136000`, no PACKED.
+  Arena starts `037224` OFF versus `042562` ON: delta 003336
+  octal = 1758 decimal installed PURE MRES words. ON physical
+  free=016173, largest aligned run=007000 vs sixth VM=010000.
+  Source-linked physical audit and two forged owner/success tests
+  PASS/reject. This is a **process-admission regression** under
+  present 48K RAW owner geometry, not a compiler defect.
+- [ ] Compare exactly FIVE live child owners in identical guest
+  sources under PURE-ON packed versus PURE-OFF resident to measure
+  net physical free/alignment and module cost at equal population.
+- [ ] Verify actual full v1391 relocated restore/rollback and
+  source/PI6 failures; determine how to make freed RAW prefixes
+  useful as contiguous APR storage before accepting P1-E. Physical
+  peak/net RAM and strict 32K gate remain OPEN; PURE default OFF.
+
 ## 2026-11-16 v1630: P1-E first physical fast restore accepted
 
 - [x] Physical original 48K five-PACKED-child guest: first slot-2
