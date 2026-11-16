@@ -1,3 +1,37 @@
+## 2026-11-16 v1627: P1-E functional lifecycle accepted on 64K
+
+- [x] Real 64K PDP-6 TSFS/no-AUX PURE six-child PIPE/WAIT/EXIT
+  guest passes original child PIPE reads, two writable-data
+  sentinels, EXIT 057, all six parent PID/WAIT/EXITED/status-057
+  checks, parent mutable data and final `Z`, following successful
+  parent BRK 010000 -> 017000. The physical console ends
+  `LwwwwwwZ` (lifecycle-only); corrupt parent-success and memory-
+  counter witnesses rejected in source-matched testkit audit.
+- [ ] Capture original simultaneous PACKED MM owner/pin geometry
+  before, during and after pressure/wake on this accepted 64K run.
+- [ ] Finish immutable backing lifetime, full/relocated restore,
+  concurrent PI6/MM rollback and whole-system net/peak physical
+  RAM including the 1758-word GCC PURE MRES. Default PURE OFF;
+  strict 32K size optimization HOLD.
+
+## 2026-11-16 v1626: P1-E next real lifecycle and RAM gates
+
+- [x] Exact original 48K sixth RUN capacity/fragmentation cause:
+  five unpinned `007000` PACKED suffixes occupy separated physical
+  intervals. Free=016173, largest aligned=007000, whereas exact
+  SOURCE/DXR-derived `vm_space_create` requests 010000 words.
+  Native/physical testkit audit and foreign-owner/overlap mutants
+  PASS/reject. Do not treat this as a compiler or allocator bug.
+- [x] Real independent 64K no-AUX PURE six-child guest: all RUN
+  admissions and parent BRK 010000 -> 017000 succeed. Full physical
+  B/A counters increase by exactly 010000, with no NEW reclaimed
+  words during BRK. Old guest correctly emits !R, followed by six
+  child w completions on parent failure. No parent WAIT claim.
+- [ ] Finish separate 64K source-backed full child PIPE/WAIT/EXIT
+  lifecycle without conflating it with *BRK-time* RAW savings.
+- [ ] Prove whole-system physical net/peak RAM and remaining PURE
+  source/owner/restore/failure paths. Default PURE OFF, 32K HOLD.
+
 ## 2026-11-16 v1625: P1-E next physical MM geometry and acceptance
 
 - [x] Original 48K PDP-6 six-child guest's sixth RUN fails in

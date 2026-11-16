@@ -1,3 +1,43 @@
+## 2026-11-16 v1627: complete real six-child 64K PURE lifecycle
+
+Separate testkit-only v1627 guest uses the same 64K no-AUX TSFS
+PURE source, six children and BRK 010000 -> 017000, but does NOT
+require an additional RAW drop specifically during BRK. It keeps
+the original child PIPE read/two private mutable sentinel checks,
+EXIT status 057, and all six parent PID/WAIT/EXITED/status checks.
+The genuine physical console reaches
+`aaaaaa[B073470/042522]<010000+017000>[A103470/042522]{073470-103470}LwwwwwwZ`
+and HALTs. `L` is lifecycle-only and the unique parent `Z` occurs
+only after all six `dsys_wait` status checks and parent sentinels.
+Native/physical source-backed testkit acceptance and two falsified
+console mutants PASS/reject. Complete PIPE/WAIT/EXIT accepted for
+this 64K guest, but source-lifetime faults, physical MM transient
+ownership, full restore rollback and positive net/peak installed
+RAM remain OPEN. Production source/code/RAM unchanged, PURE default
+OFF, strict 32K HOLD. Report:
+`design/kcore-p1e-64k-full-lifecycle-v1627.md`.
+
+## 2026-11-16 v1626: physical 48K fragmentation and 64K BRK control
+
+The v1625 real sixth-RUN physical MM snapshot contains 022 octal
+extents in arena `042562..140000`. Five unpinned PACKED owners each
+retain `007000` mutable words; free gaps sum to `016173`, but the
+largest `02000`-aligned gap is only `007000`. The original source-
+matched PURE DXR requires `001043` image + `004001` BSS + `002020`
+loader/user stack = `007064` raw, or `010000` aligned VM words.
+No current free extent fits the sixth VM, despite aggregate free RAM.
+Source/DXR/physical MM testkit proof and two corrupt-owner/overlap
+negative witnesses PASS. No allocator bug or proposed workaround.
+
+On an independent physical 64K no-AUX TSFS PURE guest, all six child
+RUNs and the parent `010000 -> 017000` BRK succeed. Exact original
+MEMINFO changes `[B073470/042522]` to `[A103470/042522]`: normal
+`010000` APR growth without additional reclaim during BRK. The
+original guest correctly prints `!R`, then six child `w` markers
+after parent failure cleanup. Parent WAIT and positive net RAM remain
+OPEN. No production changes. See
+`design/kcore-p1e-mm-geometry-v1626.md`.
+
 ## 2026-11-16 v1625: exact physical sixth RUN VM creation refusal
 
 Source-linked replay of the unchanged v1624 six-child 48K

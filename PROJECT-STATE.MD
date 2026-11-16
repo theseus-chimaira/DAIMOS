@@ -1,3 +1,43 @@
+## 2026-11-16 v1627: six-child 64K physical PIPE/WAIT/EXIT passes
+
+Separate original-source-derived physical 64K PDP-6 TSFS/no-AUX
+PURE guest reaches six RUN admissions, parent BRK 010000 ->
+017000, exact B/A accounting, six successful child PIPE/private-
+data markers and final parent Z after all six exact PID/EXITED/
+status-057 WAIT checks. Console:
+`aaaaaa[B073470/042522]<010000+017000>[A103470/042522]{073470-103470}LwwwwwwZ`.
+Only the v1614 BRK-time additional-reclamation assumption was
+replaced with bounded normal BRK accounting. `L` is lifecycle-only;
+no physical net RAM savings claimed. Two forged success/word-count
+mutants rejected by source-backed physical auditor. No production
+code, process ABI, MM, drivers, MRES or executable-format change.
+Remaining P1-E gates: actual physical PACKED occupancy across
+pressure/wake, immutable backing fault concurrency, fast/full
+restore/rollback and whole-system peak/net installed RAM. Default
+PURE OFF and 32K HOLD. See
+`design/kcore-p1e-64k-full-lifecycle-v1627.md`.
+
+## 2026-11-16 v1626: 48K physical MM fit proved; 64K BRK returns
+
+The v1625 real sixth RUN source-mapped MM snapshot is now fully
+decoded by the testkit. 022 octal extents, five PACKED suffixes
+of 007000 words, 016173 aggregate free but only 007000 largest
+APR-aligned run. Actual DXR image 001043 + BSS 004001 + stack/
+origin 002020 = 007064, rounded to required 010000; it cannot
+fit the physical free gaps. MM owner/overlap corruption controls
+rejected. This is a current-layout fragmentation limit, not a
+verified kernel/compiler bug. Original RAW ownership remains intact.
+
+On a distinct actual 64K TSFS/no-AUX/GCC PURE boot, six children
+are admitted and parent BRK 010000 -> 017000 succeeds. Exact
+MEMINFO B 073470/042522 to A 103470/042522 adds the normal
+010000 allocated words, so the old test correctly emits !R rather
+than credit a BRK-time drop. Six valid child w markers follow its
+failure cleanup, not accepted full WAIT/EXIT. v1627 lifecycle test
+and physical net/peak memory remain OPEN. No KCORE/MRES/ABI/source
+changes; PURE OFF by default, strict 32K HOLD.
+See `design/kcore-p1e-mm-geometry-v1626.md`.
+
 ## 2026-11-16 v1625: P1-E sixth RUN denied by VM creation
 
 Same original v1624 48K PDP-6 no-AUX TSFS/PURE six-child
