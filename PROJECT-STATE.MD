@@ -1,3 +1,22 @@
+## 2026-11-16 v1630: physical first restored owner enters v1384 COMMIT
+
+Replayed the unchanged true 48K five-PACKED-child v1629 PDP-6
+PURE/TSFS/no-AUX guest using read-only SIMH breakpoints derived
+from original PURE-MRES-v1612 map and exact DXR instruction bytes.
+Owner 2 reaches fast in-place `mm_pure_claim_prefix_v1384` PC
+034610, AC1..4 suffix/slot/prefix/full=117000/2/001000/010000.
+Original `mm_pure_commit_prefix_v1384` PC 034614 next has APR
+base/slot/prefix/full=116000/2/001000/010000, without earlier
+relocated FULL entry. Five child PIPE/private-state `w` markers,
+parent WAIT/Z and original PDP-6 HALT follow. Source/physical
+testkit audit PASS, forged-AC and forged-FULL breakpoint rejected.
+Existing native v1395/v1397 and v1612 rollback/service tests PASS.
+Only debugger terminal-text expectation required correction;
+no kernel/executable/memory source changed. Exact FULL physical
+fallback, source-loss, PI6/owner rollback and net/peak RAM remain
+OPEN. PURE default OFF, 32K HOLD. Details:
+`design/kcore-p1e-first-inplace-restore-v1630.md`.
+
 ## 2026-11-16 v1629: genuine 48K PACKED restore and parent WAIT complete
 
 The source-built original 48K PDP-6 TSFS/no-AUX PURE guest now

@@ -1,3 +1,23 @@
+## 2026-11-16 v1630: first true 48K PACKED child takes fast PURE path
+
+The original v1629 complete 48K PDP-6 TSFS/no-AUX PURE guest was
+replayed with original linked PURE MRES source/DXR opcode-verified
+breakpoints. Slot 2 first entered `mm_pure_claim_prefix_v1384` at
+PC `034610`, AC1..4 = `117000,2,001000,010000` octal. It then
+reached original `mm_pure_commit_prefix_v1384` PC `034614` with
+AC1..4 = `116000,2,001000,010000`; no v1391 FULL fallback occurred
+before this commit. Both installed instruction words match the
+actual PURE DXR. All five child `w` markers, original parent WAIT/Z
+and HALT followed. Physical testkit audit and forged prefix-base/
+wrong-branch negative witnesses PASS/reject; native v1395/v1397
+MM rollback and v1612 service tests PASS. A debugger-output-only
+L/wwwwwZ runner assertion was corrected (guest unchanged).
+This proves the first child's fast in-place prefix branch;
+relocated FULL, forced physical failure/rollback, source lifetime
+and net/peak RAM remain OPEN. No production code change; PURE OFF,
+strict 32K HOLD. Report:
+`design/kcore-p1e-first-inplace-restore-v1630.md`.
+
 ## 2026-11-16 v1629: complete real 48K five-PACKED child lifecycle
 
 New testkit-only physical PDP-6 48K TSFS/no-AUX/GCC PURE guest

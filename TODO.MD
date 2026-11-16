@@ -1,3 +1,20 @@
+## 2026-11-16 v1630: P1-E first physical fast restore accepted
+
+- [x] Physical original 48K five-PACKED-child guest: first slot-2
+  restore enters v1384 MM prefix CLAIM at 034610 (suffix 117000,
+  owner2, prefix001000, APR010000), then actual COMMIT at 034614
+  (base 116000, owner2, prefix001000, APR010000), with linked
+  MRES map, original DXR instruction bytes, successful child user
+  execution and five parent WAIT/Z results. Forged prefix-base and
+  forged FULL-branch physical witnesses rejected. Native v1395/
+  v1397 MM rollback and v1612 RAW service suite both PASS.
+- [ ] Physically exercise full/relocated v1391 fallback after a
+  real prefix-gap obstruction and its rollback paths. Validate
+  immutable source loss/unmount and concurrent PI6 behavior.
+- [ ] Measure source-matched no-PURE vs PURE whole-system RAM and
+  transient peak, including MRES/scratch/owners. Default PURE OFF;
+  strict 32K optimization HOLD.
+
 ## 2026-11-16 v1629: P1-E actual PACKED lifecycle accepted on 48K
 
 - [x] Original PDP-6 48K PURE child/PIPE/WAIT guest: five children
