@@ -12,8 +12,12 @@
  * exact capacity through the loader ABI, and overlays retained mutable
  * words only after the file read succeeds.
  *
- * v1611: linked only by the opt-in experimental PURE MRES, which
- * is not an accepted physical-guest or peak-RAM production profile.
+ * v1654: Unpin the destination BEFORE releasing the only authoritative
+ * PACKED source and publishing the runnable APR. A failed final unpin
+ * cannot leave a RESIDENT/TRANSITION process with its source already
+ * destroyed. Keep the short fallible commit window PI-atomic.
+ *
+ * Linked only by the opt-in PURE MRES. The default KCORE is unchanged.
  */
 #include "proc_pure_ram_restore_v1391.h"
 #include "proc_swap.h"
@@ -122,6 +126,7 @@ proc_pure_ram_restore_v1391(unsigned int slot,
         struct proc *p;
         kword_t backing, words, skip, raw, source, target;
         kword_t *u;
+        kword_t pi_state;
         int rc;
         int source_pinned = 0;
         int target_pinned = 0;
@@ -168,23 +173,37 @@ proc_pure_ram_restore_v1391(unsigned int slot,
          */
         fs_copy_words(PRAM_PTR(source), PRAM_PTR(target + skip),
             (unsigned int)raw);
+        /*
+         * Finish ALL fallible target cleanup while the authoritative
+         * source is still pinned and intact. Neither a target-unpin error
+         * nor a source-release refusal may publish a RESIDENT owner.
+         * No allocation or filesystem operation occurs with PI disabled.
+         */
+        pi_state = mach_pi_disable();
+        rc = mm_unpin(target);
+        if (rc != MM_OK) {
+                mach_pi_restore(pi_state);
+                goto fail_target;
+        }
+        target_pinned = 0;
         rc = mm_unpin(source);
         if (rc != MM_OK) {
                 source_uncertain = 1;
+                mach_pi_restore(pi_state);
                 goto fail_target;
         }
         source_pinned = 0;
         rc = mm_free(source, MM_TYPE_PACKED_PROCESS, slot);
-        if (rc != MM_OK)
+        if (rc != MM_OK) {
+                mach_pi_restore(pi_state);
                 goto fail_target;
+        }
 
         VM_PDP6_SET_BASE(p, target);
         u[PROC_SWAP_BACKING_OFFSET] = 0UL;
         pram_publish(slot, PROC_STORAGE_PACKED, PROC_STORAGE_RESIDENT);
-        rc = mm_unpin(target);
-        if (rc != MM_OK)
-                return MM_ERR_BUSY;
         PROC_CLEAR_TRANSITION(p);
+        mach_pi_restore(pi_state);
         return MM_OK;
 
 fail_target:

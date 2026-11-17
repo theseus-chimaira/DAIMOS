@@ -1,3 +1,31 @@
+## 2026-11-17 v1654: production bounded FULL commit MM safety
+
+Source-linked original PDP-6 PURE restore v1391 now checks
+mm_unpin(full target) BEFORE source PACKED free and RESIDENT
+publication, with the short destructive MM commit PI-atomic.
+One-shot target fault retains exact PACKED source/backing
+and successfully retries, permanently uncertain target/source
+unpin remains fail-closed TRANSITION-held without false
+RESIDENT publication. Native v1395/v1397/v1648 and new
+permanent pin-oracle PASS; executed old-order mutant REJECTED.
+
+New 48K physical source-built PDP-6 source/loader PC035261
+dual-pin check PASS; real secondary DTC3 read loss -4, exact
+rollback, same reel and later successful FULL, six exact
+WAITs, normal HALT. Two invalid pin/I/O physical witnesses
+rejected. Permanent fixed GCC KCORE stream remains identical
+(low end 024253 octal); optional MRES/KINIT transient end
+113621 -> 113631 octal, +8 decimal words. Full report:
+design/kcore-p1e-full-commit-atomic-v1654.md.
+
+32K strict boot/footprint acceptance explicitly DEFERRED
+until PDP-6 functional freeze, not hidden or claimed solved.
+Current KCORE remaining-work order reconciled in
+design/kcore-finish-priorities-v1654.md: finish uncertain
+MM owner policy, actual peak RAM accounting, optional
+compression yes/no and full matched-source functional
+freeze. PURE OFF by default; final size sweep LAST.
+
 ## 2026-11-17 v1653: original matched 32K KINIT capacity refusal
 
 Original GCC lowmem 32K TSFS3 image links

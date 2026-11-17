@@ -1,3 +1,42 @@
+## 2026-11-17 v1654: production PURE FULL commit corrected; 32K deferred
+
+**PDP-6 KCORE production opt-in RAW PURE fix ACCEPTED**: v1391 FULL
+now unpins the complete destination BEFORE releasing the only
+authoritative PACKED source and publishing the RESIDENT APR.
+All fallible source/target MM checks and process-mode publication
+are enclosed by a short PI-disabled commit, with no blocking VFS
+I/O inside. One-shot destination unpin failure preserves exact
+unmodified unpinned RAW and permits full retry. Permanent target
+or source pin refusals remain PACKED/TRANSITION-held and never
+falsely publish RESIDENT; uncertain automatic recovery stays OPEN.
+Real source-linked v1395/v1648 native matrix PASS, independently
+executed old post-publication mutant REJECTED, two permanent
+MM-unpin failures PASS their fail-closed native owner oracles.
+Testkit commit 01a6932.
+
+New GCC 48K physical PDP-6/no-AUX/TSFS/secondary-DTC3 source
+guest PASS: six actual PACKED children, source and target
+simultaneously pin1 at new FULL PC035261, actual DTC3 failed
+non-root read -4 with unchanged RAW/no target, same-reel
+recovery, later FULL success, all six exact EXIT/WAIT, no
+final child MM owner and normal HALT. Two false physical
+pin/success witnesses rejected. GCC permanent KCORE
+byte-identical (SHA256 88970ee633dc22094565172348bc1dcb9f49ba0417e104fb5608b71a87668d01);
+KINIT PURE-ON end grows 113621 -> 113631 octal (+8 words).
+Report design/kcore-p1e-full-commit-atomic-v1654.md.
+
+**User-directed priority change:** strict 32K boot/footprint
+ACCEPTANCE DEFERRED until remaining PDP-6 KCORE functionality
+and matched-source release freeze. The independently proven
+v1653 32K KINIT-on 6,289-word safety overrun remains a future
+constraint; do not weaken stack or drop necessary modules.
+Active P1-E finish gates: failure/uncertain ownership policy,
+complete actual peak memory, optional mutable compression
+measured YES/NO, stale DTFS native fixture, current-source
+full KCORE physical regression/freeze. KA10/KI10 port,
+TSFS1.2 and size-only sweep are separate later work.
+See design/kcore-finish-priorities-v1654.md.
+
 ## 2026-11-17 v1653: matched original 32K KINIT PURE ON/OFF rejection PASS
 
 Original C89 two-process user DXR compiled/linked,

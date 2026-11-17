@@ -1,3 +1,42 @@
+## 2026-11-17 v1654: FULL MM transaction correction and PDP-6 finish order
+
+- [x] Fix real opt-in PURE v1391 FULL bug: final destination
+  unpin must succeed BEFORE deleting authoritative RAW
+  suffix or publishing RESIDENT. Short PI-disabled MM
+  commit contains no loader/device I/O or allocation.
+  One-shot target refusal preserves PACKED source/backing,
+  exact retry succeeds. Persistent target/source failures
+  hold TRANSITION and do not publish runnable APR.
+- [x] Source-linked PDP-6 native v1395/v1397/v1648 PASS,
+  plus permanently refused target/source unpins; the
+  independently executed old source-before-unpin mutant
+  fails the stronger original MM oracle. Testkit 01a6932.
+- [x] NEW rebuilt original 48K PDP-6 no-AUX/TSFS-root/
+  secondary DTC3 six-PACKED guest: physical FULL pins
+  original RAW and separate APR, real failed DTFS read
+  preserves RAW and frees target, same-reel reattach,
+  successful FULL, exact six WAIT and normal HALT.
+  Original independent physical auditor rejects forged
+  RAW pin and fake loader success. No fixed KCORE
+  growth; optional PURE KINIT +8 decimal words.
+  design/kcore-p1e-full-commit-atomic-v1654.md.
+- [x] By explicit direction **DEFER strict 32K physical
+  boot and footprint acceptance until the remaining
+  PDP-6 KCORE functional work and feature freeze**.
+  Preserve original v1653 failure evidence and the
+  6,289-word PURE-on transient KINIT minimum reduction
+  target, without reducing the bootstrap stack or
+  removing required MRES. No 32K success claimed.
+- [ ] Finish PDP-6 KCORE functional gates: source-linked
+  permanent uncertain MM fail-closed review, complete
+  KCORE/MRES/BCACHE/loader peak-RAM accounting, conditional
+  mutable-state compression YES/NO with measured net RAM,
+  stale v1518/v1522 DTFS native fixture modernization,
+  full source-matched native/physical KCORE freeze and
+  release reports. KA10/KI10 ports and strict size-only
+  sweep are separate later work, not current blockers.
+  design/kcore-finish-priorities-v1654.md.
+
 ## 2026-11-17 v1653: original 32K transient KINIT safety blocker
 
 - [x] Compile original minimal PURE C89
