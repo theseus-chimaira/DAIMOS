@@ -1,3 +1,30 @@
+## 2026-11-17 v1656: original native DTFS integration gap CLOSED
+
+- [x] Restore actual current-source v1518
+  raw DTC read/write, native DTFS directory
+  and real BCACHE: link original v1561
+  first-write gateway with genuine V1
+  published DTC3 owner, no gate bypass.
+  All 4 native source mutants rejected.
+- [x] Restore actual current-source v1522
+  mounted V1 identity V1/V2 revalidation,
+  72-bit physical ID high/low comparison,
+  FSINFO and real BCACHE; v1575 end-anchor
+  and original v1556 slot restore fixed.
+  All 8 native source mutants rejected.
+- [x] Combined v1656 source-linked native
+  original v1518/v1522 + v1655 82-case
+  matrix PASS; all 51 unsafe source
+  mutations executed and rejected.
+  No production source change.
+  design/kcore-dtfs-original-integration-v1656.md.
+- [ ] Continue PDP-6 complete transient
+  RAM peak and lifetime, permanent MM owner
+  policy, optional mutable compression
+  YES/NO and full current-source KCORE
+  physical/native feature freeze. Strict
+  32K acceptance explicitly DEFERRED.
+
 ## 2026-11-17 v1655: current-source DTFS native freeze matrix
 
 - [x] Modernize the real v1556 PDP-6 fixture for current

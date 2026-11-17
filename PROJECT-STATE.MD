@@ -1,3 +1,30 @@
+## 2026-11-17 v1656: actual original DTFS raw-cache and identity fixtures restored
+
+Repaired stale current-source v1518/v1522 native integration
+fixtures after original v1561 physical-unit intent gate and
+v1575 discard changes. v1518 now uses original unmodified
+v1561 gate with valid V1 DTC3 mounted owner: actual raw
+read/write BCACHE behavior PASS, all 4 bad mutations
+REJECTED. v1522 now extracts correct FSINFO boundary,
+links unmodified original gate and real full BCACHE/V1
+identity recovery: PASS, all 8 bad mutations REJECTED,
+including both ID halves and workspace tag. Combined
+v1656 runner also executes v1655 82-case/39-mutation
+V1/V2 identity/intent/owner native matrix: PASS, total
+51 independently executed unsafe-source mutations rejected.
+Testkit commit a507c17. Versioned original native logs
+and source mutant archive SHA256
+7393d83105e281b66bf24852dfbb08e864b9b198978d64002a26f7b0896b1ec5.
+No production KCORE/MRES/VFS/MM code or memory change.
+
+Original v1518/v1522 current-source native integration
+gap is CLOSED at this scope. No new full physical
+Type-551 multi-process race or unlimited reel safety claim.
+Details: design/kcore-dtfs-original-integration-v1656.md.
+Full KCORE peak, permanently uncertain MM, measured
+optional compression and current-source feature freeze
+remain OPEN. Strict 32K acceptance DEFERRED; PURE OFF.
+
 ## 2026-11-17 v1655: current-source PDP-6 DTFS identity/intent matrix PASS
 
 No production KCORE/MRES/MM/VFS changes. Modernized the

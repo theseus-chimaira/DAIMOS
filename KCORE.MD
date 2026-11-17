@@ -1,3 +1,20 @@
+## 2026-11-17 v1656: original source DTFS native integration restored
+
+The original native v1518 raw read/write/BCACHE and
+v1522 mounted 72-bit identity/native-loader tests
+now PASS with current unmodified v1561 first-write
+owner gate. Four plus eight bad original source
+mutations are rejected, together with v1655's 82
+native cases / 39 mutants: 51 unsafe executed
+mutations rejected in combined v1656 runner.
+No permanent KCORE/MRES/DATA change. v1518/v1522
+stale integration gate CLOSED for native V1,
+not new physical media/concurrent-process evidence.
+design/kcore-dtfs-original-integration-v1656.md.
+
+32K boot/size deferred. Full peak RAM, uncertain MM,
+optional compression and final full freeze still OPEN.
+
 ## 2026-11-17 v1655: native current-source DTFS regression gate
 
 Testkit a048ab3 repairs historical v1556 PDP-6 recovery
