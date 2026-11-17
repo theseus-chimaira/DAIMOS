@@ -1,3 +1,22 @@
+## 2026-11-17 v1651: sampled physical 48K MM occupancy
+
+Accepted original v1643 six-checkpoint physical MM audit:
+arena 31,375 decimal words; B/A 27,163 occupied and
+4,212 free; pinned FULL 27,668/3,707; read-failure
+rollback 23,572/7,803; later FULL 27,668/3,707;
+terminal Z 4,958/26,417. At pinned FULL, only 883
+words in the largest free gap, 640 words after 02000
+APR alignment, so another minimum APR cannot fit.
+The B/A->FULL difference is +505 words after accounting
+for earlier released child RAW and dynamic kernel slab.
+Three unsafe MM mutations rejected; original v1643
+read/rollback/restoration audit rerun PASS.
+`design/kcore-p1e-48k-mm-sampled-peak-v1651.md`.
+
+Not a continuous whole-machine peak, matched new ON/OFF
+gain, 32K/64K acceptance or KA10. No production RAM
+increase, P1-E OPEN, PURE default OFF, 32K HOLD.
+
 ## 2026-11-17 v1650: slot-0 FULL PI6 serialization accepted
 
 Original native PDP-6 PI6 source-linked gate, 11 cases and

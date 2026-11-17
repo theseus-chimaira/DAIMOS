@@ -1,3 +1,30 @@
+## 2026-11-17 v1651: exact original 48K physical MM snapshot accounting PASS
+
+Original v1643 accepted physical DTC3/DTFS failure and later
+FULL restore trace reaudited without rebuilding the guest.
+Original single MM arena 042561..140000 octal has 31,375
+decimal words. At B/A six PACKED children occupy 27,163
+and leave 4,212 free; FULL_PINNED owns two pinned extents
+and occupies 27,668/free 3,707; ROLLED_BACK occupies
+23,572/free 7,803, restoring an exact 4,096-word gap;
+LATER_FULL repeats 27,668/3,707; final Z occupies
+4,958/free 26,417 with no child PROCESS/PACKED owners.
+Largest FULL free gap is 883 words, only 640 usable
+after 02000-octal alignment: no new minimum APR fits.
+Observed B->FULL delta +505 = 4096 new target minus
+3456 earlier exiting child RAW minus 135 dynamically
+released kernel words. Original v1643 physical/ABI fault
+auditor PASS; forged arena, dynamic extent and target pin
+snapshots all rejected. Testkit `9815f0c`, full report
+`design/kcore-p1e-48k-mm-sampled-peak-v1651.md`.
+No new simulator run, no production/ABI/MM change.
+
+These six observed MM samples are **not** an all-time
+continuous whole-machine peak or a matched PURE ON/OFF
+comparison for this exact larger guest. 32K/64K profiles,
+uncertain permanent MM pins and KA10 backend still OPEN.
+P1-E OPEN, PURE opt-in/OFF, strict 32K optimization HOLD.
+
 ## 2026-11-17 v1650: original slot-0 FULL PI6 serialization VERIFIED
 
 P1-E targeted native PDP-6 **PASS**, plus correlated original

@@ -1,3 +1,25 @@
+## 2026-11-17 v1651: source-matched physical 48K MM checkpoints
+
+- [x] Original v1643 48K six-PACKED read failure/recovery
+  native source-linked audit rerun, all physical source,
+  pin, rollback, WAIT/HALT checks PASS.
+- [x] Reconstruct exact original six MM snapshots: arena
+  31,375 physical words, B/A occupied27,163/free4,212;
+  FULL_PINNED27,668/3,707; ROLLED_BACK23,572/7,803;
+  LATER_FULL27,668/3,707; final Z4,958/26,417.
+  FULL's largest free gap only 883 words vs minimum
+  02000 aligned APR; one new process cannot be admitted.
+  Sample delta +505=4096-3456-135 after prior child exit
+  and dynamic allocation release. All three invalid
+  arena/dynamic/pin witnesses rejected.
+  Report `design/kcore-p1e-48k-mm-sampled-peak-v1651.md`.
+- [ ] Separate **continuous** physical transient peak
+  including fixed KCORE, MRES and all BCACHE/provider scratch;
+  source-matched 48K ON/OFF net test for this larger guest;
+  32K/64K original layouts, permanently uncertain MM pins
+  and native KA10 backend. No production changes; PURE OFF,
+  P1-E OPEN, strict 32K optimization HOLD.
+
 ## 2026-11-17 v1650: slot-0 PURE FULL serialization
 
 - [x] Check the **original** PDP-6 PI6 idle-range and
