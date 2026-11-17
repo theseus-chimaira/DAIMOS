@@ -1,3 +1,26 @@
+## 2026-11-17 v1650: slot-0 PURE FULL serialization
+
+- [x] Check the **original** PDP-6 PI6 idle-range and
+  swap-service exclusion in eleven native assembly cases.
+  Positive idle selections pass, clock timer-due outside
+  idle refuses, and lower/upper PC and swap-ownership bypass
+  mutations are all rejected.
+- [x] Correlate with the original v1643 48K physical
+  FULL loader PC035252 vs idle017216..017264; slot0
+  actually owns separate pin1 RAW slot3 suffix and full
+  APR target. Both fake slot/pin physical witnesses rejected;
+  original v1643 whole read-failure regression rerun PASS.
+  No new physical guest run or production/RAM change.
+  `design/kcore-p1e-slot0-serialization-v1650.md`.
+- [x] Close the **specific** independent-user UNMOUNT-during-
+  FULL scheduling question: no user dispatch from slot0's
+  MRES continuation under original PI6 semantics; do not
+  bypass the actual scheduler to manufacture the race.
+- [ ] P1-E remains OPEN for actual device/media interrupt
+  and I/O faults, permanently uncertain MM pins, matched
+  32K/48K/64K full transient RAM peak and KA10 backend.
+  PURE OFF by default; strict 32K optimization HOLD.
+
 ## 2026-11-17 v1649: executable guard during real two-pin FULL
 
 - [x] Native PDP-6 source-linked FULL v1391 enters callback

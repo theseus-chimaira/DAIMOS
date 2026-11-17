@@ -1,3 +1,29 @@
+## 2026-11-17 v1650: original slot-0 FULL PI6 serialization VERIFIED
+
+P1-E targeted native PDP-6 **PASS**, plus correlated original
+v1643 physical 48K dual-pin FULL evidence. The linked original
+MRES loader PC is **035252** octal; original KCORE idle-only
+PI6-switch interval is **017216..017264** octal. At physical
+FULL_PINNED, current slot0 owns slot3's exact pin1 PACKED RAW
+`111200..120000` and distinct pin1 PROCESS APR
+`120000..130000`. Original software and clock PI6 branches
+refuse slot-0 user dispatch outside idle, and pending swap
+ownership also excludes normal idle switches. Eleven native
+instruction cases PASS, three unsafe guard mutants rejected.
+Two forged physical current-slot/RAW-pin records rejected.
+Original v1643 full physical regression rerun PASS.
+No new physical guest run for v1650; no production edit.
+Testkit `39febe6`, report
+`design/kcore-p1e-slot0-serialization-v1650.md`.
+
+**Decision:** an independent user process UNMOUNT during the
+slot-0 FULL loader cannot arise under the original scheduler.
+Do not add a test-only scheduler bypass to manufacture it.
+Remaining distinct boundaries: device interrupts and media
+I/O faults, permanently uncertain MM ownership, complete
+transient 32K/48K/64K RAM/BCACHE peak, KA10 VM backend.
+P1-E OPEN, PURE OFF by default, 32K optimization HOLD.
+
 ## 2026-11-17 v1649: real FULL two-pin state and original mount guard PASS (native PDP-6)
 
 New source-linked native PDP-6 v1391 FULL callback holds the

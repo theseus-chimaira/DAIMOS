@@ -1,3 +1,19 @@
+## 2026-11-17 v1650: slot-0 FULL PI6 serialization accepted
+
+Original native PDP-6 PI6 source-linked gate, 11 cases and
+three rejected unsafe mutants, confirms slot-0 FULL MRES
+cannot dispatch another user except from the idle interval.
+That interval **017216..017264** excludes real v1643 48K
+FULL entry **035252**. Existing physical trace confirms
+slot0, source/target pin1, correct rollback and final
+cleanup; two forged slot/pin witnesses rejected. This
+correlates an existing accepted trace, not a new run.
+Independent user DTFS UNMOUNT mid-FULL is unreachable without
+changing scheduler semantics. No production/RAM change.
+Report `design/kcore-p1e-slot0-serialization-v1650.md`.
+Other PI/device/uncertain MM and peak-RAM/KA10 gates remain
+OPEN; PURE opt-in, strict 32K optimization HOLD.
+
 ## 2026-11-17 v1649: source-linked FULL target and executable guards
 
 Native PDP-6 source-linked bounded v1391 FULL callback owns
