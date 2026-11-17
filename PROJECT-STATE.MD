@@ -1,3 +1,27 @@
+## 2026-11-17 v1638: real compressed PURE FULL relocation verified
+
+The original PDP-6 48K low-BCACHE kernel/MRES now physically
+executes both successful RAW restoration mechanisms: v1630
+fast v1384 and v1638 distinct-target bounded FULL v1391.
+Testkit creates one PLAIN and five COMPRESSED+PURE source-identical
+children on the original three-member TSFS boot, checks DXR2
+metadata, and forces real seventh-RUN resource pressure. Parent
+survives, checks six PIPE/private-data/EXIT-057 and exact WAITs,
+then prints terminal Z and HALTs. MM B/A contain six PACKED
+owners. Original breakpoint at installed FULL loader PC 035252
+matches compiled opcode 200000000004. For compressed slot 3,
+the original MM table at the instruction has pinned PACKED
+111000..120000 and separately pinned PROCESS 120000..130000
+extents, AC2 target 120000 and AC4 010000 MM capacity, executed
+by slot-zero scheduler. Z has no child MM owners; original
+source/physical audit and two forged target/WAIT controls
+PASS/reject. No production KCORE/MM/MRES/loader change.
+Immutable source/unmount, interrupted FULL and PI6/MM failure-
+atomic rollback, other 32K/64K cache profiles and matched
+physical net/peak RAM remain OPEN. PURE OFF by default;
+strict 32K optimization HOLD. Report:
+`design/kcore-p1e-physical-full-relocation-v1638.md`.
+
 ## 2026-11-16 v1637: low-BCACHE preserves six real RAW PACKED restores
 
 Physical 48K PDP-6 TSFS/no-AUX/GCC/PURE with v1636 low-BCACHE:

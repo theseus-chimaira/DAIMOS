@@ -1,3 +1,24 @@
+## 2026-11-17 v1638: physical bounded FULL v1391 relocated restore PASS
+
+No production code change. Testkit-generated source-identical
+PLAIN+COMPRESSED PURE 48K PDP-6 TSFS guest admits six children,
+rejects seventh RUN, then passes all six original PIPE/private
+mutable-data/EXIT-057 and exact WAITs: `aaaaaax...LwwwwwwZ`,
+HALT. Both B/A snapshots show six genuine unpinned PACKED
+007000-word suffix owners. Source-linked physical breakpoint
+at original `exec_image_full_bounded_v1391` PC 035252 validates
+the compiled opcode `200000000004`, scheduler slot zero,
+AC2 target 120000, trusted AC4 capacity 010000. At this SAME
+instant slot 3 has a pinned PACKED 111000..120000 source and a
+separately pinned PROCESS 120000..130000 destination. Thus
+actual relocated FULL reconstruction is proven, not inferred
+from function linkage. Final Z leaves no child MM owners,
+both forged owner/WAIT witnesses rejected by testkit. Fast
+v1384 was independently proven by v1630. Failure/PI6/source
+rollback and physical net/peak RAM still OPEN; PURE default
+OFF and strict 32K HOLD. Full report:
+`design/kcore-p1e-physical-full-relocation-v1638.md`.
+
 ## 2026-11-16 v1637: six real 48K PACKED restores after seventh RUN denial
 
 With the unchanged v1636 low-BCACHE production code, an original

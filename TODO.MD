@@ -1,3 +1,24 @@
+## 2026-11-17 v1638: physical successful FULL v1391 relocation closed
+
+- [x] Actual source-built PDP-6 48K TSFS/no-AUX/PURE guest with
+  one plain and five compressed PURE executable children: six
+  admitted, seventh RUN refused, parent survives and confirms
+  all original PIPE/data/EXIT-057/PID/WAIT/status-057 checks.
+  Plain and compressed boot media produced by original tools,
+  no production kernel/allocator/loader instrumentation.
+- [x] Read-only original source-linked breakpoint at bounded
+  v1391 FULL loader PC 035252, slot-zero scheduler: AC2 target
+  120000 and trusted 010000 MM capacity. Original MM at that
+  instant has TWO simultaneous pinned owners for compressed
+  child slot 3: PACKED suffix 111000..120000 and distinct full
+  PROCESS APR 120000..130000. Final Z: no child MM owners.
+  Original physical auditor and forged FULL-owner/false-WAIT
+  mutants PASS/reject. v1630 FAST+v1638 FULL now proven on 48K.
+- [ ] Source-removal/unmount protection and immutable identity;
+  fault-injected loader/PI6/MM rollback and concurrency; 32K/64K
+  BCACHE regression profiles; complete matched physical net and
+  transient peak RAM. PURE OFF, strict 32K size optimization HOLD.
+
 ## 2026-11-16 v1637: P1-E six PACKED child restores physically accepted
 
 - [x] Genuine 48K PDP-6 TSFS/no-AUX/PURE low-BCACHE guest admits
