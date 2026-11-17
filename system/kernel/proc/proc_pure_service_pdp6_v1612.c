@@ -145,9 +145,18 @@ proc_pure_mres_reclaim_v1612(kword_t words, kword_t alignment,
                 PROC_SET_TRANSITION(p);
                 rc = proc_pure_ram_drop_v1381(slot);
                 if (rc != MM_OK) {
+                        /* Rebase can commit even when its last unpin
+                         * refuses. Unlock only an exact unpinned owner.
+                         */
                         if (ppure_retryable_v1612(slot, p,
-                            PROC_STORAGE_RESIDENT))
+                            PROC_STORAGE_RESIDENT)) {
                                 PROC_CLEAR_TRANSITION(p);
+                        } else if (ppure_retryable_v1612(slot, p,
+                            PROC_STORAGE_PACKED)) {
+                                PROC_CLEAR_TRANSITION(p);
+                                if (mm_compact(words, alignment) == MM_OK)
+                                        return 0;
+                        }
                         continue;
                 }
                 if (mm_compact(words, alignment) == MM_OK)

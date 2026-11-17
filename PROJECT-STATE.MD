@@ -1,3 +1,44 @@
+## 2026-11-17 v1658: PURE MM owner disposition (native and physical)
+
+Based on exact pushed v1657 source. Opt-in PDP-6 PURE prefix commit now
+atomically retypes PACKED to PROCESS AND releases its validated sole pin
+before publication; no fallible MM unpin follows RESIDENT. Failed DROP
+cleanup checks either exact unpinned RESIDENT or exact unpinned PACKED
+ownership before unlocking TRANSITION. Pinned, duplicate or missing
+owners remain quarantined under TRANSITION, never READY_ONCE/runnable
+or free for a foreign process. The unchanged terminal MM path refuses
+invalid owners rather than inventing an EXIT. No new persistent words
+or KCORE changes. Original v1654 FULL rollback and v1612 PURE service
+native regressions PASS. New v1658 actual native PDP-6 fast commit,
+completed-vs-refused DROP unpin and executed unsafe pin-leak mutant
+PASS/rejected. Exact native MM lifecycle policy:
+design/kcore-mm-uncertain-policy-v1658.md.
+
+Fresh original GCC 48K source-built selected TSFS ROOT / secondary
+DTC3 DTFS multi-owner guest completed its real child PIPE/WAIT/EXIT
+sequence and normal PDP-6 HALT at PC 000000. Its fixed KCORE.stream
+SHA256 88970ee633dc22094565172348bc1dcb9f49ba0417e104fb5608b71a87668d01
+is byte-identical to accepted v1654 fixed KCORE. Linked maps give
+permanent KCORE low end 024253, opt-in PURE DXR image 003355 octal
+words (zero BSS), KINIT end 113641 octal. Compared with prior v1654
+KINIT 113631, optional transient staging grew 8 decimal words;
+this is not a 32K boot improvement or fixed KCORE growth.
+
+Independent source-linked physical 48K FULL test now also PASSes:
+recentered original v1643 genuine DTC3 device loss at v1658 loader
+entry 003243, loader return -4, exact retained RAW during I/O,
+provisional 010000-octal APR target released after failure, SAME
+DTC3 reel reattach, successful later FULL and six WAIT/HALT.
+Original physical auditor rejects invented source pin and fake
+successful read. Linked MRES instructions verified before replay;
+new v1658 end-to-end physical runner exits zero. This is not
+physical injection of permanently corrupt MM metadata.
+
+New 64K source-matched acceptance, terminal/cancel owner fault
+matrix, continuous machine peak RAM, actual mode3 bitmap compression
+and complete KCORE functional freeze remain OPEN. PURE default OFF,
+strict 32K DEFERRED.
+
 ## 2026-11-17 v1657: real 48K physical six-owner RAW density measured
 
 New original source-built 48K/no-AUX/PDP-6 TSFS-root plus

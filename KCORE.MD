@@ -1,3 +1,31 @@
+## 2026-11-17 v1658: fail-closed PURE MM transition policy
+
+The existing PDP-6 PURE fast prefix MM commit used to publish a
+RESIDENT process before its fallible last unpin. Its native production
+assembly now validates exactly one pin, then retypes and unpins in one
+descriptor store. The C transaction publishes APR/RESIDENT and clears
+TRANSITION within the same PI-disabled window, without any further
+fallible MM step. DROP error handling may unlock only a verified exact
+unpinned RESIDENT or PACKED owner; uncertain/duplicate/pinned owners
+stay transition-held and never become runnable or free.
+
+Actual v1658 source-linked native PDP-6 transaction tests and executed
+unsafe retained-pin mutant PASS/reject; v1654 FULL and v1612 service
+baselines still PASS. Fresh 48K GCC source-built six-child TSFS-root
+and secondary-DTC3 process lifecycle also PASSes original PIPE/WAIT/
+EXIT and HALT at PC 000000. The fixed KCORE stream is byte-identical
+to accepted v1654 (SHA256 88970ee633dc22094565172348bc1dcb9f49ba0417e104fb5608b71a87668d01).
+Independent source-backed physical 48K FULL DTC3 read-loss/reattach
+replay also PASSes with real -4, released provisional APR, retained
+PACKED suffix, later successful FULL and six WAIT/HALT. Both forged
+source-pin and fake-success physical witnesses are rejected. Actual
+permanently corrupt MM injection remains native only; 64K and final
+freeze are still open. Optional PURE MRES
+DXR image=003355 octal words; KINIT end=113641 octal (eight decimal
+more staging words than v1654's 113631), no fixed KCORE growth.
+See design/kcore-mm-uncertain-policy-v1658.md for refusal states and
+quarantine limits. Compression OFF; 32K boot/size DEFERRED.
+
 ## 2026-11-17 v1657: actual 48K physical PURE suffix bitmap density
 
 Original 48K PDP-6 compiled guest on selected TSFS ROOT

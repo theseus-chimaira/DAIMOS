@@ -6,7 +6,8 @@
  * Prefix reserve/release use a PACKED_PROCESS full-span descriptor while
  * VFS I/O is performed. Thus the original writable suffix remains owned
  * and un-runnable, and every reader/allocator sees an occupied full span.
- * The final PROCESS descriptor plus VM/mode publication is PI-atomic.
+ * The final unpinned PROCESS descriptor plus VM/mode publication is
+ * PI-atomic. No fallible MM operation follows resident publication.
  *
  * v1611: linked only in experimental opt-in PURE MRES. The caller must
  * hold PROCESS TRANSITION and executable unmount exclusion throughout.
@@ -143,8 +144,10 @@ proc_pure_restore_v1384(unsigned int slot,
         }
 
         /* Prefix is completely initialized and immutable, writable RAM
-         * stayed bit-identical. The MM retype cannot allocate or fail
-         * after validation; publish the complete APR and mode atomically.
+         * stayed bit-identical. MM validates the exact single pin, then
+         * atomically retypes AND unpins in its final metadata store.
+         * Publish APR/mode and release TRANSITION under the same PI
+         * exclusion. No fallible MM unpin follows publication.
          */
         pi_state = mach_pi_disable();
         rc = mm_pure_commit_prefix_v1384(base, slot, prefix, words);
@@ -154,6 +157,7 @@ proc_pure_restore_v1384(unsigned int slot,
                 if (proc_storage_publish_v30(slot, PROC_STORAGE_PACKED,
                     PROC_STORAGE_RESIDENT) != 0)
                         proc_swap_storage_invariant_v30();
+                PROC_CLEAR_TRANSITION(p);
         }
         mach_pi_restore(pi_state);
         if (rc != MM_OK) {
@@ -169,8 +173,5 @@ proc_pure_restore_v1384(unsigned int slot,
                         return MM_ERR_BUSY;
                 return rc;
         }
-        if (mm_unpin(base) != MM_OK)
-                return MM_ERR_BUSY; /* committed, leave TRANSITION held */
-        PROC_CLEAR_TRANSITION(p);
         return MM_OK;
 }

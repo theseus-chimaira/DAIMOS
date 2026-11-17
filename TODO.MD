@@ -1,3 +1,30 @@
+## 2026-11-17 v1658: PURE MM owner refusal and terminal disposition
+
+- [x] Remove the fast-prefix post-publication fallible mm_unpin:
+  source-linked v1384 MM primitive now retypes and consumes its
+  verified single pin atomically before RESIDENT/TRANSITION publication.
+- [x] Check exact unpinned PACKED as well as RESIDENT after DROP
+  reported refusal; retain TRANSITION for actual pinned, duplicate,
+  missing or size-mismatched owners. No new persistent process bits.
+- [x] Execute original v1654 FULL and v1612 PURE service native
+  regressions and new v1658 native completed/refused unpin tests;
+  reject an executed source-linked retained-pin mutant.
+- [x] Rebuild fresh actual 48K GCC original source-backed TSFS ROOT
+  plus secondary DTC3 guest; six-child PIPE/WAIT/EXIT and HALT PASS.
+  Fixed KCORE stream byte-identical to accepted v1654; optional MRES
+  DXR image 003355 octal, KINIT transient end 113641 octal.
+- [x] Fresh physical FULL DTC3 source loss/reattach replay: original
+  -4, released provisional APR, authoritative RAW, same-reel recovery,
+  six WAIT/HALT. Both original forged physical trace witnesses
+  rejected; exact v1658 linked MRES instructions verified.
+- [ ] Run new source-matched 64K regression and finish owner/finalizer
+  matrix including permanent MM free/cancellation with native/physical
+  evidence.
+- [ ] Complete continuous whole-machine peak RAM, optional state3
+  compressed-RAW YES/NO, source-matched freeze matrix and release audit.
+  32K acceptance/size optimization are still explicitly DEFERRED.
+  design/kcore-mm-uncertain-policy-v1658.md.
+
 ## 2026-11-17 v1657: original physical 36-bit PURE bitmap density PASS
 
 - [x] Reboot original source-matched 48K PDP-6
