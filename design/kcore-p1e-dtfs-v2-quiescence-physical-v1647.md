@@ -106,3 +106,10 @@ including the versioned `check-v2-v1647.py` and
 `test-v2-v1647.py`. Source-built disposable evidence used
 `$TMPDIR/pure-quiesce-v1646.pcSPNb` and
 `$TMPDIR/pure-quiesce-run-v1646.0lyMqh`.
+
+Portable evidence archive with full original physical trace,
+verified test-only VFS source, map, compiled DXR binaries,
+guest source, actual DTC3 reel, auditor log and SHA256 manifest:
+`$TMPDIR/daimos-p1e-v1647-evidence.VG7qxo.tar.gz`.
+Archive SHA256:
+`63329268ecb03ecca114d825de0e1da508a40af0e940854a83fc09ccb588868d`.

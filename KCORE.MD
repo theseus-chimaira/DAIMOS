@@ -1,22 +1,3 @@
-## 2026-11-17 v1647: real V2 quiescence versus compressed PURE RUN PASS
-
-Original source-linked 48K PDP-6 TSFS ROOT plus real secondary DTC3
-DTVOL2/CLEAN DTFS mount. A test-only real PI6 sleep holds the
-original V2 unmount quiescence window. Parent verifies live FSINFO
-refusal, a genuine refused compressed DXR `RUN`, unchanged original
-MM and backing records and 1004 real CLK ticks. After unmount,
-the same DTC3 reel remounts, the same compressed RUN succeeds, and
-the original exact EXIT/WAIT and final MM owner cleanup reach a
-single normal HALT. Three forged clock/owner/RO physical traces and
-seven corrupt V2 media headers rejected. Two original children
-are RESIDENT, not PACKED: this is an **admission safety** test,
-not a new physical RAM saving. No production code/data change.
-Full report: `design/kcore-p1e-v2-quiescence-run-v1647.md`.
-
-P1-E remains OPEN for concurrent FULL target/provider I/O,
-uncertain MM rollback, total peak RAM and target configurations;
-PURE default OFF, 32K optimization HOLD.
-
 ## 2026-11-17 v1647: physical V2 source admission race accepted
 
 Actual source-derived 48K PDP-6 simulator boots with genuine

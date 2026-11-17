@@ -1,21 +1,3 @@
-## 2026-11-17 v1647: V2 quiescing source versus new PURE RUN
-
-- [x] Source-derive physical 48K PDP-6 and genuine DTC3 sealed
-  DTVOL2/CLEAN media, rejecting seven corrupt V2 headers. Earlier
-  DTVOL1 fixture did not exercise actual V2 quiescence.
-- [x] Test-only real scheduler sleep after original V2 barrier;
-  true compressed DXR2 RUN refused with FSINFO=-1 before and
-  after. Original backing/MM unchanged, 1004 real CLK ticks,
-  exact same reel remount, successful re-RUN/EXIT/WAIT and HALT.
-  Three negative physical evidence mutants rejected. Both first
-  children are RESIDENT; v1639/v1645 PACKED RAM tests independent.
-- [ ] Interleave pinned FULL target plus live non-root source I/O
-  and concurrent unmount; prove exact lock/pin/rollback behavior.
-- [ ] Resolve uncertain MM unpin/free rollback, matched physical
-  transient peak and 32K/64K BCACHE/configuration coverage. KA10
-  VM backend still separate. PURE default OFF; optimization HOLD.
-  Report: `design/kcore-p1e-v2-quiescence-run-v1647.md`.
-
 ## 2026-11-17 v1647: original V2 unmount versus compressed PURE RUN
 
 - [x] Source-match original 48K PDP-6 TSFS/root, RW DTC3

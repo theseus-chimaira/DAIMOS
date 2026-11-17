@@ -1,28 +1,3 @@
-## 2026-11-17 v1647: real V2 unmount rejects concurrent compressed PURE RUN
-
-**P1-E scoped 48K PDP-6 physical regression PASS.** An earlier DTC3
-DTVOL1 candidate could not exercise the original v1562 V2 quiescence
-barrier, so the testkit now creates and verifies genuine sealed
-DTVOL2/CLEAN physical media, rejecting seven corrupt variants.
-In a disposable source-identical VFS with only one real PI6 sleep
-after the original quiescence bit is acquired, a real secondary
-DTFS unmount overlaps a compressed DXR2 `RUN`: live FSINFO=-1,
-RUN=-1 and FSINFO=-1 after the attempt. Original swap records,
-mount identity and MM ownership remain byte-identical; 1004 real
-CLK ticks elapse before unmount completion. The same reel is
-remounted; compressed RUN, exact exit/wait, final owner release
-and single real HALT all PASS. Physical auditor rejects three
-forged clock/owner/mount witnesses. The initial two children are
-**RESIDENT, not PACKED**; memory-pressure coverage remains the
-separate accepted v1639/v1645 six-owner results. No production
-KCORE/MM/VFS/ABI or permanent RAM change. Detailed evidence:
-`design/kcore-p1e-v2-quiescence-run-v1647.md`.
-
-Still OPEN: simultaneous live FULL restoration target plus
-provider mutation, uncertain MM rollback, 32K/64K physical peak
-RAM/configurations and KA10 backend. PURE default OFF;
-strict 32K optimization HOLD. P1-C/D remain CLOSED.
-
 ## 2026-11-17 v1647: physical DTFS V2 quiescence versus new PURE RUN PASS
 
 **P1-E admission-race gate ACCEPTED; P1-E overall remains OPEN.**
