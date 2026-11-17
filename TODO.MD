@@ -1,3 +1,29 @@
+## 2026-11-17 v1644: writable executable source guards PASS physically
+
+- [x] Original 48K TSFS/PURE PDP-6 source-derived C89 guest,
+  executable on REAL native DTC3 RW mount2, mode0777. Six PACKED
+  owner suffixes 006400-octal (TX2 text001420, omit001400),
+  B/A/guard/P snapshots identical, pin0. Selected TSFS ROOT
+  provider7/mount1 remains online. VFS policy 000000000001
+  proves secondary RW, not an RO-guard false positive.
+- [x] Original KCORE `proc_swap_mount_busy` PC003431 AC1=2 and
+  `proc_swap_backing_busy` PC003322 AC1=050202000000 physically
+  executed while six children PACKED. Actual UNMOUNT, UNLINK,
+  TRUNCATE, O_TRUNC and data WRITE refused. Native same-slot
+  RENAME COMP->SAFE->COMP allowed without data mutation; UNLINK
+  of renamed vnode still refused. All six original PIPE/private
+  data/EXIT-057 and exact parent PID/WAIT/status-057 checks pass.
+  Parent then successfully UNMOUNTs, `LwwwwwwUZ`, normal HALT;
+  physical final child MM owners zero. Source-linked audit plus
+  forged RO-policy, RAW pin, mount identity controls PASS/reject.
+  No production edits or KCORE resident RAM growth; v1382/v1563
+  native process backing tests PASS.
+- [ ] Concurrent PI6 mutation/remount/restore races and uncertain
+  MM failure transaction; broad 32K/64K layouts; full matched
+  physical transient RAM peak. Older DTFS v1522 standalone
+  source-extractor remains stale after v1575/v1561 (NOT PASS).
+  PURE disabled by default; strict 32K size optimization HOLD.
+
 ## 2026-11-17 v1643: genuine non-root backing FULL failure recovered
 
 - [x] Original 48K PDP-6 no-AUX TSFS guest: native DTC3 DTFS

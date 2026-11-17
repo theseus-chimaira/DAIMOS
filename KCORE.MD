@@ -1,3 +1,27 @@
+## 2026-11-17 v1644: physical writable PURE source lifetime PASS
+
+No production edit. Original source-built 48K PDP-6 PURE guest
+now uses mode0777 compressed executable on genuine native DTC3
+RW DTFS mount2 (independent TSFS ROOT provider7/mount1).
+Six distinct unpinned PACKED_PROCESS children, each 006400-octal
+suffix (source TX2 text 001420, omit 001400). B/A, KCORE guard
+entry and P physical MM snapshots retain EXACT same six owners.
+The original `proc_swap_mount_busy` PC003431 is entered with
+AC1=2; original `proc_swap_backing_busy` PC003322 with
+AC1=050202000000 (DTFS/mount2/file slot0). Live VFS policy
+000000000001 proves mount2 RW while all source mutation checks
+refuse unmount, unlink, truncate, O_TRUNC and data WRITE. Native
+DTFS same-slot rename to SAFE and back succeeds without altering
+backing identity, and unlink of renamed source is still refused.
+After six original PIPE/mutable sentinel/EXIT-057/WAITs, parent
+unmount succeeds, console ends `LwwwwwwUZ`, normal HALT; final
+physical MM child owners zero. Auditor PASSes and three forged
+RW policy/pin/mount witnesses rejected. No KCORE RAM growth.
+Sequential ownership proved; PI6 races, uncertain MM rollback,
+32K/64K and complete transient peak RAM remain OPEN. PURE OFF,
+strict 32K HOLD. Detailed report:
+`design/kcore-p1e-backing-guards-physical-v1644.md`.
+
 ## 2026-11-17 v1643: real non-root DTFS FULL read error recovery PASS
 
 No production edit. Original physical 48K no-AUX/TSFS/PDP-6 guest

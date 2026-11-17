@@ -1,3 +1,32 @@
+## 2026-11-17 v1644: actual 48K RW executable backing protection
+
+Original 48K PDP-6 no-AUX TSFS/PURE kernel unchanged. Source-
+derived v1643 guest additionally exercises true writable
+secondary DTFS (DTC3 public mount2), mode0777 executable,
+after checked CLEAN unmount and same reel RW remount.
+Selected TSFS ROOT public mount1 remains attached. Six true
+PACKED children with original MM B/A/P unchanged, unpinned,
+source-specific RAW suffix 006400 octal words (compiled TX2
+001420, skip001400). Actual original KCORE guard breakpoints
+`proc_swap_mount_busy` PC003431 AC1=2 and
+`proc_swap_backing_busy` PC003322 AC1=050202000000;
+`vfs_mount_policy=000000000001` means mount2 RW. Parent refuses
+UNMOUNT, UNLINK, TRUNCATE, O_TRUNC and WRITE while source PACKED;
+native RENAME to SAFE and back succeeds as it preserves the
+file slot, with renamed source still unlink-protected.
+All six exact original child PIPE/private data/EXIT-057 and
+PID/WAIT/status-057 checks pass, then secondary UNMOUNT succeeds;
+normal console `LwwwwwwUZ`, HALT. Source-linked physical MM at
+U/Z no child PROCESS/PACKED owners; auditor PASS plus three
+forged RO-policy, pin and mount witnesses rejected.
+No production edit or added resident RAM. Native v1382/v1563
+backing owner regressions PASS. Sequential source lifetime
+accepted; concurrent PI6 mutation/uncertain MM errors,
+32K/64K profiles and matched transient peak RAM remain OPEN.
+Older DTFS v1522 native fixture still stale, not counted PASS.
+PURE default OFF, strict 32K whole-KCORE optimization HOLD.
+Report `design/kcore-p1e-backing-guards-physical-v1644.md`.
+
 ## 2026-11-17 v1643: real 48K secondary executable read recovery
 
 Original unchanged source-built PDP-6 48K PURE/TSFS/no-AUX kernel
