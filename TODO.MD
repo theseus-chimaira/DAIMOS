@@ -1,3 +1,39 @@
+## 2026-11-17 v1647: V2 quiescing source versus new PURE RUN
+
+- [x] Source-derive physical 48K PDP-6 and genuine DTC3 sealed
+  DTVOL2/CLEAN media, rejecting seven corrupt V2 headers. Earlier
+  DTVOL1 fixture did not exercise actual V2 quiescence.
+- [x] Test-only real scheduler sleep after original V2 barrier;
+  true compressed DXR2 RUN refused with FSINFO=-1 before and
+  after. Original backing/MM unchanged, 1004 real CLK ticks,
+  exact same reel remount, successful re-RUN/EXIT/WAIT and HALT.
+  Three negative physical evidence mutants rejected. Both first
+  children are RESIDENT; v1639/v1645 PACKED RAM tests independent.
+- [ ] Interleave pinned FULL target plus live non-root source I/O
+  and concurrent unmount; prove exact lock/pin/rollback behavior.
+- [ ] Resolve uncertain MM unpin/free rollback, matched physical
+  transient peak and 32K/64K BCACHE/configuration coverage. KA10
+  VM backend still separate. PURE default OFF; optimization HOLD.
+  Report: `design/kcore-p1e-v2-quiescence-run-v1647.md`.
+
+## 2026-11-17 v1647: original V2 unmount versus compressed PURE RUN
+
+- [x] Source-match original 48K PDP-6 TSFS/root, RW DTC3
+  secondary mount and compressed DXR2 user image against a
+  **physical** DTVOL2/CLEAN reel. Original FSINFO observes the
+  quiescence barrier, real PURE RUN is denied, and both mount
+  and 16 swap records plus original MM owners remain intact.
+  Hardware PI6 clock advances 1004 ticks across the staged
+  sleep/unmount. Same-volume remount and real compressed RUN,
+  exact EXIT/WAIT, final unmount and one normal HALT PASS.
+  Testkit rejects seven broken physical DTVOL2 witnesses,
+  three forged MM/clock/RO traces and post-HALT replay.
+  Two original children are **RESIDENT**, not PACKED; no new
+  RAM-saving claim. No production change. Detailed v1647 report.
+- [ ] P1-E remains OPEN: genuinely overlapping pinned FULL
+  restore with V2 unmount/provider I/O, uncertain MM rollback,
+  32K/64K/peak RAM and KA10 backend. PURE OFF by default.
+
 ## 2026-11-17 v1645: real PI6 staged PURE owner lifetime PASS
 
 - [x] Genuine 48K source-linked PDP-6 guest: original mode0777

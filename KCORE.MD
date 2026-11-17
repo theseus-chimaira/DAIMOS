@@ -1,3 +1,40 @@
+## 2026-11-17 v1647: real V2 quiescence versus compressed PURE RUN PASS
+
+Original source-linked 48K PDP-6 TSFS ROOT plus real secondary DTC3
+DTVOL2/CLEAN DTFS mount. A test-only real PI6 sleep holds the
+original V2 unmount quiescence window. Parent verifies live FSINFO
+refusal, a genuine refused compressed DXR `RUN`, unchanged original
+MM and backing records and 1004 real CLK ticks. After unmount,
+the same DTC3 reel remounts, the same compressed RUN succeeds, and
+the original exact EXIT/WAIT and final MM owner cleanup reach a
+single normal HALT. Three forged clock/owner/RO physical traces and
+seven corrupt V2 media headers rejected. Two original children
+are RESIDENT, not PACKED: this is an **admission safety** test,
+not a new physical RAM saving. No production code/data change.
+Full report: `design/kcore-p1e-v2-quiescence-run-v1647.md`.
+
+P1-E remains OPEN for concurrent FULL target/provider I/O,
+uncertain MM rollback, total peak RAM and target configurations;
+PURE default OFF, 32K optimization HOLD.
+
+## 2026-11-17 v1647: physical V2 source admission race accepted
+
+Actual source-derived 48K PDP-6 simulator boots with genuine
+RW DTVOL2/CLEAN secondary DTC3, selected TSFS root and a
+compressed PURE DXR2. Original V2 quiescence refuses a real
+new PURE RUN without changing the original MM extent owner or
+swap backing; original PI6 clock advances 1004 ticks. Same
+medium remount, later successful RUN, exact EXIT/WAIT,
+secondary unmount and normal HALT PASS. Seven invalid
+DTVOL2 physical records and three forged clock/backing/RO
+samples rejected. The two original children are RESIDENT:
+this tests admission, not PACKED RAM gain. Only a copied test
+VFS has a 768-tick scheduling interval; production kernel
+and permanent RAM are unchanged. P1-E still OPEN for pinned
+FULL concurrency, uncertain rollback, 32K/64K/peak RAM and
+KA10. See
+`design/kcore-p1e-dtfs-v2-quiescence-physical-v1647.md`.
+
 ## 2026-11-17 v1645: real PI6 staged backing lifetime PASS
 
 Unchanged production 48K PDP-6 no-AUX TSFS/PURE kernel, native

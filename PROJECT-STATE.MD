@@ -1,3 +1,55 @@
+## 2026-11-17 v1647: real V2 unmount rejects concurrent compressed PURE RUN
+
+**P1-E scoped 48K PDP-6 physical regression PASS.** An earlier DTC3
+DTVOL1 candidate could not exercise the original v1562 V2 quiescence
+barrier, so the testkit now creates and verifies genuine sealed
+DTVOL2/CLEAN physical media, rejecting seven corrupt variants.
+In a disposable source-identical VFS with only one real PI6 sleep
+after the original quiescence bit is acquired, a real secondary
+DTFS unmount overlaps a compressed DXR2 `RUN`: live FSINFO=-1,
+RUN=-1 and FSINFO=-1 after the attempt. Original swap records,
+mount identity and MM ownership remain byte-identical; 1004 real
+CLK ticks elapse before unmount completion. The same reel is
+remounted; compressed RUN, exact exit/wait, final owner release
+and single real HALT all PASS. Physical auditor rejects three
+forged clock/owner/mount witnesses. The initial two children are
+**RESIDENT, not PACKED**; memory-pressure coverage remains the
+separate accepted v1639/v1645 six-owner results. No production
+KCORE/MM/VFS/ABI or permanent RAM change. Detailed evidence:
+`design/kcore-p1e-v2-quiescence-run-v1647.md`.
+
+Still OPEN: simultaneous live FULL restoration target plus
+provider mutation, uncertain MM rollback, 32K/64K physical peak
+RAM/configurations and KA10 backend. PURE default OFF;
+strict 32K optimization HOLD. P1-C/D remain CLOSED.
+
+## 2026-11-17 v1647: physical DTFS V2 quiescence versus new PURE RUN PASS
+
+**P1-E admission-race gate ACCEPTED; P1-E overall remains OPEN.**
+Source-matched 48K PDP-6, genuine clean DTVOL2/CLEAN RW DTC3
+secondary mount, and exact source-derived compressed PURE DXR2.
+The original v1562 V2 owner barrier was held across one test-only
+real 768-tick scheduler sleep. Original FSINFO returned -1 during
+quiescence, actual compressed PURE RUN was denied, original
+FSINFO remained -1, and physical MM/swap owner records stayed
+unchanged. Original hardware CLK advanced 1004 ticks through
+the complete protected unmount. Same-medium remount, second
+PURE RUN, exact WAIT/exit and final unmount all PASS; one normal
+PC000000 HALT and zero final child process MM owners.
+
+The two original children are actually **RESIDENT**, not PACKED:
+this is a RUN/EXEC source admission race, **not** additional RAW
+compression or PACKED RAM proof. Testkit v1647 fixed the prior
+DTVOL1 fixture mismatch and false post-HALT replay acceptance.
+Seven physical malformed-volume mutations and three false
+clock/backing/RO traces rejected. Production VFS is original
+apart from a copied-build test-only PI6 sleep; **no production
+KCORE, MM, ABI, device, media-format or fixed-RAM change**.
+Report: `design/kcore-p1e-dtfs-v2-quiescence-physical-v1647.md`.
+Remaining: concurrent pinned FULL/DTFS provider I/O, uncertain
+MM rollback, strict 32K/64K and peak RAM, real KA10 acceptance.
+PURE OFF by default, VERSION 0.5, 32K optimization HOLD.
+
 ## 2026-11-17 v1645: real PI6 scheduling with surviving PURE owners
 
 Source-derived original 48K PDP-6 no-AUX TSFS/PURE C89 guest
