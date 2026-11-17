@@ -1,3 +1,32 @@
+## 2026-11-17 v1657: original physical 36-bit PURE bitmap density PASS
+
+- [x] Reboot original source-matched 48K PDP-6
+  guest on real DTC3 secondary backing, read
+  all six PACKED_PROCESS suffixes at the
+  genuine B checkpoint (20,736 actual
+  36-bit words), then all EXIT/WAIT/HALT.
+- [x] Exact v1451 36-word bitmap masks and
+  nonzero literals: each 3,456-word RAW has
+  65 nonzero and encodes to 161 candidate
+  words, potential reduction 3,295/owner
+  or 19,770 total. Independent unpack
+  restores every physical word. Two distinct
+  private data hashes and three rejected
+  forged trace witnesses. Testkit 5cbe205.
+- [ ] Implement optional separately owned
+  bounded v1451 bitmap transaction ONLY if
+  lossless failure-atomic mode3 MM/PI6
+  lifecycle and actual total source-matched
+  peak RAM benefit can be demonstrated.
+  The 19,770 words are GROSS potential,
+  not actual accepted production RAM savings.
+  design/kcore-p1e-physical-suffix-density-v1657.md.
+- [ ] Finish complete physical peak accounting,
+  permanent uncertain MM fail-closed policy,
+  compression actual YES/NO and full KCORE
+  functional freeze. Strict 32K acceptance
+  explicitly DEFERRED.
+
 ## 2026-11-17 v1656: original native DTFS integration gap CLOSED
 
 - [x] Restore actual current-source v1518

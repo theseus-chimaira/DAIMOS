@@ -1,3 +1,42 @@
+## 2026-11-17 v1657: real 48K physical six-owner RAW density measured
+
+New original source-built 48K/no-AUX/PDP-6 TSFS-root plus
+secondary DTC3 DTFS source guest, with KCORE/MRES/VM/MM
+UNMODIFIED. At genuine six-PACKED owner B, testkit
+physically reads all 20,736 retained 36-bit words across
+six exact original 006600-octal RAW suffixes. Each is
+3,456 words, with only 65 nonzero literals and 96
+bitmap presence-mask words; v1451 candidate compressed
+format is exactly 161 words, saving 3,295 hypothetical
+data words each, or 19,770 across six original owners.
+The real six child PIPE/DATA/EXIT-057/WAIT and normal
+HALT finish; source-specific SHA256 reveals slot2 has
+three private words different from slots3..7. Original
+independent data reconstruction and three forged
+trace controls PASS/reject. Testkit 5cbe205.
+
+This ACCEPTS physical source-density and v1451 codeword
+arithmetics, NOT a single actual KCORE compressed MM
+extent, process mode3 owner, physical extra headroom
+or complete transient peak saving. The already
+measured 883-word largest B free gap is numerically
+larger than one 161-word disjoint candidate, but
+native/physical MM ownership and failure atomicity
+are still mandatory.
+
+Optional v1451 compression now warrants a real
+bounded failure-atomic MM prototype rather than a
+premature NO COMPRESSION decision. Gross savings
+exclude additional MM/code/stack/MRES/transient peak.
+Detailed report:
+design/kcore-p1e-physical-suffix-density-v1657.md.
+The physical source evidence archive SHA256 is
+c12efb2caa5d489b3638d8d34f95fec6ca4ecf92fd0327ca10e798a90a24e3f7.
+Full physical continuous peak, compression
+integration/release decision, permanent uncertain
+MM and KCORE feature freeze remain OPEN. Strict
+32K size/boot acceptance DEFERRED.
+
 ## 2026-11-17 v1656: actual original DTFS raw-cache and identity fixtures restored
 
 Repaired stale current-source v1518/v1522 native integration

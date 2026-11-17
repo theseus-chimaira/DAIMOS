@@ -1,3 +1,29 @@
+## 2026-11-17 v1657: actual 48K physical PURE suffix bitmap density
+
+Original 48K PDP-6 compiled guest on selected TSFS ROOT
+and actual secondary DTC3 immutable PURE backing
+has six PACKED owners at physical B. The new
+read-only source-driven SIMH run captures every
+one of 20,736 original retained 36-bit words.
+Each 3,456-word RAW suffix has exactly 65
+nonzero literals; original v1451 36-word bitmap
+format requires 96 masks + 65 literals = 161
+candidate words. Gross theoretical six-owner
+RAW data reduction = 19,770 words, not an
+installed runtime or whole-system peak saving.
+Six EXIT/WAIT/HALT PASS, three invalid trace
+witnesses rejected and distinct private words
+authenticated. Testkit commit 5cbe205.
+
+Therefore evaluate an opt-in, separately owned,
+all-or-nothing compressed PROCESS/MM transaction:
+actual physical headroom and correct recovery
+must precede any release YES. The codec's 30
+TEXT words and 161-word candidate do NOT include
+temporary owner/code costs. Full report:
+design/kcore-p1e-physical-suffix-density-v1657.md.
+32K acceptance DEFERRED; PURE default OFF.
+
 ## 2026-11-17 v1656: original source DTFS native integration restored
 
 The original native v1518 raw read/write/BCACHE and
