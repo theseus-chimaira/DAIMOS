@@ -1,3 +1,27 @@
+## 2026-11-17 v1639: sampled six-owner physical RAM advantage accepted
+
+Source-identical 48K PDP-6 no-AUX TSFS PURE-ON v1637 and
+PURE-OFF v1639 guest C, DXR and fixed KCORE map. Both admit six
+sleeping children, refuse seventh RUN, survive and complete all
+six original PIPE/mutable-data/EXIT-057 and exact parent WAITs,
+ending `LwwwwwwZ`/normal HALT. Original complete MM B/A ON
+six PACKED suffix owners: occupied/free 066433/006564 octal,
+OFF six full resident PROCESS owners: 074433/004122. ON has
+3444 versus OFF 2130 decimal physical free words, +1314
+decimal after accounting for the optional resident PURE MRES
+1758-word footprint. Gross omitted prefixes 6*512=3072,
+net 3072-1758=1314, exact source-linked physical agreement.
+At final Z, children gone in both. ON free 063461 vs OFF 067220
+octal (ON -1887 decimal) reflects still-installed 1758-word
+PURE service plus an extra 0201 octal/129-word valid BCACHE
+slab in only the ON terminal snapshot. Original physical audit
+and forged MM owner/final WAIT controls PASS/reject.
+This is a matched source/lifecycle physical free-RAM sample, NOT
+matched transient peak while FULL holds two pins. Source/PI6/
+loader failure rollback, 32K/64K and final P1-E freeze remain
+OPEN. No production code changes. PURE default OFF, strict 32K
+HOLD. Report `design/kcore-p1e-six-owner-physical-ram-v1639.md`.
+
 ## 2026-11-17 v1638: real compressed PURE FULL relocation verified
 
 The original PDP-6 48K low-BCACHE kernel/MRES now physically

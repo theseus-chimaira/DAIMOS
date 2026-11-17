@@ -1,3 +1,22 @@
+## 2026-11-17 v1639: matched physical six-owner RAM gain measured
+
+- [x] Physical 48K PURE ON/OFF C89 guest, INIT DXR and KCORE map
+  BYTE-identical with six admitted children, expected seventh
+  RUN refusal, all six original PIPE/private-data/EXIT-057 and
+  exact PID/WAIT/status-057 checks, normal HALT in both modes.
+- [x] Original MM source-linked B/A: ON six PACKED suffix owners,
+  physical occupied/free octal 066433/006564; OFF six full
+  resident PROCESS owners, 074433/004122. ON free advantage
+  +1314 decimal physical words INCLUDING 1758 resident PURE MRES;
+  3072 gross omitted prefixes - 1758 module = 1314. At Z no
+  child MM owner in either; ON physical free -1887 decimal due
+  to MRES plus 0201 octal/129-word extra BCACHE owner at ON Z.
+  Two forged MM owner and final-WAIT machine witnesses rejected.
+- [ ] Full matched TEMPORAL peak including v1391 simultaneously
+  pinned PACKED source and FULL APR destination, source/unmount
+  protection, injected MM/VFS/PI6 rollback, 32K/64K BCACHE
+  regressions, final P1-E acceptance. PURE OFF, strict 32K HOLD.
+
 ## 2026-11-17 v1638: physical successful FULL v1391 relocation closed
 
 - [x] Actual source-built PDP-6 48K TSFS/no-AUX/PURE guest with

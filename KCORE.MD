@@ -1,3 +1,26 @@
+## 2026-11-17 v1639: matched six-PACKED physical free RAM +1314 words
+
+No production edit. Source- and fixed-KCORE-map-byte-identical
+PDP-6 48K no-AUX/TSFS PURE ON/OFF guests both admit six children,
+refuse seventh RUN, then verify all six original PIPE/data/
+EXIT-057/exact PID/WAIT/status-057 results and HALT normally.
+Source-linked MM B/A ON: occupied/free 066433/006564 octal,
+six PACKED 007000-word child owners. OFF: 074433/004122,
+six full PROCESS 010000-word child owners. Physical sampled
+ON free advantage +1314 decimal words (=six omitted
+001000-octal prefixes gross 3072 less installed PURE MRES 1758).
+At Z after all child releases ON occupied/free 011536/063461,
+OFF 011335/067220: ON has 1887 fewer free decimal words due
+to 1758 installed PURE MRES plus 129 additional valid BCACHE
+words in ON-only terminal cache state. Original physical auditor
+and forged resident-owner/WAIT witnesses PASS/reject. These are
+accepted source-matched sampled free physical words, NOT the
+transient maximum during v1391 simultaneous pinned source/target.
+Whole-system peak, source/PI6/failure rollback, 32K/64K and final
+feature freeze remain OPEN. PURE OFF by default, strict 32K
+optimization HOLD. Full report:
+`design/kcore-p1e-six-owner-physical-ram-v1639.md`.
+
 ## 2026-11-17 v1638: physical bounded FULL v1391 relocated restore PASS
 
 No production code change. Testkit-generated source-identical
