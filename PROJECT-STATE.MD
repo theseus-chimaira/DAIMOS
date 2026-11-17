@@ -1,3 +1,26 @@
+## 2026-11-17 v1641: physical test-injected loader error rollback
+
+Original v1638 48K PDP-6 TSFS/no-AUX compressed PURE guest and
+immutable source/MRES unchanged. Read-only breakpoint on actual
+v1391 FULL loader callback return at PC 034361, AC1=0, slot3
+has pinned PACKED 111000..120000 plus pinned PROCESS target
+120000..130000. Testkit deposits AC1=-1 ONCE at this return
+boundary (not a real device or VFS read failure). Original
+v1391 fail_target/fail_source at service PC 032461 returns -4;
+the exact original slot3 PACKED suffix is unpinned, its full
+target is gone, and other MM owners/pins are unchanged.
+Original later FULL callback for slot4 succeeds, all six exact
+child PIPE/private mutable data/EXIT-057 and parent WAITs pass,
+terminal Z/HALT, final no child MM owners. Source/opcode/MM
+physical audit and forged retained-pin/false-loader controls
+PASS/reject. No production KCORE, MM, MRES or VFS changes.
+Natural FULL NOMEM and simulated loader-callback error rollback
+now tested; real source loss, failed VFS/DECtape read, concurrent
+PI6/uncertain MM errors, 32K/64K cache layouts and matched
+transient peak RAM still OPEN. PURE OFF by default, strict
+32K optimization HOLD. Details:
+`design/kcore-p1e-full-loader-error-rollback-v1641.md`.
+
 ## 2026-11-17 v1640: real 48K FULL NOMEM rollback and recovery
 
 Original 48K PDP-6 TSFS/no-AUX/PURE source-built guest with

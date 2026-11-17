@@ -1,3 +1,24 @@
+## 2026-11-17 v1641: physical FULL injected-loader rollback PASS
+
+No production edit. Read-only original 48K PDP-6 compressed
+PURE physical replay stops at actual v1391 loader-return
+PC 034361 (original MRES offset 002333) with AC1=0 from
+genuine completed compressed loader. Slot3 has independently
+pinned PACKED 111000..120000 and PROCESS full target
+120000..130000. The test simulator injects ONLY AC1=-1 once.
+Original v1391 error branch returns -4 to v1612 service at
+PC 032461; slot3 PACKED suffix remains byte-preserved and
+pin=0, and the PROCESS target is absent from original MM.
+Later original FULL callback for slot4 returns 0 with separate
+pinned source/target, and all six children execute original
+PIPE/private-data/EXIT-057 and parent exact WAIT tests through
+terminal `LwwwwwwZ`, HALT. Final no child MM owner; forged pin
+and false pre-injection loader outcome rejected by physical audit.
+This tests a TEST-INJECTED loader error, NOT real device/VFS read
+failure. Source loss/unmount, PI6 uncertain rollback, 32K/64K
+and matched peak RAM still OPEN. PURE OFF by default, 32K HOLD.
+Report `design/kcore-p1e-full-loader-error-rollback-v1641.md`.
+
 ## 2026-11-17 v1640: source-backed genuine FULL NOMEM rollback PASS
 
 No production code modified. An original 48K PDP-6 TSFS/no-AUX

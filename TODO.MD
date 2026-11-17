@@ -1,3 +1,23 @@
+## 2026-11-17 v1641: simulated loader error FULL rollback accepted
+
+- [x] Original source-linked 48K PDP-6 compressed PURE guest
+  enters v1391 loader callback return PC 034361 with real
+  AC1=0 success, independently pinned slot3 PACKED suffix
+  111000..120000 and PROCESS destination 120000..130000.
+  Testkit-only simulator writes ONE -1 into returned AC1;
+  production code/source/MM unchanged (NOT a physical VFS fault).
+- [x] Original v1391 returns -4 at service PC 032461 and fully
+  frees temporary target and unpins original unchanged slot3
+  suffix. Subsequent original bounded FULL callback for slot4
+  returns 0. All six original child PIPE/data/EXIT-057 and
+  exact parent PID/WAIT/status checks pass, normal HALT;
+  no child MM owner at final Z. Physical auditor plus fabricated
+  retained RAW pin and false original loader outcome PASS/reject.
+- [ ] Test genuine Type-551/VFS failed read or immutable source
+  unmount, concurrent PI6/uncertain MM fault rollback, 32K/64K
+  BCACHE profiles and matched transient peak physical RAM.
+  PURE default OFF, strict 32K whole-KCORE optimization HOLD.
+
 ## 2026-11-17 v1640: genuine physical FULL NOMEM rollback verified
 
 - [x] Source-identical 48K PDP-6 guest, compressed slot2,
