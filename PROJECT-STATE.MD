@@ -1,3 +1,34 @@
+## 2026-11-17 v1643: real 48K secondary executable read recovery
+
+Original unchanged source-built PDP-6 48K PURE/TSFS/no-AUX kernel
+with guest-derived one plain ROOT child and five compressed PURE
+children from *secondary* native DTC3 DTFS. PID1 creates and
+CHMODs original source-identical compressed DXR on native DTFS,
+normal owner-safe CLEAN unmount, RO remount. Root TSFS DTC0..2
+never detaches. All six children genuinely PACKED, original MM
+B/A unpinned suffix size 006600 octal (compiled TX2 001227,
+PURE original skip=001200), seventh RUN refused, BRK accepted.
+
+At original bounded FULL PC 035252, slot3 owns pinned RAW
+111200..120000 and pinned separate full PROCESS APR
+120000..130000. Actual physical DTC3 DETACH causes v1391
+real non-root loader failure -4 at service PC 032461; same
+RAW suffix unpinned, full target freed, ROOT identity unchanged.
+After exact same private DTC3 reel returns, next observed
+compressed FULL callback for slot4 succeeds, and all six
+original PIPE/sentinel/EXIT-057 and exact PID/WAIT/status-057
+checks finish `LwwwwwwZ` normal HALT; MM Z no child owner.
+Physical source/compiled opcode/MM audit and forged RAW pin/
+false return controls PASS/reject. v1395/v1612 native PURE
+regressions PASS. Production KCORE/MM/VFS/DTFS/PURE unmodified.
+Old v1522 native DTFS testkit source extractor stale after
+v1575/v1561 (no current PASS); distinct test modernization OPEN.
+The actual READ_SUSPECT bit and time-resolved peak not sampled.
+Immutable executable mutation/unmount while PACKED, concurrent
+PI6/uncertain MM errors, 32K/64K and matched peak RAM OPEN.
+PURE default OFF; strict 32K optimization HOLD. Details:
+`design/kcore-p1e-secondary-backing-physical-v1643.md`.
+
 ## 2026-11-17 v1642: real TSFS root read loss during PURE FULL
 
 Source audit of original TSFS/DTFS and fixed KCORE v1538 confirms

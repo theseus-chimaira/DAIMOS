@@ -1,3 +1,28 @@
+## 2026-11-17 v1643: real non-root DTFS FULL read error recovery PASS
+
+No production edit. Original physical 48K no-AUX/TSFS/PDP-6 guest
+installs compressed PURE `/MOUNT/COMP` on separate native DTC3 DTFS,
+after normal RW copy, verified CLEAN unmount and RO remount;
+selected root DTC0..2/TSFS public mount1 stays healthy.
+Six source-linked PACKED child suffixes, all unpinned and
+`006600` octal words (new TX2 text `001227`, original skip
+`001200`, not earlier guest's `007000`). Original bounded
+FULL PC 035252 pins slot3 RAW 111200..120000 plus separate
+PROCESS APR 120000..130000. Detach ONLY DTC3: genuine backing
+failure returns original -4 at v1612 service PC 032461, RAW
+unchanged/unpinned and PROCESS target freed. Return the SAME
+reel: next observed compressed FULL callback for slot4 returns
+0, all six child PIPE/private mutable DATA/EXIT-057/exact
+parent WAIT checks and `LwwwwwwZ` normal HALT, final no child
+MM owner. Source-linked audit plus forged pin/return controls
+PASS/reject. No ROOT halt or fake loader callback injection.
+Separate old native DTFS v1522 source-extraction test is stale
+after v1575/v1561; modernization remains open, NOT counted PASS.
+Executable unmount/mutation, PI6/uncertain MM rollback, 32K/64K
+and complete transient peak RAM still OPEN. PURE default OFF;
+strict 32K HOLD. Report:
+`design/kcore-p1e-secondary-backing-physical-v1643.md`.
+
 ## 2026-11-17 v1642: genuine selected-root read failure must HALT
 
 Original unchanged 48K PDP-6 TSFS/no-AUX/PURE guest replayed

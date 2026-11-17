@@ -1,3 +1,30 @@
+## 2026-11-17 v1643: genuine non-root backing FULL failure recovered
+
+- [x] Original 48K PDP-6 no-AUX TSFS guest: native DTC3 DTFS
+  secondary executable `/MOUNT/COMP` copied by user syscalls,
+  CHECKED CLEAN unmount/RO remount, correct independent provider
+  5 mount2 and selected TSFS ROOT provider7 mount1. Six genuine
+  PACKED children, new source-specific 006600-octal retained
+  suffix (TX2 text 001227 -> PURE skip 001200), seventh RUN
+  refusal and parent BRK checks PASS.
+- [x] Original bounded FULL PC 035252: slot3 concurrently pinned
+  PACKED 111200..120000 and full APR 120000..130000. Physically
+  detach ONLY DTC3: original v1391 error -4 at service PC 032461,
+  exact RAW unpinned and full target FREE, healthy selected root.
+  Reattach exactly same DTC3 private reel; later compressed FULL
+  for slot4 returns zero; all six original PIPE/private writable
+  sentinel/EXIT-057 and parent exact PID/WAIT/status-057 checks
+  PASS, final no child MM owner and normal HALT. Source-linked
+  testkit audit PASS plus forged pin/loader-success rejected.
+  Native v1395/v1612 PURE regressions PASS. No production edit.
+- [ ] Mutation/unmount of secondary executable while PACKED,
+  concurrent PI6 and uncertain MM rollback, 32K/64K cache,
+  matched full transient peak RAM including BOTH FULL pins.
+  Also modernize older DTFS v1522 native testkit source-extractor:
+  old v1575 anchor plus missing original v1561 write-gate link
+  prevent current-source standalone test; do not claim it PASSed.
+  PURE OFF by default, strict 32K whole-KCORE size HOLD.
+
 ## 2026-11-17 v1642: actual root TSFS read failure fail-stop proved
 
 - [x] Source-audited v1538 selected-root I/O policy. In original
