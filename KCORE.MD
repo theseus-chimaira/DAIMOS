@@ -1,3 +1,30 @@
+## 2026-11-17 v1645: real PI6 staged backing lifetime PASS
+
+Unchanged production 48K PDP-6 no-AUX TSFS/PURE kernel, native
+DTC3 DTFS RW mode0777 compressed executable. Source-derived C89
+six-child guest first proves six 006400-octal unpinned PACKED
+sources and real mutation/unmount denial as in v1644. Parent
+writes exactly ONE PIPE token with writer still open (`H`), repeats
+the original source guards (`P`), performs real 0200-tick
+`dsys_sleep`, one child completes `w` before `T`, then source
+guards still refuse mutation/unmount with FIVE unchanged PACKED
+owners 3..7. Original `clk_tick_count`/`proc_timer_clock`
+advance 1691 REAL PI6 ticks between H=8673 and T=10364;
+post-token guard sees 9098 ticks with all six owners; after-T
+guard 11015 ticks with five. Original vnode/mount guard entries
+PC003322/PC003431 still execute against secondary DTFS mount2;
+VFS policy 000000000001 confirms DTC3 RW and TSFS ROOT mount1.
+All remaining children get EOF and exit 057; exact six parent
+PID/WAIT/status-057 checks pass, subsequent DTFS unmount succeeds
+and original console ends `LHPwTPwwwwwUZ`, normal HALT. Physical
+U/Z MM has no child owners/pins. Source/compiled DXR/complete
+MM/PI6-clock audit PASS; forged clock, pin and RO policy rejected.
+No production edit or KCORE RAM growth. Actual simultaneous
+in-flight DTFS mutation vs new PURE RUN/EXEC admission, PI6
+provider-sleep collision, uncertain MM rollback, 32K/64K and
+transient peak RAM remain OPEN. PURE OFF, strict 32K HOLD.
+Report: `design/kcore-p1e-pi6-staged-backing-v1645.md`.
+
 ## 2026-11-17 v1644: physical writable PURE source lifetime PASS
 
 No production edit. Original source-built 48K PDP-6 PURE guest

@@ -1,3 +1,33 @@
+## 2026-11-17 v1645: real PI6 staged PURE owner lifetime PASS
+
+- [x] Genuine 48K source-linked PDP-6 guest: original mode0777
+  RW secondary native DTFS DTC3 executable and six PACKED children.
+  Parent gives exactly one shared PIPE token while keeping writer
+  open, repeats original v1644 guard checks, real `dsys_sleep`
+  allows exactly one child exit057; other five remain PACKED.
+  Generated DXR2 text001454, omitted001400, RAW006400 octal.
+- [x] Real original hardware CLK PI6 and scheduler epoch advance
+  **1691** ticks between H and T (8673->10364). Original MM
+  snapshots at B/A/first guard/H/first post-H guard remain six
+  PACKED children with unchanged pins, at T and next guard
+  only owners3..7 remain, exact RAW source/pin0. All original
+  RW mutation/unmount checks still refuse with FIVE sources.
+  VFS policy000000000001 confirms secondary RW, TSFS ROOT
+  provider7/mount1 unchanged; guard breakpoints PC003431/
+  PC003322 show original KCORE mount2/file-slot0 owner checks.
+- [x] Remaining five PIPE EOF, six exact PID/WAIT/EXIT-057
+  checks pass, final normal DTFS unmount, `LHPwTPwwwwwUZ`,
+  normal HALT and U/Z physical MM no child owner/pin. Source-
+  linked audit plus forged PI6 clock, pin, RO-policy witnesses
+  PASS/reject. Native PI6 v1086, PURE owner v1563 and rename/
+  PI6 v468 tests PASS. No production edit or resident RAM growth.
+- [ ] Still OPEN: true simultaneous sleeping DTFS provider
+  mutation/retirement vs NEW PURE EXEC backing admission and
+  in-flight FULL target; uncertain MM rollback; whole 32K/64K
+  BCACHE layouts, full transient RAM peak and old DTFS v1522
+  source-fixture modernization. PURE default OFF; strict 32K
+  whole-KCORE optimization HOLD.
+
 ## 2026-11-17 v1644: writable executable source guards PASS physically
 
 - [x] Original 48K TSFS/PURE PDP-6 source-derived C89 guest,

@@ -1,3 +1,32 @@
+## 2026-11-17 v1645: real PI6 scheduling with surviving PURE owners
+
+Source-derived original 48K PDP-6 no-AUX TSFS/PURE C89 guest
+using genuine RW mode0777 secondary native DTFS executable
+and six original PIPE/private DATA/EXIT-057 exact PID/WAIT
+checks. In physical MM B/A six distinct RAW PACKED suffixes
+each 006400 octal words (new compiled DXR2 text001454,
+PURE omitted001400), all unpinned. Parent passes all v1644
+mutation/unmount guards, writes EXACT one shared PIPE token
+with writer open (`H`), repeats guards (`P`), then real
+`dsys_sleep(0200)` permits one real child `w` exit before `T`.
+Original CLK PI6 and scheduler epoch both advance 1691 real
+ticks H=8673 to T=10364; first post-H guard at tick9098
+still sees six identical PACKED owners. After T, owner2 gone
+and five original RAW owner3..7 sources remain unpinned,
+unaltered through another complete RW protection check at
+tick11015. Root stays TSFS mount1, DTC3 RW mount2. Remaining
+five children then exit/WAIT exactly, DTFS unmount succeeds
+and `LHPwTPwwwwwUZ` normal HALT, zero final child MM owner.
+Physical source/DXR/MM/PI6 audit PASS; forged clock, RAW pin and
+RO-policy traces rejected. v1086 PI6 slot0, v1563 PURE owner,
+v468 rename/PI6 source regressions PASS. No production edits
+or additional resident RAM. Simultaneous FULL target/DTFS
+mutation vs new RUN/EXEC attach and provider-I/O sleep race
+NOT proved; uncertain MM rollback, 32K/64K, matched transient
+RAM peak and old v1522 test fixture remain OPEN.
+PURE default OFF, strict 32K size optimization HOLD.
+Report `design/kcore-p1e-pi6-staged-backing-v1645.md`.
+
 ## 2026-11-17 v1644: actual 48K RW executable backing protection
 
 Original 48K PDP-6 no-AUX TSFS/PURE kernel unchanged. Source-
