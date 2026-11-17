@@ -1,3 +1,26 @@
+## 2026-11-17 v1640: real 48K FULL NOMEM rollback and recovery
+
+Original 48K PDP-6 TSFS/no-AUX/PURE source-built guest with
+slot2 compressed PURE, slot3 plain PURE, remaining four
+compressed: six PACKED suffix owners then honest seventh RUN
+refusal. Source-authentic v1391 allocator-return PC 034336:
+AC1 MM_ERR_NOMEM -1, slot2 exact PACKED 121000..130000 pinned
+1 and no separate APR target. Original v1391->v1612 service
+return PC 032461: AC1 still -1, six original PACKED extents
+unchanged and ALL pins zero, no fake resident publication.
+Later SAME compressed slot2 enters bounded FULL callback PC
+035252 with pinned PACKED suffix 121000..130000 and separate
+pinned full PROCESS APR 110000..120000, AC4=010000.
+Entire original guest PIPE/mutable data/EXIT-057 and exact six
+WAITs pass (`LwwwwwwZ`, HALT); final MM Z no child owners.
+Physical source/opcode/MM audit PASS, forged pin and fabricated
+allocator success rejected. No production code change; tests
+in daimos-testkit only. Genuine FULL allocation NOMEM cleanup/
+retry accepted; physical VFS/source failure and concurrent
+PI6/uncertain MM rollback, 32K/64K and matched transient peak
+still OPEN. PURE OFF by default, strict 32K optimization HOLD.
+Report `design/kcore-p1e-full-nomem-physical-v1640.md`.
+
 ## 2026-11-17 v1639: sampled six-owner physical RAM advantage accepted
 
 Source-identical 48K PDP-6 no-AUX TSFS PURE-ON v1637 and

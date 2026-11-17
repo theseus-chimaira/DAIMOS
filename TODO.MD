@@ -1,3 +1,23 @@
+## 2026-11-17 v1640: genuine physical FULL NOMEM rollback verified
+
+- [x] Source-identical 48K PDP-6 guest, compressed slot2,
+  plain slot3, other four compressed, all six actually PACKED,
+  seventh RUN correctly refused. Original v1391 allocator
+  returned -1 at physical PC 034336 with only slot2 RAW suffix
+  pinned. At original service return PC 032461 the same six
+  007000-word PACKED owners are unchanged and unpinned.
+- [x] Physically verified LATER successful FULL retry for SAME
+  slot2: original PC 035252, pinned 121000..130000 PACKED source
+  and separate pinned 110000..120000 PROCESS destination.
+  All six original PIPE/private sentinels/EXIT-057 and exact
+  PID/WAIT/status-057 checks, normal HALT; final no child MM
+  owners. Source-linked testkit audit and fake-pin/fake-return
+  controls PASS/reject. Production unchanged.
+- [ ] Actual physical VFS/source-loss/immutable-unmount failure;
+  fault-injected loader and concurrent PI6/MM uncertain rollback;
+  32K/64K cache regressions and matched transient peak RAM.
+  PURE default OFF, strict 32K whole-KCORE optimization HOLD.
+
 ## 2026-11-17 v1639: matched physical six-owner RAM gain measured
 
 - [x] Physical 48K PURE ON/OFF C89 guest, INIT DXR and KCORE map

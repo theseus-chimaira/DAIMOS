@@ -1,3 +1,26 @@
+## 2026-11-17 v1640: source-backed genuine FULL NOMEM rollback PASS
+
+No production code modified. An original 48K PDP-6 TSFS/no-AUX
+guest runs compressed PURE in slot2 and plain PURE in slot3;
+six children PACKED and seventh RUN naturally refuses. First
+compressed restore attempts FULL after prefix -2 UNSUPPORTED;
+MM allocator returns genuine NOMEM (-1) at source-linked
+physical PC 034336. At this instruction slot2 still owns its
+single 007000-word PACKED suffix 121000..130000, pin=1, no
+target APR. At original v1391->service return PC 032461,
+same six exact PACKED owners, ALL pin=0, AC1 still -1; no
+false resident publication. Later same slot2 FULL loader
+PC 035252 owns separate pinned PACKED 121000..130000 and
+full PROCESS destination 110000..120000, AC4=010000.
+All six original child PIPE/mutable-data/EXIT-057/WAIT checks,
+terminal `LwwwwwwZ` and HALT; Z has no child MM owner.
+Source-linked physical audit and forged pin/return controls
+PASS/reject. This closes ordinary FULL allocation-refusal
+rollback and retry, NOT failed VFS reads/source loss, PI6/MM
+uncertain fault handling, 32K/64K or transient RAM peak.
+PURE default OFF, strict 32K HOLD. Details:
+`design/kcore-p1e-full-nomem-physical-v1640.md`.
+
 ## 2026-11-17 v1639: matched six-PACKED physical free RAM +1314 words
 
 No production edit. Source- and fixed-KCORE-map-byte-identical
