@@ -1,3 +1,33 @@
+## 2026-11-17 v1653: original 32K transient KINIT safety blocker
+
+- [x] Compile original minimal PURE C89
+  one-child RUN/EXIT/WAIT user DXR.
+  Link matching real 32K lowmem/TSFS3
+  PURE ON and OFF images, KCORE map/
+  stream byte-identical (low end024253).
+  Both builds correctly REJECTED by
+  original mkimage BEFORE physical boot.
+- [x] Original 32K core100000 octal,
+  KINIT reserve0400, safe bound077400.
+  OFF KINIT end110052, 4,394 decimal
+  words over safe bound; ON end113621,
+  6,289 decimal over. Original PURE
+  transient addition03547 octal=1,895
+  decimal; baseline OFF already exceeds
+  physical core by 4,138. All three
+  fake linker/log/KCORE witnesses rejected.
+  Report design/kcore-p1e-32k-kinit-staging-capacity-v1653.md.
+- [ ] Correct transient KINIT staging or
+  removable-package installation without
+  dropping required modules or weakening
+  the 0400 bootstrap stack. Rebuild/boot
+  genuine 32K PDP-6 before claiming
+  process or PURE/MM acceptance. Not a
+  proven assembler/compiler or MM fault.
+  48K/64K independent PASS unaffected.
+  P1-E OPEN, PURE OFF by default and
+  strict 32K optimization HOLD.
+
 ## 2026-11-17 v1652: true 64K source-linked PACKED owner profile
 
 - [x] New real original PDP-6 64K lowmem/no-AUX build,

@@ -1,3 +1,34 @@
+## 2026-11-17 v1653: matched original 32K KINIT PURE ON/OFF rejection PASS
+
+Original C89 two-process user DXR compiled/linked,
+but source-matched 32K lowmem TSFS3 in-place
+PURE ON and OFF KINIT images BOTH rejected by
+the original mkimage stack-safe bound BEFORE
+any physical boot. KCORE maps and exact byte
+streams identical ON/OFF (low end 024253).
+Core limit 0100000 octal, reserve0400, safe
+bound077400. OFF KINIT end110052 exceeds
+core by 4,138 decimal and stack-safe by 4,394;
+ON end113621 exceeds core by 6,033 and
+safe by 6,289. PURE adds 03547 octal, 1,895
+decimal transient KINIT words, but baseline
+OFF was already over 32K. Correct original
+fail-closed safety guard, NOT an assembler
+or kernel-MM bug, and NOT a 32K physical PASS.
+Three source-matched forged map/log/KCORE
+inputs rejected. Testkit 9b5a512.
+Report design/kcore-p1e-32k-kinit-staging-capacity-v1653.md.
+No production/ABI/RAM edits.
+
+32K remains blocked by total transient
+KINIT staging, requiring at least 6,289
+words reduction from the ON image for this
+exact profile while preserving bootstrap
+stack and required module services. Do not
+reduce stack, drop essential modules or
+claim a guest boot. P1-E OPEN, PURE opt-in
+default OFF, strict 32K optimization HOLD.
+
 ## 2026-11-17 v1652: original 64K nine-PACKED-owner guest and MM release PASS
 
 New independently built original 64K PDP-6/no-AUX/TSFS/

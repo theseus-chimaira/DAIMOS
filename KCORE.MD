@@ -1,3 +1,22 @@
+## 2026-11-17 v1653: original matched 32K KINIT capacity refusal
+
+Original GCC lowmem 32K TSFS3 image links
+identical fixed KCORE map/stream with PURE
+ON/OFF (KCORE low end 024253 octal). Original
+mkimage rejects BOTH transient KINIT images
+BEFORE boot: OFF end110052 vs 077400
+stack-safe bound (4,394 decimal over);
+ON end113621 (6,289 over).
+PURE adds only 03547 octal=1,895 decimal
+to transient staging, while OFF already
+exceeds physical 32K by 4,138 words.
+Three forged capacity/linker witnesses
+rejected by testkit source-linked auditor.
+No physical 32K runtime or PACKED claim;
+no production code/ABI/RAM changes.
+Report design/kcore-p1e-32k-kinit-staging-capacity-v1653.md.
+P1-E OPEN, PURE default OFF, 32K HOLD.
+
 ## 2026-11-17 v1652: new original 64K nine-PACKED physical profile
 
 Original source-linked PDP-6 64K/no-AUX TSFS-root and
