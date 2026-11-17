@@ -1,3 +1,23 @@
+## 2026-11-17 v1649: executable guard during real two-pin FULL
+
+- [x] Native PDP-6 source-linked FULL v1391 enters callback
+  with simultaneous pin1 PACKED RAW suffix and separate pin1
+  full PROCESS APR. Original extracted assembler mount and
+  exact-file busy scanners refuse backed DTFS source while
+  leaving both descriptors/RAW/backing unchanged; mismatched
+  mount and file are not blocked. FULL then commits exact
+  image, one resident PROCESS, all pins released.
+- [x] Negative compiled native guard mutations execute and
+  fail 002002 octal. Original v1563 native staging/ownership
+  regression passes 26 cases and rejects six mutants.
+  No production code/RAM growth. Report:
+  `design/kcore-p1e-full-guard-during-pin-v1649.md`.
+- [ ] Independent physical PI6 concurrent unmount attempt
+  while provider FULL is in flight, with current-slot/clock/
+  MM evidence. Full peak RAM/32K/48K/64K, indefinite MM pin
+  uncertainty and KA10 backend also remain open.
+  PURE default OFF; strict 32K optimization HOLD.
+
 ## 2026-11-17 v1648: missing FULL MM release/pin fault matrix
 
 - [x] Native source-linked PDP-6 FULL v1391 validates separate

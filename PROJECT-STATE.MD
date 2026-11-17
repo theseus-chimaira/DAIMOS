@@ -1,3 +1,27 @@
+## 2026-11-17 v1649: real FULL two-pin state and original mount guard PASS (native PDP-6)
+
+New source-linked native PDP-6 v1391 FULL callback holds the
+original authoritative PACKED RAW suffix and a separate complete
+PROCESS APR, both pin1. Original extracted
+`proc_swap_mount_busy(1)` and `proc_swap_backing_busy(exact vnode)`
+refuse the DTFS executable owner; unrelated mount/index remain
+available. Both MM descriptors and original backing remain
+unaltered, then normal bounded FULL restores all text/writable
+data, publishes RESIDENT and clears transition. Two separately
+executed invalid scanner mutants each fail native status 002002.
+Original v1563 owner scanner passes 26 cases and rejects six
+mutants. Testkit `5b51d68`, report
+`design/kcore-p1e-full-guard-during-pin-v1649.md`.
+No production change or permanent RAM growth.
+
+P1-E still OPEN: this is **not** a physical independent-process
+unmount during blocked provider I/O. VFS unmount preflight checks
+the PACKED owner without yield before quiescence acquisition,
+which may make ordinary overlap inadmissible; prove this with
+physical PI6 and MM evidence. Remaining uncertain rollback,
+whole transient RAM peak/32K/48K/64K and KA10 unchanged.
+PURE opt-in, strict 32K optimization HOLD.
+
 ## 2026-11-17 v1648: native FULL MM source release and target pin faults PASS
 
 **P1-E targeted native source-linked PDP-6 PASS**, after the

@@ -1,3 +1,19 @@
+## 2026-11-17 v1649: source-linked FULL target and executable guards
+
+Native PDP-6 source-linked bounded v1391 FULL callback owns
+both a pin1 RAW PACKED source and separate pin1 complete
+PROCESS APR. Original assembler mount/backing scanners refuse
+the precise DTFS executable source without touching pins, RAW
+or process state; unrelated mount/file index allow. Full
+restore completes with correct text/suffix and one resident
+PROCESS. Two unsafe guard mutants fail octal 002002; v1563
+26-case native owner suite plus six mutations passes.
+Detailed report:
+`design/kcore-p1e-full-guard-during-pin-v1649.md`.
+No production code, ABI or RAM change. The independent
+physical PI6 unmount/provider race is *not* yet proved;
+P1-E OPEN, PURE default OFF, 32K optimization HOLD.
+
 ## 2026-11-17 v1648: FULL rollback and exact retry native PASS
 
 Native source-linked v1391 FULL transaction now additionally
