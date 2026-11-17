@@ -1,3 +1,21 @@
+## 2026-11-17 v1648: missing FULL MM release/pin fault matrix
+
+- [x] Native source-linked PDP-6 FULL v1391 validates separate
+  source PACKED free BUSY and INVAL, and new target APR pin BUSY.
+  Exact original RAW, single unpinned PACKED MM owner/backing,
+  saved VM, TRANSITION and no leaked target on refusal. Removing
+  the one fault yields complete FULL retry and exact text/RAW
+  contents, RESIDENT publication and one PROCESS extent.
+- [x] Original v1395/v1397 and service v1611/v1612 native suites
+  PASS. Independently linked negative variants missing writable
+  overlay and target cleanup execute and fail with octal `0706`
+  and `01004`. No production code, ABI or permanent RAM change.
+  Report: `design/kcore-p1e-full-mm-atomic-native-v1648.md`.
+- [ ] Physical actual pinned FULL source + target simultaneous
+  DTFS I/O/modify/unmount race, permanent uncertain MM owner
+  handling, 32K/48K/64K full transient peak and KA10 backend.
+  P1-E remains OPEN; PURE OFF by default, 32K optimization HOLD.
+
 ## 2026-11-17 v1647: original V2 unmount versus compressed PURE RUN
 
 - [x] Source-match original 48K PDP-6 TSFS/root, RW DTC3

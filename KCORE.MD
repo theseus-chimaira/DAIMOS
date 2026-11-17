@@ -1,3 +1,22 @@
+## 2026-11-17 v1648: FULL rollback and exact retry native PASS
+
+Native source-linked v1391 FULL transaction now additionally
+passes PACKED source-release BUSY/INVAL and separate full-APR
+pin BUSY tests, all preserving the exact RAW contents, one
+unpinned PACKED descriptor, original backing and TRANSITION,
+with no leaked target or premature RESIDENT publication. Each
+then retries successfully to exact restored text/suffix and
+correct PROCESS owner/mode. Both separately compiled invalid
+transactions fail native execution: omitted RAW overlay exit
+`0706`; leaked target on invalid source-free exit `01004`.
+Old v1395/v1397 and v1611/v1612 native gates still PASS.
+Production KCORE/MM/PURE source and resident RAM unchanged.
+`design/kcore-p1e-full-mm-atomic-native-v1648.md`.
+
+This does **not** prove concurrent pinned FULL/provider activity,
+indefinitely uncertain MM pins, KA10 or 32K/48K/64K peak RAM.
+P1-E remains OPEN, PURE opt-in, strict 32K optimization HOLD.
+
 ## 2026-11-17 v1647: physical V2 source admission race accepted
 
 Actual source-derived 48K PDP-6 simulator boots with genuine

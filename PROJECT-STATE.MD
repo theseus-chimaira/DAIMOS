@@ -1,3 +1,28 @@
+## 2026-11-17 v1648: native FULL MM source release and target pin faults PASS
+
+**P1-E targeted native source-linked PDP-6 PASS**, after the
+v1647 physical DTFS admission test. Original production v1391
+FULL and v1381/v1384 PURE code compiled and linked with real
+MM rebase/expand assembly. Three new fault/retry cases cover
+checked source PACKED `mm_free` returning BUSY or INVAL, and
+destination FULL `mm_pin` returning BUSY. For each the one
+authoritative PACKED RAW owner, exact contents, backing, pin0
+and TRANSITION survive; temporary PROCESS APR is freed, no
+RESIDENT publication occurs, and removing the fault allows a
+complete retry with exact writable suffix and immutable text.
+Both intentionally invalid source-linked transactions fail at
+native simulated `__test_exit` (`0706` missing RAW overlay,
+`01004` leaked target). Original v1395/v1397 and v1611/v1612
+service native suites PASS. No production KCORE/MM/ABI/RAM change.
+Testkit branch `test-kcore-p1e-full-mm-atomic-v1648-20261117`,
+commit `500d023`. Full report:
+`design/kcore-p1e-full-mm-atomic-native-v1648.md`.
+
+**Not yet proven:** actual concurrent pinned FULL source and
+destination with VFS/DTFS sleeping-provider activity, permanently
+uncertain MM ownership, complete peak RAM for 32K/48K/64K, and
+KA10 backend. P1-E remains OPEN, PURE opt-in, 32K HOLD.
+
 ## 2026-11-17 v1647: physical DTFS V2 quiescence versus new PURE RUN PASS
 
 **P1-E admission-race gate ACCEPTED; P1-E overall remains OPEN.**
