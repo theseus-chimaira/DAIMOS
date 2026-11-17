@@ -1,3 +1,27 @@
+## 2026-11-17 v1642: real TSFS root read loss during PURE FULL
+
+Source audit of original TSFS/DTFS and fixed KCORE v1538 confirms
+selected ROOT I/O failure is intentionally fatal, unlike a
+recoverable non-root backing error. Actual original PDP-6 48K
+TSFS/no-AUX/PURE mixed guest replay stops at bounded FULL loader
+PC 035252 with compressed slot3 concurrently pinned PACKED
+111000..120000 and PROCESS APR 120000..130000. Testkit detaches
+the three actual selected Type-551 root members DTC0/1/2;
+each device reports no attachment. Next real TSFS read error
+reaches root classifier PC 003761, AC1=7 TSFS, AC2=1 root mount,
+exact match to original vfs_namespace_root. Source and target
+MM extent/pin counts unchanged until root-specific terminal
+HALT PC 003776. No parent Z/WAIT occurs or is claimed.
+Physical source-linked testkit auditor and forged mount/HALT
+controls PASS/reject. No production source change; testkit
+detach-marker indentation corrected and actual guest rerun.
+Selected-root failure policy validated, NOT recoverable FULL
+read-error rollback. That requires a secondary filesystem.
+Unchanged outstanding: immutable source unmount/modify,
+PI6/uncertain MM rollback, 32K/64K cache and complete transient
+peak RAM. PURE default OFF, strict 32K size HOLD.
+Report `design/kcore-p1e-tsfs-root-read-failstop-v1642.md`.
+
 ## 2026-11-17 v1641: physical test-injected loader error rollback
 
 Original v1638 48K PDP-6 TSFS/no-AUX compressed PURE guest and

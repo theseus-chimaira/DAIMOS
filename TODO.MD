@@ -1,3 +1,22 @@
+## 2026-11-17 v1642: actual root TSFS read failure fail-stop proved
+
+- [x] Source-audited v1538 selected-root I/O policy. In original
+  48K PDP-6 six-PACKED TSFS/no-AUX/PURE guest, compressed slot3
+  enters v1391 bounded FULL with separate pinned RAW source
+  111000..120000 and PROCESS target 120000..130000.
+- [x] Detach all three selected root DTC0/1/2 Type-551 reels
+  while guest suspended at FULL callback; verify physical device
+  statuses. Actual TSFS read failure reaches KCORE classifier
+  PC 003761 with provider 7, public mount 1 equal namespace
+  ROOT; terminal root-specific HALT PC 003776. No user WAIT/Z
+  and no false PURE rollback claim. Physical auditor rejects
+  wrong-mount and wrong-HALT mutated traces. No production edits.
+- [ ] Now place compressed PURE backing on a SECONDARY non-root
+  mount to exercise recoverable physical failed reads/rollback.
+  Source immutability/unmount, PI6/uncertain MM recovery,
+  32K/64K general regressions and matched transient peak RAM
+  still OPEN. PURE default OFF, strict 32K size HOLD.
+
 ## 2026-11-17 v1641: simulated loader error FULL rollback accepted
 
 - [x] Original source-linked 48K PDP-6 compressed PURE guest

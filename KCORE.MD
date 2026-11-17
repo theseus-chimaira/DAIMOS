@@ -1,3 +1,25 @@
+## 2026-11-17 v1642: genuine selected-root read failure must HALT
+
+Original unchanged 48K PDP-6 TSFS/no-AUX/PURE guest replayed
+with six true PACKED children. At original bounded FULL loader
+PC 035252 compressed slot3 has simultaneously pinned RAW
+suffix 111000..120000 and full PROCESS APR 120000..130000.
+SIMH testkit detaches actual Type-551 TSFS ROOT members DTC0,
+DTC1 and DTC2, individual device status confirms all absent.
+The resulting actual TSFS read error enters the fixed v1538
+root classifier PC 003761 with AC1=7/provider TSFS and AC2=1,
+equal to published namespace ROOT. The original MM source
+and target are still pinned at classifier, and machine HALTs
+at source-linked root-specific PC 003776, NOT a parent Z/WAIT.
+This confirms critical-root fail-stop during FULL reconstruction;
+it is not a recoverable loader failure, so NO rollback is claimed.
+Source-linked testkit and forged alternate-mount/HALT witnesses
+PASS/reject. No production source changed. Recoverable non-root
+read errors, source unmount, PI6 uncertain MM rollback,
+32K/64K and matched transient RAM peak still OPEN.
+PURE OFF by default, strict 32K HOLD. Full report:
+`design/kcore-p1e-tsfs-root-read-failstop-v1642.md`.
+
 ## 2026-11-17 v1641: physical FULL injected-loader rollback PASS
 
 No production edit. Read-only original 48K PDP-6 compressed
