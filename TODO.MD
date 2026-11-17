@@ -1,3 +1,27 @@
+## 2026-11-17 v1652: true 64K source-linked PACKED owner profile
+
+- [x] New real original PDP-6 64K lowmem/no-AUX build,
+  original secondary DTC3 DTFS and source-derived
+  one plain/eight compressed PURE DXR2 children.
+  Nine admitted, tenth naturally refused, exact
+  original PIPE/private DATA/exit057/nine WAIT and
+  one normal PC000000 HALT. Exploratory 10-child
+  capacity refusal kept as negative diagnostic.
+- [x] Independent original physical SIMH MM B/A/Z
+  replay: arena 042601..200000, nine distinct
+  pin0 PACKED_PROCESS RAW suffixes 006600 octal,
+  source exact B/A, 9,404 decimal free and max
+  gap 4,155. Final Z no child MM owners and
+  42,769 free. Fake type, duplicate owner, final
+  WAIT witnesses all rejected. No kernel change.
+  design/kcore-p1e-64k-nine-owner-physical-v1652.md.
+- [ ] Continuous FULL transient physical 64K
+  peak, matched 64K PURE ON/OFF net free-word
+  comparison, original 32K physical layout,
+  permanently uncertain MM owner cleanup and
+  native KA10 remain OPEN. PURE default OFF,
+  strict 32K whole-KCORE optimization HOLD.
+
 ## 2026-11-17 v1651: source-matched physical 48K MM checkpoints
 
 - [x] Original v1643 48K six-PACKED read failure/recovery

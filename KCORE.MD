@@ -1,3 +1,19 @@
+## 2026-11-17 v1652: new original 64K nine-PACKED physical profile
+
+Original source-linked PDP-6 64K/no-AUX TSFS-root and
+native DTC3 DTFS compressed PURE guest proves nine
+simultaneous pin0 PACKED_PROCESS RAW owners, slots
+2..10, 006600 octal words each. Ninth admitted,
+tenth real RUN denied, exact nine DATA/EXIT/WAIT
+and normal HALT. Separate MM replay B/A gives
+9,404 decimal managed free words, largest gap 4,155;
+Z shows no child owner, free 42,769. Three false
+physical MM/WAIT traces rejected. No production
+code, ABI, MRES or MM layout edits. Report
+design/kcore-p1e-64k-nine-owner-physical-v1652.md.
+This is not a full continuous peak or 64K ON/OFF gain.
+32K and KA10 remain OPEN; PURE OFF, 32K HOLD.
+
 ## 2026-11-17 v1651: sampled physical 48K MM occupancy
 
 Accepted original v1643 six-checkpoint physical MM audit:

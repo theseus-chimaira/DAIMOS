@@ -1,3 +1,30 @@
+## 2026-11-17 v1652: original 64K nine-PACKED-owner guest and MM release PASS
+
+New independently built original 64K PDP-6/no-AUX/TSFS/
+secondary DTC3 DTFS PURE guest, C89 source-derived from
+v1643, admits NINE original child RUNs, refuses the
+tenth, passes all nine original PIPE/private DATA/
+EXIT-057 exact PID/WAIT checks and normal PC000000 HALT.
+One plain root and eight genuine compressed DXR2 DTFS
+executables. Physical source-linked B/A MM snapshots
+show nine distinct process slots 2..10 each holding
+one unpinned PACKED_PROCESS suffix 006600 octal words
+in one arena octal 042601..200000, with 9,404 decimal
+free words and largest gap 4,155. Z frees all child
+PROCESS/PACKED owners, has 42,769 managed free words
+and retains the original unpinned parent. Three fake
+type/owner/WAIT witnesses rejected. Exploratory TEN
+child run properly failed its tenth admission, not
+confused with accepted NINE-child success.
+Testkit 86cdbdd. Report
+design/kcore-p1e-64k-nine-owner-physical-v1652.md.
+No production RAM/KCORE code change.
+
+Not a matched 64K PURE ON/OFF saving or continuous
+FULL transient peak. 32K physical, persistent uncertain
+MM pins and KA10 still OPEN; P1-E OPEN, PURE default
+OFF, strict 32K optimization HOLD.
+
 ## 2026-11-17 v1651: exact original 48K physical MM snapshot accounting PASS
 
 Original v1643 accepted physical DTC3/DTFS failure and later
