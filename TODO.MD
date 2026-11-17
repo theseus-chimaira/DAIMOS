@@ -1,3 +1,27 @@
+## 2026-11-17 v1655: current-source DTFS native freeze matrix
+
+- [x] Modernize the real v1556 PDP-6 fixture for current
+  v1572 trusted-operator V2 writable CLEAN/ARMED-RO
+  behavior, preserve RBN0/identity/cache negative
+  checks, add armed-RO DIRTY refusal, reject fourteen
+  current-source unsafe mutants; thirty cases PASS.
+- [x] Execute current original v1554 physical DIRTY
+  (17 cases, 10 mutants), v1561 mounted unit/MM first
+  intent (35 cases, 13 mutants), v1575 exact poisoned
+  owner drain (2 mutants). Total current PDP-6
+  82 enumerated cases and 39 executed bad-source
+  variants PASS/rejected. No production code change.
+  Testkit a048ab3,
+  design/kcore-dtfs-current-source-matrix-v1655.md.
+- [ ] Old source-linked v1518 raw-I/O cache and v1522
+  mounted-identity standalone extractors still fail
+  fixture generation after v1561/v1572. Do NOT count
+  their historical PASS as fresh KCORE release evidence.
+  Modernize exact integration or prove equivalent
+  physical/native coverage before final freeze.
+  Full physical peak/uncertain MM/optional compression
+  gates still OPEN, strict 32K acceptance DEFERRED.
+
 ## 2026-11-17 v1654: FULL MM transaction correction and PDP-6 finish order
 
 - [x] Fix real opt-in PURE v1391 FULL bug: final destination

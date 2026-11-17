@@ -1,3 +1,32 @@
+## 2026-11-17 v1655: current-source PDP-6 DTFS identity/intent matrix PASS
+
+No production KCORE/MRES/MM/VFS changes. Modernized the
+stale v1556 native source-linked PDP-6 DTFS recovery
+oracle to honor current v1572 trusted-operator writable
+V2/CLEAN and ARMED/RO policy, replacing obsolete mutation
+anchors with executable valid native refusal probes.
+Thirty V1/V2 physical-RBN0 recovery scenarios and
+fourteen unsafe mutations PASS/REJECT. Newly grouped
+current v1554 physical DIRTY (17+10), v1561 exact
+mounted MM/intent ownership (35+13), and v1575
+poisoned-owner drain (original leaf+2 bad mutants)
+also PASS. Total 82 enumerated PDP-6 native cases
+and 39 independently executed bad-source mutants.
+Testkit a048ab3; complete result in
+design/kcore-dtfs-current-source-matrix-v1655.md.
+
+Historical v1518 raw DTC/cache and v1522 mounted
+volume ID standalone script extractors remain STALE
+against present v1561/v1572/v1575 source and do NOT
+pass current-tree generation. v1655 is not equivalent
+to those original combined integration tests or
+unrestricted writable reel-exchange safety. Modernize
+the exact remaining raw/cache integration or verify
+equivalent actual original physical coverage before
+final KCORE freeze. Full peak RAM, compression YES/NO
+and uncertain MM owner still OPEN. 32K acceptance
+DEFERRED until after feature completion; PURE OFF.
+
 ## 2026-11-17 v1654: production PURE FULL commit corrected; 32K deferred
 
 **PDP-6 KCORE production opt-in RAW PURE fix ACCEPTED**: v1391 FULL

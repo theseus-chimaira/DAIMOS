@@ -1,3 +1,21 @@
+## 2026-11-17 v1655: native current-source DTFS regression gate
+
+Testkit a048ab3 repairs historical v1556 PDP-6 recovery
+oracle for the accepted v1572 V2 writable/ARMED policy,
+then executes native source-linked v1556 V1/V2 recovery,
+v1554 physical DIRTY readback, v1561 exact mount/MM
+intent ownership and v1575 poisoned-owner cache drain.
+82 enumerated native cases PASS; all 39 separately
+compiled unsafe source mutants are REJECTED. No production
+KCORE/MRES/data change; see
+design/kcore-dtfs-current-source-matrix-v1655.md.
+
+Old v1518/v1522 standalone source extractors are still
+STALE and not falsely counted as current acceptance.
+Their full combined raw I/O + mounted identity integration
+remains a distinct KCORE functional-freeze check.
+32K boot/size acceptance DEFERRED; PURE default OFF.
+
 ## 2026-11-17 v1654: production bounded FULL commit MM safety
 
 Source-linked original PDP-6 PURE restore v1391 now checks
