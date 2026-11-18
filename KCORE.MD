@@ -1,3 +1,15 @@
+## 2026-11-18 v1660: FULL bitmap preflight, NOT installed
+
+Test-only C89/PDP-6 source validates the entire bitmap before calling
+the original unbounded 30-word v1451 decoder. No output is written
+for malformed masks/literals/length or overlapping geometry. The
+73-word/6-encoded-word native fixture and independently executed
+unsafe exact-consumption mutant PASS/reject; original v1659 MM
+baseline PASS. This does NOT admit mode3 in permanent KCORE, change
+the installed RAW-only terminal or claim compressed RAM savings.
+Details: design/kcore-pure-bitmap-decode-v1660.md. PURE default OFF;
+strict 32K size acceptance deferred.
+
 ## 2026-11-18 v1659: bounded disjoint PURE bitmap probe (test only)
 
 New v1659 C89/native PDP-6 opt-in probe counts the EXACT unpinned

@@ -1,3 +1,17 @@
+## 2026-11-18 v1660: bounded compressed FULL decode preflight
+
+- [x] Audit actual fixed-KCORE storage mode and terminal RAW-only
+  assumptions. Do NOT enable mode3 without a terminal owner handler.
+- [x] Add test-only native PDP-6 bitmap decoder with complete stream
+  validation before any writes; reject invalid masks, zero literals,
+  wrong lengths and overlap; preserve output on refusal.
+- [x] Source-linked KCC/PDP-6 73-word, six-encoded-word native
+  positive/negative tests PASS; executed exact-consumption-bypass
+  mutant rejected. Original v1659 MM/bitmap baseline PASS.
+- [ ] Implement full compressed MM owner/terminal/restore/PI6 fault
+  lifecycle before production mode3 publication, then matched
+  physical 48K/64K net RAM and continuous peak tests. 32K deferred.
+
 ## 2026-11-18 v1659: source-linked bounded bitmap MM prototype
 
 - [x] Promote unmodified 30-TEXT-word v1451 PDP-6 codec into

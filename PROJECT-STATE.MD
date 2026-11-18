@@ -1,3 +1,25 @@
+## 2026-11-18 v1660: bitmap FULL decode preflight, native proof
+
+Based directly on pushed v1659, a test-only C89 source-linked PDP-6
+FULL decoder first validates the entire encoded bitmap, every
+nonzero literal, final-mask padding, exact consumption, physical
+source/destination disjointness and bounds BEFORE invoking the
+unchanged 30-word v1451 native decoder. The source-linked 73-word
+fixture produces six encoded words, decodes correctly, and rejects
+corrupt/truncated/overlong/overlapping inputs with no destination
+writes. An independently compiled/executed source mutant bypassing
+exact-consumption checking is rejected by the native oracle.
+Original v1659 bitmap/MM baseline PASS. This is test-only, not linked
+to fixed KCORE, KINIT or PURE MRES. The decoder preflight object
+costs 144 standalone TEXT words (0 DATA/BSS); the original codec
+remains 30 TEXT words. These are NOT installed costs. No mode3 or
+compressed owner is published, no actual physical RAM saving is
+claimed. The permanent storage-mode gate and RAW-only terminal/
+fast-PREFIX paths remain unchanged; see
+design/kcore-pure-bitmap-decode-v1660.md. Next is exact compressed
+MM ownership and terminal/restore PI6 lifecycle. Default PURE OFF,
+strict 32K acceptance DEFERRED.
+
 ## 2026-11-18 v1659: bounded opt-in PURE RAW bitmap MM probe, native PASS
 
 Based directly on committed/pushed v1658, the original native v1451
