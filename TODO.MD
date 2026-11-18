@@ -1,3 +1,26 @@
+## 2026-11-18 v1665: root-aware SWAP/PURE MRES selection
+
+- [x] Physical driver MINITs precede root discovery, which now
+  precedes memory-service selection. SWAP/PURE choice uses the
+  actual selected controller class and validated BACKSTORE size.
+- [x] DTC no-BACKSTORE selects optional PURE; DTC with validated
+  nonzero swap and DSK/DRM root select historical disk MRES;
+  unresolved/incompatible roots install neither.
+- [x] `ROOT=auto` PURE=1 links PURE candidate despite D6FS
+  support; ROOT=disk/drum excludes PURE and default PURE remains OFF.
+- [x] Original KINIT source C89 selection, unsafe inverse-order and
+  wrong-root mutants, real Makefile candidate matrix and v1613
+  baseline PASS. KCC FULL auto-root image links both candidates;
+  64K GCC TSFS root without AUXST1 boots with PURE and INIT.
+- [ ] v1666: put backend-specific terminal release behind small
+  KINIT-patched entry, keep mode3 disabled until scheduler/EXIT/WAIT
+  safe, and avoid installing compatibility in permanent KCORE.
+- [ ] Dedicated *swapless-only* TSFS image that excludes DISK SWAP
+  candidate and fails closed on positive BACKSTORE; measure transient
+  KINIT size, actual permanent MRES and physical 48K/64K peak.
+- [ ] Physical ROOT=auto TSFS/no-AUXST1 and positive BACKSTORE
+  selection; strict physical 32K deferred. PURE OFF by default.
+
 ## 2026-11-18 v1664: bounded compressed mode3 FULL APR restore
 
 - [x] Opt-in source-linked restore checks exact mode3 MM owner,

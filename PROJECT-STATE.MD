@@ -1,3 +1,37 @@
+## 2026-11-18 v1665: root-aware exclusive KINIT SWAP/PURE selection
+
+Based directly on v1664. KINIT previously ran SWAP selection before
+the actual root selector; ROOT=auto with compiled D6FS therefore
+could not install opt-in PURE after choosing swapless TSFS. The
+MINIT table now runs physical drivers, ROOT select, then SWAP/PURE
+select, then AUXSTORE. Transient `proc_swap_minit_v481` evaluates
+`root_select_class()` and validated BACKSTORE capacity; selected
+DTC with no validated nonzero swap chooses opt-in PURE, while
+DTC with validated swap and disk/drum roots choose original disk
+MRES. Unsupported/unresolved root installs neither. Only one MRES
+is permanently installed; no runtime dual dispatcher or fixed
+KCORE source changes. `ROOT=auto` now carries the PURE candidate
+only if explicitly enabled; disk/drum-only builds exclude it.
+
+Native host C89 matrix PASS for six compiled combinations and
+runtime selected roots/capacity; six actual Makefile package
+selection checks PASS, inverse-MINIT-order and wrong-root mutations
+executed/rejected. Historical v1613 selector baseline PASS.
+KCC FULL ROOT=auto PURE=1 image linked with both candidates,
+`__kinit_image_end=140154`, `__kcore_low_end=024535` octal.
+Real 64K GCC lowmem ROOT=tape without AUXST1 booted with `PURE
+LOADED`, `INIT V1`, no `?RT`/INIT failures. The older v1613
+physical test uses obsolete 024254 bound; current lowmem fixed
+bound is 024255 octal, verified in the new v1665 smoke test.
+
+No production compressed mode3 implementation enabled; the
+v1659..v1664 compression/restore sources remain isolated. The
+unselected MRES still occupies transient KINIT candidate space,
+and dedicated swapless-only link pruning and shared terminal
+entry are outstanding. No new net or peak physical RAM claim.
+PURE default OFF; strict physical 32K acceptance deferred.
+See design/kcore-root-backend-select-v1665.md.
+
 ## 2026-11-18 v1664: bounded FULL compressed-mode3 APR restore (staged)
 
 Based on pushed v1663. Opt-in, unlinked C89 FULL restore locates the

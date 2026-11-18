@@ -466,10 +466,10 @@ extern kword_t backstore_init;
 extern kword_t backstore_alloc;
 extern kword_t backstore_free;
 extern kword_t backstore_verify_allocated_v795;
-#if !D6FS_FS_ENABLED && DAIMOS_PURE_MRES_ENABLED
-/* Only the source-selected no-BACKSTORE PDP-6 MRES is installed here.
- * The original DISK MRES remains unchanged for any real AUXST1 backing.
- * Both packages occupy KINIT input space; at runtime install exactly one.
+#if DAIMOS_PURE_MRES_ENABLED && KINIT_TAPE_BOOT
+/* ROOT=auto may select TSFS at runtime despite D6FS being compiled.
+ * Only a validated DTC root without BACKSTORE may select PURE.
+ * The two packages are transient KINIT input; only one is installed.
  */
 extern const kword_t proc_pure_mres_package_v1612[];
 #endif
@@ -479,19 +479,24 @@ proc_swap_minit_v481(void)
 {
         kword_t name = (kword_t)SIXBIT("SWAP  ");
         unsigned int base;
+        unsigned int root = root_select_class();
 
-#if !D6FS_FS_ENABLED
-        /* A TSFS root does not load D6FS. Inspect only explicitly
-         * provisioned AUXST1 storage using transient KINIT code. Driver
-         * services were installed earlier in MINIT order. No device is
-         * formatted or written by discovery. */
+        /* Root discovery precedes this MINIT. An unresolved selector
+         * cannot authorize installation of either memory backend.
+         * kinit_boot will diagnose an absent/unresolved root later.
+         */
+        if (root == KINIT_ROOT_AUTO)
+                return;
+#if KINIT_TAPE_BOOT
+        if (root == KINIT_ROOT_DTC) {
+        /* Only TSFS needs to inspect AUXST1 to decide which memory
+         * backend to install. DSK/DRM roots retain the original
+         * disk-swap MINIT and never try to install PURE.
+         */
         /*
-         * v1613: an absent AUXST1 returns -1, not a successful
-         * descriptor with zero BACKSTORE blocks. Both are valid
-         * no-BACKSTORE configurations for the optional PURE MRES.
-         * Only a positively validated nonzero BACKSTORE allocation
-         * may select the original disk-swap service. Discovery
-         * resets the published count before trying each controller.
+         * Absence/invalid AUXST1 and a validated zero-size BACKSTORE
+         * both mean no swap. Neither a DSK/DRM controller nor a
+         * LOGSTORE-only AUXST1 implies usable disk swap storage.
          */
         if (auxstore_boot_discover() != 0 ||
             auxstore_backstore_blocks == 0UL) {
@@ -515,6 +520,23 @@ proc_swap_minit_v481(void)
                 return;
         }
         auxstore_post_minits();
+        }
+#endif
+        /* A supported configured disk/drum root always uses the
+         * historical disk service. TSFS reaches here only with
+         * positively validated BACKSTORE. Unsupported classes
+         * fail closed. No per-call compatibility dispatcher.
+         */
+        if (root != KINIT_ROOT_DTC && root != KINIT_ROOT_DSK &&
+            root != KINIT_ROOT_DRM)
+                return;
+#if !D6FS_FS_ENABLED
+        if (root != KINIT_ROOT_DTC)
+                return;
+#endif
+#if !KINIT_TAPE_BOOT
+        if (root == KINIT_ROOT_DTC)
+                return;
 #endif
         base = minit_install(name);
 

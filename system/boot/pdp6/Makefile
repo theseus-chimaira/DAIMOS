@@ -420,9 +420,11 @@ MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PCLK_MRES_OBJ) $(SOFTCLOCK
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 1
 endif
-ifeq ($(DAIMOS_PURE_MRES_ENABLED)$(D6FS_FS_ENABLED),10)
-# Only the no-disk TSFS path can install the PURE module. Its source
-# package must be linked into KINIT but is never fixed KCORE memory.
+ifeq ($(DAIMOS_PURE_MRES_ENABLED)$(KINIT_TAPE_BOOT),11)
+# Both ROOT=tape and ROOT=auto can select a DTC/TSFS root with no
+# validated BACKSTORE. KINIT installs PURE only in that case; a
+# positively validated BACKSTORE selects the old disk-swap MRES.
+# ROOT=disk/drum excludes PURE even if the opt-in flag is supplied.
 MRES_PACKAGE_OBJS += $(PURE_MRES_OBJ_V1612)
 endif
 KINIT_DRM_ENABLED = 1

@@ -1,3 +1,19 @@
+## 2026-11-18 v1665: KINIT chooses memory backend after root
+
+MINIT order changed from SWAP->ROOT to ROOT->SWAP, after physical
+driver installation. Actual DTC/TSFS root plus absent/zero
+BACKSTORE selects opt-in PURE, DTC with validated BACKSTORE and
+DSK/DRM roots select historical disk MRES. `ROOT=auto` now links
+PURE when tape capability and explicit opt-in exist; disk-only
+images do not. Only one MRES is installed permanently, unchanged
+resident scheduler exports, zero fixed KCORE source changes.
+Strict C89 original-source selector matrix, two executed unsafe
+mutants, real Makefile candidate checks, KCC FULL auto image link
+and physical 64K GCC TSFS no-AUXST1 boot all PASS. The current
+GCC bound is 024255 octal; old v1613 smoke assertion at 024254
+was stale. No mode3 scheduler integration, no runtime dual
+dispatcher or net/peak RAM proof. PURE OFF; strict 32K deferred.
+
 ## 2026-11-18 v1664: opt-in bounded compressed FULL APR restore
 
 Added opt-in source-linked C89 mode3 FULL restore: exact compressed

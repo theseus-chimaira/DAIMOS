@@ -154,9 +154,13 @@ __minit_table_begin:
 .if KINIT_DRM_ENABLED
         .word drm236_minit,,drm236_mres_package
 .endif
-        ; Swap services are installed after physical storage discovery.
-        .word proc_swap_minit_v481,,proc_swap_mres_package_v481
+        ; Select the *actual* physical root before choosing the one
+        ; memory-management MRES. ROOT=auto may select DTC even with
+        ; DSK/DRM hardware present for auxiliary storage.
         .word root_select_minit,,0
+        ; SWAP/PURE selection now sees the chosen root and validated
+        ; AUXSTORE capacity. The unselected MRES is never installed.
+        .word proc_swap_minit_v481,,proc_swap_mres_package_v481
 .if KINIT_FULL
         .word auxstore_minit,,0
 .endif
