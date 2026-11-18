@@ -1,3 +1,18 @@
+## 2026-11-18 v1671: native KINIT stack reserve validation
+
+Four source-matched physical PDP-6 TSFS/PURE 48K/64K diagnostic
+boots (general and strict swapless) with native v639/v655
+KINIT_STACK_WATERMARK=1 each show highest touched KINIT stack
+index **129** of 256, with **126 high reserve words untouched**.
+The stored native high-water agrees with all 256 real physical
+stack words as read by SIMH at first user VM entry. Four unsafe
+counter/sentinel/initialization/report mutations rejected. The
+one-word diagnostic KCORE cost is OFF in production, whose fixed
+end remains 024076 octal. Strict still saves 1877 instrumented
+KINIT image words. Default 0400 stack reserve is unchanged;
+separate error path/fatal high-water testing is required before
+attempting a smaller default. Post-user pressure remains OPEN.
+
 ## 2026-11-18 v1670: live allocator-event high-water at KINIT handoff
 
 Source-matched 48K/64K PDP-6 SIMH physical traces now cover

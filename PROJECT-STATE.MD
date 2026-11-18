@@ -1,3 +1,30 @@
+## 2026-11-18 v1671: physical KINIT stack high-water at 48K/64K
+
+Parent accepted v1670. No DAIMOS production source code/ABI or
+resident memory change. With existing opt-in diagnostic
+KINIT_STACK_WATERMARK=1 and original 0400-octal (256-word) stack,
+the testkit boots source-matched GCC lowmem general and strict
+TSFS/PURE on actual PDP-6 SIMH 48K and 64K. Simulator breakpoints
+confirm original watermark initialization, then at first
+vm_enter_initial_user independently examine all 256 physical
+stack words plus high-water/resident KCORE words. The native
+sentinel scan and physical stack both identify the same maximum
+touched index **129 decimal** in all four runs (130 words through
+the highest modified index), leaving **126 upper untouched
+stack words**. The strict v1668 candidate removal does not
+increase boot stack use. Four executed corrupted/unsafe readings
+(counter, upper sentinel, initialization, forged report) rejected.
+
+The diagnostic flag introduces exactly ONE additional fixed
+KCORE word: normal low end 024076 -> diagnostic 024077 octal,
+48K resident 17725->17726, 64K 17741->17742. Instrumented
+source-matched KINIT still shrinks 1877 words strict vs general.
+No production change, and no lowering of the default stack
+reserve is authorized: fatal/error/root variations may require
+more depth. Post-user process-pressure, mode3 RUN/EXIT/WAIT/PI6,
+stack failure paths and strict physical 32K remain OPEN.
+See `design/kcore-kinit-stack-watermark-v1671.md`.
+
 ## 2026-11-18 v1670: physical KINIT allocator-event high-water at 48K/64K
 
 Parent v1669. No kernel/ABI/permanent RAM changes. Source-matched

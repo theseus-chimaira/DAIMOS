@@ -1,3 +1,23 @@
+## 2026-11-18 v1671: physical KINIT stack high-water
+
+- [x] Run general and strict TSFS/PURE GCC lowmem with native
+  diagnostic `KINIT_STACK_WATERMARK=1` at real PDP-6 48K/64K;
+  confirm original initializer and first user VM handoff.
+- [x] Independently read the entire physical 0400 octal/256-word
+  KINIT stack reserve plus resident high-water counter at the
+  handoff. Highest touched index **129** in all four images;
+  upper **126 words untouched**. Strict is no deeper than general.
+- [x] Verify diagnostic KCORE increases exactly one word only
+  (024076->024077 octal), standard production remains unchanged;
+  instrumented strict image still saves 1877 transient words.
+- [x] Execute/reject four unsafe watermark/sentinel/initialization
+  and forged report mutants using original physical evidence.
+- [ ] Do not shrink the default 0400 KINIT reserve until actual
+  fatal/error/root variant stack depths are bounded; then
+  consider physically testing an optional smaller reserve.
+- [ ] Post-user 48K/64K MM process pressure, RUN/EXIT/WAIT/PI6,
+  compressed mode3 admission and strict physical 32K remain open.
+
 ## 2026-11-18 v1670: physical KINIT allocator-event peak proof
 
 - [x] Source-matched general vs strict TSFS/PURE GCC lowmem 48K
