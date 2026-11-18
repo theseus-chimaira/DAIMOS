@@ -69,7 +69,10 @@
         .globl monitorfs_mres_package
         .globl mfsdev_install_minit
         .globl proc_swap_minit_v481
+.if DAIMOS_SWAPLESS_ONLY_V1668
+.else
         .globl proc_swap_mres_package_v481
+.endif
         .globl cty_mres_package
         .globl clk_mres_package
         .globl pclk_mres_package
@@ -160,7 +163,13 @@ __minit_table_begin:
         .word root_select_minit,,0
         ; SWAP/PURE selection now sees the chosen root and validated
         ; AUXSTORE capacity. The unselected MRES is never installed.
+.if DAIMOS_SWAPLESS_ONLY_V1668
+        ; Exactly one candidate: PURE is installed directly by KINIT.
+        ; Never create a relocation/reference to DISK SWAP MRES.
+        .word proc_swap_minit_v481,,0
+.else
         .word proc_swap_minit_v481,,proc_swap_mres_package_v481
+.endif
 .if KINIT_FULL
         .word auxstore_minit,,0
 .endif

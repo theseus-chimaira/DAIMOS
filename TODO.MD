@@ -1,3 +1,33 @@
+## 2026-11-18 v1668: strict TSFS swapless-only KINIT candidate removal
+
+- [x] Dedicated ROOT=tape/PURE-only opt-in removes the unused disk
+  SWAP MRES from transient KINIT and zeros its module-table package
+  pointer, with no new KCORE compatibility or process metadata.
+- [x] Positive validated BACKSTORE and unexpected root are fatal;
+  later full-profile AUXSTORE rediscovery must also reject positive
+  backing. Zero-BACKSTORE LOGSTORE remains available.
+- [x] Actual source-extracted C89 selection, first/second unsafe
+  fatal-bypass mutants, real Makefile candidate/guard matrix and
+  original v1665/v1613 tests PASS.
+- [x] Actual 64K GCC TSFS/no-AUX guest boots PURE/INIT. The same
+  strict image with real DRM0 positive BACKSTORE prints SWAP FAIL
+  and HALTs before installing PURE or starting INIT.
+- [x] Source-matched GCC lowmem links: KCORE 024076 octal and
+  PURE MRES 1863 words unchanged; transient KINIT end
+  113732->110205 octal saves **1877** words. SWAP package absent.
+- [x] Source-matched KCC FULL links: fixed KCORE 024353 octal,
+  PURE MRES 2307 unchanged; transient KINIT end 131475->125775
+  octal saves **1856** words. SWAP package absent.
+- [ ] Complete whole-machine 48K/64K transient high-water and
+  MM process-owner RAM comparisons across OFF/RAW/bitmap modes;
+  strict 32K KINIT placement remains deferred.
+- [ ] Finish compressed reclaim mode3 RUN/EXIT/WAIT/PI6 lifecycle
+  and immutable backing/uncertain MM transaction proof; mode3
+  must remain production disabled until fully accepted.
+- [ ] Source-built general ROOT=auto/DSK/DRM physical boot matrix,
+  full-profile KCC physical boot and 48K process-pressure tests remain
+  separate acceptance gates.
+
 ## 2026-11-18 v1667: compressed memory services staged in PURE MRES
 
 - [x] Explicit TSFS-capable PURE-only build flag for compressed
@@ -45,12 +75,13 @@
 - [x] Source-built physical PDP-6 64K, 3-member TSFS root without
   AUXSTORE boots with PURE LOADED and INIT V1. Fixed KCORE map
   has no RAW terminal scanner; PURE MRES map contains it.
-- [ ] Integrate compressed mode3 into PURE-only terminal and
-  scheduler/full restore before activating the mode; DISK MRES
-  must remain entirely independent of bitmap ownership.
-- [ ] Dedicated swapless-only TSFS boot candidate pruning and
-  48K/64K peak MM physical accounting; disk-root v1666 physical
-  boot, strict 32K deferred.
+- [x] v1667 staged compressed mode3 terminal and scheduler/FULL
+  restore exclusively in PURE MRES, without production mode3
+  admission or any DISK MRES bitmap dependency.
+- [x] v1668 dedicated swapless-only TSFS candidate pruning;
+  1856 KCC FULL/1877 GCC lowmem transient image words reclaimed.
+- [ ] 48K/64K whole-machine peak MM and disk-root v1666 physical
+  boot; strict 32K deferred.
 
 ## 2026-11-18 v1665: root-aware SWAP/PURE MRES selection
 
@@ -66,12 +97,13 @@
   wrong-root mutants, real Makefile candidate matrix and v1613
   baseline PASS. KCC FULL auto-root image links both candidates;
   64K GCC TSFS root without AUXST1 boots with PURE and INIT.
-- [ ] v1666: put backend-specific terminal release behind small
+- [x] v1666: put backend-specific terminal release behind small
   KINIT-patched entry, keep mode3 disabled until scheduler/EXIT/WAIT
   safe, and avoid installing compatibility in permanent KCORE.
-- [ ] Dedicated *swapless-only* TSFS image that excludes DISK SWAP
-  candidate and fails closed on positive BACKSTORE; measure transient
-  KINIT size, actual permanent MRES and physical 48K/64K peak.
+- [x] v1668: dedicated *swapless-only* TSFS image excludes DISK
+  SWAP MRES candidate and fails closed on positive BACKSTORE;
+  unchanged permanent MRES/KCORE and verified KCC/GCC link sizes.
+- [ ] Physical 48K/64K temporal peak and net MM owner acceptance.
 - [ ] Physical ROOT=auto TSFS/no-AUXST1 and positive BACKSTORE
   selection; strict physical 32K deferred. PURE OFF by default.
 

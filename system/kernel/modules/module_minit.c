@@ -40,6 +40,10 @@
 #include "auxstore.h"
 #include "logstore.h"
 #include "root_select.h"
+#if DAIMOS_SWAPLESS_ONLY_V1668 && \
+    (!DAIMOS_PURE_MRES_ENABLED || !KINIT_TAPE_BOOT || D6FS_FS_ENABLED)
+#error v1668_requires_pure_tsfs_only_kinit
+#endif
 #include "badmap.h"
 #include "mm.h"
 #include "monitorfs.h"
@@ -482,6 +486,16 @@ proc_swap_minit_v481(void)
         unsigned int base;
         unsigned int root = root_select_class();
 
+#if DAIMOS_SWAPLESS_ONLY_V1668
+        /* This image physically has NO disk-swap candidate. Reject
+         * unexpected root selection rather than relying on an
+         * uninstalled module or continuing with an invalid policy.
+         */
+        if (root != KINIT_ROOT_DTC) {
+                minit_fatal(name);
+                return;
+        }
+#endif
         /* Root discovery precedes this MINIT. An unresolved selector
          * cannot authorize installation of either memory backend.
          * kinit_boot will diagnose an absent/unresolved root later.
@@ -523,6 +537,14 @@ proc_swap_minit_v481(void)
 #endif
                 return;
         }
+#if DAIMOS_SWAPLESS_ONLY_V1668
+        /* An actual AUXST1 BACKSTORE is incompatible with this image.
+         * Never continue into a missing DISK MRES installation, nor
+         * publish physical swap blocks for a nonexistent service.
+         */
+        minit_fatal(name);
+        return;
+#endif
         auxstore_post_minits();
         }
 #endif
@@ -542,6 +564,7 @@ proc_swap_minit_v481(void)
         if (root == KINIT_ROOT_DTC)
                 return;
 #endif
+#if !DAIMOS_SWAPLESS_ONLY_V1668
         base = minit_install(name);
 
         storage_patch_jump(&proc_swap_reclaim, minit_export(name, base, 0U));
@@ -554,6 +577,7 @@ proc_swap_minit_v481(void)
         storage_patch_jump(&backstore_free, minit_export(name, base, 5U));
         storage_patch_jump(&backstore_verify_allocated_v795,
             minit_export(name, base, 6U));
+#endif
 }
 
 /** Register a resident PI handler and enable its hardware PI level. */
@@ -1453,6 +1477,16 @@ void
 auxstore_minit(void)
 {
         (void)auxstore_boot_discover();
+#if DAIMOS_SWAPLESS_ONLY_V1668
+        /* Full-profile AUXSTORE rediscovers for LOGSTORE setup. A
+         * positive descriptor appearing on this later probe must
+         * also fail closed before any backing is published.
+         */
+        if (auxstore_backstore_blocks != 0UL) {
+                minit_fatal((kword_t)SIXBIT("SWAP  "));
+                return;
+        }
+#endif
         if (auxstore_logstore_blocks != 0UL) {
                 logstore_boot_configure(auxstore_logstore_start,
                     auxstore_logstore_blocks);

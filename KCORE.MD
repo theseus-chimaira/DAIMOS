@@ -1,3 +1,26 @@
+## 2026-11-18 v1668: remove unused DISK MRES from strict TSFS KINIT
+
+When explicitly configured ROOT=tape, PURE=1 and
+`DAIMOS_SWAPLESS_ONLY_V1668=1`, KINIT's SWAP MINIT table has no
+disk-swap package and its source C cannot call the disk installer.
+Positive validated BACKSTORE or wrong root fails closed at boot;
+full-profile repeated AUXSTORE discovery also refuses new swap
+backing. Ordinary ROOT=auto/disk/drum boot policy is unchanged.
+Only the transient DISK SWAP candidate is excluded; independent
+DSK/DRM physical services remain available for LOGSTORE.
+
+Two real source-matched GCC lowmem links: fixed KCORE end 024076
+octal and installed PURE 1863 words are identical; KINIT end
+113732->110205 octal saves 1877 transient words. Real 64K
+PDP-6 TSFS/no-AUX boot reaches INIT V1, and the same image with
+validated DRM0 BACKSTORE prints SWAP FAIL and HALTs. Strict C89
+selection, two unsafe mutants and general-root regressions PASS.
+Source-matched KCC FULL also links: fixed 024353 and installed
+PURE 2307 words unchanged, KINIT end 131475->125775 octal
+saves **1856** transient words without the DISK MRES package.
+Neither production bitmap mode3 nor measured whole-guest peak
+memory is enabled/claimed. Strict physical 32K remains deferred.
+
 ## 2026-11-18 v1667: opt-in compressed PURE MRES only
 
 The fixed KCORE and DISK MRES do not contain mode3 code. An

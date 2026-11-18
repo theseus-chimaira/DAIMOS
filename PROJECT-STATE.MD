@@ -1,3 +1,41 @@
+## 2026-11-18 v1668: dedicated swapless-only TSFS KINIT pruning
+
+Parent v1667. Explicit `DAIMOS_SWAPLESS_ONLY_V1668=1` is valid
+only with ROOT=tape and `DAIMOS_PURE_MRES_ENABLED=1`. It removes
+the DISK SWAP MRES package from the linked lowmem/full KINIT
+candidate set and makes the SWAP MINIT table entry package zero.
+Normal ROOT=auto and disk/drum images retain their original disk
+swap candidate and root-based installer logic. The strict image
+accepts only actual DTC/TSFS root; absent or zero validated
+BACKSTORE installs PURE, while positive validated AUXST1
+BACKSTORE and unexpected roots cause SWAP FAIL before publication
+or loading a missing disk service. Full-profile AUXSTORE
+rediscovery repeats the positive-BACKSTORE fail-closed check;
+zero-BACKSTORE LOGSTORE is retained. DSK/DRM physical controllers
+remain usable for independent auxiliary services.
+
+Actual source-extracted strict C89 KINIT MINIT and second
+AUXSTORE MINIT tests PASS, with first/second fatal-bypass source
+mutants executed and rejected. Top-level Makefile guard/candidate
+matrix and original v1665/v1613 root-aware tests PASS. Actual
+64K GCC lowmem TSFS physical boot without AUXST1 reaches PURE
+LOADED and INIT V1; the SAME image with validated DRM0/AUXST1
+BACKSTORE actually prints SWAP FAIL and HALTs before PURE or INIT.
+
+Source-matched general vs strict GCC lowmem links show identical
+fixed KCORE `__kcore_low_end=024076` octal and identical installed
+PURE MRES 1863 words. Strict KINIT end falls from `113732` to
+`110205` octal: 1877 transient words reclaimed, with disk-swap
+MRES candidate entirely absent from the linked KINIT map. This
+was independently reproduced with KCC FULL tape: fixed KCORE
+024353 octal and installed PURE 2307 words unchanged, KINIT end
+131475->125775 octal (**1856 transient words saved**), disk-swap
+MRES absent. Both compiler profiles pass their link/map tests.
+This does NOT yet prove a whole-system physical transient high-water
+reduction or net runtime free RAM gain. Bitmap mode3/default PURE
+remain production OFF; physical 48K/32K and full lifecycle open.
+See `design/kcore-tsfs-swapless-kinit-v1668.md`.
+
 ## 2026-11-18 v1667: bitmap terminal/FULL restore staged in PURE MRES
 
 Parent v1666. New explicit `DAIMOS_PBM_V1667=1` flag, valid only
