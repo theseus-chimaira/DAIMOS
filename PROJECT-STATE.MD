@@ -1,3 +1,54 @@
+## 2026-11-18 v1659: bounded opt-in PURE RAW bitmap MM probe, native PASS
+
+Based directly on committed/pushed v1658, the original native v1451
+30-word presence-bit encoder/decoder instruction stream was copied
+without changes into an explicitly test-only PDP-6 source file.
+New C89 probe checks immutable PURE backing, PROCESS TRANSITION,
+single RAW PACKED MM owner, exact 36-bit nonzero count, disjoint
+exact-length no-reclaim allocation and every produced bitmap word,
+then unpins/frees provisional output and restores one exact RAW owner.
+Malformed literal/trailing bitmap, no gain, allocator failure/overlap,
+duplicate process owner, target pin/unpin/free and source unpin
+refusals remain fail-closed. No blind MM repair or mode publication.
+
+Native PDP-6 v1658 baseline and v1659 twelve source-linked cases
+PASS; independent executed removal of the bitmap verifier is rejected
+at __test_exit=001604. The v1657 3,456 RAW/65 nonzero geometry
+produces 161 bitmap words in real PDP-6 assembly, with original RAW
+contents unchanged. Standalone codec 30 TEXT, new probe C object
+586 TEXT, both zero DATA/BSS. These are PROTOTYPE CODE COSTS only.
+
+The v1659 genuine original PDP-6 MM allocator test exposed an
+unrelated but blocking real MM bug: `mm_alloc_aligned_noreclaim`
+rejected the already-defined type4 PACKED_PROCESS (its old `[-4]`
+validation admitted types 1..3 only). The permanent MM source now
+accepts precisely 1..4 with `[-10]` plus upper bound 4, rejecting
+reserved 5..7 and invalid high bits. Original MM allocator tests
+v1111 (-1/-2/-3 and negative mutants) and v1552 pin/free/shortage
+still PASS. New actual production-ASM allocation succeeds for 161
+words within the 883-word v1657 gap while RAW is pinned, then
+verified unpin/free restores ownership; 884 words, descriptor
+exhaustion and invalid types fail. Both old-type and overbroad-type
+real assembler mutants are executed and rejected. Fresh source-built
+48K linked KCORE low end moves 024253 -> 024255 octal and KINIT
+image end 113641 -> 113643, exactly two extra words in each.
+KCORE stream SHA256:
+0a547e28dd9223e1a26420e4a75f8a6a5ca39836dd62b6a3c3d531ced57fc8f8.
+The original 48K TSFS-root, secondary-DTC3 PURE multi-owner guest
+completes all six PIPE/WAIT/EXIT and normal HALT at PC000000. The
+normal physical regression and native MM/fault tests PASS.
+
+No compressed MM owner is published: existing storage mode3 is NOT
+accepted by fixed KCORE and terminal teardown requires RAW geometry.
+Only the allocator type validation changes permanent KCORE; the
+bitmap probe/codec remain unlinked, with no realized net RAM saving.
+Fresh v1659 48K/64K physical COMPRESSION remains unimplemented;
+new 64K allocator regression is still open.
+Next is failure-atomic compressed ownership/restore/terminal design,
+real continuous RAM accounting and release tests. Strict 32K size
+acceptance is DEFERRED; PURE default remains OFF. Details:
+design/kcore-pure-bitmap-probe-v1659.md.
+
 ## 2026-11-17 v1658: PURE MM owner disposition (native and physical)
 
 Based on exact pushed v1657 source. Opt-in PDP-6 PURE prefix commit now

@@ -1,3 +1,35 @@
+## 2026-11-18 v1659: bounded disjoint PURE bitmap probe (test only)
+
+New v1659 C89/native PDP-6 opt-in probe counts the EXACT unpinned
+RAW MM source after TRANSITION/source admission, pins it, reserves a
+minimal disjoint bitmap extent without reclaim recursion, encodes
+using the v1451-identical 30-word assembly, independently verifies
+all RAW data and partial mask bounds, and releases temporary MM
+ownership before reporting the packed size. Source remains unchanged.
+MM uncertainty retains TRANSITION. Twelve original native cases and
+an executed unsafe verification-bypass mutant PASS/reject. The actual
+v1657 six-owner geometry is reproduced natively: 3,456 RAW words,
+65 nonzero, 96 masks, 161 compressed words per candidate.
+
+The C probe is 586 TEXT words; codec is 30, neither installed in
+KINIT/MRES or KCORE. A new genuine original MM allocator test found
+the old type validation rejected legitimate MM_TYPE_PACKED_PROCESS=4.
+The fixed allocator now admits exactly 1..4 and rejects reserved
+types 5..7 and high bits. Original v1111/v1552 allocator tests and
+new 883-gap/161-word insertion/pin/free/shortage pass; both executed
+unsafe old/restricted and overbroad guard mutants are rejected.
+The allocator fix modifies permanent KCORE: source-built 48K low end
+024255 (was 024253), KINIT image end 113643 (was 113641); +2 words.
+Original TSFS-root/secondary-DTC3 six-child PIPE/WAIT/EXIT physically
+PASSes and HALTs normally PC000000. KCORE stream SHA256:
+0a547e28dd9223e1a26420e4a75f8a6a5ca39836dd62b6a3c3d531ced57fc8f8.
+This remains a BOUNDED ALLOCATION/ROLLBACK probe, NOT an actual
+compressed mode3 process or measured RAM savings.
+Existing permanent storage map and terminal RAW ownership rules
+still forbid publishing compressed extents. See
+design/kcore-pure-bitmap-probe-v1659.md. PURE default OFF; strict
+32K acceptance and size-only optimization DEFERRED.
+
 ## 2026-11-17 v1658: fail-closed PURE MM transition policy
 
 The existing PDP-6 PURE fast prefix MM commit used to publish a

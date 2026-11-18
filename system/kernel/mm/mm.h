@@ -45,6 +45,8 @@
 #define MM_TYPE_KERNEL_DYNAMIC  3U
 /**
  * Evicted writable state stored in core, not a runnable APR process image.
+ * The no-reclaim allocator accepts this fourth defined MM type
+ * (v1659 fix). Reserved type values 5..7 remain invalid.
  * v1609 accepts exact terminal cleanup of a PACKED_PROCESS owner.
  * v1611 adds creation/restore in an opt-in experimental MRES only,
  * not in the default KCORE or accepted physical boot profile.

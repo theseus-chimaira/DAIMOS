@@ -1,3 +1,34 @@
+## 2026-11-18 v1659: source-linked bounded bitmap MM prototype
+
+- [x] Promote unmodified 30-TEXT-word v1451 PDP-6 codec into
+  explicitly test-only DAIMOS source, without KCORE/MRES boot linkage.
+- [x] Preflight exact TRANSITION/PURE/MM RAW owner, compute bitmap
+  length before allocating; require disjoint no-reclaim output.
+  Verify original RAW word-for-word without an extra decoded buffer;
+  release temporary MM output and original pin with checked errors.
+- [x] Run original v1658 native matrix plus 12 v1659 source-linked
+  native cases; exact 3456/65/161 geometry, poisoned bitmap,
+  duplicate/overlapping owners, all unpin/free failures. Executed
+  unverified-bitmap source mutant correctly rejected.
+- [x] Measure unlinked object TEXT: codec 30, C probe 586 words, no
+  DATA/BSS. These are PROTOTYPE overheads, not net RAM savings.
+- [x] Fix original permanent PDP-6 no-reclaim MM type validation:
+  legitimate PACKED_PROCESS=4 previously refused. Accept only 1..4,
+  reject 5..7/high bits. Real original allocator 883-gap/161-word
+  reserve/pin/free, 884-word shortage, descriptor-capacity and
+  invalid-type matrix PASS. Both old/reckless source mutants rejected;
+  original v1111 and v1552 allocator regressions PASS.
+- [x] Verify fixed KCORE low end 024253 -> 024255 octal and KINIT
+  113641 -> 113643 (+2 words each) in fresh source-built GCC 48K
+  TSFS-root/secondary-DTC3 guest, full six-child PIPE/WAIT/EXIT,
+  normal HALT PC000000. No installed bitmap compression is claimed.
+- [ ] Complete separately recoverable compressed MM mode3 owner,
+  fail-atomic source release, FULL restore/decode, permanent terminal
+  EXIT/WAIT/reaper and PI6 scheduler integration before enabling it.
+- [ ] Full real-source 48K/64K runtime/fault coverage and continuous
+  whole-machine peak RAW/compressed/OFF comparison. 32K remains
+  DEFERRED; default PURE OFF. design/kcore-pure-bitmap-probe-v1659.md.
+
 ## 2026-11-17 v1658: PURE MM owner refusal and terminal disposition
 
 - [x] Remove the fast-prefix post-publication fallible mm_unpin:
