@@ -1,3 +1,18 @@
+## 2026-11-18 v1663: bounded bitmap compressor frontend (unlinked)
+
+New opt-in C89 compressor completes bounded RAW pin, nonzero count,
+no-gain rejection, original no-reclaim MM allocation, disjoint
+candidate encoding via the unchanged 30-word v1451 codec, verified
+unpin, and the v1662 atomic RAW retirement/mode3 commit. Refusal
+cleans candidate before RAW and checks actual MM ownership after
+fallible operations; uncertain cleanup never clears TRANSITION.
+Native PDP-6 original-MM 3,456/65 ->161-word and all-zero ->96-word
+end-to-end successes, RAM reuse at 040000 octal and full v1662..
+v1659 regressions PASS. 41 native refusal/no-gain cases and two
+executed dangerous mutants rejected. Prototype 776 TEXT, zero
+DATA/BSS, no installed KCORE change. Mode3 FULL restore and live
+dispatch remain open; PURE OFF, 32K deferred.
+
 ## 2026-11-18 v1662: prepared bitmap MM commit (unlinked)
 
 New opt-in PDP-6 ASM validates pinned RAW plus unpinned candidate,

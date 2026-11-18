@@ -1,3 +1,40 @@
+## 2026-11-18 v1663: bounded PURE bitmap compression frontend, native PASS
+
+Based directly on pushed v1662. New opt-in C89 preparation frontend
+requires one exact unpinned RAW PURE PACKED_PROCESS owner, stopped/
+sleeping TRANSITION, immutable backing and mode2. It pins RAW,
+calculates `ceil(raw/36)+nonzero` without scratch, refuses no-gain,
+allocates an exact disjoint HIGH candidate with original no-reclaim
+MM, validates both owners before encoding with the unchanged
+30-word v1451 PDP-6 bitmap codec, unpins the candidate, and passes
+it to the v1662 fully verified, failure-atomic RAW-retire/mode3
+commit. Successful mode3 remains TRANSITION held; no live dispatch.
+
+Ordinary refusal frees the candidate before unpinning RAW and
+revalidates descriptor state after every fallible cleanup. False
+success/failure or uncertain owner/mode leaves TRANSITION held,
+never blindly repairs MM or clears the only recoverable image.
+The v1662 commit verifier avoids duplicate full RAW scanning.
+
+Native PDP-6 uses actual original MM allocation, pin/unpin, free,
+fit and insertion leaves. For 3,456 RAW/65 nonzero it allocates
+161 bitmap words at `050122` octal in the old 883-word gap,
+reclaims the RAW region at `040000` via an independent original-MM
+02000-octal-word allocation, decodes exactly and terminal-releases
+the compressed owner. All-zero RAW produces 96 bitmap words at
+`050223` octal and passes decode/terminal and RAM reuse. Dense
+RAW rejects before allocation. Forty-four native cases: three
+successful and 41 refusal/no-gain scenarios. Executed unsafe
+geometry and target-unpin source mutants rejected. Full original
+v1662/v1661/v1660/v1659 native regression chain PASS.
+Standalone compressor 776 TEXT, 0 DATA/BSS; prototype not linked.
+
+The default KCORE still refuses mode3 and the scheduler/terminal
+dispatch is unchanged. Mode3 FULL APR restore and physical 48K/64K
+continuous peak-RAM acceptance remain open. No installed net memory
+savings claimed. PURE OFF by default; strict 32K deferred. Details:
+design/kcore-pure-bitmap-compress-v1663.md.
+
 ## 2026-11-18 v1662: fail-atomic prepared bitmap MM commit, native PASS
 
 Based directly on pushed v1661. An opt-in, unlinked PDP-6 MM

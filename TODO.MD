@@ -1,3 +1,23 @@
+## 2026-11-18 v1663: bounded PURE bitmap compression frontend
+
+- [x] Source-linked opt-in C89 frontend pins one exact RAW owner,
+  counts nonzero 36-bit words, rejects no-gain without allocation,
+  reserves disjoint exact-sized HIGH MM candidate without reclaim,
+  encodes with original v1451 PDP-6 bitmap and invokes atomic v1662.
+- [x] Cleanup verifies source/target ownership and mode2 before
+  release; candidate free precedes RAW unpin. False successes/
+  failures, wrong geometry and MM uncertainty remain TRANSITION-held.
+- [x] Native original MM sparse 3,456/65 ->161 and all-zero ->96
+  encoded-word paths, complete decode, reclaimed-core allocation,
+  compressed terminal MM release PASS. Dense no-gain PASS.
+- [x] 44 native tests (three positive, 41 refusal/no-gain cases),
+  two executed unsafe mutants, full v1662/v1661/v1660/v1659
+  native regression PASS. Unlinked frontend 776 TEXT/0 DATA/BSS.
+- [ ] Implement mode3 FULL APR restoration and terminal dispatcher
+  with PI6 scheduler fault handling before production mode3 enable.
+- [ ] Measure complete physical 48K/64K and continuous peak/net RAM;
+  PURE OFF, strict 32K physical acceptance deferred.
+
 ## 2026-11-18 v1662: atomic compressed RAW retirement
 
 - [x] Opt-in PDP-6 MM leaf consumes exactly one pinned RAW descriptor
