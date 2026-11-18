@@ -1,3 +1,39 @@
+## 2026-11-18 v1664: bounded FULL compressed-mode3 APR restore (staged)
+
+Based on pushed v1663. Opt-in, unlinked C89 FULL restore locates the
+sole unpinned compressed MM owner in mode3, verifies exact saved PURE
+backing and mount, pins the packed extent, allocates and pins a
+disjoint original-size APR using production MM no-reclaim, invokes
+the existing capacity-bounded FULL loader ABI, then checks all
+bitmap masks and literals with v1660 before decoding the retained
+RAW suffix. No new registry or RAW-sized scratch. The new opt-in
+PDP-6 MM `mm_pure_bitmap_finish_v1664.s` validates the exact
+once-pinned packed source and PROCESS APR owner, then consumes both
+pins while deleting the packed descriptor, without a fallible
+post-deletion operation. Under the same PI exclusion the caller
+publishes APR base, clears saved backing, mode3 -> RESIDENT and
+TRANSITION; source is never lost before target is fully valid.
+
+Ordinary failure frees checked APR target before source unpin;
+false MM results or changed backing/TRANSITION/mode/APR leave
+ownership quarantined. Native PDP-6 original-MM source-linked
+test uses a bounded loader fixture, reconstructed immutable text
+and exact 3,456-word mutable suffix, with complete restored
+4,096-word APR byte-for-byte comparison. Sparse and 96-mask
+all-zero compressed images PASS. Source-first and target-first
+descriptor order, same-ID MODULE, slot-0 SRUN restore and full
+136-entry MM descriptor capacity PASS. 62 native v1664 scenarios:
+8 positive and 54 malformed/refused, plus two executed unsafe
+mutants rejected. Full v1663/v1662/v1661/v1660/v1659 native
+baseline PASS. Opt-in code 969 C TEXT + 133 ASM TEXT, 0 DATA/BSS;
+not installed KCORE/MRES overhead.
+
+Still gated: normal fixed mode3 rejection, production terminal
+dispatch, scheduler/PI6 finalizer wiring, source-built physical
+48K/64K end-to-end FULL execution and peak/net RAM accounting.
+PURE default OFF and strict physical 32K deferred. See
+design/kcore-pure-bitmap-restore-v1664.md.
+
 ## 2026-11-18 v1663: bounded PURE bitmap compression frontend, native PASS
 
 Based directly on pushed v1662. New opt-in C89 preparation frontend

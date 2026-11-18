@@ -1,3 +1,23 @@
+## 2026-11-18 v1664: bounded compressed mode3 FULL APR restore
+
+- [x] Opt-in source-linked restore checks exact mode3 MM owner,
+  mount/backing, APR allocation and decoded RAW bounds. FULL loader
+  runs before completely validated v1660 bitmap decode; no second
+  RAW-size scratch buffer or extra permanent owner registry.
+- [x] PDP-6 atomic MM finish validates both once-pinned PROCESS/
+  PACKED extents, deletes encoded source, consumes APR pin, then
+  nonfallible PI-excluded VM/mode/TRANSITION publication.
+- [x] Fail-closed APR rollback/free before compressed-source unpin;
+  unknown MM/callback/lifecycle state stays quarantined.
+- [x] 62 source-linked PDP-6 native restore/ASM scenarios (8
+  positive, 54 refused/corrupt), two unsafe mutants executed and
+  rejected; full original v1663..v1659 regression PASS. Unlinked
+  C restore 969 TEXT, ASM 133 TEXT, no DATA/BSS.
+- [ ] Integrate compressed terminal dispatch, scheduler/PI6 retry
+  and EXIT/WAIT, then enable mode3 only when all paths are safe.
+- [ ] Verify real source-built 48K/64K guest boot, physical net/peak
+  RAM accounting, with PURE default OFF; strict 32K deferred.
+
 ## 2026-11-18 v1663: bounded PURE bitmap compression frontend
 
 - [x] Source-linked opt-in C89 frontend pins one exact RAW owner,

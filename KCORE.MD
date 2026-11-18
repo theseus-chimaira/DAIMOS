@@ -1,3 +1,18 @@
+## 2026-11-18 v1664: opt-in bounded compressed FULL APR restore
+
+Added opt-in source-linked C89 mode3 FULL restore: exact compressed
+owner pin, actual original aligned APR MM allocation, bounded
+immutable text loader, full v1660 canonical decode, and new PDP-6
+MM leaf to consume source/target pins and retire source before
+nonfallible RESIDENT VM/mode/TRANSITION publication under PI.
+Unexpected MM or lifecycle states keep source owned. Native
+source-extracted MM 4,096-word APR reconstruction PASS, sparse and
+all-zero, slot-0 RUN and full 136-descriptor capacity. 62 new
+cases and two rejected unsafe mutants; prior v1659..v1663 native
+baseline PASS. Unlinked 969 C TEXT + 133 ASM TEXT, zero DATA/BSS;
+permanent KCORE untouched. Fixed mode3 rejection and scheduler/
+terminal dispatch remain disabled; PURE OFF, strict 32K deferred.
+
 ## 2026-11-18 v1663: bounded bitmap compressor frontend (unlinked)
 
 New opt-in C89 compressor completes bounded RAW pin, nonzero count,
