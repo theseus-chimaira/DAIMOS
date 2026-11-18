@@ -94,6 +94,17 @@ DAIMOS_PURE_MRES_ENABLED ?= 0
 ifneq ($(filter $(DAIMOS_PURE_MRES_ENABLED),0 1),$(DAIMOS_PURE_MRES_ENABLED))
 $(error DAIMOS_PURE_MRES_ENABLED must be 0 or 1)
 endif
+# v1667 is a separate test-only PURE MRES linkage experiment.
+# Executable mode3 remains refused by fixed KCORE.
+DAIMOS_PBM_V1667 ?= 0
+ifneq ($(filter $(DAIMOS_PBM_V1667),0 1),$(DAIMOS_PBM_V1667))
+$(error DAIMOS_PBM_V1667 must be 0 or 1)
+endif
+ifeq ($(DAIMOS_PBM_V1667),1)
+ifneq ($(DAIMOS_PURE_MRES_ENABLED)$(KINIT_TAPE_BOOT),11)
+$(error DAIMOS_PBM_V1667 requires TSFS-capable PURE MRES)
+endif
+endif
 # MonitorFS runtime is exclusively in its pinned, boot-loaded MRES.
 override MONITORFS_MRES_ENABLED := 1
 MONITORFS_MODE_STAMP = $(BUILD)/.monitorfs-v17-mode-$(MONITORFS_MRES_ENABLED)
@@ -104,7 +115,7 @@ KINIT_TAPE_MODE_STAMP = $(BUILD)/.kinit-tape-v20-mode-$(KINIT_TAPE_BOOT)
 KINIT_STACK_MODE_STAMP = $(BUILD)/.kinit-stack-v655-$(KINIT_STACK_RESERVE_WORDS)-$(KINIT_STACK_WATERMARK)
 PDP10_GCC ?= pdp10-dec-none-gcc
 # Switch v1611 PURE MRES on/off without reusing stale KINIT output.
-KINIT_PURE_MODE_STAMP = $(BUILD)/.kinit-pure-v1611-mode-$(DAIMOS_PURE_MRES_ENABLED)
+KINIT_PURE_MODE_STAMP = $(BUILD)/.kinit-pure-v1611-mode-$(DAIMOS_PURE_MRES_ENABLED)-$(DAIMOS_PBM_V1667)
 $(KINIT_PURE_MODE_STAMP): | $(BUILD)
 	@rm -f $(BUILD)/.kinit-pure-v1611-mode-*
 	@touch $@
@@ -777,7 +788,7 @@ $(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP) $(MONITORFS_MOD
 	touch $@
 
 $(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(WALL_CLOCK_HZ_STAMP) $(KINIT_PURE_MODE_STAMP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' WALL_CLOCK_HZ='$(WALL_CLOCK_HZ)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' VM_BACKEND='$(VM_BACKEND)'
+	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' WALL_CLOCK_HZ='$(WALL_CLOCK_HZ)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' DAIMOS_PBM_V1667='$(DAIMOS_PBM_V1667)' VM_BACKEND='$(VM_BACKEND)'
 	touch $@
 
 $(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
@@ -794,6 +805,12 @@ KERNEL_ASM_OBJS += $(BUILD)/proc_pure_service_v1612.dobj \
 	$(BUILD)/proc_pure_drop_v1611.dobj \
 	$(BUILD)/proc_pure_prefix_v1611.dobj \
 	$(BUILD)/proc_pure_full_v1611.dobj
+endif
+ifeq ($(DAIMOS_PBM_V1667),1)
+KERNEL_ASM_OBJS += $(BUILD)/proc_pure_term_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_terminal_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_restore_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_decode_v1667.dobj
 endif
 
 $(SWAP_MRES_OBJ_V481): $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres_v484.dobj $(KCORE_MAP)
@@ -815,6 +832,28 @@ $(BUILD)/pure-terminal-v1666.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_DETACH_SOURCE)
 	  cat $<; } > $(BUILD)/pure-terminal-v1666.s
 	$(DAS) $(DASFLAGS) -C -O $@ $(BUILD)/pure-terminal-v1666.s
 
+ifeq ($(DAIMOS_PBM_V1667),1)
+# The original 30-word v1451 codec and the atomic v1664 MM finish
+# remain MRES-only. Nothing from the test-only bitmap chain enters
+# fixed KCORE or the disk-swap MRES.
+$(BUILD)/pure-bitmap-codec-v1667.dobj: $(KERNEL_DIR)/proc/proc_pure_bitmap_codec_v1659.s | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(BUILD)/pure-bitmap-finish-v1667.dobj: $(KERNEL_DIR)/mm/mm_pure_bitmap_finish_v1664.s | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+PURE_BITMAP_PARTS_V1667 = $(BUILD)/proc_pure_term_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_terminal_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_restore_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_decode_v1667.dobj \
+	$(BUILD)/pure-bitmap-codec-v1667.dobj \
+	$(BUILD)/pure-bitmap-finish-v1667.dobj
+PURE_TERMINAL_EXPORT_V1667 = proc_pure_term_v1667
+else
+PURE_BITMAP_PARTS_V1667 =
+PURE_TERMINAL_EXPORT_V1667 = pdp6_pure_detach_v1609
+endif
+
 $(BUILD)/pure-rebase-v1611.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_REBASE_SOURCE) | $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
@@ -830,7 +869,8 @@ PURE_MRES_PARTS_V1612 = $(BUILD)/proc_pure_service_v1612.dobj \
 	$(BUILD)/proc_pure_full_v1611.dobj \
 	$(BUILD)/pure-rebase-v1611.dobj \
 	$(BUILD)/pure-expand-v1611.dobj \
-	$(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj
+	$(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj \
+	$(PURE_BITMAP_PARTS_V1667)
 
 # A KCORE-safe, relocation-verified donor equivalence. The v1611
 # source-identical v1381/v1391 helper region saves 49 words without an
@@ -843,7 +883,8 @@ $(PURE_MRES_OBJ_V1612): $(BUILD)/proc_pure_service_v1612.dobj \
 	$(BUILD)/proc_pure_prefix_v1611.dobj \
 	$(BUILD)/proc_pure_full_v1611.dobj \
 	$(BUILD)/pure-rebase-v1611.dobj $(BUILD)/pure-expand-v1611.dobj \
-	$(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj $(KCORE_MAP) $(PURE_MRES_FOLD_PLAN_V1612)
+	$(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj \
+	$(PURE_BITMAP_PARTS_V1667) $(KCORE_MAP) $(PURE_MRES_FOLD_PLAN_V1612)
 	$(DLINK) -b 0 -A $(KCORE_MAP) \
 	    --fold-plan $(PURE_MRES_FOLD_PLAN_V1612) \
 	    -o $(BUILD)/pure-mres-v1612.dxr \
@@ -851,13 +892,14 @@ $(PURE_MRES_OBJ_V1612): $(BUILD)/proc_pure_service_v1612.dobj \
 	    -N proc_pure_mres_package_v1612 \
 	    -X proc_pure_mres_reclaim_v1612 \
 	    -X proc_pure_mres_service_v1612 \
-	    -X pdp6_pure_detach_v1609 \
+	    -X $(PURE_TERMINAL_EXPORT_V1667) \
 	    $(BUILD)/proc_pure_service_v1612.dobj \
 	    $(BUILD)/proc_pure_drop_v1611.dobj \
 	    $(BUILD)/proc_pure_prefix_v1611.dobj \
 	    $(BUILD)/proc_pure_full_v1611.dobj \
 	    $(BUILD)/pure-rebase-v1611.dobj $(BUILD)/pure-expand-v1611.dobj \
-	    $(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj
+	    $(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj \
+	    $(PURE_BITMAP_PARTS_V1667)
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)

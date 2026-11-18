@@ -23,6 +23,11 @@
 #include "mm.h"
 #include "bstore.h"
 
+#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+#include "proc_pure_bitmap_restore_v1664.h"
+#include "proc_pure_bitmap_terminal_v1661.h"
+#endif
+
 #define PPURE_READY_ONCE_V1612 01000UL
 #define PPURE_COOLDOWN_V1612 0100UL
 
@@ -32,6 +37,24 @@ extern int exec_image_prefix_backing_v1386(kword_t, kword_t,
     kword_t, kword_t);
 extern int exec_image_full_bounded_v1391(kword_t, kword_t,
     kword_t, kword_t);
+
+#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+/* Fixed proc_storage_expect_v30 intentionally cannot read mode3.
+ * Check the unchanged two-bit map only in this opt-in PURE module.
+ */
+static int
+ppure_mode3_v1667(unsigned int slot)
+{
+        kword_t shift;
+        if (!proc_storage_runtime_v29.words ||
+            slot >= proc_storage_runtime_v29.slots)
+                return 0;
+        shift = (kword_t)(slot % PROC_STMAP_SLOTS_WORD_V28) * 2UL;
+        return ((proc_storage_runtime_v29.words[
+            slot / PROC_STMAP_SLOTS_WORD_V28] >> shift) & 3UL) ==
+            (kword_t)PROC_STORAGE_BITMAP_V1661;
+}
+#endif
 
 /* Check the one authoritative process MM owner after a refused operation.
  * A free/duplicate/pinned descriptor cannot be unlocked for execution or
@@ -175,6 +198,9 @@ proc_pure_mres_service_v1612(void)
         struct proc *p;
         kword_t request = proc_sched_cursor;
         int rc;
+#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+        int bitmap;
+#endif
 
         if (!(request & PROC_SCHED_SWAP_REQUEST))
                 return 0;
@@ -186,15 +212,33 @@ proc_pure_mres_service_v1612(void)
         p = &proc_table[slot];
         if (PROC_STATE(p) != PROC_SRUN || PROC_TRANSITION(p) ||
             VM_PDP6_BASE(p) ||
-            !proc_swap_records[slot].state ||
-            proc_storage_expect_v30(slot, PROC_STORAGE_PACKED) != 0)
+            !proc_swap_records[slot].state
+#if !defined(DAIMOS_PBM_V1667) || DAIMOS_PBM_V1667 != 1
+            || proc_storage_expect_v30(slot, PROC_STORAGE_PACKED) != 0
+#endif
+            )
                 return 0;
+#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+        bitmap = ppure_mode3_v1667(slot);
+        if (!bitmap && proc_storage_expect_v30(slot,
+            PROC_STORAGE_PACKED) != 0)
+                return 0;
+#endif
         PROC_SET_TRANSITION(p);
+#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+        if (bitmap) {
+                rc = proc_pure_bitmap_restore_v1664(slot,
+                    exec_image_full_bounded_v1391);
+        } else {
+#endif
         rc = proc_pure_restore_v1384(slot,
             exec_image_prefix_backing_v1386);
         if (rc == PROC_PURE_PREFIX_FALLBACK_V1384)
                 rc = proc_pure_ram_restore_v1391(slot,
                     exec_image_full_bounded_v1391);
+#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+        }
+#endif
         if (rc == MM_OK &&
             !PROC_TRANSITION(p) && VM_PDP6_BASE(p) &&
             proc_storage_expect_v30(slot, PROC_STORAGE_RESIDENT) == 0) {
@@ -206,7 +250,13 @@ proc_pure_mres_service_v1612(void)
          * remains an exact unpinned PACKED owner. Other failures retain
          * TRANSITION and must be handled by the existing terminal reaper;
          * never unlock an unknown MM owner or attempt a disk exchange. */
+#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+        if (bitmap ?
+            proc_pure_bitmap_retry_v1667(slot) == MM_OK :
+            ppure_retryable_v1612(slot, p, PROC_STORAGE_PACKED))
+#else
         if (ppure_retryable_v1612(slot, p, PROC_STORAGE_PACKED))
+#endif
                 PROC_CLEAR_TRANSITION(p);
         proc_swap_pressure_ticks = PPURE_COOLDOWN_V1612;
         return 0;

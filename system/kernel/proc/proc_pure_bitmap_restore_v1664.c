@@ -192,6 +192,34 @@ pbr_cancel_source_v1664(unsigned int slot, kword_t source,
         return reason;
 }
 
+#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+/* A retryable failure has exactly the one unpinned encoded owner;
+ * no APR, no extra PROCESS owner and no changed executable identity.
+ * This reuses the restore's authoritative source scan rather than
+ * installing a second owner scanner in PURE MRES. A corrupt bitmap
+ * is never made runnable: only the TRANSITION lock may be dropped.
+ */
+int
+proc_pure_bitmap_retry_v1667(unsigned int slot)
+{
+        struct proc *p;
+        kword_t backing, words, skip, source = 0UL, encoded = 0UL;
+
+        if (pure_life_prepare_v1604(slot, PURE_LIFE_RESTORE_V1610,
+            &p, &backing, &words) != MM_OK ||
+            pbr_lifecycle_v1664(slot) != MM_OK ||
+            pbr_mode_v1664(slot) != MM_OK ||
+            pure_admit_source_v1608(p, backing) != MM_OK ||
+            !words || (words & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            pdp6_pure_skip_v1604(backing, words, &skip) != MM_OK ||
+            pbr_source_v1664(slot, words - skip, &source,
+                &encoded) != MM_OK)
+                return MM_ERR_BUSY;
+        return pbr_owners_v1664(slot, source, encoded, 0U,
+            0UL, 0UL, 0U);
+}
+#endif
+
 int
 proc_pure_bitmap_restore_v1664(unsigned int slot,
     proc_pure_ram_loader_v1391 loader)

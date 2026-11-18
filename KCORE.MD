@@ -1,3 +1,22 @@
+## 2026-11-18 v1667: opt-in compressed PURE MRES only
+
+The fixed KCORE and DISK MRES do not contain mode3 code. An
+explicit opt-in stage links v1661 bitmap terminal, v1660 bounded
+decode, v1664 FULL APR restore/MM finish and original v1451
+bitmap codec only into the TSFS-capable PURE MRES. The PURE
+terminal's index2 export handles RAW mode2 and compressed mode3;
+slot-0 PURE service uses v1664 restore and a strict authoritative
+unpin/MM-owner proof to decide whether a failed restore is
+retryable. The original fixed `vm_space_destroy` still rejects
+mode3; no pressure path creates it. Production compression remains
+OFF, and no extra per-process word or per-call root dispatcher.
+
+Link measurements vs v1666: fixed KCORE unchanged; staged PURE
+MRES grows 1685 words KCC FULL, 1323 GCC lowmem. This code is
+overhead until a real process compresses. Native actual C/ASM
+terminal and slot-0 FULL restore integration tests pass; physical
+peak RAM and actual mode3 RUN/EXIT/WAIT remain unproven.
+
 ## 2026-11-18 v1666: terminal backend belongs to selected MRES
 
 KINIT patches one default-refusing fixed `proc_swap_term_v1666`

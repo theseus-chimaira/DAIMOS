@@ -1,3 +1,32 @@
+## 2026-11-18 v1667: compressed memory services staged in PURE MRES
+
+- [x] Explicit TSFS-capable PURE-only build flag for compressed
+  mode3 terminal, v1660 bounded decoder, v1664 FULL APR restore,
+  original v1451 codec and v1664 atomic MM finish. Default OFF;
+  incompatible ROOT/PURE configurations rejected at Make time.
+- [x] Third PURE terminal export dispatches RAW mode2 to original
+  v1609 exact MM owner scanner and mode3 to v1661 compressed
+  terminal. KCORE and disk MRES unchanged.
+- [x] Slot-0 PURE service conditionally restores mode3 with v1664
+  FULL loader and only clears failed TRANSITION after one exact
+  unpinned-source proof. Uncertain MM pins remain quarantined.
+- [x] Native mode2/mode3 terminal matrix 21 cases plus rejected
+  unsafe dispatcher mutant; source-linked v1664 original MM and
+  integrated v1612 service matrix 16 cases PASS. Actual KCC/GCC
+  linker maps show fixed KCORE unchanged and bitmap code PURE-only.
+- [x] Executed unsafe failed-restore ownership retry mutant
+  rejected. Physical staged 64K PDP-6 TSFS/no-AUXST1 boot reaches
+  PURE LOADED and INIT V1, but no live mode3 process is accepted.
+- [x] Document actual staged cost: +1685 resident PURE words KCC
+  FULL, +1323 GCC lowmem; transient KINIT +1778 KCC/+1396 GCC;
+  no real compressed process net savings.
+- [x] Independent KCC FULL normal PURE build, bitmap stage OFF:
+  fixed 024353 octal and PURE MRES 2307 words, identical to v1666.
+- [ ] Keep fixed mode3 destroy refusal until real reclaim compressor,
+  terminal RUN/EXIT/WAIT and PI6 scheduler lifecycle validated.
+- [ ] Physical guest 48K/64K net/peak RAM across real compression;
+  strictly swapless-only KINIT candidate pruning; 32K deferred.
+
 ## 2026-11-18 v1666: one boot-patched terminal MRES service
 
 - [x] Move exact PACKED RAW MM terminal scanner from permanent

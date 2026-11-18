@@ -53,7 +53,16 @@ DAIMOS_PURE_MRES_ENABLED ?= 0
 ifneq ($(filter $(DAIMOS_PURE_MRES_ENABLED),0 1),$(DAIMOS_PURE_MRES_ENABLED))
 $(error DAIMOS_PURE_MRES_ENABLED must be 0 or 1)
 endif
-KINIT_PURE_MODE_STAMP = ${BUILD}/.pure-mres-mode-v1611-${DAIMOS_PURE_MRES_ENABLED}
+DAIMOS_PBM_V1667 ?= 0
+ifneq ($(filter $(DAIMOS_PBM_V1667),0 1),$(DAIMOS_PBM_V1667))
+$(error DAIMOS_PBM_V1667 must be 0 or 1)
+endif
+ifeq ($(DAIMOS_PBM_V1667),1)
+ifneq ($(DAIMOS_PURE_MRES_ENABLED),1)
+$(error DAIMOS_PBM_V1667 requires PURE MRES enabled)
+endif
+endif
+KINIT_PURE_MODE_STAMP = ${BUILD}/.pure-mres-mode-v1611-${DAIMOS_PURE_MRES_ENABLED}-${DAIMOS_PBM_V1667}
 ${KINIT_PURE_MODE_STAMP}:
 	@mkdir -p ${BUILD}
 	@rm -f ${BUILD}/.pure-mres-mode-v1611-*
@@ -414,7 +423,36 @@ endif
 
 $(BUILD)/proc_pure_service_v1612.s: $(DAIMOS_VM_PURE_SERVICE_SOURCE) $(KERNEL_HEADERS)
 	@mkdir -p $(BUILD)
-	$(PDP10_CC) $(PDP10_CFLAGS) $(INCLUDES) -S $< -o $@
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PBM_V1667=$(DAIMOS_PBM_V1667) $(INCLUDES) -S $< -o $@
+
+# Source-linked opt-in bitmap MRES helpers. The fixed kernel and the
+# default PURE MRES contain none of these code words.
+ifeq ($(DAIMOS_PBM_V1667),1)
+MRES_ASM += $(BUILD)/proc_pure_term_v1667.s \
+    $(BUILD)/proc_pure_bitmap_terminal_v1667.s \
+    $(BUILD)/proc_pure_bitmap_restore_v1667.s \
+    $(BUILD)/proc_pure_bitmap_decode_v1667.s
+kcore: $(BUILD)/proc_pure_term_v1667.s \
+    $(BUILD)/proc_pure_bitmap_terminal_v1667.s \
+    $(BUILD)/proc_pure_bitmap_restore_v1667.s \
+    $(BUILD)/proc_pure_bitmap_decode_v1667.s
+
+$(BUILD)/proc_pure_term_v1667.s: proc/proc_pure_term_v1667.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PBM_V1667=1 $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_bitmap_terminal_v1667.s: proc/proc_pure_bitmap_terminal_v1661.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_BITMAP_TERMINAL_V1661=1 $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_bitmap_restore_v1667.s: proc/proc_pure_bitmap_restore_v1664.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PBR_V1664=1 -DDAIMOS_PBM_V1667=1 $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_bitmap_decode_v1667.s: proc/proc_pure_bitmap_decode_v1660.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_BITMAP_DECODE_V1660=1 $(INCLUDES) -S $< -o $@
+endif
 
 $(BUILD)/proc_pure_drop_v1611.s: proc/proc_pure_ram_v1381.c $(KERNEL_HEADERS)
 	@mkdir -p $(BUILD)

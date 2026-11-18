@@ -1,3 +1,48 @@
+## 2026-11-18 v1667: bitmap terminal/FULL restore staged in PURE MRES
+
+Parent v1666. New explicit `DAIMOS_PBM_V1667=1` flag, valid only
+with TSFS-capable `DAIMOS_PURE_MRES_ENABLED=1`, stages all bounded
+compressed owner services in PURE MRES alone. The third PURE
+terminal MRES export now dispatches exact RAW mode2 to original
+v1609 ASM, compressed mode3 to v1661 terminal C; DISK MRES and
+fixed KCORE remain entirely independent. The v1612 slot-0 PURE
+service checks bitmap mode3 only with the stage flag and uses
+v1664 bounded FULL restore, original v1451 codec, atomic v1664
+MM finish and strict retry-only owner proof before clearing an
+unsuccessful TRANSITION. No extra process word or resident
+backend-selector table.
+
+The fixed mode3 VM destroy refusal is deliberately unchanged,
+and pressure reclaim does not call the v1663 compressor. This
+stage therefore CANNOT create a live compressed process; bitmap
+mode3 production admission remains disabled. Default PURE=0,
+bitmap stage=0. ROOT=disk/drum stage requested => Make error.
+
+Native PDP-6 terminal source-linked C/RAW ASM/v1661 compressed
+dispatcher: 21 cases PASS, one independently executed unsafe
+RAW-for-bitmap dispatch mutant rejected. Original-MM v1664 FULL
+restore regression and v1612 bitmap service integration matrix:
+16 mode3 slot-0 service cases PASS, including exact APR, zero
+stream, NOMEM, malformed bitmap and quarantined uncertain
+rollback. KCC FULL and GCC lowmem real linked image maps verify
+unchanged fixed KCORE and PURE-only bitmap symbol ownership.
+Both independently executed unsafe mutants (RAW-only mode3
+dispatch and bypassed failed-restore owner retry proof) rejected.
+A source-built physical 64K PDP-6 with TSFS/no-AUXST1 and staged
+PURE boots with PURE LOADED and INIT V1. This proves physical
+boot reachability, not a live compressed process lifecycle.
+Installed PURE MRES increases 2307->3992 KCC (+1685 words) or
+1863->3186 GCC (+1323 words), with no real process compressed
+yet; these are stage costs, not net or physical peak RAM gains.
+Transient KINIT end increases 140230->143612 octal (+1778 KCC)
+or 113732->116516 (+1396 GCC lowmem) in matching images.
+An independent v1667 normal KCC PURE=1, bitmap=0 build confirms
+exact original v1666 PURE MRES 2307 words and KCORE 024353 octal.
+
+Real mode3 RUN/EXIT/WAIT, PI6 lifecycle, source-backed compression
+trigger, physical 48K/64K net/peak RAM and strict 32K remain
+open. See design/kcore-pure-bitmap-mres-v1667.md.
+
 ## 2026-11-18 v1666: move terminal memory-owner release to one MRES
 
 Based on v1665, the fixed `proc_swap_detach` no longer interprets
