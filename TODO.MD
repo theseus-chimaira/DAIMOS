@@ -1,3 +1,28 @@
+## 2026-11-18 v1672: post-user 48K/64K process ownership and accounting
+
+- [x] Correct actual native SYS_MEMINFO and PROCINFO when the
+  EXITed zombie has VM_SPACE_NONE=-1: report zero VM words,
+  not 0777777. Two executed source-assembler mutants rejected.
+- [x] Source-link patched KCORE with GCC lowmem and KCC FULL
+  ROOT=auto; necessary fixed increase **4 words** in both,
+  no new global/per-process data.
+- [x] Exercise actual RUN/EXIT/WAIT with 4 (48K) and 7 (64K)
+  concurrent children on source-matched TSFS/PURE general and
+  swapless-only physical PDP-6; test-only PID1/child on media.
+- [x] Capture actual original MM arena, allocated extent, APR
+  owner and pin counts at three CTY-synchronized stable stages;
+  never use user virtual PC breakpoints that alias KCORE code.
+- [x] Physical MM free before/pressure/after: 48K
+  27441->18193->27441 and 64K 43793->27609->43793, equal
+  general/strict. Each child owns 2048 APR + 264 dynamic words;
+  all APRs and dynamic resources released after WAIT, no new pins.
+- [x] Execute/reject four unsafe corrupted physical-state/CTY
+  witness reports and two unsafe zombie assembler variants.
+- [ ] Capture continuous post-user process/scheduler high-water
+  under stricter RAM pressure and actual RAW PURE reclaim;
+  production bitmap mode3 RUN/EXIT/WAIT/PI6 still disabled.
+- [ ] Physical ROOT=auto/disk/DRM and strict 32K remain pending.
+
 ## 2026-11-18 v1671: physical KINIT stack high-water
 
 - [x] Run general and strict TSFS/PURE GCC lowmem with native
@@ -15,7 +40,9 @@
 - [ ] Do not shrink the default 0400 KINIT reserve until actual
   fatal/error/root variant stack depths are bounded; then
   consider physically testing an optional smaller reserve.
-- [ ] Post-user 48K/64K MM process pressure, RUN/EXIT/WAIT/PI6,
+- [x] v1672 post-user 48K/64K MM RAW PURE RUN/EXIT/WAIT
+  four/seven-child process ownership and post-WAIT restoration.
+- [ ] More aggressive PI6 timing pressure, forced RAW PURE reclaim,
   compressed mode3 admission and strict physical 32K remain open.
 
 ## 2026-11-18 v1670: physical KINIT allocator-event peak proof
@@ -33,9 +60,11 @@
 - [x] Verify equal MM after KINIT reclaim/first user entry:
   free 26421 (48K), 42773 (64K), identical permanent/owners.
   Strict image does NOT improve steady-state free MM total.
-- [ ] Exact instruction-level allocator micropeaks and KINIT
-  pushdown-list watermark comparison, then full 48K/64K process
-  RAM pressure, compressed mode3 lifecycle and strict 32K.
+- [x] v1671 KINIT pushdown-list watermark compared physically.
+- [x] v1672 physical 48K/64K post-user process RAM pressure and
+  exact stable RUN/EXIT/WAIT MM recovery.
+- [ ] Exact instruction-level allocator micropeaks, continuous
+  post-user high-water, compressed mode3 lifecycle and strict 32K.
 
 ## 2026-11-18 v1669: 48K/64K physical pre-reclaim MM snapshots
 
@@ -82,9 +111,9 @@
 - [ ] Finish compressed reclaim mode3 RUN/EXIT/WAIT/PI6 lifecycle
   and immutable backing/uncertain MM transaction proof; mode3
   must remain production disabled until fully accepted.
+- [x] v1672 48K source-built real RAW PURE process-pressure PASS.
 - [ ] Source-built general ROOT=auto/DSK/DRM physical boot matrix,
-  full-profile KCC physical boot and 48K process-pressure tests remain
-  separate acceptance gates.
+  full-profile KCC physical boot remain separate acceptance gates.
 
 ## 2026-11-18 v1667: compressed memory services staged in PURE MRES
 

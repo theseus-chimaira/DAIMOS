@@ -1,3 +1,47 @@
+## 2026-11-18 v1672: actual post-user PURE RUN/EXIT/WAIT at 48K/64K
+
+Base v1671. Fixed a genuine assembler accounting error in native
+SYS_MEMINFO/PROCINFO: the all-ones VM_SPACE_NONE (-1) VM descriptor
+of an EXITed zombie was counted as 0777777 words. Valid resident
+and swapped logical sizes continue to report normally, while a
+zombie reports zero image words. Actual source-extracted PDP-6
+tests PASS and two guard-removal mutants are executed/rejected.
+The necessary fixed KCORE cost is FOUR words: GCC lowmem
+024076->024102 octal, KCC FULL 024353->024357 octal. KCC FULL
+ROOT=auto with both MRES candidates also source-links. No new
+per-process or global data fields, no kernel feature creep.
+
+The separate testkit now boots *real* source-matched general and
+strict TSFS/PURE 48K and 64K PDP-6 guests with test-only tiny
+PID1 and child files on disposable DECtape roots. PID1 performs
+4 real RUN/EXIT/WAIT child lifecycles on 48K, 7 on 64K, with
+three synchronized CTY input barriers that allow the host to
+read the original physical MM arena/extent descriptors. Raw
+user-virtual-PC SIMH breakpoints were rejected because they
+collide with fixed KCORE code addresses. Every native source,
+CTY release, MM owner/pin and physical word-conservation test
+PASS; four unsafe physical/report mutations are rejected.
+
+The real MM free words are **27441->18193->27441 at 48K**,
+**43793->27609->43793 at 64K**, exactly IDENTICAL for general
+and strict boot images. MM allocated words rise/recover
+3934->13182->3934 (48K) and 3950->20134->3950 (64K), APR
+ownership 1->5->1 and 1->8->1 respectively. Each live child
+consumes 2048 APR + 264 kernel dynamic words. The preexisting
+MM pinned owner is unchanged, and all post-WAIT MM extents,
+physical free words and largest free run return to baseline.
+General/strict corrected KINIT image ends 113736->110211 octal
+retain 1877-word transient pruning; installed PURE and post-user
+MM costs are equal. No process memory leak or newly pinned owner
+was observed during these tests. This is real user RUN/EXIT/WAIT,
+not a continuous scheduler-time memory peak or bitmap mode3.
+
+Next: actual post-user high-water event coverage under 48K/64K
+process pressure, native VM/PURE low-memory reclaim transitions,
+and staged bitmap mode3 reclaim/restore/EXIT/WAIT/PI6. Physical
+strict 32K deferred. See
+`design/kcore-runtime-process-pressure-v1672.md`.
+
 ## 2026-11-18 v1671: physical KINIT stack high-water at 48K/64K
 
 Parent accepted v1670. No DAIMOS production source code/ABI or

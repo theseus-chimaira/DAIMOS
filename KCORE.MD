@@ -1,3 +1,23 @@
+## 2026-11-18 v1672: native zombie words and real post-user RAM pressure
+
+Fixed native SYS_MEMINFO/PROCINFO treating an EXITed zombie
+VM_SPACE_NONE=-1 as 0777777 user words. Both source-extracted
+assembler leaves and unsafe guard-removal mutants pass PDP-6
+native verification. Four extra permanent KCORE instructions:
+GCC lowmem end 024076->024102 octal, KCC FULL 024353->024357.
+No extra permanent data or per-process fields.
+
+Source-matched 48K/64K TSFS/PURE guests with a disposable INIT
+fixture perform actual RUN/EXIT/WAIT for four/seven children.
+Physical MM free words 48K 27441->18193->27441 and 64K
+43793->27609->43793; identical for general and strict KINIT.
+Each child adds 2048 APR plus 264 u-area, then releases both;
+APR owners return 1->5->1 / 1->8->1. No new pin or leaked MM
+allocation at any stable CTY barrier. The strict KINIT still
+reduces transient image size by 1877 GCC lowmem words, but does
+not improve post-user runtime free memory. Continuous runtime
+high-water and compressed mode3 production remain OPEN.
+
 ## 2026-11-18 v1671: native KINIT stack reserve validation
 
 Four source-matched physical PDP-6 TSFS/PURE 48K/64K diagnostic
