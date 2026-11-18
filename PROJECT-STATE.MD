@@ -1,3 +1,39 @@
+## 2026-11-18 v1662: fail-atomic prepared bitmap MM commit, native PASS
+
+Based directly on pushed v1661. An opt-in, unlinked PDP-6 MM
+assembler leaf validates exactly two PACKED_PROCESS owners (a
+once-pinned original RAW and an unpinned compressed candidate),
+checks sizes, pins, uniqueness, overlap, physical bounds and MM
+descriptor capacity, and removes the RAW descriptor without a
+separate fallible unpin. No post-validation failure is possible.
+An opt-in C89 prepared-only wrapper first repeats exact backing,
+mode2, TRANSITION and MM-owner admission, verifies every canonical
+RAW/bitmap word, then excludes PI across MM deletion and the
+nonfallible two-bit mode2->mode3 update. On any refusal both owners,
+their pins and mode2 remain owned under TRANSITION. No new registry.
+
+Native actual PDP-6 source-extracted original MM allocator,
+descriptor insertion, pin/unpin and free are linked. The v1657
+3,456 RAW/65 nonzero/161 bitmap candidate fits the original
+883-word gap at `050122` octal. After successful MM commit, the
+original allocator reuses the released RAW physical address at
+`040000` octal for an independent 02000-octal-word owner. Bounded
+decode matches every RAW word; v1661 compressed terminal then
+releases the sole compressed owner. Twenty-four C and twenty-one
+direct MM refusal cases PASS, including source-first deletion and
+136-descriptor capacity. Executed unsafe stream-verifier and
+duplicate-MM-owner mutants are both rejected. Entire v1661/v1660/
+v1659 native baseline PASS. Prototype C commit 606 TEXT, ASM retire
+125 TEXT, both 0 DATA/BSS and UNLINKED. No fixed KCORE changes.
+
+Mode3 is still NOT accepted by production KCORE; this is a prepared
+commit, not integrated compression. The bounded encoding frontend,
+MM cleanup on preparation failure, mode3 FULL restore, terminal
+dispatch, PI6 scheduler handling and real physical 48K/64K/peak
+RAM acceptance remain open. No installed RAM savings claimed.
+PURE OFF by default; strict physical 32K acceptance deferred.
+Details: design/kcore-pure-bitmap-commit-v1662.md.
+
 ## 2026-11-18 v1661: test-only compressed PURE terminal MM release
 
 Based on v1660, the opt-in PDP-6 source-linked C terminal primitive

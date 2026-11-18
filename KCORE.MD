@@ -1,3 +1,18 @@
+## 2026-11-18 v1662: prepared bitmap MM commit (unlinked)
+
+New opt-in PDP-6 ASM validates pinned RAW plus unpinned candidate,
+deletes RAW atomically without a separate unpin/free gap; C89
+verifies the entire compressed stream and publishes mode3 under
+the same PI exclusion. Native tests link the original real MM
+allocator/free and recover an independent physical allocation
+inside reclaimed RAW core, then decode and terminal-release the
+compressed image. 24 wrapper and 21 MM direct refusals, two
+executed unsafe mutants PASS/rejected; original v1661/v1660/v1659
+regressions PASS. Prototype C 606 TEXT, ASM 125 TEXT, no DATA/BSS,
+no installed permanent KCORE cost. Mode3 fixed-KCORE admission,
+FULL restore and terminal dispatch not enabled. PURE OFF, strict
+32K deferred. See design/kcore-pure-bitmap-commit-v1662.md.
+
 ## 2026-11-18 v1661: staged mode3 terminal owner proof
 
 An opt-in, unlinked PDP-6 terminal leaf proves exactly one compressed

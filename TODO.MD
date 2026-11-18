@@ -1,3 +1,22 @@
+## 2026-11-18 v1662: atomic compressed RAW retirement
+
+- [x] Opt-in PDP-6 MM leaf consumes exactly one pinned RAW descriptor
+  without separate unpin/free; validates the matching shorter
+  unpinned PACKED_PROCESS owner and uniqueness before deletion.
+- [x] Prepared-only C89 wrapper validates canonical RAW/bitmap,
+  physical ownership and PURE backing; PI-excluded MM commit ->
+  nonfallible two-bit mode2 to mode3 publication. No new registry.
+- [x] Native original MM allocator actually fits 161 encoded words
+  in 883-word gap, recycles freed RAW at 040000 octal, verifies
+  complete decode, and releases compressed owner via v1661.
+- [x] Twenty-four C/21 direct-MM negative cases, maximum descriptor
+  capacity, source-first deletion and two executed mutants rejected;
+  full v1661/v1660/v1659 baseline PASS.
+- [ ] Finish bounded compressor preparation/rollback frontend and
+  full compressed process restore/terminal/PI6 scheduler policy.
+- [ ] Then enable mode3 in live KCORE and measure 48K/64K physical
+  RAM delta and continuous peak; strict 32K deferred, PURE OFF.
+
 ## 2026-11-18 v1661: compressed terminal proof
 
 - [x] Isolated mode3 terminal release: derive encoded extent from
