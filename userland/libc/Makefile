@@ -8,19 +8,22 @@ DAS = das
 DASFLAGS ?= -F
 DARC = darc
 CFLAGS = -Pgnu99 -O -x=pdp6 -m=gas
-CPPFLAGS = -I$(LIBC_ROOT) -I$(LIBC_ROOT)/../../system/kernel/core \
+CPPFLAGS = -I$(LIBC_ROOT) -I$(PDP10_PREFIX)/lib/kcc/include \
+	-I$(LIBC_ROOT)/../../system/kernel/core \
 	-I$(LIBC_ROOT)/../../system/kernel/fs \
 	-I$(LIBC_ROOT)/../../system/kernel/proc \
 	-I$(LIBC_ROOT)/../../system/kernel/storage \
 	-I$(PDP10_PREFIX)/include
 
-ASM_SRCS = memcpy.s memmove.s memset-v1.s memcmp-v2.s strlen-v1.s strcmp-v1.s strncmp-v1.s syscall.s
-C_SRCS = stdlib.c string.c stat_time.c process_ctype.c u.c
+ASM_SRCS = memcpy.s memmove.s memset-v1.s memcmp-v2.s strlen-v1.s strcmp-v1.s strncmp-v1.s syscall.s sprintf-v33.s dformat-f0-v33.s
+C_SRCS = stdlib.c string.c printf.c stat_time.c process_ctype.c u.c
 ASM_OBJS = $(BUILD)/memcpy.dobj $(BUILD)/memmove.dobj \
 	$(BUILD)/memset-v1.dobj $(BUILD)/memcmp-v2.dobj \
 	$(BUILD)/strlen-v1.dobj $(BUILD)/strcmp-v1.dobj \
-	$(BUILD)/strncmp-v1.dobj $(BUILD)/syscall.dobj
+	$(BUILD)/strncmp-v1.dobj $(BUILD)/syscall.dobj \
+	$(BUILD)/sprintf-v33.dobj $(BUILD)/dformat-f0-v33.dobj
 C_OBJS = $(BUILD)/stdlib.dobj $(BUILD)/string.dobj \
+	$(BUILD)/printf.dobj \
 	$(BUILD)/stat_time.dobj $(BUILD)/process_ctype.dobj $(BUILD)/u.dobj
 OBJS = $(ASM_OBJS) $(C_OBJS)
 LIBC = $(BUILD)/libc.a
@@ -56,8 +59,11 @@ $(BUILD)/strlen-v1.dobj: strlen-v1.s
 $(BUILD)/strcmp-v1.dobj: strcmp-v1.s
 $(BUILD)/strncmp-v1.dobj: strncmp-v1.s
 $(BUILD)/syscall.dobj: syscall.s
+$(BUILD)/sprintf-v33.dobj: sprintf-v33.s
+$(BUILD)/dformat-f0-v33.dobj: dformat-f0-v33.s
 $(BUILD)/stdlib.dobj: stdlib.c
 $(BUILD)/string.dobj: string.c
+$(BUILD)/printf.dobj: printf.c
 $(BUILD)/stat_time.dobj: stat_time.c
 $(BUILD)/process_ctype.dobj: process_ctype.c
 $(BUILD)/u.dobj: u.c

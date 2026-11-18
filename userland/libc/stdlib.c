@@ -110,8 +110,10 @@ malloc(unsigned int chars)
         if (chars == 0U)
                 chars = 1U;
         header = heap_header_words();
+        if (chars > (~0U) - (sizeof(kword_t) - 1U))
+                return 0;
         need = header + heap_data_words(chars);
-        if (need < header)
+        if (need < header || need > (~0U) - header)
                 return 0;
 
         link = &heap_free;
