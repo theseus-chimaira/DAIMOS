@@ -1,3 +1,20 @@
+## 2026-11-18 v1670: live allocator-event high-water at KINIT handoff
+
+Source-matched 48K/64K PDP-6 SIMH physical traces now cover
+stable MM memory-changing event boundaries from `mres_init` to
+first `vm_enter_initial_user`. With general vs v1668 strict
+TSFS/PURE, the maximum sampled occupied/reserved words fall
+**1877** at both core sizes: 48K 37208->35331, 64K
+37224->35347. Each high-water occurs at initial MM-ready
+`mres_init`. First user entry has identical general/strict MM
+free 26421 at 48K and 42773 at 64K; permanent PURE/MRES and
+process-owner allocations are unchanged. The intermediate v1669
+pre-reclaim +66 total MM free is a distinct measurement stage.
+No guest code or resident word was added, and no bitmap mode3
+production code enabled. Exact instruction-level internal
+allocator micropeaks and later runtime workload pressure are
+not established by the MM event-entry trace.
+
 ## 2026-11-18 v1669: real MM geometry, not just KINIT image size
 
 The v1668 strict TSFS/PURE KINIT removes 1877 linked GCC lowmem

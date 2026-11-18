@@ -1,3 +1,39 @@
+## 2026-11-18 v1670: physical KINIT allocator-event high-water at 48K/64K
+
+Parent v1669. No kernel/ABI/permanent RAM changes. Source-matched
+general and strict TSFS/PURE GCC lowmem KINIT images run through
+real SIMH PDP-6 at both 48K and 64K. All DECtape media are copied
+per run; no AUXSTORE media attached. SIMH breakpoints use original
+KINIT/KCORE symbols, sampling the real MM arena+extent fields at
+`mres_init` MM-ready start, 20 extent insertions, 12 permanent
+boot reservations, 18 or 19 free-arena publications, and finally
+`vm_enter_initial_user`. The general image yields 53 physical
+samples, strict 52, at each core size. No ordinary free,
+compaction or in-place process extent resize occurred. Every
+MM state conserves actual physical arena and extent words; three
+unsafe trace/report mutations (arena, missing terminal, forged
+peak) were executed and rejected.
+
+The maximum sampled occupied-or-reserved memory occurs at the
+first `mres_init` boundary for all four guests. At 48K, general
+max nonfree 37208 vs strict 35331 words (**1877 reduction**),
+minimum free 11944 vs 13821. At 64K, general max nonfree 37224
+vs strict 35347 (**1877 reduction**), minimum free 28312 vs
+30189. The v1668 transient linked image saving is therefore
+physically visible at the *KINIT stable MM event-boundary
+high-water*, although v1669's late pre-reclaim checkpoint only
+gains 66 total free words. First user entry has IDENTICAL MM
+free general/strict: 26421 (48K), 42773 (64K); same low resident
+17725/17741 and same allocated process/dynamic owners
+4958/4974 words respectively. No steady-state total RAM gain.
+
+This is NOT an exact instruction-level micropeak nor a runtime
+process-pressure high-water after initial user entry. Further
+KINIT stack/intermediate-event validation, production compressed
+mode3 reclaim and RUN/EXIT/WAIT/PI6, 48K/64K workload pressures,
+and strict physical 32K remain OPEN. See
+`design/kcore-kinit-event-peak-v1670.md`.
+
 ## 2026-11-18 v1669: physical 48K/64K pre-reclaim KINIT MM checkpoint
 
 Parent accepted v1668. No DAIMOS kernel code or resident memory

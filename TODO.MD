@@ -1,3 +1,22 @@
+## 2026-11-18 v1670: physical KINIT allocator-event peak proof
+
+- [x] Source-matched general vs strict TSFS/PURE GCC lowmem 48K
+  and 64K real PDP-6 boot trace from `mres_init` MM-ready to
+  `vm_enter_initial_user`, using SIMH-only map-driven breakpoints.
+- [x] Validate every sampled arena and process/module/dynamic MM
+  extent, physical core/count/capacity, sorting/ownership and
+  exact free+allocated conservation; execute and reject unsafe
+  arena, missing-terminal and forged-high-water mutations.
+- [x] Prove stable *sampled event-boundary* peak nonfree reduction
+  of **1877 words** at BOTH 48K and 64K: 37208->35331 and
+  37224->35347, respectively. Initial `mres_init` is peak.
+- [x] Verify equal MM after KINIT reclaim/first user entry:
+  free 26421 (48K), 42773 (64K), identical permanent/owners.
+  Strict image does NOT improve steady-state free MM total.
+- [ ] Exact instruction-level allocator micropeaks and KINIT
+  pushdown-list watermark comparison, then full 48K/64K process
+  RAM pressure, compressed mode3 lifecycle and strict 32K.
+
 ## 2026-11-18 v1669: 48K/64K physical pre-reclaim MM snapshots
 
 - [x] Independently boot source-matched GCC TSFS/PURE general and
