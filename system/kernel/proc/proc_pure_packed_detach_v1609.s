@@ -30,6 +30,12 @@ pdp6_pure_detach_v1609:
         jumpe   010,ppure_detach_bad_v1609
         jumpe   011,ppure_detach_bad_v1609
         jumpe   012,ppure_detach_bad_v1609
+        ; This leaf is now installed only as the PURE terminal MRES
+        ; export. Never free RAW MM ownership when mode != PACKED.
+        move    1,010
+        movei   2,2
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,ppure_detach_bad_v1609
         move    4,(011)
         trnn    4,PPURE_META_TRANSITION_V1609
         jrst    ppure_detach_bad_v1609

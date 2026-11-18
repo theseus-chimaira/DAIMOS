@@ -801,8 +801,19 @@ $(SWAP_MRES_OBJ_V481): $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres
     -R $@ -N proc_swap_mres_package_v481 -X proc_swap_mres_reclaim_v481 -X proc_swap_mres_service_v481 \
     -X backstore_mres_bitmap_words_v484 -X backstore_mres_init_v484 \
     -X backstore_mres_alloc_v484 -X backstore_mres_free_v484 \
-    -X backstore_mres_verify_allocated_v880 \
+    -X backstore_mres_verify_allocated_v880 -X proc_swap_mres_terminal_v1666 \
     $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres_v484.dobj
+
+# Assemble RAW PURE terminal ownership exclusively into PURE MRES,
+# instead of carrying its process-MM scanner in permanent KCORE.
+# Reuse the exact v1609 PDP-6 leaf with the same constant mappings.
+$(BUILD)/pure-terminal-v1666.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_DETACH_SOURCE) | $(BUILD)
+	{ printf '%s\n' '.equ PROC_SWAP_TEXT_SHIFT,026' \
+	  '.equ PROC_SWAP_TEXT_MASK,037777' \
+	  '.equ PROC_SWAP_BACKING_OFFSET,0406' \
+	  '.equ EXEC_USER_ORIGIN,020'; \
+	  cat $<; } > $(BUILD)/pure-terminal-v1666.s
+	$(DAS) $(DASFLAGS) -C -O $@ $(BUILD)/pure-terminal-v1666.s
 
 $(BUILD)/pure-rebase-v1611.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_REBASE_SOURCE) | $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
@@ -819,7 +830,7 @@ PURE_MRES_PARTS_V1612 = $(BUILD)/proc_pure_service_v1612.dobj \
 	$(BUILD)/proc_pure_full_v1611.dobj \
 	$(BUILD)/pure-rebase-v1611.dobj \
 	$(BUILD)/pure-expand-v1611.dobj \
-	$(BUILD)/pure-image-v1611.dobj
+	$(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj
 
 # A KCORE-safe, relocation-verified donor equivalence. The v1611
 # source-identical v1381/v1391 helper region saves 49 words without an
@@ -832,7 +843,7 @@ $(PURE_MRES_OBJ_V1612): $(BUILD)/proc_pure_service_v1612.dobj \
 	$(BUILD)/proc_pure_prefix_v1611.dobj \
 	$(BUILD)/proc_pure_full_v1611.dobj \
 	$(BUILD)/pure-rebase-v1611.dobj $(BUILD)/pure-expand-v1611.dobj \
-	$(BUILD)/pure-image-v1611.dobj $(KCORE_MAP) $(PURE_MRES_FOLD_PLAN_V1612)
+	$(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj $(KCORE_MAP) $(PURE_MRES_FOLD_PLAN_V1612)
 	$(DLINK) -b 0 -A $(KCORE_MAP) \
 	    --fold-plan $(PURE_MRES_FOLD_PLAN_V1612) \
 	    -o $(BUILD)/pure-mres-v1612.dxr \
@@ -840,12 +851,13 @@ $(PURE_MRES_OBJ_V1612): $(BUILD)/proc_pure_service_v1612.dobj \
 	    -N proc_pure_mres_package_v1612 \
 	    -X proc_pure_mres_reclaim_v1612 \
 	    -X proc_pure_mres_service_v1612 \
+	    -X pdp6_pure_detach_v1609 \
 	    $(BUILD)/proc_pure_service_v1612.dobj \
 	    $(BUILD)/proc_pure_drop_v1611.dobj \
 	    $(BUILD)/proc_pure_prefix_v1611.dobj \
 	    $(BUILD)/proc_pure_full_v1611.dobj \
 	    $(BUILD)/pure-rebase-v1611.dobj $(BUILD)/pure-expand-v1611.dobj \
-	    $(BUILD)/pure-image-v1611.dobj
+	    $(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)

@@ -1,3 +1,22 @@
+## 2026-11-18 v1666: terminal backend belongs to selected MRES
+
+KINIT patches one default-refusing fixed `proc_swap_term_v1666`
+to the selected backend. The disk MRES frees blocks and publishes
+DISK->RESIDENT; PURE MRES reuses the original exact RAW owner
+scanner with an added mode2 preflight. Fixed `proc_swap_detach`
+handles only common backing/u-area/credential cleanup after
+successful service release. Uninstalled MRES refuses any
+nonresident owner; resident cleanup still works. No dual fixed
+owner scanner, extra metadata or per-call backend selector.
+
+Fixed KCORE KCC full saves 114 words, DISK MRES adds 42, PURE
+adds 90 => net 72 DISK/24 PURE permanent words saved. GCC lowmem
+fixed saves 111, PURE adds 90 => net 21 words saved. The KCC
+auto-root transient KINIT image grows 44 words; not yet a
+physical peak RAM saving. Source-linked native terminal and
+no-service tests pass; two executed unsafe mutants rejected.
+Mode3 remains production-disabled; PURE OFF, strict 32K deferred.
+
 ## 2026-11-18 v1665: KINIT chooses memory backend after root
 
 MINIT order changed from SWAP->ROOT to ROOT->SWAP, after physical

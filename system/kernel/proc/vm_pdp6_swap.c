@@ -7,10 +7,10 @@
  * word is saved in the stable u-area and the record is reused for first-block
  * and block-count. Swap-in runs from slot-0 executive context so synchronous
  * storage I/O never suspends on a process stack whose user extent is absent.
- * v1609: terminal PACKED_PROCESS cleanup also lives here. It uses a
- * PDP-6-specific source-selected MM leaf instead of ever interpreting
- * the resident PURE record as a disk block range. This code does not
- * itself activate RAW PURE memory reclamation.
+ * v1666: terminal backing release belongs to the single installed
+ * memory-service MRES. The permanent kernel only retires common
+ * swap-record/u-area metadata after that selected service succeeds.
+ * No disk-range arithmetic or packed-MM owner scan is retained here.
  */
 #include "proc_swap.h"
 #include "vm_pdp6.h"
@@ -39,12 +39,12 @@ extern int proc_storage_publish_v30(unsigned int slot,
 extern int proc_storage_expect_v30(unsigned int slot, unsigned int mode);
 extern void proc_swap_storage_invariant_v30(void);
 
-/* PDP-6 physical owner scan is a small assembly leaf. It validates the
- * full PURE size and exactly one unpinned PACKED_PROCESS descriptor,
- * frees it, then publishes the RESIDENT mode under TRANSITION. No
- * generic process policy reads the APR base or searches the MM table.
- * It intentionally works when the executable mount is already lost. */
-extern int pdp6_pure_detach_v1609(int slot, struct proc *p,
+/* One default-refusing KCORE trampoline, patched by KINIT to the
+ * selected disk or RAW PURE MRES. AC1..3 use the existing C ABI.
+ * A backend must verify its exact mode/owner and atomically publish
+ * RESIDENT only after successfully releasing the physical backing.
+ */
+extern int proc_swap_term_v1666(int slot, struct proc *p,
     kword_t backing);
 
 /** Release only validated nonresident disk backing, then clear ownership.
@@ -57,33 +57,13 @@ proc_swap_detach(int slot)
 {
         struct proc *p;
         kword_t state;
-        kword_t blocks;
-        kword_t first;
 
         p = &proc_table[slot];
         state = proc_swap_records[slot].state;
         if (proc_storage_expect_v30((unsigned int)slot,
-            PROC_STORAGE_PACKED) == 0) {
-                if (pdp6_pure_detach_v1609(slot, p, state) != 0)
-                        return -1;
-        } else if (VM_PDP6_BASE(p) == 0UL && state != 0UL) {
-                first = (state >> 18U) & MM_HALF_MASK;
-                blocks = state & MM_HALF_MASK;
-                /* The same checked release handles both ownership and
-                 * validity, including after swap allocations are disabled.
-                 * Unlike the allocation verifier, a legitimate release
-                 * must not depend on backstore_enabled. An absent MRES or
-                 * a refused free retains the exact DISK record for retry.
-                 * Do not decrement used blocks before release succeeds. */
-                if (blocks == 0UL || proc_swap_blocks_used < blocks ||
-                    backstore_free(first, blocks) != 0)
-                        return -1;
-                proc_swap_blocks_used -= blocks;
-                /* The discarded slot must not retain the DISK mode. */
-                if (proc_storage_publish_v30((unsigned int)slot,
-                    PROC_STORAGE_DISK, PROC_STORAGE_RESIDENT) != 0)
-                        proc_swap_storage_invariant_v30();
-        }
+            PROC_STORAGE_RESIDENT) != 0 &&
+            proc_swap_term_v1666(slot, p, state) != 0)
+                return -1;
         proc_swap_records[slot].state = 0UL;
         if (PROC_HAS_UAREA(p)) {
                 PROC_SWAP_BACKING_WORD(p) = 0UL;

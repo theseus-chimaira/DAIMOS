@@ -1,3 +1,28 @@
+## 2026-11-18 v1666: one boot-patched terminal MRES service
+
+- [x] Move exact PACKED RAW MM terminal scanner from permanent
+  KCORE to PURE MRES; check mode2 before any fallible MM release.
+- [x] Move disk backing block-range release/accounting and mode1
+  publication into DISK MRES, not fixed `proc_swap_detach`.
+- [x] New default-refusing fixed JRST patched by KINIT to the
+  third PURE or eighth disk export; mode0 common cleanup never
+  requires an installed service. No extra runtime dispatch table.
+- [x] Native actual KCORE C and source-extracted PDP-6 terminal
+  tests PASS with two rejected unsafe mutants; v1609 RAW, v880/v957
+  disk and v1665 selector regressions pass.
+- [x] Full KCC link reports fixed -114, DISK MRES +42, PURE MRES
+  +90 words; net permanent -72 DISK/-24 PURE. GCC lowmem TSFS
+  fixed -111/PURE +90, net -21. Transient KCC KINIT +44 words.
+- [x] Source-built physical PDP-6 64K, 3-member TSFS root without
+  AUXSTORE boots with PURE LOADED and INIT V1. Fixed KCORE map
+  has no RAW terminal scanner; PURE MRES map contains it.
+- [ ] Integrate compressed mode3 into PURE-only terminal and
+  scheduler/full restore before activating the mode; DISK MRES
+  must remain entirely independent of bitmap ownership.
+- [ ] Dedicated swapless-only TSFS boot candidate pruning and
+  48K/64K peak MM physical accounting; disk-root v1666 physical
+  boot, strict 32K deferred.
+
 ## 2026-11-18 v1665: root-aware SWAP/PURE MRES selection
 
 - [x] Physical driver MINITs precede root discovery, which now

@@ -1,3 +1,47 @@
+## 2026-11-18 v1666: move terminal memory-owner release to one MRES
+
+Based on v1665, the fixed `proc_swap_detach` no longer interprets
+disk block ranges or calls the RAW PACKED_PROCESS scanner. Its
+only backend operation uses new default-refusing KCORE JRST
+`proc_swap_term_v1666`, patched exactly once by KINIT to index 7
+of installed DISK MRES or index 2 of installed PURE MRES. The
+common process-record/u-area/mount-staging retirement remains in
+KCORE and occurs only after successful backend release. Resident
+mode0 may detach without an installed MRES; modes1/2 cannot.
+
+Original `pdp6_pure_detach_v1609` moved unmodified in function
+geometry to PURE MRES with one added mode2 preflight before the
+MM free. DISK MRES gains a small original-ABI assembly leaf
+checking mode1, absent APR, nonzero block length and sufficient
+swap block accounting, then freeing validated disk blocks and
+publishing mode0. KCORE carries neither owner implementation.
+
+KCC full auto image: fixed `__kcore_low_end` 024535->024353
+octal (**114 fewer words**), DISK MRES 1795->1837 (+42), PURE
+MRES 2217->2307 (+90), so net permanent -72 DISK/-24 PURE.
+KCC transient KINIT image end 140154->140230 (+44 words).
+GCC lowmem TSFS fixed 024255->024076 (-111), installed PURE
+1773->1863 (+90): net permanent **-21** words. No physical
+peak/continuously allocated MM claim.
+
+Actual KCORE C + original source-extracted disk PDP-6 assembler
+native cases PASS, as do default no-MRES refusal, historical
+v1609 RAW native/test mutant and v880/v957 disk host tests.
+Two executed unsafe default-success/live-APR mutants rejected.
+KINIT source tests now verify exactly three PURE/eight DISK
+patches and v1665 root-aware exclusive selection still passes.
+Full v1659..v1664 staged bitmap/FULL restore native regression
+PASS. Source-built physical GCC lowmem PDP-6 64K three-member
+TSFS with no AUXST1 boots to PURE LOADED and INIT V1; KCORE
+map confirms absent RAW scanner and PURE MRES map owns it.
+
+PURE remains OFF by default. Fixed mode3 rejection is unchanged;
+no compressed mode3 production path enabled, no new process word,
+registry or alternate resident memory backend table. Physical
+48K/32K RAM acceptance and an actual disk-root physical v1666
+boot remain separate gates.
+See design/kcore-terminal-backend-v1666.md.
+
 ## 2026-11-18 v1665: root-aware exclusive KINIT SWAP/PURE selection
 
 Based directly on v1664. KINIT previously ran SWAP selection before

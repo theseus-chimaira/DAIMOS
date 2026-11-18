@@ -461,6 +461,7 @@ minit_export(kword_t name, unsigned int base, unsigned int index)
 
 extern kword_t proc_swap_reclaim;
 extern kword_t proc_swap_service_one;
+extern kword_t proc_swap_term_v1666;
 extern kword_t backstore_bitmap_words;
 extern kword_t backstore_init;
 extern kword_t backstore_alloc;
@@ -502,16 +503,19 @@ proc_swap_minit_v481(void)
             auxstore_backstore_blocks == 0UL) {
 #if DAIMOS_PURE_MRES_ENABLED
                 const kword_t *pure = proc_pure_mres_package_v1612;
-                unsigned int reclaim, service;
+                unsigned int reclaim, service, terminal;
 
                 if (mres_install(pure, &base) != 0)
                         minit_fatal(name);
                 reclaim = mres_export(pure, base, 0U);
                 service = mres_export(pure, base, 1U);
-                if (!reclaim || !service)
+                terminal = mres_export(pure, base, 2U);
+                if (!reclaim || !service || !terminal)
                         minit_fatal(name);
                 storage_patch_jump(&proc_swap_reclaim, reclaim);
                 storage_patch_jump(&proc_swap_service_one, service);
+                storage_patch_jump(&proc_swap_term_v1666,
+                    terminal);
                 /* Transient boot witness: an actual no-BACKSTORE
                  * installation, not merely a linkable PURE package.
                  * No resident KCORE or MRES diagnostic state. */
@@ -542,6 +546,8 @@ proc_swap_minit_v481(void)
 
         storage_patch_jump(&proc_swap_reclaim, minit_export(name, base, 0U));
         storage_patch_jump(&proc_swap_service_one, minit_export(name, base, 1U));
+        storage_patch_jump(&proc_swap_term_v1666,
+            minit_export(name, base, 7U));
         storage_patch_jump(&backstore_bitmap_words, minit_export(name, base, 2U));
         storage_patch_jump(&backstore_init, minit_export(name, base, 3U));
         storage_patch_jump(&backstore_alloc, minit_export(name, base, 4U));

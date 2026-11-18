@@ -18,6 +18,7 @@
         .text
         .globl  proc_swap_mres_service_v481
         .globl  proc_swap_mres_reclaim_v481
+        .globl  proc_swap_mres_terminal_v1666
         .globl  proc_swap_out
         .globl  proc_swap_exchange_sector_v771
         .globl  proc_swap_exchange_overlap_v772
@@ -91,6 +92,56 @@
         .globl  fs_zero_words
         .globl  proc_storage_expect_v30
         .globl  proc_storage_publish_v30
+
+; Disk-only terminal owner retirement. No PACKED_PROCESS handling
+; and no special PURE record interpretation resides in this MRES.
+; AC1=slot, AC2=proc descriptor, AC3=disk first-block/count word.
+; Return 0 on exact release plus mode1->0, -1 with ownership intact.
+; The old post-free mode-publication invariant remains fatal.
+proc_swap_mres_terminal_v1666:
+        add     17,[010,,010]
+        movei   0,-7(17)
+        hrli    0,010
+        blt     0,-1(17)
+        move    010,1
+        move    011,2
+        move    012,3
+        jumpe   010,swap_term_bad_v1666
+        jumpe   011,swap_term_bad_v1666
+        jumpe   012,swap_term_bad_v1666
+        move    1,010
+        movei   2,1                    ; exact DISK mode
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,swap_term_bad_v1666
+        hrrz    4,1(011)              ; absent VM APR required
+        jumpn   4,swap_term_bad_v1666
+        hlrz    014,012               ; first physical disk block
+        hrrz    015,012               ; exact block count
+        jumpe   015,swap_term_bad_v1666
+        move    4,proc_swap_blocks_used
+        camge   4,015
+        jrst    swap_term_bad_v1666
+        move    1,014
+        move    2,015
+        pushj   17,backstore_free
+        jumpn   1,swap_term_bad_v1666
+        movn    4,015
+        addm    4,proc_swap_blocks_used
+        move    1,010
+        movei   2,1
+        setz    3,
+        pushj   17,proc_storage_publish_v30
+        jumpn   1,proc_swap_storage_invariant_v30
+        setz    1,
+        jrst    swap_term_return_v1666
+swap_term_bad_v1666:
+        seto    1,
+swap_term_return_v1666:
+        movei   0,010
+        hrli    0,-7(17)
+        blt     0,016
+        sub     17,[010,,010]
+        popj    17,
 
         .equ    PROC_WORDS,3
         .equ    PROC_SCHED_READY_ONCE,01000

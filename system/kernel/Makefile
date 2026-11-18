@@ -379,7 +379,7 @@ ${BUILD}/vm_backend.s: ${KERNEL_HEADERS} $(if $(filter pdp6,${VM_BACKEND}),,${VM
 	@mkdir -p ${BUILD}
 	@if test "${VM_BACKEND}" = pdp6; then printf ' .text\n' > $@; else ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_BACKEND_C} -o $@; fi
 
-${BUILD}/proc_swap.s: ${VM_SWAP_C} ${DAIMOS_VM_SWAP_SOURCE} ${DAIMOS_VM_BACKING_SOURCE} ${DAIMOS_VM_PURE_DETACH_SOURCE} proc/proc_storage_runtime_v30.s proc/proc_pure_attach.c proc/proc_storage_map_v28.h ${KERNEL_HEADERS}
+${BUILD}/proc_swap.s: ${VM_SWAP_C} ${DAIMOS_VM_SWAP_SOURCE} ${DAIMOS_VM_BACKING_SOURCE} proc/proc_storage_runtime_v30.s proc/proc_pure_attach.c proc/proc_storage_map_v28.h ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} \
 	    -DPROC_SWAP_VERIFY_PURE=${PROC_SWAP_VERIFY_PURE} \
@@ -388,7 +388,7 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} ${DAIMOS_VM_SWAP_SOURCE} ${DAIMOS_VM_BACKING_
 	  '.equ PROC_SWAP_TEXT_MASK,037777' '.equ PROC_SWAP_MOUNT_SHIFT,022' \
 	  '.equ PROC_SWAP_BACKING_OFFSET,0406' '.equ EXEC_DXR_F_COMPRESSED,0100000' \
 	  '.equ EXEC_USER_ORIGIN,020'; \
-	  cat ${DAIMOS_VM_BACKING_SOURCE} ${DAIMOS_VM_PURE_DETACH_SOURCE} proc/proc_storage_runtime_v30.s; } > $@
+	  cat ${DAIMOS_VM_BACKING_SOURCE} proc/proc_storage_runtime_v30.s; } > $@
 	rm -f $@.c
 
 ${BUILD}/proc_swap_mres_v481.s: ${DAIMOS_VM_SWAP_SOURCE}
