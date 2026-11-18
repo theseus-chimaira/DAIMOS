@@ -1,3 +1,18 @@
+## 2026-11-18 v1669: real MM geometry, not just KINIT image size
+
+The v1668 strict TSFS/PURE KINIT removes 1877 linked GCC lowmem
+image words; v1669's actual physical 48K and 64K PDP-6 MM
+snapshots at `kinit_late_start` show only **66 more total free
+MM words**, but **1877 more words in the largest contiguous
+free run**. A middle arena shrinks 1811 as late KINIT source
+code shifts earlier. Real resident low memory and allocated MM
+extent totals are identical between matched general/strict
+images (48K: 17725/598, 64K: 17741/614). No new kernel code or
+resident state has been introduced. Strict 48K no-AUX TSFS/PURE
+also boots to INIT V1 under real SIMH and survives the 85-second
+control interval. These checkpoint numbers are not whole-boot
+temporal peaks; 48K/64K workload high-water remains OPEN.
+
 ## 2026-11-18 v1668: remove unused DISK MRES from strict TSFS KINIT
 
 When explicitly configured ROOT=tape, PURE=1 and

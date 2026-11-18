@@ -1,3 +1,37 @@
+## 2026-11-18 v1669: physical 48K/64K pre-reclaim KINIT MM checkpoint
+
+Parent accepted v1668. No DAIMOS kernel code or resident memory
+changes. daimos-testkit runs source-matched general vs strict
+TSFS/PURE guest images at physical 48K and 64K. SIMH breaks at
+the actual guest's `kinit_late_start` and reads original MM
+arena/extent descriptors, installed core capacity and the patched
+resident immediate directly from PDP-6 core. Four physical
+snapshots pass exact arena/extent conservation and linker-based
+displacement proof; three independently corrupted physical
+readings are rejected (bad arena, missing count, forged free).
+
+At 48K the actual general/strict managed MM free words are
+21947/22013 (**+66**), largest contiguous free 10022/11899
+(**+1877**). At 64K the corresponding values are free
+38299/38365 (**+66**), largest 26406/28283 (**+1877**).
+Installed low resident and live dynamic MM allocations are
+identical within each pair: 48K resident 17725, allocated 598;
+64K resident 17741, allocated 614 (six MM extents in each).
+High arena grows 1877 due to pruned KINIT image; a different
+pre-reclaim arena shrinks 1811 due to layout relocation, so
+physical net MM free at this exact checkpoint is only 66 words.
+The larger 1877-word high contiguous region is a real benefit
+for large contiguous allocations, NOT 1877 more total MM free.
+
+A source-built strict no-AUX TSFS guest also successfully boots
+with physical core limited to **48K**, reaches PURE LOADED and
+INIT V1 and sustains an 85-second controlled SIMH run. This is
+not continuous high-water measurement or mode3 guest acceptance.
+Next: true temporal peak instrumentation across late reclaim,
+RUN/EXIT/WAIT/PI6, immutable source, bitmap compressor, and
+48K/64K comparable process loads. Strict physical 32K deferred.
+See `design/kcore-tsfs-physical-mm-checkpoint-v1669.md`.
+
 ## 2026-11-18 v1668: dedicated swapless-only TSFS KINIT pruning
 
 Parent v1667. Explicit `DAIMOS_SWAPLESS_ONLY_V1668=1` is valid

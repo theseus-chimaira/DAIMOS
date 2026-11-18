@@ -1,3 +1,22 @@
+## 2026-11-18 v1669: 48K/64K physical pre-reclaim MM snapshots
+
+- [x] Independently boot source-matched GCC TSFS/PURE general and
+  strict KINIT at 48K and 64K real PDP-6 core to the same late
+  KINIT pre-reclaim checkpoint; inspect actual MM words with SIMH.
+- [x] Verify live MM descriptor capacity, arenas/extent ownership,
+  nonoverlap, physical core limits, conservation, patched permanent
+  resident immediate and exact source-linked geometry at all four
+  checkpoints. Three forged/unsafe physical variants rejected.
+- [x] Physically measure *net* managed free **+66 words** at 48K
+  and 64K, and largest contiguous free **+1877 words** in both.
+  Mid arena shrinks 1811 while high arena grows 1877; do not
+  confuse linker-image shrink with net physical free memory.
+- [x] Strict 48K TSFS/no-AUX SOURCE-BUILT physical guest boots
+  PURE LOADED and INIT V1 and survives 85-second timeout.
+- [ ] Measure continuous KINIT high-water including reclaim/INIT
+  process construction, physical 48K/64K workload temporal peaks,
+  real bitmap-mode3 life cycles and admission; strict 32K deferred.
+
 ## 2026-11-18 v1668: strict TSFS swapless-only KINIT candidate removal
 
 - [x] Dedicated ROOT=tape/PURE-only opt-in removes the unused disk
