@@ -1,3 +1,15 @@
+## 2026-11-18 v1661: staged mode3 terminal owner proof
+
+An opt-in, unlinked PDP-6 terminal leaf proves exactly one compressed
+PACKED_PROCESS MM owner; under PI exclusion it calls the real MM-free
+leaf and only on success clears mode3 to RESIDENT. Eighteen negative
+native MM/geometry cases and executed duplicate-owner mutant are
+rejected; actual original MM assembler release passes. No registry,
+permanent KCORE change or installed mode3. The unlinked decoder's
+exclusive-end physical bound was corrected to allow 01000000 octal.
+Details: design/kcore-pure-bitmap-terminal-v1661.md. PURE default
+OFF; strict 32K acceptance deferred.
+
 ## 2026-11-18 v1660: FULL bitmap preflight, NOT installed
 
 Test-only C89/PDP-6 source validates the entire bitmap before calling

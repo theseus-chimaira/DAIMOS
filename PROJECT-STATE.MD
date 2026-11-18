@@ -1,3 +1,32 @@
+## 2026-11-18 v1661: test-only compressed PURE terminal MM release
+
+Based on v1660, the opt-in PDP-6 source-linked C terminal primitive
+now derives compressed length from the single exact unpinned MM
+PACKED_PROCESS owner: no per-process registry. It validates saved
+PURE backing, aligned APR, valid omission boundary, absent user APR,
+TRANSITION, mode3 and physical/length geometry. Under PI exclusion,
+the original MM-free leaf releases the only owner; successful free
+is immediately followed by a nonfallible mode3 -> mode0 bit-clear.
+Failure keeps MM/mode unchanged and TRANSITION held. The terminal
+cannot run without these invariants, even on an unmounted backing.
+
+Native source-linked PDP-6 real MM-free PASS: original 3,456 RAW /
+161 compressed geometry, eighteen unchanged-owner refusal cases,
+legal exact 01000000-octal physical end, preservation of a separate
+MODULE extent with the same numeric owner ID, and independently executed
+duplicate-owner mutant rejection. The hardware PI sequence is
+represented by a controlled test stub; terminal C prototype costs
+314 TEXT, zero DATA/BSS, unlinked. Fixed KCORE/MM remain unchanged.
+The unlinked v1660 bounded decoder also now accepts a legal physical
+extent ending precisely at the 18-bit exclusive end. Original v1660
+bitmap decoding and v1659 MM baseline rerun.
+
+Still NOT installed: mode3 publication, compressed RAW retirement,
+bounded FULL recovery, terminal dispatch in proc_swap_detach, PI6
+scheduler failure-state handling, physical 48K/64K compressed RAM
+acceptance. PURE default OFF and strict 32K deferred. See
+design/kcore-pure-bitmap-terminal-v1661.md.
+
 ## 2026-11-18 v1660: bitmap FULL decode preflight, native proof
 
 Based directly on pushed v1659, a test-only C89 source-linked PDP-6

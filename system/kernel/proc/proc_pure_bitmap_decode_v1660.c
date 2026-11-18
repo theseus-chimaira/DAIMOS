@@ -32,8 +32,8 @@ proc_pure_bitmap_decode_v1660(kword_t source, kword_t encoded_words,
 
         if (!source || !target || !raw_words || !encoded_words ||
             source > MM_HALF_MASK || target > MM_HALF_MASK ||
-            raw_words > MM_HALF_MASK - target ||
-            encoded_words > MM_HALF_MASK - source ||
+            raw_words > MM_HALF_MASK + 1UL - target ||
+            encoded_words > MM_HALF_MASK + 1UL - source ||
             encoded_words >= raw_words ||
             (source < target + raw_words &&
              target < source + encoded_words))

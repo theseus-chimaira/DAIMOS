@@ -1,3 +1,19 @@
+## 2026-11-18 v1661: compressed terminal proof
+
+- [x] Isolated mode3 terminal release: derive encoded extent from
+  exact sole MM owner; validate PROCESS TRANSITION, saved backing,
+  omitted PURE prefix, no APR, physical length and source mode.
+- [x] Real PDP-6 assembler MM-free under controlled PI exclusion;
+  successful free -> nonfallible mode3 clear, failed MM-free retains
+  ownership. Eighteen refusal cases, independent MODULE owner,
+  physical end boundary and
+  independently executed duplicate-owner mutant checked.
+- [x] Correct 18-bit exclusive-end check in unlinked v1660 decoder.
+- [ ] Implement complete compressed DROP commitment, RAW release,
+  mode3 publication, FULL restore, terminal dispatch and scheduler
+  pressure/fault matrix. Only then install/measure 48K/64K compression.
+- [ ] Strict physical 32K acceptance (deferred, PURE OFF by default).
+
 ## 2026-11-18 v1660: bounded compressed FULL decode preflight
 
 - [x] Audit actual fixed-KCORE storage mode and terminal RAW-only
