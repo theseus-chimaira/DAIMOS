@@ -85,10 +85,13 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   Prove `FINALIZE+PREVM` pending/backoff on the actual idle-stack PI6
   path with exact original owner/PROC/MM snapshots, then verify either
   controlled MM-unpin recovery or permanent fail-closed quarantine.
-  The retired v1677-v1681 DAIMOS-specific fault/terminal test suites
-  do not count as active acceptance evidence. The physical terminal
-  test still needs a real foreign PACKED termination or RUN-discard
-  trigger; the normal PIPE-held guest restores its APR before EXIT.
+  The v1680 component gate and v1681 source-linked original-MM/
+  terminal/FINALIZE+PREVM native integration are accepted separately,
+  but neither is **physical** PI6 terminal/reaper acceptance. The
+  normal PIPE-held guest restores APR before EXIT; a physical test
+  needs a real foreign PACKED termination or RUN-discard trigger.
+  See `design/kcore-pure-terminal-pinned-owner-v1680.md` and
+  `design/kcore-pure-terminal-finalizer-integration-v1681.md`.
 - [ ] **Executable source lifetime under pressure:** extend the real
   physical RO/mount/provider failure and return tests to nine-child
   RAW reclamation and bounded FULL fallback, including immutability,
