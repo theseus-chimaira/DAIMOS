@@ -101,8 +101,10 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   retirement. After merging and proving all topic tips reachable from
   main, remove superseded clean local worktrees, local branches and
   remote branches, then re-audit the final remote/local refs and retain
-  only explicit active branches. No forced or unverified branch deletion.
-  Full manifest and procedure: `design/daimos-branch-consolidation-v1677.md`.
+  only explicit active branches. Apply the same audit, preservation,
+  test-branch merge and retirement rules to the dependent daimos-testkit
+  repository. No forced or unverified branch deletion. Full manifest
+  and procedure: `design/daimos-branch-consolidation-v1677.md`.
 - [ ] **KA10 target backend:** implement and accept its distinct
   mapping/APR/MM, interrupt and process-restore requirements using
   actual KA10-specific native/simulator tests. PDP-6 physical evidence
