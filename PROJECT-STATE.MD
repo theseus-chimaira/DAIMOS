@@ -1,3 +1,17 @@
+## 2026-11-19 v1676: KCORE documentation condensed (no code changes)
+
+The root `KCORE.MD` is now a 234-line engineering reference covering
+fixed residency, PDP-6 MM/APR ownership, mainline P0-A/P0-B/P1-C/P1-D
+accepted boundaries, unmerged PDP-6 RAW PURE v1674 high-water, mode3 and
+KA10 exclusions, boot RAM targets, and deferred size work. It contains
+no independent dated experiment diary and points to source-linked design
+reports for measurements. The full original 11,181-line KCORE chronicle,
+including its existing local edits, is preserved permanently at
+`git show 738c79c5:KCORE.MD`. The separately versioned PURE branch
+retains its own original KCORE chronicle in Git history. The active 53
+open tasks remain in root `TODO.MD` v1675r2. No source, simulator,
+MM owner, KINIT/MRES footprint or physical acceptance changed.
+
 ## 2026-11-19 v1675: consolidated active TODO only
 
 Root `TODO.MD` now contains 53 source-audited *open* items in
