@@ -1,3 +1,23 @@
+## 2026-11-19 v1680: terminal pinned-owner refusal native preflight (PASS)
+
+Original PDP-6 `pdp6_pure_detach_v1609`/`proc_swap_detach`/
+`vm_space_destroy` source-linked native execution now PASSes four
+terminal retries against one and two genuine original MM descriptor
+pins, with no `mm_free`, record publication or adjacent second owner
+corruption until the pin is released. The original teardown then
+succeeds once and is idempotent. Four consecutive definite
+`MM_ERR_BUSY` returns on original `mm_free` also preserve the PACKED
+owner/backing and peer until final success. A compiled unsafe assembler
+mutant removing the exact MM pin guard is rejected at native guest
+exit `000000001102`. Original v1609 terminal baseline PASSes.
+Testkit commit `c290b5e`; see
+`design/kcore-pure-terminal-pinned-owner-v1680.md`.
+This is **NOT physical PI6 or idle-stack FINALIZE+PREVM retry**:
+the eventual pin release is simulated by the fixture. Full 48K
+terminal retry/backoff/quarantine, uncertain owner and backing-source
+fault cases and 71-watch high-water remain open. No production KCORE
+source/RAM changes, mainline integration remains deferred.
+
 ## 2026-11-19 v1679: paired original physical repeated-MM precommit refusal (scoped PASS)
 
 GENERAL and STRICT 48K real PDP-6 TSFS guests source-linked from the

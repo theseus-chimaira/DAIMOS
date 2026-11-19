@@ -207,6 +207,21 @@ pin/PI6/backing failure or continuous physical MM write-watch gate;
 P1-E remains OPEN. See
 `design/kcore-pure-mm-repeated-refusal-v1679.md` on the PURE branch.
 
+### v1680 original terminal pinned-owner native preflight: PASS
+
+The source-linked original PDP-6 terminal assembler and KCORE
+`proc_swap_detach`/`vm_space_destroy` pass repeated pinned RAW PACKED
+owner refusal and definite `mm_free` refusal with independent peer
+preservation. Two pin-count cases each refuse terminal release four
+times before one controlled successful pin removal and exact cleanup.
+Four `MM_ERR_BUSY` terminal frees also refuse without releasing the
+owner, then accept a fifth real cleanup. An executed unsafe mutant
+that ignores the MM pinned guard fails the exact native oracle.
+**Physical PI6 idle-stack FINALIZE+PREVM retry/backoff and permanently
+uncertain pin handling remain OPEN**; fixture pin release is not an
+executed MM-unpin operation. See
+`design/kcore-pure-terminal-pinned-owner-v1680.md`.
+
 ### Feature exclusions that remain in the TODO
 
 - PI6/scheduler physical fault pressure during simultaneous RAW owners,
