@@ -258,6 +258,11 @@ fold_half_equal(const struct dobj_object *a, unsigned long ao,
         br->addend.rh >= bbase && br->addend.rh < bbase + span)
         return ar->addend.rh - abase == br->addend.rh - bbase &&
                ar->addend.lh == br->addend.lh;
+    /* Numeric local offsets in distinct objects are not identical
+     * addresses after linking.  Only absolute constants or relocations
+     * wholly within the matched TEXT ranges can be shared safely. */
+    if (a != b && ar->target_sec != DOBJ_SEC_ABS)
+        return 0;
     return ar->addend.lh == br->addend.lh &&
            ar->addend.rh == br->addend.rh;
 }

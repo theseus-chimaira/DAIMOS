@@ -203,12 +203,23 @@ half_equal(const struct input *a, unsigned long ao,
                     ar->addend.rh < abase + span &&
                     br->addend.rh >= bbase &&
                     br->addend.rh < bbase + span) {
+                        /* A local TEXT relocation within the folded span
+                         * is equivalent only at the same relative offset.
+                         * This remains safe across distinct input objects. */
                         if (ar->addend.rh - abase != br->addend.rh - bbase ||
                             ar->addend.lh != br->addend.lh)
                                 return 0;
-                } else if (ar->addend.lh != br->addend.lh ||
-                    ar->addend.rh != br->addend.rh) {
-                        return 0;
+                } else {
+                        /* Local TEXT/DATA/BSS targets outside the span
+                         * belong to their own objects.  Equal numeric
+                         * offsets in different objects do not identify
+                         * the same relocated address after linking.
+                         * Absolute constants have no such object identity. */
+                        if (a != b && ar->target_sec != DOBJ_SEC_ABS)
+                                return 0;
+                        if (ar->addend.lh != br->addend.lh ||
+                            ar->addend.rh != br->addend.rh)
+                                return 0;
                 }
         }
         return 1;
