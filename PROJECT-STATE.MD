@@ -1,3 +1,25 @@
+## 2026-11-19 v1683: compiler-only C89 folding preflight and native KPARSE structural build
+
+The appropriate `pdp10-testkit` (not DAIMOS kernel testkit) now has
+`misc/validation/kcc-constant-eval-v1683/`: C89 enumerator arithmetic,
+array extents, shift constants, signed 36-bit boundary checks, and
+PDP-6 simulated execution of exact dimension/scalar results. Host
+KCC from `$PDP10_PREFIX/bin/kcc` and repository `build/kcc` PASS in
+both optimized and unoptimized modes. Testkit commits `fa13aa1` and
+`f97e50e` are pushed to `pdp10-testkit/main`.
+
+The current-source `kcc` checkout `1f04c6e` built a **native KPARSE**
+through the real PDP-6 KCC/DAS/DLINK toolchain with isolated build
+root under `$HOME/tmp/daimos-kparse-native-v1683`; `dxrcheck` PASSes:
+DXR image `151044`, BSS `010721`, relocations `002727` (octal).
+Build output is uninstalled; no compiler source, KCORE image or RAM
+ABI was changed. The original native IDENTWDS/CHKOVF overflow report
+is **not closed**, because a fresh native KCPP->KPARSE runtime with
+source-matched KPT4 input and original C89 diagnostics has not run.
+Likewise the linear KIR graph lookup and event 050636 remain open.
+Do not substitute successful host compiler tests for native phase
+correctness.
+
 ## 2026-11-19: retire DAIMOS-specific PURE validation v1677-v1681
 
 The six DAIMOS-specific test suites in daimos-testkit (`pure-pi6-fault-

@@ -34,6 +34,11 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   including the original CHKOVF/JFCL semantics, generated code and
   source/toolchain identity. Retest with current KCC; do not disable
   legitimate overflow detection. Capture native KPT4 progress.
+  Compiler-only v1683 preflight in `pdp10-testkit/misc/validation/
+  kcc-constant-eval-v1683/` passes C89 dimensions/enum folding under
+  both host KCC binaries, optimized/unoptimized, with PDP-6 execution.
+  A current-source KPARSE DXR links and passes DXR validation, but this
+  does NOT establish native KCPP->KPARSE execution or close the bug.
 - [ ] **Native KPARSE progress and RAM:** diagnose the KIR graph writer's
   linear FINDPTR lookup (captured 7679-entry scan, quadratic work),
   design/test a bounded-memory fix if still reproducible, and measure
