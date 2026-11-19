@@ -1,151 +1,16 @@
-## 2026-11-19 v1681: original MM/PURE terminal + PREVM finalizer native integration (PASS)
+## 2026-11-19: retire DAIMOS-specific PURE validation v1677-v1681
 
-The source-linked PDP-6 v1681 native guest executes the **original**
-`mm_pin`, `mm_unpin`, `mm_free`, `vm_space_destroy`, `proc_swap_detach`,
-`pdp6_pure_detach_v1609`, `proc_finish_slot`, idle finalizer service,
-storage-mode publication and shared backoff. A foreign finalizer
-refuses a genuinely pinned exact RAW PACKED owner, retains
-TRANSITION+FINALIZE+PREVM and original executable/MM backing, and
-continues to refuse at the next service retry. The original timer
-backoff doubles 020->040. After real MM-unpin, original terminal/VM
-release succeeds, two further controlled u-area refusals do not
-repeat VM/HUP, and the final zombie publishes safely. Four separately
-executed unsafe source mutations (false VM commit, missing PREVM,
-missing actual MM pin increment, missing timer-backoff doubling) are
-rejected at exact native exit statuses. Testkit commit `05cdf28`.
-No production kernel/MM code or fixed KCORE RAM changed. This is
-**native original instruction integration**, not physical 48K
-scheduler/PI6 with a real PACKED foreign termination. Full physical
-fail-closed pinned-owner/idle retry, root/loader source loss and
-71-watch fault high-water remain OPEN. See
-`design/kcore-pure-terminal-finalizer-integration-v1681.md`.
+The six DAIMOS-specific test suites in daimos-testkit (`pure-pi6-fault-
+pressure-v1677`, `pure-mm-precommit-v1678`, `pure-mm-persistent-v1679`,
+`pure-terminal-pin-v1680`, `pure-prevm-finalizer-v1680`, and
+`pure-terminal-finalizer-v1681`) were removed by explicit user request.
+They tested DAIMOS kernel behavior, not the C compiler/language.
+Their scoped PASS claims have been withdrawn as active acceptance
+evidence. Git history retains earlier test source and reports; no
+production kernel code or baseline v1674 release acceptance was changed.
+P1-E failure/retry, real PI6 and terminal recovery remain OPEN.
 
-## 2026-11-19 v1680: original PDP-6 idle FINALIZE+PREVM repeated refusal (native PASS)
-
-The source-linked native original `proc_finish_slot` and
-`proc_finish_service_v881` assembler now PASS four consecutive modeled
-VM pin refusals (initial foreign finalize + three real idle scans).
-TRANSITION, FINALIZE+PREVM, original VM, pending retry and original
-exit status remain intact without repeat HUP/u-area cleanup or early
-zombie. After a controlled modeled pin release, original VM/u-area
-cleanup eventually publishes exactly one zombie and further scans
-are idempotent. A compiled premature-success mutation is rejected.
-Original v1494 PREVM refusal, v1102 16/32/64 backoff and native v1680
-actual PACKED detach-pin tests all rerun PASS. Testkit commit `5d9fa8c`.
-This models the VM boundary and does NOT constitute an original MM-pin
-instruction or physical 48K PI6 finalizer acceptance. Original fatal
-event delivery defers when a target owns a private executive wait
-continuation; the v1674 PIPE-held child fixture is unsuitable for
-direct remote terminal teardown until that wait safely unwinds.
-Physical test design must establish a safe saved USER PC/no WAIT owner
-before TERM, and preserve exact MM pins and FINALIZE+PREVM at the
-original terminal event. P1-E remains OPEN; no production code change.
-See `design/kcore-pure-terminal-pinned-owner-v1680.md`.
-
-## 2026-11-19 v1680: terminal pinned-owner refusal native preflight (PASS)
-
-Original PDP-6 `pdp6_pure_detach_v1609`/`proc_swap_detach`/
-`vm_space_destroy` source-linked native execution now PASSes four
-terminal retries against one and two genuine original MM descriptor
-pins, with no `mm_free`, record publication or adjacent second owner
-corruption until the pin is released. The original teardown then
-succeeds once and is idempotent. Four consecutive definite
-`MM_ERR_BUSY` returns on original `mm_free` also preserve the PACKED
-owner/backing and peer until final success. A compiled unsafe assembler
-mutant removing the exact MM pin guard is rejected at native guest
-exit `000000001102`. Original v1609 terminal baseline PASSes.
-Testkit commit `c290b5e`; see
-`design/kcore-pure-terminal-pinned-owner-v1680.md`.
-This is **NOT physical PI6 or idle-stack FINALIZE+PREVM retry**:
-the eventual pin release is simulated by the fixture. Full 48K
-terminal retry/backoff/quarantine, uncertain owner and backing-source
-fault cases and 71-watch high-water remain open. No production KCORE
-source/RAM changes, mainline integration remains deferred.
-
-## 2026-11-19 v1679: paired original physical repeated-MM precommit refusal (scoped PASS)
-
-GENERAL and STRICT 48K real PDP-6 TSFS guests source-linked from the
-same unchanged v1674 fixed KCORE and an isolated test-only PURE MRES
-completed three genuine original assembler MM rebase geometry refusals
-against the same sleeping RESIDENT child (slot 2), including two more
-real refused RUN attempts after the normal refused tenth RUN. At B the
-original installed KCORE JRST, MRES relocation and physical counter
-at octal 035532 show 3 genuine MM failures per profile. Eight other
-children are correctly RAW PACKED. Original A/B/C free MM
-27324->2549->27324, largest 27324->1524->27324; all original
-MM/PROC/mode/pin, native SYS_MEMINFO, nine-child EXIT/WAIT and
-active descriptor recovery PASS in both independent guests. Paired
-physical reports byte-identical, SHA256
-`f731089e19ec472dc57a7537180a3988edb1d266a036cadb85d745a9a823de8e`.
-Three original installed-JRST/MM-counter, five physical MM/PROC/MEMINFO
-and two missing native repeated-RUN mutations rejected per profile;
-forged cross-profile summary rejected. The four-refusal native original
-pin/rebase source tests, independent bystander READY_ONCE, and two
-compiled unsafe source mutants also PASS. **Scoped v1679 PASS only**:
-continuous physical MM fault high-water, permanently uncertain pins,
-FULL backing failure, PI6 timing and all-branch mainline integration
-remain OPEN. No production KCORE/MM code or installed image changed.
-See `design/kcore-pure-mm-repeated-refusal-v1679.md` and testkit
-`pure-mm-persistent-v1679/`, accepted testkit commit `e238a8f`.
-
-## 2026-11-19 v1678: original physical PDP-6 PURE MM precommit rejection (scoped PASS)
-
-Both independently built physical 48K GENERAL and STRICT swapless
-PDP-6 guests execute one genuine `MM_ERR_INVAL` from the original
-`mm_pure_rebase_pinned_v1381` assembler before the PURE DROP commits.
-Original source pin cleanup, resident process, owner and TRANSITION
-are correct: checkpoint B has eight RAW PACKED children and exactly
-one intact RESIDENT failed child (slot 2), with native tenth RUN
-refused under fragmentation. Original A/B/C physical MM free/maximum
-extent: 27323/27323 -> 2548/1523 -> 27323/27323. Live MM descriptor
-counts 9/26/9; no MM pin leaks, all nine EXIT/WAIT, exact final owners
-and SYS_MEMINFO PASS. The source-linked installed MRES counter at
-physical octal 035533 equals 1. Five independent MM/PROC/MEMINFO
-snapshot corruptions and three installed-JRST/counter tamperings
-reject in each profile. Original physical-state reports are identical,
-SHA256 `ef48a65af796f55e8601e3957d6d5d7f028c2f82d758c4503724075d0f9fd291`.
-Native v1678 genuine pin/rebase refusal and two executed unsafe source
-mutants also PASS. Fixed KCORE is unchanged and identical to v1674;
-only isolated test MRES/source copies differ. Scope is exact precommit
-refusal/recovery, not continuous write-watch or all PI6/MM/backing
-failures; P1-E and eventual all-branch integration remain OPEN.
-See `design/kcore-pure-mm-precommit-refusal-v1678.md` and
-`daimos-testkit/tests/validation/pure-mm-precommit-v1678/`.
-
-## 2026-11-19 v1677: paired original physical lost-success RAW DROP accepted (scoped)
-
-Both original 48K GENERAL and STRICT full PDP-6 guests source-built
-from identical fixed KCORE and test-only PURE MRES completed the full
-nine-PIPE-child RAW RUN/BRK/drop/restore/EXIT/WAIT sequence after ONE
-fault-injected lost-success MM return. Actual patched kernel JRST and
-relocated MRES physical counter `035522`=1 observed in both at B;
-three corrupted original JRST/counter witnesses rejected per profile.
-Original v1673 physical MM-owner/PIN/MEMINFO A/B/C tests PASS, real
-tenth RUN refused and nine retained RAW owners at B. Original free
-MM 27332->2685->27332, largest 27332->1532->27332 in both;
-paired source-linked original JSON reports byte-identical. The
-native two-owner fault/READY_ONCE and unsafe pin-guard mutation remain
-PASS. This accepts only the **one lost-success** scenario; 71-watch
-continuous high-water, genuine other PI6/uncertain MM/source/terminal
-faults and mainline merge remain OPEN. No production code/RAM change.
-See `design/kcore-pure-physical-return-fault-v1677.md` and testkit
-`pure-pi6-fault-pressure-v1677/README-v1677.md`.
-
-## 2026-11-19 v1677: native two-owner MM fault preflight and full branch audit
-
-Unmerged PURE branch v1677 began from the accepted 48K physical v1674
-NORMAL RUN/EXIT/WAIT gate. The **native** PDP-6 source-linked v1677
-validation now PASSes two distinct physical MM owners through the real
-MM rebase and KCC PURE DROP/RESTORE/service, under normal second-owner
-unpin, an unpin which committed but returned MM_ERR_BUSY, and a genuinely
-refused retained pin. The first owner can complete READY_ONCE while the
-second remains transition-held and pinned. The exact MM pinned-owner
-predicate is verified by an executed compiled unsafe service mutant;
-its v1677-only negative guest fails at `000000002202`. Baseline v1654,
-v1612, v1658 remains passing. Testkit branch commit `b409f35`; see
-`tests/validation/pure-pi6-fault-pressure-v1677/`. This is NOT a full
-physical PI6 interrupt/fault-injection acceptance, and does not close
-P1-E or change any production kernel/MM source or RAM.
+## 2026-11-19 v1677: retained local/remote branch inventory
 
 A separate READ-ONLY branch consolidation census has now audited every
 local and fetched/pruned origin DAIMOS ref: 91 local, 89 origin, 180

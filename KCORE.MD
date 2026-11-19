@@ -154,101 +154,16 @@ committed memory consumers. Full detail and binary identities:
 `design/kcore-pure-runtime-highwater-48k-v1674.md` on the PURE branch,
 and `daimos-testkit/tests/validation/pure-runtime-highwater-v1674/`.
 
-### v1677 source-linked lost-success RAW DROP fault: scoped PASS
+### Retired DAIMOS-only validation suites (v1677-v1681)
 
-An isolated test-only PURE MRES reports one `MM_ERR_BUSY` after a real,
-completed original MM RAW prefix DROP/unpin. Full 48K GENERAL and
-STRICT native PDP-6 guests with **identical fixed KCORE and fault MRES**
-observe that counter exactly once at physical checkpoint B through the
-real installed service JRST. Both execute nine RAW children, a refused
-tenth RUN, and normal restore/EXIT/WAIT. Original physical A/B/C
-MM/PIN/MEMINFO owner checks PASS: free 27332->2685->27332 and largest
-27332->1532->27332; all original owners and pins recovered. Three
-physical witness corruptions per profile fail. Independent paired
-source-backed JSON reports are byte-identical. Current testkit native
-two-owner MM fault + unsafe pin-guard regression also PASS. No fixed
-KCORE change; the test-only fault PURE MRES has seven more managed
-words than the v1674 control. This is **not** the full PI6 MM-fault
-matrix or fault-injected 71-watch committed high-water. P1-E stays
-OPEN. See `design/kcore-pure-physical-return-fault-v1677.md` on this
-branch and testkit `pure-pi6-fault-pressure-v1677`.
-
-### v1678 original MM precommit refusal: scoped physical PASS
-
-Two physical 48K GENERAL/STRICT PDP-6 runs with byte-identical fixed
-KCORE and isolated fault MRES completed the nine-child PIPE-held
-RUN/EXIT/WAIT lifecycle despite one *genuine original assembler*
-precommit MM rebase refusal. The original C DROP unpins its temporary
-source and preserves slot 2 as RESIDENT; eight other children become
-RAW PACKED. Original A/B/C physical MM free 27323->2548->27323,
-with largest extent 27323->1523->27323, exact live descriptors and
-no pin/TRANSITION leaks. Physical JRST and MRES counter prove one
-rejection; paired source-linked MM/PROC/MEMINFO reports are identical.
-Five original MM snapshot mutants and three relocated-fault-witness
-mutants reject per profile; native source mutations also reject.
-This is **not** the full persistent MM/PI6 or 71-write-watch fault
-matrix. P1-E remains OPEN. See the versioned development-branch report
-`design/kcore-pure-mm-precommit-refusal-v1678.md`.
-
-### v1679 repeated original MM precommit refusal: scoped physical PASS
-
-An isolated test-only optional PURE MRES makes the *original* PDP-6 MM
-assembler reject the same sleeping RESIDENT child's rebase three times
-under three real native fragmented RUN refusals. GENERAL and STRICT
-48K guests both retain eight original RAW PACKED children and one
-complete unpinned RESIDENT child until B, then restore/reap all nine
-with exact MM/PROC/SYS_MEMINFO/pin recovery at C. Original free MM
-27324->2549->27324; largest free 27324->1524->27324. Independent
-physical source-linked reports and binary identities are identical.
-Ten original witness tamper cases fail per profile; paired forged
-report and two compiled native unsafe source mutations also reject.
-No fixed KCORE/MM change. This is **not** the full persistent uncertain
-pin/PI6/backing failure or continuous physical MM write-watch gate;
-P1-E remains OPEN. See
-`design/kcore-pure-mm-repeated-refusal-v1679.md` on the PURE branch.
-
-### v1680 original terminal pinned-owner native preflight: PASS
-
-The source-linked original PDP-6 terminal assembler and KCORE
-`proc_swap_detach`/`vm_space_destroy` pass repeated pinned RAW PACKED
-owner refusal and definite `mm_free` refusal with independent peer
-preservation. Two pin-count cases each refuse terminal release four
-times before one controlled successful pin removal and exact cleanup.
-Four `MM_ERR_BUSY` terminal frees also refuse without releasing the
-owner, then accept a fifth real cleanup. An executed unsafe mutant
-that ignores the MM pinned guard fails the exact native oracle.
-**Physical PI6 idle-stack FINALIZE+PREVM retry/backoff and permanently
-uncertain pin handling remain OPEN**; fixture pin release is not an
-executed MM-unpin operation. See
-`design/kcore-pure-terminal-pinned-owner-v1680.md`.
-
-### v1680 original idle FINALIZE+PREVM native integration: PASS
-
-Original PDP-6 `proc_finish_slot`/`proc_finish_service_v881` assembler
-executes four modeled VM pin refusals while preserving original
-TRANSITION, FINALIZE+PREVM, backing/VM and idle pending state. After
-controlled release it retires VM/u-area, publishes one zombie and
-remains idempotent. A compiled premature-success mutation rejects.
-Prior v1494 PREVM and v1102 original retry-backoff regressions pass.
-This is *source-linked native* finalizer coverage, not a physical 48K
-PI6 real-MM-pin acceptance. The original foreign-fatal event path
-defers while a child owns a private PIPE wait stack, so a physical
-terminal fixture must first ensure a supported stopped USER-PC owner.
-See `design/kcore-pure-terminal-pinned-owner-v1680.md`.
-
-### v1681 original FINALIZE+PREVM/PURE terminal native integration: PASS
-
-The original PDP-6 MM pin/unpin/free, RAW PACKED terminal MRES,
-`vm_space_destroy`, permanent backing detach and full PREVM idle
-finalizer instructions run in one native source-linked PDP-6 guest.
-Genuinely retained original MM pins safely refuse original terminal
-cleanup; correct FINALIZE+PREVM/backoff is retained and later original
-MM-unpin permits terminal/VM release. Two post-VM u-area refusals do
-not repeat HUP or MM/VM cleanup. Four compiled/assembled executable
-mutants of exact source guards and retry backoff are rejected.
-**Real 48K PI6 scheduler timing and foreign PACKED-process terminal
-failure remain unaccepted.** See
-`design/kcore-pure-terminal-finalizer-integration-v1681.md`.
+The v1677-v1681 DAIMOS-specific PURE fault and terminal validation
+suites have been dropped from `daimos-testkit` at user request; they
+were kernel behavior tests, not C compiler tests. Their prior scoped
+acceptance claims are no longer live release evidence. Original source
+and historical results remain recoverable through Git history. P1-E
+physical fault, terminal, source-lifetime and PI6 gates remain open.
+The accepted v1674 baseline and branch-consolidation inventory are
+unchanged.
 
 ### Feature exclusions that remain in the TODO
 
