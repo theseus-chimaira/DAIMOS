@@ -228,7 +228,8 @@ is **post-1.0** and cannot compromise installed mandatory services.
   documents should be updated on completed, accepted development,
   not with unverified handoff plans.
 - **Complete original KCORE milestone diary:**
-  `git show 738c79c5:KCORE.MD` (mainline) and historical snapshots
-  in the PURE branch. Do not re-add DONE/OPEN chronological entries
+  `git show 738c79c5:KCORE.MD` (mainline) and
+  `git show 2871682d:KCORE.MD` (unmerged PURE branch, 12,587 lines).
+  Do not re-add DONE/OPEN chronological entries
   to this file; update the accepted contract or remove the finished
   item from `TODO.MD` instead.
