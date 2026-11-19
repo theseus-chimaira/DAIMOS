@@ -1,3 +1,18 @@
+## 2026-11-19 v1675: consolidated active TODO only
+
+Root `TODO.MD` now contains only 50 consolidated *open* items in
+242 lines, with no DONE checkboxes and no superseded historical
+acceptance diary. The exact pre-clean 8685-line file, including
+earlier uncommitted TODO edits, is recoverable with
+`git show affe58a9:TODO.MD`; prior source/acceptance evidence
+also remains in this PROJECT-STATE, versioned design reports,
+`KCORE.MD` and pdp10-doc. The cleaned index distinguishes
+current mainline P0-B/P1-C/P1-D closure from unmerged PDP-6
+PURE v1674 success and still-open P1-E/KA10/mode3 gates.
+Only the root TODO was compacted; specialist DSH and D6CODEC
+worklists retain their independent scope. No production code,
+physical acceptance or KCORE memory footprint changed.
+
 ## 2026-11-16: native DAS acceptance and D6FS free-FCB bound v1
 
 **Native PDP-6 DAS guest acceptance PASS.** D6FS previously failed
