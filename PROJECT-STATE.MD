@@ -1,3 +1,17 @@
+## 2026-11-19 v1673: RAW PURE physical 48K reclaim stable PASS
+
+Source `ae84bb37` on unmerged PURE branch; original testkit v1673
+runs revalidated. General and strict simulator reports agree in two
+retained pairs. Original physical MM free words 27441->2794->27441,
+largest gap 27441->1641->27441, nine PACKED RAW suffixes present at
+pressure and retired after EXIT/WAIT, exactly 1152 PURE text words
+reclaimed. Five source-linked physical corruptions and a forged report
+were executed and rejected. Source and evidence scope:
+`design/kcore-pure-raw-reclaim-48k-v1673.md`. No production change
+for acceptance. Next: continuous runtime high-water under RAW reclaim,
+then alternate-root regressions and mode3 completion. This does not
+assert 32K, KA10, disk-root, PI6 fault or mainline acceptance.
+
 ## 2026-11-18 v1672: actual post-user PURE RUN/EXIT/WAIT at 48K/64K
 
 Base v1671. Fixed a genuine assembler accounting error in native

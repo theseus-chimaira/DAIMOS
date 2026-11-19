@@ -1,3 +1,20 @@
+## 2026-11-19 v1673: 48K physical RAW PURE reclaim (stable PASS)
+
+- [x] Both independent source-matched general and strict 48K PDP-6
+  physical reports pass the original paired comparison: 9 PACKED RAW
+  owners under real APR pressure, each releasing 128 words (1152 total).
+- [x] MM free 27441 -> 2794 -> 27441, largest gap
+  27441 -> 1641 -> 27441, resident APRs 1 -> 1 -> 1,
+  PACKED RAW owners 0 -> 9 -> 0, all MM owners and pins restored.
+- [x] Independently replay original physical console measurement and
+  reject five physical corruptions plus a forged summary with the
+  original testkit negative oracle. Testkit target committed separately.
+- [ ] Continuous post-user high-water/PI6 fault pressure, disk/DRM and
+  ROOT=auto physical regression, bitmap mode3 and KA10 are still OPEN.
+
+See `design/kcore-pure-raw-reclaim-48k-v1673.md`; this branch is NOT
+merged into mainline KCORE.
+
 ## 2026-11-18 v1672: post-user 48K/64K process ownership and accounting
 
 - [x] Correct actual native SYS_MEMINFO and PROCINFO when the
