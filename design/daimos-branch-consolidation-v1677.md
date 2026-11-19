@@ -26,6 +26,24 @@ ancestry heads. Explicit expected heads for this snapshot:
 - `refs/heads/kcore-p1e-cache-placement-v1635-20261116`: 1 uncommitted/untracked paths
 - `refs/heads/daimos-native-selfhost-v1414-20261109`: 7 uncommitted/untracked paths
 
+## Companion `daimos-testkit` branch audit
+
+The same read-only script audited the exact testkit parent repository
+using `--feature test-pure-pi6-fault-v1677-20261119`: **2 local and 2
+origin branch refs**, none with independent ancestry outside `main`
+and the v1677 fault-test development branch. Its **20 attached worktrees
+include 11 with uncommitted/untracked files**. All must be reviewed
+and preserved before retirement; testkit v1677 source and physical
+fixtures must first be accepted into testkit main. No testkit branch
+or worktree has been deleted. Exact audited refs:
+
+| Scope | Branch | Commit |
+| --- | --- | --- |
+| `local` | `main` | `605da958a919` |
+| `local` | `test-pure-pi6-fault-v1677-20261119` | `b55d364567d3` |
+| `origin` | `main` | `605da958a919` |
+| `origin` | `test-pure-pi6-fault-v1677-20261119` | `b55d364567d3` |
+
 ## Mandatory integration/retirement sequence
 
 1. Finish current P1-E physical PI6/MM/backing failures, ROOT=auto,
@@ -42,11 +60,15 @@ ancestry heads. Explicit expected heads for this snapshot:
    pass. Confirm all *local and remote* topic branch tips are ancestors of
    the new `main` commit, including formerly PURE-only branches and the
    unpaired remote/local names above.
-5. Retire superseded clean worktrees and local topic refs with checked
+5. Consolidate the linked `daimos-testkit` local and remote topic
+   branches and worktrees too; the v1677 test branch is an integration
+   dependency, not a permanent fork. Refuse to discard any of the
+   currently dirty testkit worktrees or untracked test sources.
+6. Retire superseded clean worktrees and local topic refs with checked
    ancestry (`git branch -d`), then remove corresponding remote topic
    branches only after fresh origin verification. Keep `main` and other
    active/specially retained refs. Confirm no untracked files are lost.
-6. Run final complete inventory: zero unmerged tips, zero orphan worktrees,
+7. Run final complete inventory: zero unmerged tips, zero orphan worktrees,
    no stale superseded local/remote refs, clean retained worktrees. Record
    the resulting final branch map and pushed main commit. Do not claim
    consolidation complete before that validation.
