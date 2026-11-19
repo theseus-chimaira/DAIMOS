@@ -1,4 +1,43 @@
-## CURRENT KCORE FEATURE TODO (authoritative after v1604, 2026-11-15)
+# KCORE feature backlog and release scope (2026-11-19)
+
+**Authority:** current `main` source and completed physical acceptance, with
+unmerged development results explicitly identified as such. See
+`design/kcore-open-feature-audit-v1674.md` for source and branch evidence.
+Historical dated checkboxes below are preserved for traceability, not
+additional live work items. Their original OPEN/CLOSED claims must be read
+at the date and branch on which they were written.
+
+## Accepted or deferred
+
+- [x] **P0-B:** CLOSED v1575 under trusted-operator DTVOL2. Operator controls
+  reel exchange/quarantine; retain checked DIRTY/CLEAN, I/O, cache, and
+  owner safeguards. Older physical interlock/reinsertion TODOs are superseded.
+- [x] **P1-C:** CLOSED v1603 physical swap/storage/BCACHE matrix.
+- [x] **P1-D:** CLOSED v1601 FSINFO/controller matrix.
+- [ ] **48K full boot:** de facto minimum and active acceptance target;
+  32K **kernel-only** tests remain required.
+- **Full 32K boot:** DEFERRED, not a feature-freeze gate.
+- **Final size optimization:** DEFERRED until feature freeze; maintain
+  efficient RAM use without premature size-only work.
+
+## Open feature acceptance (branch-qualified)
+
+- [ ] **P1-E PDP-6 PURE:** newer v1611-v1672 implementation and physical
+  48K/64K RUN/EXIT/WAIT evidence are on an **unmerged branch**, not main.
+  The v1673 opt-in physical RAW reclaim testkit is integrated on its
+  development branch (commit `1848722`), but final WAIT/restore and PI6
+  owner acceptance are still open; do not merge production PURE yet.
+- [ ] **PURE mode3 bitmap:** bounded codec/restore/terminal are staged
+  on the unmerged branch, but live scheduler compressor admission and
+  compressed RUN/EXIT/WAIT/PI6 are unaccepted. Keep production disabled.
+- [ ] **Boot profiles:** validate ROOT=auto, disk/DRM and full-profile
+  KCC physical boots with the newer PURE path, before mainline merge.
+- [ ] **KA10 PURE backend:** separate target-specific MM/APR and physical
+  acceptance; PDP-6 evidence does not close this gate.
+- [ ] **48K runtime pressure:** measure continuous post-user high-water
+  and actual RAW reclaim. Sampled v1672 barriers are not a peak proof.
+
+## MAINLINE KCORE FEATURE HISTORY (v1604 baseline; later branch work is separate)
 
 This block supersedes historical dated *status claims* lower
 in this file; retain those entries for acceptance evidence,
@@ -1706,22 +1745,26 @@ and optimization are **not KCORE feature tasks**. VERSION 0.5.
   F1 swapless PURE/MM/APR; F3 dynamic FSINFO enumeration; optional
   compression only after functional acceptance.
 
-## 2026-11-12 v1508: physical permanent BACKSTORE refusal gate
+## 2026-11-12 v1508: physical permanently refused BACKSTORE owner
 
-- [x] Boot a disposable 256K PDP-6 and refuse every checked release of
-  one real ordinary DISK owner without changing its original bitmap.
-  Three actual fault-on snapshots prove 1/4/7 refusals, advancing PI6
-  clock, unchanged DISK/u-area/pending TERM and zero false finalizers.
-  Strict v1508 physical verifier PASS, ten unsafe mutants rejected.
-- [ ] Demonstrate real independently runnable/swapped bystander
-  progress during a sustained physical failure, not merely native
-  scheduler fairness or clock progress.
-- [ ] Resolve irreparable backing/DEVICE loss via genuine recovery,
-  reconstruction, or explicitly safe retained ownership; no forced
-  release and no unverified zombie. Physically validate mixed media.
-- [ ] Continue KCORE feature completion: mixed DEVICE/VOLUME,
-  BCACHE/DTFS/LOGSTORE/MEMFS error gates, F1 swapless PURE/MM/APR,
-  F3 dynamic FSINFO mount enumeration. Compression only after PURE.
+- [x] Run a disposable real 256K KCC PDP-6 guest with permanent
+  checked release refusal for a dynamically selected DISK run,
+  leaving the original bitmap intact. The source-linked v1508
+  physical verifier PASSES: selected slot `010`, first `02350`,
+  count `0330`, refusals 1/4/7, actual PI6 retry cadence,
+  unchanged disk/u-area/TERM owner, zero false ready/finalization.
+  Thirteen unsafe verifier mutations rejected. No new production
+  process state or permanent data RAM.
+- [x] Later v1509/v1510 physically accepted independent resident
+  and **healthy swapped** progress after permanent refusal; v1512
+  additionally accepts genuine lost PI2 completion/PI6 watchdog.
+- [ ] Real confirmed permanent DEVICE/media loss and appropriate
+  v1513 critical HALT or non-root revalidation. Root/BACKSTORE
+  reconstruction and forced owner release were cancelled v1513;
+  bounded retries alone do not finish an irreparable child.
+- [ ] Remaining KCORE features: mixed DEVICE/VOLUME, BCACHE,
+  DTFS, LOGSTORE, MEMFS fault cases, F1 PURE/APR, F3 FSINFO,
+  final feature acceptance before any optimization.
 
 ## 2026-11-12 v1507: failed BACKSTORE retry bounded in native scheduler
 
@@ -2198,8 +2241,12 @@ historical and superseded by this release-scope decision.
 - [ ] Accept DTC/MTC real device boot, 48K runtime and 32K strict
   permanent placement; KCORE is 9701 words, current 32K placement needs
   another 45 words. Preserve checked storage ownership invariants.
-- [ ] Rerun full 256K swap/OOM/recovery guest with block-only executables
-  before carrying over the earlier v1406 full-guest acceptance to v1464.
+- [x] Rerun the unmodified strict v1349 256K swap/OOM/recovery full guest
+  with block-only executables: physical HALT/EXIT and original F07,
+  requester OOM/protected witness/held provider, 32 swap-outs and 32
+  swap-ins, MM pressure/cooldown 1/1, zero leaked swap/BACKSTORE blocks,
+  four independent MM owners released, six negative controls PASS.
+  Record the versioned v1466 evidence archive and SHA256 in PROJECT-STATE.
 
 ## 2026-11-10 v1462: merge complete, production D6LZ36 retained
 
