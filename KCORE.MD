@@ -154,6 +154,25 @@ committed memory consumers. Full detail and binary identities:
 `design/kcore-pure-runtime-highwater-48k-v1674.md` on the PURE branch,
 and `daimos-testkit/tests/validation/pure-runtime-highwater-v1674/`.
 
+### v1677 source-linked lost-success RAW DROP fault: scoped PASS
+
+An isolated test-only PURE MRES reports one `MM_ERR_BUSY` after a real,
+completed original MM RAW prefix DROP/unpin. Full 48K GENERAL and
+STRICT native PDP-6 guests with **identical fixed KCORE and fault MRES**
+observe that counter exactly once at physical checkpoint B through the
+real installed service JRST. Both execute nine RAW children, a refused
+tenth RUN, and normal restore/EXIT/WAIT. Original physical A/B/C
+MM/PIN/MEMINFO owner checks PASS: free 27332->2685->27332 and largest
+27332->1532->27332; all original owners and pins recovered. Three
+physical witness corruptions per profile fail. Independent paired
+source-backed JSON reports are byte-identical. Current testkit native
+two-owner MM fault + unsafe pin-guard regression also PASS. No fixed
+KCORE change; the test-only fault PURE MRES has seven more managed
+words than the v1674 control. This is **not** the full PI6 MM-fault
+matrix or fault-injected 71-watch committed high-water. P1-E stays
+OPEN. See `design/kcore-pure-physical-return-fault-v1677.md` on this
+branch and testkit `pure-pi6-fault-pressure-v1677`.
+
 ### Feature exclusions that remain in the TODO
 
 - PI6/scheduler physical fault pressure during simultaneous RAW owners,

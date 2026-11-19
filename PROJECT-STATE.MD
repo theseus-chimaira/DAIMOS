@@ -1,3 +1,22 @@
+## 2026-11-19 v1677: paired original physical lost-success RAW DROP accepted (scoped)
+
+Both original 48K GENERAL and STRICT full PDP-6 guests source-built
+from identical fixed KCORE and test-only PURE MRES completed the full
+nine-PIPE-child RAW RUN/BRK/drop/restore/EXIT/WAIT sequence after ONE
+fault-injected lost-success MM return. Actual patched kernel JRST and
+relocated MRES physical counter `035522`=1 observed in both at B;
+three corrupted original JRST/counter witnesses rejected per profile.
+Original v1673 physical MM-owner/PIN/MEMINFO A/B/C tests PASS, real
+tenth RUN refused and nine retained RAW owners at B. Original free
+MM 27332->2685->27332, largest 27332->1532->27332 in both;
+paired source-linked original JSON reports byte-identical. The
+native two-owner fault/READY_ONCE and unsafe pin-guard mutation remain
+PASS. This accepts only the **one lost-success** scenario; 71-watch
+continuous high-water, genuine other PI6/uncertain MM/source/terminal
+faults and mainline merge remain OPEN. No production code/RAM change.
+See `design/kcore-pure-physical-return-fault-v1677.md` and testkit
+`pure-pi6-fault-pressure-v1677/README-v1677.md`.
+
 ## 2026-11-19 v1677: native two-owner MM fault preflight and full branch audit
 
 Unmerged PURE branch v1677 began from the accepted 48K physical v1674
