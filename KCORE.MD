@@ -1,3 +1,9 @@
+## 2026-11-19 KCORE policy and branch scope
+
+**Branch boundary:** mainline KCORE status here ends at v1604. PURE v1611-v1672 source/test results belong to the unmerged development branch, as inventoried in `design/kcore-open-feature-audit-v1674.md`. Historical dated sections below retain their original acceptance context; do not read their old OPEN items as the current backlog.
+
+P0-B is already CLOSED by v1575 under the trusted-operator DTVOL2 contract; historical hardware-interlock demands do not reopen it. The full-boot working minimum is 48K words; 32K remains mandatory for kernel-only tests, not full boot. Final size optimization is deferred until feature freeze. These are policy decisions, not new guest acceptance results.
+
 ## 2026-11-15 v1604: P1-E PDP-6/KA10 architecture boundary reviewed
 
 The original PDP-6 APR user mapping is one contiguous 02000-octal
@@ -2106,19 +2112,26 @@ contender, genuine DEVICE/media loss and unrecoverable owner
 reconstruction/reclaim remain OPEN. See
 `design/kcore-backstore-bystander-physical-v1509.md`.
 
-## 2026-11-12 v1508: physical sustained BACKSTORE refusal (scoped PASS)
+## 2026-11-12 v1508: physical persistent BACKSTORE refusal scoped PASS
 
-Disposable real 256K KCC PDP-6 captured three post-fault snapshots of
-one genuine selected DISK slot `010`, extent `02350`/`0330`.
-Checked-release refusals advanced 1/4/7 while PI6 clock progressed;
-the original DISK record, stable u-area, retry epoch and pending TERM
-survived. No owner TERM consumption, zombie, false RESIDENT or repair.
-Testkit's strict physical v1508 verifier PASS; ten unsafe witness
-mutations rejected. Diagnostic sampling stopped intentionally, NOT a
-normal HALT or terminal reclaim. Physical bystander fairness, genuine
-DEVICE loss and recovery/reclamation still OPEN. No new KCORE code,
-resident RAM or process state beyond accepted v1507.
-See `design/kcore-backstore-persistent-physical-v1508.md`.
+The real source-linked 256K KCC PDP-6 F07 guest permanently
+refused checked release of one selected BACKSTORE run while
+leaving its actual allocation bitmap intact. After authentic
+swap-in reads, the selected slot `010` retained exact DISK
+extent `02350`/`0330`, stable u-area, pending TERM and
+nonresident RUN/VM across three timed physical samples.
+Seven real refused frees, zero repairs/owner TERM completions,
+private fatal closes, finish or zombies. PI6 advanced 1943
+and 1942 ticks between observed refusal counts 1/4/7;
+the clock-bounded v1507 per-owner scheduler delay held with
+no false READY_ONCE. Strict v1508 physical verifier PASS;
+13 negative mutations rejected. The bounded diagnostic
+intentionally stopped without F07 HALT. Its 18 RUN
+acknowledgments do not prove a runnable bystander's progress
+**after** the fault; the final runqueue had only the failed
+user runnable. That fairness profile, real DEVICE/media loss
+and irrevocable owner cleanup remain OPEN. Report:
+`design/kcore-backstore-persistent-physical-v1508.md`.
 
 ## 2026-11-12 v1507: owner-specific BACKSTORE retry (native accepted)
 
@@ -2680,6 +2693,22 @@ acceptance remain OPEN. No size optimization was attempted.
 An exact matched movable MEMFS MRES link against the existing KCORE map
 measures 1774 -> 1781 resident words (+7 initialized, BSS still 13).
 No fixed-KCORE object was changed; this is footprint accounting only.
+
+## 2026-11-10 v1466: block-only full F07 accepted; size unchanged
+
+The v1464 block-only KCORE and compressed userland have now passed the
+fresh strict 256K KCC DSK/D6FS v1349 physical guest to HALT/EXIT, with
+the unchanged original F07/held-provider/18-child/owner postflight.
+32 swap-outs/32 swap-ins, one real MM allocation failure and cooldown,
+zero outstanding BACKSTORE/process-swap blocks, and all four independent
+8K-word MM owners reclaimed with zero errors. The six invalid-owner
+evidence mutations also fail as required. Evidence and per-file SHA256
+checks are archived as v1466/r1 under `$TMPDIR` (see PROJECT-STATE.MD).
+
+This adds **zero production code or RAM** beyond the v1464 cutover:
+GCC lowmem KCORE **9701**, movable SWAP MRES **1762**, aggregate **16381**
+36-bit words. The strict 16K single-root placement still needs 45 words;
+full 48K runtime and separate DTC/MTC Stage-1 boots remain open.
 
 ## 2026-11-10 v1464: block-only low core, +14 fixed words
 
