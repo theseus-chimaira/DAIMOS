@@ -1,3 +1,35 @@
+## 2026-11-19 v1677: native two-owner MM fault preflight and full branch audit
+
+Unmerged PURE branch v1677 began from the accepted 48K physical v1674
+NORMAL RUN/EXIT/WAIT gate. The **native** PDP-6 source-linked v1677
+validation now PASSes two distinct physical MM owners through the real
+MM rebase and KCC PURE DROP/RESTORE/service, under normal second-owner
+unpin, an unpin which committed but returned MM_ERR_BUSY, and a genuinely
+refused retained pin. The first owner can complete READY_ONCE while the
+second remains transition-held and pinned. The exact MM pinned-owner
+predicate is verified by an executed compiled unsafe service mutant;
+its v1677-only negative guest fails at `000000002202`. Baseline v1654,
+v1612, v1658 remains passing. Testkit branch commit `b409f35`; see
+`tests/validation/pure-pi6-fault-pressure-v1677/`. This is NOT a full
+physical PI6 interrupt/fault-injection acceptance, and does not close
+P1-E or change any production kernel/MM source or RAM.
+
+A separate READ-ONLY branch consolidation census has now audited every
+local and fetched/pruned origin DAIMOS ref: 91 local, 89 origin, 180
+exact refs, zero unique tips outside mainline/PURE ancestry, and 15
+attached worktrees (four dirty in the source snapshot). Mainline and
+PURE currently diverge with distinct head commits; no merge or branch
+retirement is yet authorized until the fault/root/boot gates pass.
+Three topic branches are local-only, one is remote-only; all belong to
+an existing mainline or PURE history. The exact commit-ID manifest and
+mandatory local AND remote branch/worktree consolidation procedure are
+recorded in `design/daimos-branch-consolidation-v1677.md` and
+`design/daimos-branch-ref-inventory-v1677.tsv`. The repeatable read-only
+testkit inventory is commit `d26523d`. Preserve every uncommitted
+source/worktree before subsequent branch retirement. Final mainline
+integration must include this complete consolidation, not just the PURE
+merge.
+
 ## 2026-11-19 TODO cleanup: authoritative open-only backlog
 
 The feature-branch top-level `TODO.MD` was reconciled against the

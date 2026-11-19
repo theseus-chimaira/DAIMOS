@@ -91,10 +91,18 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   MRES cost. Compare feature OFF versus RAW with installed/transient
   KCORE+KINIT+MRES accounting and actual APR placement; no assumption
   of 32K full boot success.
-- [ ] **PDP-6 feature integration review:** after the above gates,
-  reconcile the PURE branch with current mainline and the source/API
-  changes there; rerun full testkit and physical boot matrix before
-  any controlled merge. Default PURE stays OFF until authorized.
+- [ ] **PDP-6 mainline integration and ALL branch consolidation:** after
+  the above gates, reconcile the PURE branch with newer mainline
+  source/API changes. Re-run the complete source-linked native and
+  physical boot/fault matrix before an authorized merge; PURE remains
+  default OFF until accepted. Refresh and audit every **local AND remote
+  DAIMOS branch**, including unmatched names and attached worktrees;
+  preserve unique commits and all dirty/untracked source before any
+  retirement. After merging and proving all topic tips reachable from
+  main, remove superseded clean local worktrees, local branches and
+  remote branches, then re-audit the final remote/local refs and retain
+  only explicit active branches. No forced or unverified branch deletion.
+  Full manifest and procedure: `design/daimos-branch-consolidation-v1677.md`.
 - [ ] **KA10 target backend:** implement and accept its distinct
   mapping/APR/MM, interrupt and process-restore requirements using
   actual KA10-specific native/simulator tests. PDP-6 physical evidence
