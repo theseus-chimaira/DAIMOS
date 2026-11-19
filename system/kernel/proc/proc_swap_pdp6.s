@@ -1707,7 +1707,21 @@ proc_swap_out_state_ok:
         iorm    1,(11)
         move    1,13
         pushj   17,mm_pin
-        jumpn   1,proc_swap_out_clear
+        ; mm_is_pinned returns zero for a missing descriptor as well as
+        ; an unpinned one. If the authoritative mm_pin now refuses, the
+        ; resident VM owner is unproven: do not clear TRANSITION or let
+        ; the scheduler run an image with no verified MM reservation.
+        jumpn   1,proc_swap_storage_invariant_v30
+        ; mm_pin verifies only the physical base. Before copying any
+        ; process image to backing, prove that the exact pinned extent
+        ; still has this slot, PROCESS type and its expected full size.
+        ; A mismatch leaves TRANSITION and the acquired pin held: no
+        ; unverified process image may return to the runnable state.
+        move    1,13
+        move    2,10
+        move    3,14
+        pushj   17,mm_process_verify_pinned_v792
+        jumpn   1,proc_swap_storage_invariant_v30
 
         move    1,16
         pushj   17,proc_swap_skip_words

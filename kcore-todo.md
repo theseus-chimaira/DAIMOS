@@ -20,13 +20,14 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678):** the PDP-6 compactor, process-swap reclaim
-  service and allocation-pressure chain now preserve hard MM move/refusal
-  errors rather than relabeling them as fragmentation or reclaiming more
-  victims. Native tests and a KCC KCORE source build pass; see
-  `design/kcore-k01-mm-refusal-v1678.md`. Still open: comprehensive
-  permanent free/pin/rebase/restore and provider-owner fault cases,
-  bounded administrative recovery, and physical guest acceptance.
+  **In progress (v1678-v1682):** MM compaction and reclaim preserve hard
+  refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
+  exact type/owner/length/pin verification, and PURE verification rollback
+  unpin refusal. Native PDP-6 tests and KCC KCORE source builds pass;
+  see `design/kcore-k01-mm-refusal-v1678.md` and
+  `design/kcore-k01-swap-owner-v1682.md`. Still open: permanent free,
+  rebase, restore and other owner failure paths, bounded administrative
+  recovery and complete physical guest acceptance.
 - [ ] **K02 - Process resource cleanup.** Complete failure-safe cleanup
   of process-owned MM, VM, FD, PIPE/FIFO and related resources during
   EXIT, EXEC and failed or unpublished RUN. Do not claim provider-specific
