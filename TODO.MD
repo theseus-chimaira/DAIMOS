@@ -1,242 +1,305 @@
-# DAIMOS TODO - current open work (v1675)
+# DAIMOS TODO - current open work (v1675r2)
 
-Updated: 2026-11-19. This is the *active backlog*, not a chronological
-acceptance log. Every checkbox below denotes unfinished work; there are no
-completed checkboxes or superseded historical requirements in this file.
+Updated: 2026-11-19. This is the consolidated open-only backlog for
+DAIMOS mainline and the unmerged PDP-6 PURE development branch.
+Tasks are grouped by remaining acceptance condition, not by
+historical version or failed experiment.
 
-The complete former 8,685-line TODO, including its existing local edits, is
-preserved in Git at commit `affe58a9` (`git show affe58a9:TODO.MD`). Completed
-milestones and measured results belong in `PROJECT-STATE.MD`, `KCORE.MD`,
-versioned `design/` reports and `pdp10-doc`, not here. Do not interpret old
-open requirements as current blockers without comparing newer accepted gates.
+Both historical checklists remain recoverable in Git: the
+8,685-line mainline version (including existing local edits) at
+`git show affe58a9:TODO.MD`, and the 10,190-line PURE-branch
+chronicle at `git show ae03d40f:TODO.MD`. Completed milestones
+belong in `PROJECT-STATE.MD`, `KCORE.MD`, source-linked design
+reports and `pdp10-doc`, not in this active TODO.
 
-## Scope and working rules
+Priority: fix **compiler/assembler correctness** before new features;
+then KCORE correctness and missing physical acceptance; then the
+required 0.9 applications/storage tools; optimize resident RAM **last**.
+No workaround may replace a correctness fix. All tests belong in the
+appropriate daimos-testkit (or toolchain testkit) repository.
 
-- Current production `main` is not the PURE development branch. The accepted
-  PDP-6 RAW PURE 48K physical high-water v1674 belongs to the **unmerged**
-  `kcore-pure-reclaim-pressure-v1673-20261118` branch, commit `ae03d40f`.
-- KCORE P0-B trusted-operator DTVOL2 (v1575), P1-C storage/swap/BCACHE
-  (v1603), and P1-D controller/FSINFO matrix (v1601) are CLOSED under their
-  documented contracts. Do not reopen obsolete mechanical reel-interlock,
-  all-controller, or already-accepted fault matrices without new evidence.
-- **48K words is the working full-boot minimum.** 32K *kernel-only* tests
-  remain necessary. Full 32K boot, final size shaving, and MRES runtime
-  unload/reload are not current release blockers.
-- Correctness first, especially compiler/assembler regressions; minimize
-  resident RAM, then runtime. No workaround for a reproduced underlying bug.
-  All new tests go into `daimos-testkit` (compiler-specific regressions may
-  also belong in `pdp10-testkit`). Maintain source/branch/build identities.
+**Release boundary:** PDP-6 RAW PURE v1674 48K GENERAL/STRICT physical
+committed-MM high-water is accepted: 3122 original MM writes per profile,
+minimum 1255 free words, complete nine-owner drop/restore and post-WAIT
+recovery. It does NOT accept PI6 fault pressure, bitmap mode3,
+KA10, alternate roots, or a mainline merge. P0-B trusted-operator
+DTVOL2, P1-C and P1-D are closed under their documented contracts.
+The existing grouped D6 block codec and restricted privileged MEMFS
+XIP are production-integrated; do not reopen their obsolete proposals.
 
-## A. Immediate correctness and release gates
+## P0. Correctness blockers (fix before optimization)
 
-### A1. Native compiler, assembler and build-system correctness
+- [ ] **Native KCC KPARSE correctness:** investigate the still-reported
+  constant-expression overflow on ordinary IDENTWDS and array sizes,
+  including the original CHKOVF/JFCL semantics, generated code and
+  source/toolchain identity. Retest with current KCC; do not disable
+  legitimate overflow detection. Capture native KPT4 progress.
+- [ ] **Native KPARSE progress and RAM:** diagnose the KIR graph writer's
+  linear FINDPTR lookup (captured 7679-entry scan, quadratic work),
+  design/test a bounded-memory fix if still reproducible, and measure
+  native runtime/RAM. Separately examine the event 050636 stalled
+  storage-state observation before changing I/O wakeup behavior.
+- [ ] **Compiler/assembler regression gate:** rerun current PDP-6
+  codegen/ABI/relocation and native KCC phase tests after each fix;
+  correctly rebuild and install a current source-matched host toolchain
+  before judging native KCPP/KPARSE/KOPT/KGEN. Never accept stale
+  binaries or paper over compiler errors in the kernel.
+- [ ] **Permanent FILE and MM provider failures:** diagnose
+  missing/type/owner MM extents and permanently refused VFS/FILE,
+  PIPE/FIFO, display and process-teardown resources. Preserve exact
+  owners and readable diagnostics; provide safe bounded retry and
+  administrative recovery without forced release. Extend whole-system
+  fault injection to actual scheduler/EXIT/EXEC failure cases.
+- [ ] **OOM policy:** define/test an allocation-free, safe victim
+  termination path only after all provider, VM, FD, zombie, EXEC and
+  unpublished-RUN teardown states can be released or retained safely.
+  Keep automatic OOM killing disabled in the meantime.
+- [ ] **Real `?RT` failures:** retain failing image, original media,
+  full SIMH transcript and root/INIT handoff; reproduce and identify
+  the fault rather than using a clean rebuild as a purported fix.
+  Revisit the old v669/v670 pre-VFS D6FS root failure only if still
+  reproducible on current source and matching media.
 
-- [ ] Reproduce and fix any current native KPARSE/KCC identifier/constant-
-  expression overflow and stalled parse graph from the actual installed and
-  source-built compiler. Do not disable overflow checking to hide defects.
-- [ ] Recheck the known quadratic `CCKIRWRITE.C` pointer lookup against
-  current native KPARSE, then implement a bounded-RAM index only if current
-  measurements justify it; measure graph-build time, peak RAM and stack.
-- [ ] Verify unoptimized host/native KCC output parity (`-N`), nested-call
-  stack-argument ABI, D-format/overflow flags, and the current source-built
-  assembler/linker path. Fix any reproducible miscompile before proceeding.
-- [ ] Complete native DAS relocatable DOBJ1 `-A -C` serialization, relocation
-  ownership, `.set` aliases, LH/RH edge cases and native DLINK resolution;
-  run C89 -> DAS -> DLINK -> RUN source-linked regressions.
-- [ ] Run compiler/assembler/`p10fold` regressions against the current
-  cross-object relocation-identity fix, including reproducing old invalid
-  fold plans; avoid unsafe fold reuse for size alone.
-- [ ] Complete a genuine native KCC `MAKE ALL` and controlled `INSTALL`
-  from freshly source-built KCPP/KPARSE/KOPT/KGEN, then repeat a native
-  self-rebuild and single-source invalidation. Measure peak KCC/MAKE RAM.
-  Do not trigger an unbounded full native self-build without a bounded plan.
-- [ ] Reconcile still-failing GCC/KCC disk-root testkit groups against
-  current sources and physical media, keeping correct accepted tests intact.
+## P1. KCORE P1-E: swapless PURE RAW (release-blocking)
 
-### A2. KCORE P1-E: PDP-6 swapless PURE
+- [ ] **PI6 reclaim/restore fault pressure:** test actual multi-process
+  RAW prefix reclamation and restoration with independently triggered
+  MM/pin/allocator, backing and real PI6 interruption conditions.
+  Preserve exact PROCESS/PACKED owner, TRANSITION, READY_ONCE and
+  source/backing lifetime on failure and retry; validate scheduler
+  progress, WAIT/EXIT and final conservation. Respect slot-0 FULL
+  serialization; do not fabricate impossible concurrent user dispatch.
+- [ ] **Uncertain MM failure policy:** fully exercise persistent
+  pin/free/rebase errors, restore cancellation and terminal/reaper
+  disposition under live RAW pressure. Fail closed if an owner cannot
+  be proved singly owned and unpinned; do not publish an ambiguous APR
+  or silently free the sole retained suffix.
+- [ ] **Executable source lifetime under pressure:** extend the real
+  physical RO/mount/provider failure and return tests to nine-child
+  RAW reclamation and bounded FULL fallback, including immutability,
+  source loss/replacement and owner-safe unmount refusal. Retain the
+  accepted v1643/v1650 failure and PI6 scheduling contracts.
+- [ ] **Alternate-root boot matrix:** source-build and physically test
+  ROOT=auto for TSFS without AUXSTORE, positive DSK/DRM BACKSTORE,
+  selected disk/drum roots, and missing or disappearing controllers.
+  Verify selected DISK SWAP versus PURE MRES, no phantom service,
+  native RUN/EXEC/BRK/EXIT/WAIT and recovery. Do not regress backed
+  swap or the P0 critical root/BACKSTORE fail-stop paths.
+- [ ] **KCC FULL and RAM profiles:** run current-source matching-image
+  KCC FULL physical root/service matrix and source-linked 48K/64K
+  general/strict runtime ownership, temporary peak and persistent
+  MRES cost. Compare feature OFF versus RAW with installed/transient
+  KCORE+KINIT+MRES accounting and actual APR placement; no assumption
+  of 32K full boot success.
+- [ ] **PDP-6 feature integration review:** after the above gates,
+  reconcile the PURE branch with current mainline and the source/API
+  changes there; rerun full testkit and physical boot matrix before
+  any controlled merge. Default PURE stays OFF until authorized.
+- [ ] **KA10 target backend:** implement and accept its distinct
+  mapping/APR/MM, interrupt and process-restore requirements using
+  actual KA10-specific native/simulator tests. PDP-6 physical evidence
+  cannot be reused as proof of KA10 hardware support.
 
-- [ ] Add real physical PI6/scheduler fault-pressure during multi-owner RAW
-  PURE reclaim and restore. Inject recoverable and uncertain MM/loader/
-  backing failures at reachable stages; prove owner/pin/TRANSITION rollback,
-  no premature READY_ONCE, continued bystander progress, and final reaping.
-  Respect original slot-0 scheduler/PI6 serialization; do not fabricate an
-  impossible parallel user UNMOUNT during a FULL callback.
-- [ ] Regress the optional PURE path in matched physical ROOT=auto,
-  disk-root, drum-root, DSK/DRM direct/mapped BACKSTORE, and KCC FULL
-  profiles, including automatic TSFS-vs-disk service choice. Preserve
-  existing disk swap and ordinary KCORE without conditional regressions.
-- [ ] Extend production-relevant 48K/64K RAW PURE pressure coverage where
-  failures or alternate providers require it. The v1674 48K committed-MM
-  low-water (1,255 free words) and the stable v1672 64K acceptance are
-  established *only* for their source-linked workloads, not all schedules.
-- [ ] Finish the controlled review/merge of proven PDP-6 RAW PURE into
-  `main`, retaining default-OFF until required regression gates pass;
-  distinguish PDP-6-only support from complete cross-machine P1-E release.
-- [ ] Define and validate KA10-specific VM/APR mapping, relocation,
-  low/high-segment capability and restore/rollback ABI. Reuse only genuinely
-  common immutable-backing and RAW-owner semantics; do not apply the PDP-6
-  APR implementation to KA10 without hardware/target acceptance.
+## P2. KCORE P1-E: optional compressed mutable RAM (mode3)
 
-### A3. P1-E optional bitmap mode 3 (separate from RAW PURE)
+- [ ] **Executable opt-in policy:** finalize unused, backwards-compatible
+  DXR admission/header representation for COMPRESSIBLE_MUTABLE, keeping
+  COMPRESSED executable payload and BSS bits distinct; prove fork/EXEC
+  replacement, legacy/invalid headers and privileged admission.
+- [ ] **Source-linked bounded overlap codec:** complete read-only
+  preflight, 35/36/37-word and sparse/dense tests, exact encoded size,
+  RAW fallback, partial overlap and forward/backward encoding/decoding.
+  Reject nonshrinking outputs. Do not rely on a disjoint codec test as
+  proof of in-place safety.
+- [ ] **Temporary memory ownership:** reuse the still-owned prefix only
+  where its full lifetime is proved; evaluate a VFS workspace solely
+  with an explicit exclusive lease and callback/BCACHE safety.
+  Otherwise acquire bounded pinned no-reclaim MM scratch. Never
+  borrow freed memory or allocate an always-resident compression slab.
+- [ ] **Atomic mode3 DROP publication:** integrate the staged v1659-
+  v1667 bitmap frontend with the real scheduler/reclaim path. Prove
+  source survival before the first overwrite, exact sole MM ownership,
+  source/target overlap safety, complete encoder completion, and
+  failure-safe RAW-vs-BITMAP commit with no partial publication.
+- [ ] **Mode3 FULL restoration and terminal path:** integrate bounded
+  decode, immutable backing/restore fallback, 2048-word APR limits,
+  target-pin ordering, raw/bitmap terminal detach and VM destroy.
+  Add exact wake/retry/EXIT/WAIT/finalizer accounting and preserve
+  pin/owner identity on every error path.
+- [ ] **PI6, MM and backing failure matrix for mode3:** verify actual
+  process scheduler wake, READY_ONCE, source loss, corruption,
+  allocation refusal, torn/overlapping data, uncertain MM and
+  terminal cancellation under native/physical fault injection.
+  Do not lift the permanent mode3 destroy refusal until safe.
+- [ ] **End-to-end mode3 acceptance:** source-built 48K/64K physical
+  marked and unmarked process RUN/EXEC/EXIT/WAIT; repeat sleep/wake,
+  real DSH mutable-state samples, kernel/process memory high-water,
+  compression payback versus OFF/RAW, negative witnesses and failure
+  rollback. Enable opt-in mode3 only after net RAM and safety pass;
+  disk-swap compression is not part of this feature.
 
-- [ ] Integrate the bounded mode3 compressor into the *real* inactive-process
-  scheduler admission path and physical MM storage accounting. No duplicate
-  backing registry, unsupported compression format or resident RAM creep.
-- [ ] Prove atomic compressed commit and refusal: exact buffer capacity,
-  codec validity, pinned/duplicate owner guards, source immutability,
-  fragmentation/low-memory fallback and recoverable uncertain failures.
-- [ ] Run real compressed RUN/EXEC, EXIT/WAIT, reaping, multiple owners,
-  restore from source, terminal release, scheduler PI6 retry, failed FULL
-  fallback and source/media-loss recovery with authenticated physical MM.
-- [ ] Verify measured net RAM savings against added PURE MRES code and
-  transient compression/decompression peak. Keep mode3 production-OFF
-  until complete; do not equate staged native codec tests with live support.
+## P3. KCORE platform and release matrix
 
-### A4. Final KCORE release acceptance
+- [ ] **32K kernel-only regression:** preserve native PDP-6 32K
+  KINIT/boot-to-process-entry and error-path checks, without falsely
+  requiring a full 32K ROOT/DSH workload. Repeat at 40K/48K/64K and
+  supported high-core configurations when changing KINIT/MM.
+- [ ] **KINIT remaining stack/error paths:** bound physical controller
+  loss, abnormal MM/IO/root-selection and INIT-launch stack maxima
+  with the existing 0400-octal (256-word) reserve; do not shrink the
+  stack without complete fatal/error-profile measurements.
+- [ ] **Current-source final kernel matrix:** GCC/KCC, tape/disk/drum,
+  TSFS/D6FS, 48K/64K/96K/256K as supported; PI6/PIO, swaps,
+  mount/provider loss and return, failed writes and correct HALT,
+  process/FILE/PIPE ownership, BCACHE/MM pin conservation, KINIT
+  unload and selected-MRES placement. Recheck known P0-B/P1-C/P1-D
+  acceptances; do not reimplement them.
+- [ ] **Combined storage/controller regressions:** exercise the
+  current-source ROOT/service combinations and late controller
+  disappearance, including independent mounted secondary failures,
+  BACKSTORE/BCACHE/LOGSTORE owner and dirty/write-through isolation,
+  physical DSK/DRM fault routing, PI2/PI6 scheduling and fair retry.
+  The 26-volume mount bound is a logical capacity, not 26 drives.
+- [ ] **RAM/fragmentation quality:** measure exact physical MM free,
+  largest gap, process APR rounding waste, owner-table footprint,
+  allocation peaks and scheduler overhead at 32K kernel-only and
+  48K/64K/256K supported profiles; improve compaction/placement
+  only where accepted behavior and whole-machine RAM improve.
+- [ ] **Functional freeze:** run one clean, source-matched, repeatable
+  complete testkit/release matrix with all required KCORE features
+  accepted or explicitly deferred; document fixed/resident KCORE,
+  optional MRES, transient KINIT, process RAM, PI and faults.
 
-- [ ] Complete mandatory 32K **kernel-only** assembler/linker/MM/critical
-  error-path tests. Full 32K DSH boot is deliberately deferred.
-- [ ] Run a final matched-source native and physical PDP-6 release matrix
-  after permitted feature integration: ROOT selection, media error/return,
-  MM/VM/PIPE, EXEC/RUN/WAIT, process owner/PI, failure atomicity, full
-  KCC/GCC profiles, 48K viability, 64K and larger supported configurations.
-- [ ] Record exact KCORE/MRES/KINIT permanent and transient RAM, largest
-  free extent, source/build identity, process/owner invariants and remaining
-  target-specific exclusions before declaring feature freeze.
+## P4. Storage, VFS and time administration
 
-## B. Other system, filesystem and tooling work
+- [ ] **AUXSTORE and BLOCKSET inventory:** discover other usable DSK/
+  DRM units and complete member sets safely, without probing absent
+  devices or guessing reserved membership. Count independent D6FS
+  volumes as mounts, BLOCKSETs as one; test physical tape+drum,
+  disk+drum and root/secondary combinations on supported hardware.
+- [ ] **VFS capacity and device-loss follow-up:** validate the already
+  boot-selected dynamic mount slab and 26-slot/file-mount overlays
+  across full root/provider/controller combinations, sparse high
+  mount IDs, late removal and returned media. Preserve installed
+  provider bounds and ABI; do not revive historical four/16-slot
+  activation or theoretical 26-drive hardware requirements.
+- [ ] **MKSWAP utility:** supply inspection/dry-run and explicit
+  destructive confirmation for separately chosen DSK/DRM swap and
+  optional LOGSTORE regions; reject existing formats and overlaps.
+  Unattended boot never autoformats swap.
+- [ ] **Wall-clock physical validation:** source-matched PCLK-present/
+  absent, configured 50/60-Hz scheduler-versus-calendar timing,
+  rollover and PCLK/controller loss under load. Preserve accepted
+  SETTIME/DATE, privilege, TIME36, GETTIME race and filesystem mtime
+  semantics; do not reimplement their already proven code.
+- [ ] **Online D6FS packer (0.9):** move extents in a mounted and
+  active D6FS using VFS ownership and minimum per-file exclusion;
+  preserve open FILEs, reserved swap/LOGSTORE/BADMAP regions, crash
+  recovery and concurrent safe I/O. Distinguish from offline packfs.
+- [ ] **Persistent LOGSTORE/BSTORE isolation:** test in-flight mapped
+  DEVICE/VOLUME errors, dirty cache isolation, complete rollback and
+  LOG recovery on current native/physical KCORE. Add only verified
+  missing migration steps; P1-C is not reopened wholesale.
+- [ ] **Safe recovery mode and maintenance media:** design a small
+  single-user/recovery DECtape with existing tools, separate from a
+  new INITFS root; test cold boot and no-data-loss repair policy.
 
-### B1. KINIT, providers, storage and administration
+## P5. Toolchain, build and userland (0.9)
 
-- [ ] Audit D6FS BLOCKSET discovery on non-root and secondary DSK/DRM
-  units, avoiding unsafe probes of absent hardware. Count known BLOCKSETs
-  as one logical mount and unknown non-members as possible independent
-  mounts; do not silently assume DRM0 is the only eligible AUXSTORE.
-- [ ] Revalidate boot-selected VFS capacity and provider service bounds
-  for newly introduced controller combinations. Retain safe published
-  mount IDs, exact allocated slab capacity, and no phantom service slots;
-  do not revive already accepted P1-D FSINFO tests without a regression.
-- [ ] Finish the native MKSWAP provisioning utility, with non-destructive
-  geometry/ownership checks, actual DSK/DRM/BLOCKSET media and error tests.
-  Complete supported tape+drum, disk+drum and non-root service combinations.
-- [ ] Implement a real online D6FS packer, distinct from offline `packfs`:
-  respect open-file and VFS lifetimes, swap/LOGSTORE/BADMAP exclusions,
-  crash-safe extent moves, and bounded per-file/per-extent exclusion.
-- [ ] Verify D6FS CREATE/recovery failure atomicity and provider MM/FILE
-  refusal paths under current source, rather than treating the repaired
-  FCB scan-bound bug as an end-to-end crash-recovery proof.
-- [ ] Add privileged software wall-clock SETTIME/DATE SET with an accepted
-  clock source and persistence policy; do not require PCLK for setting time.
-- [ ] Extend current KINIT stack watermark and error-path coverage to
-  unusual roots, missing devices and fatal exits before considering a
-  reduction of the existing 256-word stack reserve.
-- [ ] Add host-tool round-trip/format tests for MKDT, MKSTREAM and WORDS2PT
-  in `pdp10-testkit`, including malformed input and representative images.
+- [ ] **Finish native KCC self-hosting:** once P0 compiler bugs are
+  fixed, run native MAKE ALL/INSTALL, measure KPARSE/phase RAM and
+  time, rebuild kernel and one controlled userland component using
+  native CPP/KCC/libc/CRT0/libsys, then test full native rebuilding.
+- [ ] **Native MAKE large-graph correctness:** test graph limits above
+  768 dependency/384 recipe links, sorted-index cost, actual KCC
+  graph invalidation, suffix rule ordering, and the exact required
+  recursive variable/MAKEFLAGS and recipe syntax. Keep SIXBIT-only
+  uppercase input and serial execution; do not add parallel builds.
+- [ ] **Native MAKEDEPEND (deferred within 0.9):** evaluate using
+  native KCC preprocessing for dependency extraction; otherwise port
+  a minimal conservative C89 recursive include scanner with cycle,
+  -I and Makefile-output handling. Test on host and DAIMOS against
+  the imported `userland/makedepend/PORT-STATUS.MD` contract.
+- [ ] **Full GCC/KCC regression groups:** rerun only remaining failed
+  disk-testkit groups and complete an end-to-end clean matrix after
+  toolchain fixes; previously passed individual groups are not new
+  implementation tasks.
+- [ ] **DSH:** finish its dedicated test coverage and documentation,
+  frozen language/case/globbing, scripts/functions, external pipelines,
+  job-control TTY, bounded interactive editor, optional SIXMD
+  completion and acceptance. Detailed task authority:
+  `userland/dsh/TODO.MD` and `pdp10-doc/USER/DSH_DESIGN.MD`.
+- [ ] **Core userspace commands:** complete the genuinely missing
+  required ECHO/BASENAME/DIRNAME/TRUE/FALSE/EXPR/CAT/CP/CMP/GREP/
+  HEAD/WC/TEE/STRINGS/LS/FIND/STAT/MKDIR/RM/MV/PWD/CHMOD/XARGS/
+  TAIL/DD/CHOWN/RMDIR/TOUCH variants, checking current sources
+  first. Do not re-port commands already accepted by the testkit.
+- [ ] **MonitorFS administration:** complete PS/FREE/DEVSTAT/MEMSTAT,
+  clock/media diagnostics and other native admin utilities without
+  reviving obsolete DAIMOSv1 SYSCTL/DEVIO interfaces.
+- [ ] **Elvis VI/EX:** port after native build tools and baseline
+  commands function; include required spelling/folding, not optional
+  visual syntax highlighting, colors or URL features.
+- [ ] **Host image-tool regressions:** add target-source-format and
+  roundtrip tests for MKDT, MKSTREAM and WORDS2PT; keep current
+  production grouped-codec Stage-1/DXR/TSFS format fully matched.
 
-### B2. Restricted MEMFS XIP and process ownership
+## P6. RAM-first optimization (only after functional freeze)
 
-- [ ] Close remaining privileged raw MEMFS XIP admission and user-lifetime
-  cases: nonwriting image/startup contract, no user writes/stack/argv,
-  exact source provenance, MM pins, owner refcounts and immutable backing.
-- [ ] Validate real scheduled XIP RUN/EXEC/EXIT, shared repeated launches,
-  EXEC rollback, final VM teardown/unpin, provider unmount/remount,
-  swap/BRK refusal, post-admission u-area failure and low-RAM pressure.
-  Reuse accepted 128K+ cases; do not infer 48K or arbitrary MM-fault proof.
-- [ ] Complete persisted MEMFS/LOGSTORE refusal/retry and recovery tests
-  that are not covered by accepted P1-C contracts, especially uncertain
-  provider/MM ownership and crash-atomic storage updates.
+- [ ] **Final linked KCORE sweep:** follow `SIZEOPT.MD`, auditing fixed
+  `proc_swap`, `bcache`, `fs_mres`, controller dispatch, PCLK,
+  `fs_block_workspace`, process descriptors and dynamic mount paths
+  against current images. No old pre-v1464 codec size assumptions.
+- [ ] **Folding and boot specialization:** rerun p10fold/p10super
+  against the final matching link graph, checking relocations,
+  cross-MRES ownership, removable-module dependency and JRST hot
+  paths; implement only source- and runtime-proven net RAM savings.
+- [ ] **KINIT reserve, APR alignment and final image:** optimize
+  actual memory high-water, register-liveness, dead data, startup
+  specialization and temporary workspaces only after the remaining
+  physical faults/root profiles are accepted.
+- [ ] **Strict full 32K boot (deferred):** aim for fixed KCORE below
+  octal 020000, preserve 8K boundary probe, measure total process/
+  DSH/LOGIN footprint and CTY-only build. Full 32K DSH/commands
+  are a separate size and userspace optimization goal, NOT a KCORE
+  0.9 feature acceptance blocker; kernel-only 32K tests remain mandatory.
+- [ ] **LIBC assembly candidates (deferred):** profile bounded-RAM
+  `qsort` and only then `strcpy`, `strncpy`, `strcat`, `strncat`,
+  `strchr`, `strrchr`, with native timing, size, stack and semantic
+  regressions; keep ordinary C unless measured benefit is clear.
 
-### B3. Process events, OOM and error containment (separate audit)
+## P7. Post-KCORE / explicitly deferred architecture
 
-- [ ] Reconcile historical P0-D/E/F OOM and fatal owner-teardown
-  requirements with the current accepted KCORE contract before enabling
-  broader automatic OOM victim termination. Source history includes
-  stale and superseded requirements; prove a current gap first.
-- [ ] If automatic OOM victim termination is enabled, prove bounded,
-  allocation-free FILE/PIPE/TTY/DPY/VM/provider cleanup, exact-once
-  owner retirement, PID reuse, group HUP/TERM/CHLD ordering, and healthy
-  bystander progress under real low-MM and persistent refusal.
-- [ ] Define a fail-closed policy for indefinitely nonreturning providers
-  and permanently corrupt/missing MM/FILE owner records. Do not claim
-  forced recovery, unbounded retry success, or reclaimed physical RAM
-  while a pin/provider remains owned.
+- [ ] **Unified TSFS before 0.9 release:** after KCORE freeze and its
+  RAM sweep, implement a compact single TSFS namespace/read engine and
+  supported root/auxiliary profiles. Use the sharded-metadata proposal
+  as research input, not a mandated on-disk format.
+- [ ] **Optional userspace overlays and shared TEXT:** after working
+  self-hosted non-overlay programs and measured DSH/KCC/editor memory,
+  experiment with safe opt-in overlays and PDP-6 shared execution
+  areas without growing KCORE's permanent footprint.
+- [ ] **Type-340/344 runtime input:** implement minimal hardware-faithful
+  light-pen coordinate, edge/stop, acknowledgement and resume support
+  on AAP without burdening ordinary display refresh/PI7 handling.
+- [ ] **MIT MAC HACK chess:** after that display interface is accepted,
+  port the original ITS game and Type-340 art while isolating its
+  ITS-specific monitor/book/storage code.
+- [ ] **Post-1.0 MRES dynamic unload/reload:** revisit relocatable,
+  removable and dynamically sized runtime modules only after 0.9;
+  do not create mandatory resident retargeting infrastructure now.
+- [ ] **Future hardware and process models:** complete slave reverse
+  interrupts, PCLK-delivery variants and later PDP-10 hardware pager
+  only under independent architectural requirements and test coverage.
 
-### B4. Native MAKE and broader self-hosting
+## Documentation and gate discipline
 
-- [ ] Finish native MAKE correctness for the source-staged KCC graph:
-  dependency/recipe tables beyond 768/384 links, sorted-index RAM/timing,
-  recursive invalidation and required recipe/variable syntax.
-- [ ] Verify current suffix search precedence and recursive MAKEFLAGS
-  contract against GNU/BSD Make only where actual native makefiles need
-  the behavior. Preserve SIXBIT/uppercase, serial execution and the
-  feature-frozen V0.9 scope; no unnecessary -j worker implementation.
-- [ ] Rebuild a bounded ordinary userland component with native
-  MAKE/DAS/DARC/DLINK/OBJDUMP, then incrementally self-host the required
-  core userland. Record RAM/stack/latency rather than assuming host parity.
-- [ ] Complete source-compatible native MAKEDEPEND only after mainline
-  native build reliability; prefer the existing imported reference or a
-  small accurate C89 include scanner with cycle and -I handling.
-
-### B5. DSH and core utilities
-
-- [ ] Complete DSH-specific tests and synchronization with the frozen
-  language contract; remaining case/glob, scripts/functions, pipelines,
-  TTY/job control, bounded interactive editor and SIXMD/help completion.
-  Detailed active checklist: `userland/dsh/TODO.MD`.
-- [ ] Complete the minimal standard command set needed for a functional
-  shell, build and administration (ECHO, CAT, CP, CMP, GREP, HEAD, TAIL,
-  LS, FIND, STAT, MKDIR, RM, MV, CHMOD, CHOWN, DD, XARGS, WC, etc.).
-  Reuse working programs; do not rewrite already accepted commands.
-- [ ] Port/finish MonitorFS-native PS, FREE, DEVSTAT, MEMSTAT and admin
-  tools. Do not recreate DAIMOSV1 SYSCTL/DEVIO compatibility layers.
-- [ ] After native build stabilization, integrate a small-footprint
-  Elvis vi/ex with its essential editing functionality; defer cosmetic
-  syntax/URL/color features and unmeasured overlays.
-
-## C. Deliberately deferred or separately authorized work
-
-- [ ] **Full 32K boot and final KCORE size sweep:** revisit only after
-  functional feature freeze. Measure true resident/process/stack peaks,
-  8K permanent image limits and CTY-only kernel configuration. Evaluate
-  dynamic table/pointer costs and the 256-word KINIT stack reserve.
-- [ ] **Post-freeze code folding/superoptimization:** evaluate safe
-  p10fold/p10super use on non-hot JRST paths and natural KCORE/MRES
-  dependencies. Require measured meaningful net RAM savings and never
-  weaken relocation or removable-module correctness for small gains.
-- [ ] **D6 codec single-format cutover:** existing production D6LZ36
-  remains authoritative. If separately authorized, implement the new
-  grouped decoder with identical resumable low-core ABI, bounded
-  64-word refill and <=31-word groups; measure full source/target RAM,
-  run error/stack tests and atomically replace all five Stage-1 loaders,
-  KINIT, host/TSFS, VFS/EXEC/PURE and native producers. No mixed-format
-  image fallback. Detailed plan:
-  `system/kernel/core/D6CODEC-INTEGRATION-TODO-v054.md`.
-- [ ] **Unified DECtape filesystem design:** revisit the proposed
-  root/secondary TSFS/DTFS consolidation, write durability, access classes,
-  mtime and build-time AUX/TMP combinations only after a new design decision.
-  Do not replace accepted trusted-operator DTFS media policy implicitly.
-- [ ] **Loadable/unloadable runtime MRES and userspace overlays:** defer
-  runtime unload/reload, shared text and user overlays until measured
-  non-overlay programs work and memory savings justify new machinery.
-- [ ] **Libc assembler tuning:** profile qsort and compact byte-pointer
-  string primitives; do not rewrite C code without measured RAM/runtime
-  improvements and target native regressions.
-- [ ] **AAP Type 340/344 interaction:** add the smallest useful
-  light-pen/special-condition PI input interface, coordinates, stop/edge
-  acknowledgement and resume, with AAP hardware-model tests; do not grow
-  the ordinary display refresh hot path.
-- [ ] **MIT MAC HACK vi and Type 340 chess display:** port only after a
-  smaller native display interface is proved, keeping old ITS dependencies
-  separate. Do not reinstate the rejected persistent display-list feeder.
-- [ ] **Recovery media and other hardware:** bootable recovery DECtape,
-  SLAVE reverse/PCLK interrupt behavior and hardware-pager backend for
-  later PDP-10s are independent post-0.9 projects.
-
-## Completion protocol
-
-When a checkbox is fully accepted, **remove it from this file** and put
-its tested state, versioned source/fixture identity, memory impact and
-unaccepted exclusions in `PROJECT-STATE.MD`, the appropriate `design/`
-report and, for completed kernel documentation, `pdp10-doc`.
-Do not recreate the dated DONE/OPEN diary in this TODO. Before deleting
-an older checkbox, verify whether later work actually closed it.
+- `PROJECT-STATE.MD` and `KCORE.MD` retain accepted chronological
+  evidence; `SIZEOPT.MD` holds the deferred RAM optimization details.
+- `userland/dsh/TODO.MD` owns the DSH-specific functional checklist;
+  `pdp10-doc` owns completed architecture descriptions, not handoffs.
+- Keep unresolved tasks here, in their proper section; do not append a
+  new dated history entry for each completed test. Delete a completed
+  checkbox from this file after the source-linked evidence is accepted.
+- Before starting a task, inspect current implementation, native tests,
+  optional/boot-selected MRES, physical maps and the main/development
+  branch boundary. Do not turn superseded historical ideas into features.

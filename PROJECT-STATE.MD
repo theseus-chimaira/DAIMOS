@@ -1,7 +1,7 @@
 ## 2026-11-19 v1675: consolidated active TODO only
 
-Root `TODO.MD` now contains only 50 consolidated *open* items in
-242 lines, with no DONE checkboxes and no superseded historical
+Root `TODO.MD` now contains 53 source-audited *open* items in
+305 lines, with no DONE checkboxes and no superseded historical
 acceptance diary. The exact pre-clean 8685-line file, including
 earlier uncommitted TODO edits, is recoverable with
 `git show affe58a9:TODO.MD`; prior source/acceptance evidence
