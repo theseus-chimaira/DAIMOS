@@ -236,6 +236,20 @@ defers while a child owns a private PIPE wait stack, so a physical
 terminal fixture must first ensure a supported stopped USER-PC owner.
 See `design/kcore-pure-terminal-pinned-owner-v1680.md`.
 
+### v1681 original FINALIZE+PREVM/PURE terminal native integration: PASS
+
+The original PDP-6 MM pin/unpin/free, RAW PACKED terminal MRES,
+`vm_space_destroy`, permanent backing detach and full PREVM idle
+finalizer instructions run in one native source-linked PDP-6 guest.
+Genuinely retained original MM pins safely refuse original terminal
+cleanup; correct FINALIZE+PREVM/backoff is retained and later original
+MM-unpin permits terminal/VM release. Two post-VM u-area refusals do
+not repeat HUP or MM/VM cleanup. Four compiled/assembled executable
+mutants of exact source guards and retry backoff are rejected.
+**Real 48K PI6 scheduler timing and foreign PACKED-process terminal
+failure remain unaccepted.** See
+`design/kcore-pure-terminal-finalizer-integration-v1681.md`.
+
 ### Feature exclusions that remain in the TODO
 
 - PI6/scheduler physical fault pressure during simultaneous RAW owners,

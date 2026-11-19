@@ -1,3 +1,25 @@
+## 2026-11-19 v1681: original MM/PURE terminal + PREVM finalizer native integration (PASS)
+
+The source-linked PDP-6 v1681 native guest executes the **original**
+`mm_pin`, `mm_unpin`, `mm_free`, `vm_space_destroy`, `proc_swap_detach`,
+`pdp6_pure_detach_v1609`, `proc_finish_slot`, idle finalizer service,
+storage-mode publication and shared backoff. A foreign finalizer
+refuses a genuinely pinned exact RAW PACKED owner, retains
+TRANSITION+FINALIZE+PREVM and original executable/MM backing, and
+continues to refuse at the next service retry. The original timer
+backoff doubles 020->040. After real MM-unpin, original terminal/VM
+release succeeds, two further controlled u-area refusals do not
+repeat VM/HUP, and the final zombie publishes safely. Four separately
+executed unsafe source mutations (false VM commit, missing PREVM,
+missing actual MM pin increment, missing timer-backoff doubling) are
+rejected at exact native exit statuses. Testkit commit `05cdf28`.
+No production kernel/MM code or fixed KCORE RAM changed. This is
+**native original instruction integration**, not physical 48K
+scheduler/PI6 with a real PACKED foreign termination. Full physical
+fail-closed pinned-owner/idle retry, root/loader source loss and
+71-watch fault high-water remain OPEN. See
+`design/kcore-pure-terminal-finalizer-integration-v1681.md`.
+
 ## 2026-11-19 v1680: original PDP-6 idle FINALIZE+PREVM repeated refusal (native PASS)
 
 The source-linked native original `proc_finish_slot` and
