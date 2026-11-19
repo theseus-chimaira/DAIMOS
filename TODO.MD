@@ -1,3 +1,25 @@
+## 2026-11-19 v1674: physical 48K RAW PURE MM high-water (PASS)
+
+- [x] Complete real original-MM write-watch physical PDP-6 general and
+  strict swapless 48K tests, same KCORE/PURE MRES binaries and test
+  fixture; use 71 physical watches, not user-virtual-PC breakpoints.
+- [x] Both source-linked physical profiles pass A/B/C, all nine
+  reclaim/restore owners and native RUN/EXIT/WAIT, plus 3122 MM writes,
+  194 count commits, 5 BRK and 9+9 PURE span commits. Complete strict
+  physical trace replay and original owner/pin/MEMINFO checks PASS.
+- [x] Minimum committed-MM free 1255 words, maximum nonfree 47897
+  (48K total 49152). A/B/C free 27339->2692->27339 in both profiles.
+- [x] Execute/reject five physical write/owner mutations plus a forged
+  summary on EACH profile; original paired comparison PASS with
+  byte-identical independently generated JSON reports.
+- [ ] PI6 fault injection under actual reclaim/restore remains OPEN.
+- [ ] ROOT=auto, DSK/DRM, KCC FULL-profile regression remains OPEN.
+- [ ] Compressed PURE mode3, KA10 ownership, mainline integration,
+  and deferred 32K boot/ultimate size reduction remain OPEN.
+
+See `design/kcore-pure-runtime-highwater-48k-v1674.md`.
+No production KCORE words added for v1674 acceptance.
+
 ## 2026-11-19 v1673: 48K physical RAW PURE reclaim (stable PASS)
 
 - [x] Both independent source-matched general and strict 48K PDP-6

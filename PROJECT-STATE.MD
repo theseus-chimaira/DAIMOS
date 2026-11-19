@@ -1,3 +1,21 @@
+## 2026-11-19 v1674: physical RAW PURE high-water 48K PASS
+
+On unmerged PURE branch, matched source-built PDP-6 GENERAL and STRICT
+swapless profiles completed actual physical 48K CTY A/B/C memory
+reclamation with write-watch reconstruction of all 3122 original MM
+writes in each, 194 count commits, five native BRK changes, and nine
+PURE 128-word drops followed by nine restores. Stable original MM free
+27339->2692->27339; between barriers lowest committed MM free 1255,
+maximum nonfree 47897 of 49152. Complete original owner/pin/MEMINFO
+and physical source-linked replay PASS for both profiles. Five executed
+witness mutations and a forged report reject for each; paired profile
+comparison PASS with byte-identical reports and source-linked KCORE
+and PURE MRES images. No production kernel modification. See
+`design/kcore-pure-runtime-highwater-48k-v1674.md` and testkit
+`pure-runtime-highwater-v1674/README-v1674.md`. P1-E still awaits
+PI6 fault pressure, alternate-root/KCC regression, compressed mode3,
+KA10 and later integration; no full 32K boot acceptance.
+
 ## 2026-11-19 v1673: RAW PURE physical 48K reclaim stable PASS
 
 Source `ae84bb37` on unmerged PURE branch; original testkit v1673
