@@ -1808,6 +1808,9 @@ proc_swap_out_restore:
 proc_swap_out_verify_fail:
         move    1,13
         pushj   17,mm_unpin
+        ; A failed verification must not clear TRANSITION while the
+        ; source extent remains pinned or its ownership is uncertain.
+        jumpn   1,proc_swap_storage_invariant_v30
         jrst    proc_swap_out_clear
 .endif
 
