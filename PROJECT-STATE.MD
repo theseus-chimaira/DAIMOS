@@ -1,3 +1,19 @@
+## 2026-11-19 TODO cleanup: authoritative open-only backlog
+
+The feature-branch top-level `TODO.MD` was reconciled against the
+accepted current source and testkit through physical v1674. Completed
+and historically superseded dated checkpoints were removed from the
+active backlog; 53 distinct remaining gates are now grouped in nine
+sections (correctness, RAW PURE, bitmap mode3, KCORE release,
+storage/time, native build/userland, final RAM optimization, deferred
+architecture, and documentation discipline). No kernel, ABI, module
+or test source was changed. The former 10190-line TODO snapshot is
+preserved in Git commit `ae03d40f` (`git show ae03d40f:TODO.MD`).
+The main checkout has independent uncommitted documentation changes;
+this cleanup applies to the unmerged PURE development branch only.
+`SIZEOPT.MD` and `userland/dsh/TODO.MD` remain the detailed specialist
+backlogs; historical accepted milestones remain in Git and state/docs.
+
 ## 2026-11-19 v1674: physical RAW PURE high-water 48K PASS
 
 On unmerged PURE branch, matched source-built PDP-6 GENERAL and STRICT
