@@ -190,6 +190,23 @@ This is **not** the full persistent MM/PI6 or 71-write-watch fault
 matrix. P1-E remains OPEN. See the versioned development-branch report
 `design/kcore-pure-mm-precommit-refusal-v1678.md`.
 
+### v1679 repeated original MM precommit refusal: scoped physical PASS
+
+An isolated test-only optional PURE MRES makes the *original* PDP-6 MM
+assembler reject the same sleeping RESIDENT child's rebase three times
+under three real native fragmented RUN refusals. GENERAL and STRICT
+48K guests both retain eight original RAW PACKED children and one
+complete unpinned RESIDENT child until B, then restore/reap all nine
+with exact MM/PROC/SYS_MEMINFO/pin recovery at C. Original free MM
+27324->2549->27324; largest free 27324->1524->27324. Independent
+physical source-linked reports and binary identities are identical.
+Ten original witness tamper cases fail per profile; paired forged
+report and two compiled native unsafe source mutations also reject.
+No fixed KCORE/MM change. This is **not** the full persistent uncertain
+pin/PI6/backing failure or continuous physical MM write-watch gate;
+P1-E remains OPEN. See
+`design/kcore-pure-mm-repeated-refusal-v1679.md` on the PURE branch.
+
 ### Feature exclusions that remain in the TODO
 
 - PI6/scheduler physical fault pressure during simultaneous RAW owners,

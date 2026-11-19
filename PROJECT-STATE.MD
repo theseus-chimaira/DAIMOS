@@ -1,3 +1,29 @@
+## 2026-11-19 v1679: paired original physical repeated-MM precommit refusal (scoped PASS)
+
+GENERAL and STRICT 48K real PDP-6 TSFS guests source-linked from the
+same unchanged v1674 fixed KCORE and an isolated test-only PURE MRES
+completed three genuine original assembler MM rebase geometry refusals
+against the same sleeping RESIDENT child (slot 2), including two more
+real refused RUN attempts after the normal refused tenth RUN. At B the
+original installed KCORE JRST, MRES relocation and physical counter
+at octal 035532 show 3 genuine MM failures per profile. Eight other
+children are correctly RAW PACKED. Original A/B/C free MM
+27324->2549->27324, largest 27324->1524->27324; all original
+MM/PROC/mode/pin, native SYS_MEMINFO, nine-child EXIT/WAIT and
+active descriptor recovery PASS in both independent guests. Paired
+physical reports byte-identical, SHA256
+`f731089e19ec472dc57a7537180a3988edb1d266a036cadb85d745a9a823de8e`.
+Three original installed-JRST/MM-counter, five physical MM/PROC/MEMINFO
+and two missing native repeated-RUN mutations rejected per profile;
+forged cross-profile summary rejected. The four-refusal native original
+pin/rebase source tests, independent bystander READY_ONCE, and two
+compiled unsafe source mutants also PASS. **Scoped v1679 PASS only**:
+continuous physical MM fault high-water, permanently uncertain pins,
+FULL backing failure, PI6 timing and all-branch mainline integration
+remain OPEN. No production KCORE/MM code or installed image changed.
+See `design/kcore-pure-mm-repeated-refusal-v1679.md` and testkit
+`pure-mm-persistent-v1679/`, accepted testkit commit `e238a8f`.
+
 ## 2026-11-19 v1678: original physical PDP-6 PURE MM precommit rejection (scoped PASS)
 
 Both independently built physical 48K GENERAL and STRICT swapless
