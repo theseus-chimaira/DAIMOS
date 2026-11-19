@@ -1,3 +1,25 @@
+## 2026-11-19 v1680: original PDP-6 idle FINALIZE+PREVM repeated refusal (native PASS)
+
+The source-linked native original `proc_finish_slot` and
+`proc_finish_service_v881` assembler now PASS four consecutive modeled
+VM pin refusals (initial foreign finalize + three real idle scans).
+TRANSITION, FINALIZE+PREVM, original VM, pending retry and original
+exit status remain intact without repeat HUP/u-area cleanup or early
+zombie. After a controlled modeled pin release, original VM/u-area
+cleanup eventually publishes exactly one zombie and further scans
+are idempotent. A compiled premature-success mutation is rejected.
+Original v1494 PREVM refusal, v1102 16/32/64 backoff and native v1680
+actual PACKED detach-pin tests all rerun PASS. Testkit commit `5d9fa8c`.
+This models the VM boundary and does NOT constitute an original MM-pin
+instruction or physical 48K PI6 finalizer acceptance. Original fatal
+event delivery defers when a target owns a private executive wait
+continuation; the v1674 PIPE-held child fixture is unsuitable for
+direct remote terminal teardown until that wait safely unwinds.
+Physical test design must establish a safe saved USER PC/no WAIT owner
+before TERM, and preserve exact MM pins and FINALIZE+PREVM at the
+original terminal event. P1-E remains OPEN; no production code change.
+See `design/kcore-pure-terminal-pinned-owner-v1680.md`.
+
 ## 2026-11-19 v1680: terminal pinned-owner refusal native preflight (PASS)
 
 Original PDP-6 `pdp6_pure_detach_v1609`/`proc_swap_detach`/

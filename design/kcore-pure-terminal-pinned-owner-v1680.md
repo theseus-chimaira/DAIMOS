@@ -53,6 +53,54 @@ a pinned owner and rejects the mutation with exact guest status
 The fixture checks the actual numeric 8-bit MM pin count rather than
 incorrectly treating `MM_EXTENT_PINNED` (Boolean) as a count.
 
+## Additional original FINALIZE+PREVM idle retry native gate (PASS)
+
+Separate testkit branch `test-pure-prevm-finalizer-v1680-20261119`,
+commit `5d9fa8c`, now extracts and executes the unchanged original PDP-6
+`proc_finish_slot`, `proc_finish_mark_pending_v892` and
+`proc_finish_service_v881` assembler with the original v1494 finalizer
+fixture. A test-only two-pin value controls a modeled refusal from the
+VM destroy boundary: the initial foreign-process finalizer and three
+subsequent real idle-stack scans must preserve TRANSITION, original
+non-NONE VM, FINALIZE+PREVM, pending retry state, saved exit status,
+and exact u-area ownership. No extra session HUP, zombie publication
+or u-area destruction is allowed while the model reports a held pin.
+After a controlled model release, the *original* idle finalizer
+commits VM destruction, clears PREVM, retries two original u-area
+failures and publishes the zombie exactly once. Further idle scans
+are idempotent. A separately compiled real finalizer mutation that
+forcibly treats refused VM destruction as success is executed and
+rejected by the new native oracle.
+
+Complementary original source-linked tests `daimos-swap-prevm-finalizer-
+v1494.sh`, `daimos-reaper-backoff-v1102.sh` (16/32/64 tick backoff),
+and `pure-terminal-pin-v1680/run-v1680.sh` all rerun PASS, including
+their executed unsafe mutations. The model is not a real MM pin
+instruction and does not prove original 48K PI6 or terminal timing.
+The original RAW terminal leaf's genuine MM pin guard was tested
+separately in the earlier native v1680 component gate above.
+
+### Physical delivery selection: safe owner context is essential
+
+Source inspection of the original `proc_event_apply` shows a fatal
+TERM sent to a noncurrent process with a private `PROC_WAIT_INTR`,
+`PROC_WAIT_EVENT` or `PROC_WAIT_CHILD` executive continuation is
+**deferred**, not immediately finalized. The deterministic v1674
+PIPE-held children have exactly such a saved wait continuation. A
+physical test that simply sends TERM at checkpoint B therefore cannot
+prove pinned PACKED terminal detach: its terminal teardown may run
+only after its private blocked read is safely resumed. This is a
+kernel safety feature, not a reason to bypass its guard.
+
+The next full guest must establish a supported **stopped process with
+saved user-mode return PC and no private executive wait class**, then
+send `SYS_PROCCTL_EVENT_PID` / `SYS_EVENT_TERM` from an authorized
+parent while its retained suffix is genuinely PINNED. Before claiming
+reaper recovery, verify the original CTX_PC, PROC_STOP/WAIT bits,
+MM/PROC owner and backing at the event boundary. No test-only
+mutation may disable this fatal-event safety guard or force direct
+foreign teardown on a borrowed process stack.
+
 ## Limits and next physical gate
 
 The fixture directly adjusts its descriptor to simulate eventual

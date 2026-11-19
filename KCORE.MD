@@ -222,6 +222,20 @@ uncertain pin handling remain OPEN**; fixture pin release is not an
 executed MM-unpin operation. See
 `design/kcore-pure-terminal-pinned-owner-v1680.md`.
 
+### v1680 original idle FINALIZE+PREVM native integration: PASS
+
+Original PDP-6 `proc_finish_slot`/`proc_finish_service_v881` assembler
+executes four modeled VM pin refusals while preserving original
+TRANSITION, FINALIZE+PREVM, backing/VM and idle pending state. After
+controlled release it retires VM/u-area, publishes one zombie and
+remains idempotent. A compiled premature-success mutation rejects.
+Prior v1494 PREVM and v1102 original retry-backoff regressions pass.
+This is *source-linked native* finalizer coverage, not a physical 48K
+PI6 real-MM-pin acceptance. The original foreign-fatal event path
+defers while a child owns a private PIPE wait stack, so a physical
+terminal fixture must first ensure a supported stopped USER-PC owner.
+See `design/kcore-pure-terminal-pinned-owner-v1680.md`.
+
 ### Feature exclusions that remain in the TODO
 
 - PI6/scheduler physical fault pressure during simultaneous RAW owners,
