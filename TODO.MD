@@ -96,7 +96,13 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   physical RO/mount/provider failure and return tests to nine-child
   RAW reclamation and bounded FULL fallback, including immutability,
   source loss/replacement and owner-safe unmount refusal. Retain the
-  accepted v1643/v1650 failure and PI6 scheduling contracts.
+  accepted v1643/v1650 failure and PI6 scheduling contracts. A new
+  source-linked C89 native **two-owner** v1684 test PASSes original
+  zero-copy DROP, simultaneous pinned FULL, immutable executable
+  guards and fail-closed lost-provider restore with two different
+  mounts; two original guard mutants reject. This does NOT close the
+  nine-owner physical/PI6/unmount gate. See
+  `design/kcore-pure-multiowner-source-lifetime-v1684.md`.
 - [ ] **Alternate-root boot matrix:** source-build and physically test
   ROOT=auto for TSFS without AUXSTORE, positive DSK/DRM BACKSTORE,
   selected disk/drum roots, and missing or disappearing controllers.

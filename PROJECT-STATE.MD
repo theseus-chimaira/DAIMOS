@@ -1,3 +1,25 @@
+## 2026-11-19 v1684: two RAW PURE executable sources under bounded FULL (native C89 PASS)
+
+The new daimos-testkit v1684 source-linked **C89** PDP-6 native test
+executes two original `proc_pure_ram_drop_v1381` zero-copy transactions,
+original MM PURE rebase assembly, original bounded
+`proc_pure_ram_restore_v1391` with simultaneously pinned RAW source
+and full APR destination, original source-backed mount/vnode guard
+assembler, and the original packed-mode runtime. Two independent RAW
+PACKED process owners use different executable mounts and vnodes;
+guards report both busy while one FULL is in progress, and the second
+owner's exact MM descriptor, suffix words and mode remain unchanged.
+The restored resident first process **continues protecting** its
+executable because it may be reclaimed again. Removing the second
+mount root causes the original FULL preflight to refuse without
+losing/pinning/freeing the retained RAW suffix. Two compiled unsafe
+original ASM mount/backing scanner mutations fail the new-only C89
+oracle at guest exits `000000004004` and `000000004200` respectively.
+Testkit commit `983c5fb`. No original KCORE/MM/MRES source or RAM change.
+**Native scope only**: real nine-child source-loss/unmount/rename,
+secondary controller failure and physical PI6/write high-water remain
+OPEN. See `design/kcore-pure-multiowner-source-lifetime-v1684.md`.
+
 ## 2026-11-19 v1683: compiler-only C89 folding preflight and native KPARSE structural build
 
 The appropriate `pdp10-testkit` (not DAIMOS kernel testkit) now has

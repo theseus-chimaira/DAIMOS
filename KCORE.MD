@@ -250,6 +250,20 @@ mutants of exact source guards and retry backoff are rejected.
 failure remain unaccepted.** See
 `design/kcore-pure-terminal-finalizer-integration-v1681.md`.
 
+### v1684 two-owner PURE backing lifetime: native C89 PASS
+
+A PDP-6 C89 native test reclaims two different original PROCESS owners
+into RAW PACKED source extents through real MM rebase assembly. While
+one owner undergoes original bounded FULL, the original source mount
+and backing scans protect both executable sources, preserving the
+second process's exact MM descriptor and suffix words. The restored
+resident owner still protects its executable; the other's lost
+provider rejects FULL early without consuming its unique RAW owner.
+Two source-assembler unsafe mount/backing mutations are rejected by
+the new two-owner oracle at precise PDP-6 exit codes. This is **not**
+a physical nine-child source-lifetime/PI6 test and does not close
+P1-E. See `design/kcore-pure-multiowner-source-lifetime-v1684.md`.
+
 ### Feature exclusions that remain in the TODO
 
 - PI6/scheduler physical fault pressure during simultaneous RAW owners,
