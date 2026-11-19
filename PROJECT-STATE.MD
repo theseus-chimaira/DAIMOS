@@ -1,3 +1,27 @@
+## 2026-11-19 v1678: original physical PDP-6 PURE MM precommit rejection (scoped PASS)
+
+Both independently built physical 48K GENERAL and STRICT swapless
+PDP-6 guests execute one genuine `MM_ERR_INVAL` from the original
+`mm_pure_rebase_pinned_v1381` assembler before the PURE DROP commits.
+Original source pin cleanup, resident process, owner and TRANSITION
+are correct: checkpoint B has eight RAW PACKED children and exactly
+one intact RESIDENT failed child (slot 2), with native tenth RUN
+refused under fragmentation. Original A/B/C physical MM free/maximum
+extent: 27323/27323 -> 2548/1523 -> 27323/27323. Live MM descriptor
+counts 9/26/9; no MM pin leaks, all nine EXIT/WAIT, exact final owners
+and SYS_MEMINFO PASS. The source-linked installed MRES counter at
+physical octal 035533 equals 1. Five independent MM/PROC/MEMINFO
+snapshot corruptions and three installed-JRST/counter tamperings
+reject in each profile. Original physical-state reports are identical,
+SHA256 `ef48a65af796f55e8601e3957d6d5d7f028c2f82d758c4503724075d0f9fd291`.
+Native v1678 genuine pin/rebase refusal and two executed unsafe source
+mutants also PASS. Fixed KCORE is unchanged and identical to v1674;
+only isolated test MRES/source copies differ. Scope is exact precommit
+refusal/recovery, not continuous write-watch or all PI6/MM/backing
+failures; P1-E and eventual all-branch integration remain OPEN.
+See `design/kcore-pure-mm-precommit-refusal-v1678.md` and
+`daimos-testkit/tests/validation/pure-mm-precommit-v1678/`.
+
 ## 2026-11-19 v1677: paired original physical lost-success RAW DROP accepted (scoped)
 
 Both original 48K GENERAL and STRICT full PDP-6 guests source-built

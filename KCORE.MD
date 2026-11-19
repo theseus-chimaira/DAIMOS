@@ -173,6 +173,23 @@ matrix or fault-injected 71-watch committed high-water. P1-E stays
 OPEN. See `design/kcore-pure-physical-return-fault-v1677.md` on this
 branch and testkit `pure-pi6-fault-pressure-v1677`.
 
+### v1678 original MM precommit refusal: scoped physical PASS
+
+Two physical 48K GENERAL/STRICT PDP-6 runs with byte-identical fixed
+KCORE and isolated fault MRES completed the nine-child PIPE-held
+RUN/EXIT/WAIT lifecycle despite one *genuine original assembler*
+precommit MM rebase refusal. The original C DROP unpins its temporary
+source and preserves slot 2 as RESIDENT; eight other children become
+RAW PACKED. Original A/B/C physical MM free 27323->2548->27323,
+with largest extent 27323->1523->27323, exact live descriptors and
+no pin/TRANSITION leaks. Physical JRST and MRES counter prove one
+rejection; paired source-linked MM/PROC/MEMINFO reports are identical.
+Five original MM snapshot mutants and three relocated-fault-witness
+mutants reject per profile; native source mutations also reject.
+This is **not** the full persistent MM/PI6 or 71-write-watch fault
+matrix. P1-E remains OPEN. See the versioned development-branch report
+`design/kcore-pure-mm-precommit-refusal-v1678.md`.
+
 ### Feature exclusions that remain in the TODO
 
 - PI6/scheduler physical fault pressure during simultaneous RAW owners,
