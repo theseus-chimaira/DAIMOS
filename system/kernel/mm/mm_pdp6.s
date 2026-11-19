@@ -469,6 +469,11 @@ mm_compact:
         move    1,(17)
         camge   1,010
         jrst    mm_compact_nomem
+        ; Retain a refused VM move while checking the remaining candidates.
+        ; A pinned/mapped process may become movable later, but a failed
+        ; move must not be misreported as ordinary fragmentation and used
+        ; to justify swapping unrelated process images.
+        setz    013,
         setz    012,
 
 mm_compact_scan:
@@ -486,11 +491,20 @@ mm_compact_scan:
         move    1,012
         movei   2,VM_EXTENT_ALIGN_WORDS
         pushj   17,mm_move_extent
-        jumpn   1,mm_compact_next
+        jumpn   1,mm_compact_move_refused_v1678
         pushj   17,mm_compact_find
         jumpn   1,mm_compact_ok
         setz    012,
         jrst    mm_compact_scan
+mm_compact_move_refused_v1678:
+        came    1,[-5]                  ; MM_ERR_BUSY
+        jrst    mm_compact_move_error_v1678
+        move    013,1                   ; remember a real VM/MM refusal
+        jrst    mm_compact_next          ; another candidate may still work
+mm_compact_move_error_v1678:
+        camge   1,[-3]                  ; invalid/unknown: fail closed
+        jrst    mm_compact_return
+        jrst    mm_compact_next         ; no fitting gap for this candidate
 ; Private common setup for repeated LOW gap checks.
 mm_compact_find:
         move    1,010
@@ -508,6 +522,8 @@ mm_compact_nomem:
         seto    1,
         jrst    mm_compact_return
 mm_compact_fragmented:
+        move    1,013
+        jumpn   1,mm_compact_return    ; report MM_ERR_BUSY, not -2
         movni   1,2
         jrst    mm_compact_return
 mm_compact_inval:
@@ -645,6 +661,11 @@ mm_alloc_aligned_swap:
         move    1,010
         move    2,011
         pushj   17,proc_swap_reclaim
+        ; A hard MM refusal must not initiate more victim reclamation.
+        ; Ordinary no-victim (-1) and fragmentation (-2) still follow
+        ; the bounded allocator pressure schedule.
+        camge   1,[MM_ERR_DESCRIPTORS]
+        jrst    mm_alloc_aligned_mm_refused_v1678
         jrst    mm_alloc_aligned_pressure_done
 mm_alloc_aligned_fs_reclaim:
         move    1,010
@@ -653,6 +674,9 @@ mm_alloc_aligned_fs_reclaim:
 mm_alloc_aligned_pressure_done:
         aoj     016,
         jrst    mm_alloc_aligned_retry
+mm_alloc_aligned_mm_refused_v1678:
+        movem   1,(17)                 ; preserve exact -4/-5 for caller
+        jrst    mm_alloc_aligned_return
 
 mm_alloc_aligned_return:
         movei   0,010

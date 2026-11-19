@@ -73,7 +73,9 @@ int proc_swap_backing_busy(vnode_t node);
 /** Return nonzero while a swapped PURE process depends on this mount. */
 int proc_swap_mount_busy(unsigned int mount);
 int proc_swap_service_one(void);
-/** Reclaim process VM until MM can satisfy a requested extent or no victim remains. */
+/** Reclaim process VM until MM can satisfy a requested extent or no victim remains.
+ * Returns MM_OK, -1 if no victim can be reclaimed, or an MM_ERR_INVAL/BUSY
+ * refusal from compaction without swapping additional unrelated owners. */
 int proc_swap_reclaim(kword_t words, kword_t alignment,
     unsigned int exclude_owner);
 

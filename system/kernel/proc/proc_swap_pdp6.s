@@ -2137,7 +2137,8 @@ proc_swap_service_clear:
  * @param AC1 Required free words.
  * @param AC2 Required alignment.
  * @param AC3 Owner excluded from victim selection.
- * @return AC1 zero on success, -1 when no further victim can be reclaimed.
+ * @return AC1 zero on success, -1 when no further victim can be reclaimed,
+ *         or MM_ERR_INVAL/BUSY on an unsafe MM compaction refusal.
  */
 proc_swap_mres_reclaim_v481:
         push    17,10
@@ -2155,9 +2156,12 @@ proc_swap_reclaim_loop:
         move    1,10
         move    2,11
         pushj   17,mm_compact
-        jumpn   1,proc_swap_reclaim_loop
-        ; mm_compact returned zero: preserve it as the success result.
+        jumpe   1,proc_swap_reclaim_done
+        ; An MM ownership/refusal error is not another swap candidate.
+        ; Preserve its typed result instead of swapping additional jobs.
+        camge   1,[-3]
         jrst    proc_swap_reclaim_done
+        jrst    proc_swap_reclaim_loop
 proc_swap_reclaim_fail:
         seto    1,
 proc_swap_reclaim_done:

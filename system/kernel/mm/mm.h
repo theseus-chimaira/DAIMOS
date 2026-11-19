@@ -99,7 +99,10 @@ int mm_pin(kword_t base);
 int mm_unpin(kword_t base);
 /** Return nonzero when the extent beginning at base is physically pinned. */
 int mm_is_pinned(kword_t base);
-/** Compact movable process extents until an aligned request can fit. */
+/** Compact movable process extents until an aligned request can fit.
+ * Returns MM_ERR_BUSY if an otherwise eligible owner refuses relocation
+ * and no other candidate succeeds, or MM_ERR_INVAL for an invalid move.
+ * Neither error authorizes swapping other owners to hide the failure. */
 int mm_compact(kword_t words, kword_t alignment);
 /** Return the largest currently contiguous free run. */
 kword_t mm_largest_free(void);
