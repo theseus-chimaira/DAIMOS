@@ -73,7 +73,14 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   pin/free/rebase errors, restore cancellation and terminal/reaper
   disposition under live RAW pressure. Fail closed if an owner cannot
   be proved singly owned and unpinned; do not publish an ambiguous APR
-  or silently free the sole retained suffix.
+  or silently free the sole retained suffix. Next physical v1680 gate:
+  retain an original MM pin on a real PACKED child at terminal EXIT,
+  prove `FINALIZE+PREVM` pending/backoff on the actual idle-stack PI6
+  path with exact original owner/PROC/MM snapshots, then verify either
+  controlled MM-unpin recovery or permanent fail-closed quarantine.
+  The native v1680 component pin/refusal gate is accepted separately;
+  it is **not** physical terminal/reaper acceptance. See
+  `design/kcore-pure-terminal-pinned-owner-v1680.md`.
 - [ ] **Executable source lifetime under pressure:** extend the real
   physical RO/mount/provider failure and return tests to nine-child
   RAW reclamation and bounded FULL fallback, including immutability,
