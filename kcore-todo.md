@@ -198,6 +198,17 @@ unmerged from its development line; mode3 remains disabled.
   MEMINFO FILE accounting and single-character console formatting.
   This proves **bounded backoff and scheduler progress**, not bounded
   reclamation. K02 OPEN; K04 policy and K03 OOM remain gated.
+  **v1728:** native source-linked PDP-6 integration of actual session
+  teardown and fatal event-delivery routines. Five consecutive
+  permanently refused member FILE closes retain its stable FD6 and
+  the leader TTY; a separate committed VM_NONE+FINALIZE member is
+  skipped. Three additional HUPs after marking the refused member's
+  protected FATAL_CLOSE owner retain FD6 and TTY without re-closing
+  the private-stack owner. Three unsafe source mutations rejected.
+  Separate v922 session HUP, v1720 lowmem EXEC fatal and v970
+  fatal-owner/HUP native regressions all pass. This is source-linked
+  acceptance only; a combined physical session/provider/EXEC guest
+  and K04 permanently refused ownership policy remain OPEN.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.

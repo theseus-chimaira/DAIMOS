@@ -1,3 +1,34 @@
+## 2026-11-20 v1728: source-linked permanent session HUP and EXEC audit PASS
+
+An additional PDP-6 native regression links the actual resident
+proc_session_teardown and proc_event_apply implementation and drives
+five successive session HUP attempts against an ordinary stable
+member FD6 whose FILE provider always refuses close. The session
+leader retains its TTY each time. The separate committed
+TRANSITION+VM_NONE+FINALIZE member is skipped; the unfinished member
+retains FD6 and its u-area. After setting the existing
+PROC_FATAL_CLOSE_BIT on the still-live member, three further session
+HUPs are all refused without new FILE closes, TTY retirement or
+process finalization. Three unsafe source mutations (ignore failed
+HUP, invert fatal owner guard, re-HUP finalized member) were rejected.
+Only the simulated FILE close boundary is stubbed; all session/event
+branch behavior is source-linked PDP-6 production assembler.
+
+Independent native checks passed: v922 repeated partial HUP; v1720
+destructive low-memory EXEC fatal owner with seven source-linked
+cases and two unsafe mutants; and v970 foreign HUP/private stack
+protection. The previously accepted full guest v1727 supplies
+separate physical permanent D6FS provider-entry refusal, bounded
+fatal-owner sleep and independent PIPE/HUP progress.
+
+The new v1728 test is native and source-linked, NOT an additional
+full 256K PDP-6 boot with combined session HUP and permanent
+provider/EXEC failure. That full-system combination and K04 policy
+for permanently unreleaseable owner resources remain open. No
+production code, ABI, permanent data or per-process RAM was changed.
+K02 remains OPEN; K03 OOM victim termination remains disabled.
+See design/kcore-k02-permanent-session-v1728.md.
+
 ## 2026-11-20 v1727: permanent D6FS refusal with independent fatal HUP PASS
 
 The new daimos-testkit v1727 physical 256K PDP-6 guest extends v1726:
