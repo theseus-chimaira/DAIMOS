@@ -512,3 +512,35 @@ integrity error. A mutant reverting to -3(17) fails. This completes
 only the witness-correctness test; the strict full-guest F07 bitmap
 failure still reports two TERM events and other diagnostic errors
 and is not accepted until separately explained and corrected.
+
+### v1713-v1716: completed physical fault gate and source acceptance
+
+The versioned **fault-specific** v1713 F07 guest ran the original
+256K KCC PDP-6 18-child workload while injecting one actual BACKSTORE
+bitmap fault. It passed the original v1203/v1207 process and MM checks,
+the v1349 independent owner-lifecycle checks, and the v1160 physical
+media postflight. The explicit HALT guest showed 18 admitted and reaped
+RUN children, two failed swap-in restores, two deferred TERM events,
+three checked backing release calls, one successful bitmap repair, and
+final BACKSTORE usage zero. The source-linked independent owner
+verifier checked eight original resident PROCESS extents. Sixteen
+unsafe mutations in the fault-specific verifier were rejected.
+
+The clean v1336/v1349 F07 baseline is **not** relaxed by v1713 and
+remains a separate final physical-guest gate. Only the faulted v1713
+profile has been accepted here; the old v1494 diagnostic's one-TERM
+assumption cannot describe two deliberate failed restores.
+
+The daimos-k01-native-acceptance-v1715.sh suite ran 33 source-linked
+native PDP-6 MM ownership/refusal regressions with revision-stamped
+retained logs. All 33 passed, including the corrected v870 PIPE-close
+fixture (v1714). Separately, daimos-k01-mm-free-site-audit-v1716.py
+structurally reviewed all 26 direct mm_free calls in 12 production
+assembly files; it rejected four removed refusal guards and one
+unreviewed extra caller. This source audit is a structural canary,
+not an exhaustive dynamic ownership proof.
+
+K01 remains open for the independent **clean** v1349 physical F07
+baseline, any source/guest regressions it finds, and final integrated
+ownership acceptance. The v1713-v1716 stages added no persistent
+KCORE RAM and did not modify production MM implementation.

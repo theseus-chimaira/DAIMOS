@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1711):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1716):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -95,13 +95,19 @@ unmerged from its development line; mode3 remains disabled.
   atomically under PI; swap-out still requires its own checked pin.
   v1712 corrects the test-only v1494 TERM stack witness to -4(17)
   and checks it in native PDP-6; the full physical F07 gate remains open.
+  v1713 physical faulted F07 PASS: 18/18 children, two deferred TERM
+  events, exact backing repair, independent MM owners and final
+  BACKSTORE zero. The clean no-fault v1349 F07 remains a separate gate.
+  v1714 restores the native v870 PIPE-close source extraction;
+  v1715 passes 33 source-linked native K01 regressions; v1716 audits
+  all 26 MM-free callers in 12 files and rejects five unsafe changes.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
   `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
   rebase, restore and other owner failure paths (including other
-  temporary provider scratch on failed setup), the strict F07 bitmap-
-  refusal postflight (18/18 children now admitted), and a final
+  temporary provider scratch on failed setup), the independent clean
+  F07 baseline, and the final
   cross-subsystem source/guest acceptance sweep. Hardware interrupt
   tests cannot exhaust all races.
 - [ ] **K02 - Process resource cleanup.** Complete failure-safe cleanup
