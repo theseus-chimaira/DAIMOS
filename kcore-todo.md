@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1702):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1703):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -67,12 +67,18 @@ unmerged from its development line; mode3 remains disabled.
   (v1102/v1098 tests), with offline operator recovery for permanent
   ownership corruption; neither forced release nor a new retry table
   is permitted.
+  v1703 confirms permanent real-MM pin (-5), wrong-owner (-4) and a
+  distinct held filesystem-provider lease in three individually booted
+  256K PDP-6 full-system guests: owners and WAIT remain quarantined,
+  retries are bounded in rate, diagnostics stay exact and independent
+  users progress. The v1703 testkit gate records per-case evidence.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
   `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
-  rebase, restore and other owner failure paths, cross-subsystem
-  bounded-retry acceptance and complete physical guest fault injection.
+  rebase, restore and other owner failure paths, physical transient
+  retry-to-completion and qualified PI6 interleavings, plus a final
+  cross-subsystem source/guest acceptance sweep.
 - [ ] **K02 - Process resource cleanup.** Complete failure-safe cleanup
   of process-owned MM, VM, FD, PIPE/FIFO and related resources during
   EXIT, EXEC and failed or unpublished RUN. Do not claim provider-specific

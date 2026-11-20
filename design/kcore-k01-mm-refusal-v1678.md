@@ -265,6 +265,38 @@ Remaining K01 gates include full physical guest PI6 and MM fault
 injection on final source, verification of owner quarantine and
 bystander progress, and a residual cross-subsystem refusal audit.
 
+### v1703: full-guest permanent MM owner-refusal matrix
+
+Three existing 256K PDP-6 physical full-system fault-injection guests
+were booted against DAIMOS f7e8450a (v1702) without editing the
+production tree. The versioned testkit wrapper
+`daimos-k01-physical-owner-gate-v1703.sh` selects each case and requires
+its established guest-side PASS witness, rather than treating a built
+image, partial boot or mere simulator exit as acceptance.
+
+* v909: one genuine permanently pinned u-area, 7 checked MM releases,
+  7 exact -5 refusals, 6 reaper attempts, retained owner and unreaped
+  WAIT, independent runnable user, zero errors.
+* v1101: one wrong-owner u-area MM descriptor, 7 checked releases,
+  7 exact -4 refusals, 6 reaper attempts, correct 0402 ownership
+  diagnostics, no false free, independent runnable user, zero errors.
+* v1125: the same 7 wrong-owner -4 refusals, plus an independently
+  serialized filesystem-provider lease still held after 80 observed
+  provider waits, while the original quarantined MM owner and a
+  separate runnable user remain intact; zero errors.
+
+These are three individually successful runs; the combined selector
+`K01_PHYSICAL_CASE=all` was not itself run. Native v1098/v1102 retry
+clock and v887 ownership diagnostic suites were also re-run and pass.
+This provides full-system evidence for permanent refusal quarantine,
+bounded retry rate and bystander progress, but does not yet prove a
+transient physical VM/u-area refusal later completes exactly once or
+that every PI6 interrupt interleaving is safe. The existing full guest
+v997/v1106/v1153 recovery fixtures need source-anchor review against
+the v1695-v1702 MM/VM changes before they can be counted as current
+acceptance. K01 remains open for those tests and a final integrated
+ownership/refusal audit; no forced administrative MM release is added.
+
 Verify permanent actual MM free/pin/unpin/rebase and process restore
 refusals through all live owners, including ambiguous or missing extents,
 bounded retry/reaper state, consistent typed GETTEARDOWN diagnostics, and
