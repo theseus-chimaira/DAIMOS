@@ -1,3 +1,52 @@
+## 2026-11-20 v1722a: physical named FIFO pin/reopen and typed refusal PASS
+
+The pre-existing daimos-testkit v900 full-system 256K PDP-6 named-FIFO
+guest was rerun against copied current production KCORE sources. The
+real MM owner was pinned during the first last-reference close and
+produced an actual MM_ERR_BUSY (-5), while the object was reinserted
+into the active FIFO list and could be reopened by another owner.
+One real MM pin, one unpin, one BUSY refusal and three final-close
+attempts completed with `errors=0` and expected guest HALT. Versioned
+test-image hashes and exact gate details are in the v1722 design report.
+
+Native `daimos-pipe-typed-close-v1099` passed both MM_ERR_BUSY/-5 and
+MM_ERR_INVAL/-4 owner-retention cases with four failing unsafe mutants.
+`daimos-fifo-open-abort-mm-v1084` passed the interrupted FIFO OPEN
+owner-pin/unpin-and-close path, and `daimos-pipe-directmount-20261026-v417`
+passed TSFS/PIPE mount isolation. Two old testkit scripts were repaired
+to exclude an unrelated post-v1531 DTFS abandonment entry from their
+source-linked FILE helper extraction. No source, ABI or permanent RAM
+change in production DAIMOS; K02 remains OPEN, K03 OOM killing disabled.
+
+## 2026-11-20 v1722: K02 integrated RUN/PIPE/FILE lifetime regression
+
+No production KCORE source or permanent RAM change. The new source-linked
+PDP-6 native `daimos-k02-run-pipe-lifetime-v1722.sh` extracts the actual
+RUN fdmap copy, PIPE reference acquisition/release, and FILE close-all
+transaction. A malformed RUN map aborts after speculative FD copying but
+before PIPE reference acquisition. A valid RUN duplicates the parent's
+reader into two child FDs, inherits one writer and copies a TSFS mount-8
+FD with PIPE-like low vnode bits; the expected reader/writer counts and
+untouched foreign-provider object are checked. The child close succeeds
+for all PIPE descriptors but deliberately refuses the first TSFS sync;
+only the TSFS FD remains live. Its first failing FD3 and exact -5 cause
+appear in the existing u-area fatal-FILE witness. A retry succeeds
+without decrementing already-closed PIPE references again. Parent close
+then refuses final PIPE MM release with actual MM_ERR_BUSY identity -5;
+its writer FD and unchanged object reader/writer counts survive, witness
+identifies FD1, and a subsequent retry frees exactly once. Two negative
+source mutants (skip inherited PIPE acquisition and incorrectly clear a
+descriptor on refused close) are both rejected by actual guest tests.
+
+The older `daimos-run-fdmount-v19` test was stale after FILE v417 packed
+the complete six-bit vnode mount directly into node_meta. Its source-
+linked check now asserts mount 63/offset preservation and no obsolete
+u-area bitmap; it passes alongside the existing PIPE/TSFS mount-8 test.
+No allocation, process fields, filesystem provider ABI or KCORE binary
+size changed. This is not a complete physical concurrency proof: K02
+remains OPEN and K03 automatic OOM termination remains disabled. Details:
+`design/kcore-k02-run-pipe-lifetime-v1722.md`.
+
 ## 2026-11-20 v1721: physical PDP-6 post-MM-free EXEC backing refusal
 
 The DAIMOS production source is unchanged. A new daimos-testkit v1721

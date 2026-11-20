@@ -135,6 +135,17 @@ unmerged from its development line; mode3 remains disabled.
   third call accepts without a second PROCESS MM release. Backing
   identity survives both refusals; FILE retry and parent WAIT pass.
   K02 remains OPEN for other resource and provider interleavings.
+  **v1722:** source-linked PDP-6 native integrated RUN/PIPE/FILE test
+  covers malformed unpublished FD-map rollback with no ref acquisition,
+  duplicated inherited PIPE endpoints, full six-bit TSFS mount isolation,
+  independent VFS_SYNC and final PIPE MM_ERR_BUSY close refusals, exact
+  per-FD witness and successful retry without double release. Two
+  ownership-mutating negative controls are rejected. K02 remains OPEN.
+  **v1722a:** the existing 256K PDP-6 physical named-FIFO guest v900
+  passes against current KCORE with a real MM pin, -5 final-close
+  refusal, FIFO re-listing/reopen, unpin and successful retry. Native
+  typed -4/-5 FIFO tests v1099 (four mutants), pinned OPEN rollback
+  v1084 and direct-mount isolation v417 also pass. No KCORE change.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.
