@@ -1610,7 +1610,7 @@ proc_swap_verify_restore:
         move    2,14
         move    3,11
         pushj   17,backstore_read
-        jumpn   1,proc_swap_verify_free_fail
+        jumpn   1,proc_swap_verify_restore_lost_v1691
         move    1,(17)
         move    2,14
         pushj   17,backstore_free
@@ -1624,7 +1624,17 @@ proc_swap_verify_restore_fail:
         move    1,(17)
         move    2,14
         move    3,11
-        pushj   17,backstore_read       ; best-effort original-image restore
+        ; The PURE prefix was already erased. If the original image
+        ; cannot be restored, freeing its scratch copy and returning
+        ; would make the damaged resident process runnable. Keep the
+        ; scratch owner and the process TRANSITION, then fail-stop.
+        pushj   17,backstore_read
+        jumpn   1,proc_swap_verify_restore_lost_v1691
+        jrst    proc_swap_verify_free_fail
+        .globl  proc_swap_verify_restore_lost_v1691
+proc_swap_verify_restore_lost_v1691:
+        halt    .                       ; original resident image lost
+        jrst    .-1
 proc_swap_verify_free_fail:
         move    1,(17)
         caml    1,backstore_blocks

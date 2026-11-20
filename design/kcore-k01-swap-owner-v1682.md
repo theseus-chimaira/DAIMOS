@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1690
+# K01 swap MM owner and rollback safety, v1679-v1691
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -218,6 +218,26 @@ table-integrity invariant, not a recoverable out-of-memory condition.
 `tests/validation/daimos-k01-relocate-publication-v1690.sh` injects
 `MM_ERR_DESCRIPTORS` into the real first or second insertion call and
 matches each native PDP-6 HALT PC against the production symbol.
+
+### v1691: never resume a partially restored PURE verification image
+
+In `PROC_SWAP_VERIFY_PURE=1` diagnostic builds, the verifier saves a
+complete resident image to scratch backing, zeroes the PURE prefix,
+reloads the executable and compares its reconstructed words. If a
+comparison/reload fails, it attempts to restore the original image.
+Previously it ignored a failed restore read and freed the scratch
+backing, then returned a recoverable verification error. Likewise, a
+failed read on the normal restore path fell into scratch cleanup.
+Either path could resume a process whose resident image was damaged.
+
+Both failed original-image restores now enter the named
+`proc_swap_verify_restore_lost_v1691` HALT with the scratch backing
+still allocated and the swap TRANSITION held. Successful restoration
+still permits ordinary cleanup. No permanent RAM is added; the guard
+is absent when PURE verification is disabled. The native PDP-6 test
+`daimos-k01-pure-restore-v1691.sh` executes the production failure
+branch with a refused backing read, matches the HALT PC and rejects
+an unsafe branch-removal mutation.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and
