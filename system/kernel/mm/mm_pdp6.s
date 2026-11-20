@@ -845,8 +845,12 @@ mm_shrink_inval:
 
 ; int mm_process_grow_pinned(base,owner,new_words)
 ; AC5=owner, AC6=size, AC7=span; AC10=index, AC11=limit.
+; AC10/AC11 are caller-preserved PDP-6 registers. Swap preparation
+; retains its request pointer in AC10 across this call.
 ; The next extent or arena end must accommodate the enlarged image.
 mm_process_grow_pinned:
+        push    17,010
+        push    17,011
         move    5,2
         move    6,3
         jumpe   5,mm_grow_inval
@@ -877,7 +881,7 @@ mm_process_grow_pinned:
         jrst    mm_grow_limit
         ; No growth is needed; do not modify the descriptor.
         setz    1,
-        popj    17,
+        jrst    mm_grow_return_v1684
 mm_grow_limit:
         hrrz    7,mm_extents(1)
         move    011,7
@@ -912,15 +916,18 @@ mm_grow_commit:
         lsh     1,1
         hrlm    6,mm_extents(1)
         setz    1,
-        popj    17,
+        jrst    mm_grow_return_v1684
 mm_grow_nospace:
         movni   1,1
-        popj    17,
+        jrst    mm_grow_return_v1684
 mm_grow_busy:
         movni   1,5
-        popj    17,
+        jrst    mm_grow_return_v1684
 mm_grow_inval:
         movni   1,4
+mm_grow_return_v1684:
+        pop     17,011
+        pop     17,010
         popj    17,
 
 ; AC1=base, AC2=+1/-1. Shared pin adjustment.

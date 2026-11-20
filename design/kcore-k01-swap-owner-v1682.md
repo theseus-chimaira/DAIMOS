@@ -1,4 +1,4 @@
-# K01 swap-out MM owner and rollback safety, v1679-v1683
+# K01 swap MM owner and rollback safety, v1679-v1684
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -64,6 +64,18 @@ MM descriptor unchanged; it does not free the unpublished backing run
 or invent a physical release. No additional persistent RAM is used.
 The ordinary successful `mm_free` and swap publication remain unchanged.
 
+### v1684: pinned growth corrupted swap preparation's request pointer
+
+The production `mm_process_grow_pinned` leaf used AC10 as the extent
+index and AC11 as the proposed limit without saving either register.
+The caller `proc_swap_exchange_prepare_v781` holds the nine-word swap
+request pointer in AC10 across `proc_swap_exchange_prepare_ram_v780`,
+which calls that MM leaf when the incoming process needs more RAM.
+The leaf therefore corrupted its caller's request pointer on success
+and on several refusal paths. Subsequent disk-tail cleanup and request
+publication could address unrelated words. The MM leaf now saves and
+restores AC10/AC11 on all exits. No permanent RAM or new policy is used.
+
 ## Native validation
 
 All tests reside in `daimos-testkit`, not in the DAIMOS source tree:
@@ -85,6 +97,10 @@ All tests reside in `daimos-testkit`, not in the DAIMOS source tree:
   Wrong owner and a pinned extent must retain TRANSITION and physical
   descriptors; a valid owner is freed. Restoring the unsafe rollback
   branch fails the regression.
+- `tests/validation/daimos-k01-grow-registers-v1684.sh` executes the
+  real PDP-6 growth leaf and checks AC10/AC11 after growth, no-space
+  refusal and owner refusal. Removing the register saves/restores
+  fails the test; the earlier v769 native growth regression also passes.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and
