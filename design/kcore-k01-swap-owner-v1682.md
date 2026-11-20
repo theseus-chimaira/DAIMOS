@@ -167,6 +167,21 @@ policy is introduced.
 and FS copy code, tests stale-base refusal with unchanged destination
 and process state, verifies valid relocation, and rejects a bypassed
 source-base check under native PDP-6 stepping.
+
+### v1688: verify relocation rollback without changing kernel code
+
+The source-linked native PDP-6 test
+`tests/validation/daimos-k01-relocate-rollback-v1688.sh` extends the
+existing v531 MM relocation fixture. An injected no-fit result after
+the temporary descriptor deletion must restore the original descriptor
+and extent count, preserve the owner, balance PI disable/restore and
+avoid calling VM. It also repeats the existing VM refusal and success
+cases. Removing the rollback insertion in an executable mutant is
+rejected. The existing production implementation passes unchanged.
+
+This test does not simulate failure of the descriptor insertion itself;
+that would be a separate MM table-integrity invariant, not ordinary
+fragmentation or a recoverable VM refusal.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and

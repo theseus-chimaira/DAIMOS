@@ -28,7 +28,8 @@ unmerged from its development line; mode3 remains disabled.
   fail-stop on refused swap-in unpin (v1685), and exact MM ownership
   verification before restoring a swapped image (v1686), and rejection
   of stale process-table source bases before VM relocation (v1687).
-  Native PDP-6
+  Native PDP-6 v1688 also verifies no-fit descriptor rollback and PI
+  restoration, including an unsafe rollback mutation. Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
   `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
