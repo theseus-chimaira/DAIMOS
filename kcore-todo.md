@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1693):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1694):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -39,6 +39,9 @@ unmerged from its development line; mode3 remains disabled.
   runtime-sized process table before accessing a process descriptor.
   v1693 rejects MM relocation lengths that differ from the resident
   process VM extent, before physical copy or process-state mutation.
+  v1694 closes the compactor's PI-to-descriptor race: relocation locks
+  PI before reading the source and rechecks PROCESS type, pin count,
+  table bounds and slot integrity before deleting any owner.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and

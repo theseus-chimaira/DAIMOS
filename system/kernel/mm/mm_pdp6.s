@@ -376,25 +376,36 @@ mm_move_extent:
         blt     0,-6(17)
         move    010,1
         move    011,2
-        ; Reinsertion is mandatory on every relocation exit. Prove that
-        ; the original descriptor table is valid before deleting an
-        ; owner; otherwise rollback could fail with MM_ERR_DESCRIPTORS
-        ; and silently orphan the process's physical memory.
+        ; The compactor's preceding PROCESS/unpinned test was made with
+        ; PI enabled. An interrupt may have pinned or changed the owner
+        ; meanwhile. Lock the MM descriptor table BEFORE reading the
+        ; source, and revalidate the exact descriptor under that lock.
+        pushj   17,mach_pi_disable
+        movem   1,-3(17)
+        ; Reinsertion is mandatory on every relocation exit. The table
+        ; must be valid before we delete its original physical owner.
         move    1,mm_extent_count
         camle   1,mm_extent_capacity
-        jrst    mm_move_bad_table_v1689
+        jrst    mm_move_bad_table_locked_v1694
+        jumpge  010,mm_move_slot_nonnegative_v1694
+        jrst    mm_move_bad_table_locked_v1694
+mm_move_slot_nonnegative_v1694:
         caml    010,1
-        jrst    mm_move_bad_table_v1689
+        jrst    mm_move_bad_table_locked_v1694
         move    1,010
         lsh     1,1
         move    2,mm_extents(1)
         move    3,mm_extents+1(1)
+        hlrz    4,3
+        andi    4,7
+        caie    4,MM_TYPE_PROCESS
+        jrst    mm_move_bad_table_locked_v1694
+        tlne    3,03770
+        jrst    mm_move_pinned_locked_v1694
         movem   2,-5(17)
         movem   3,-4(17)
         hrrz    012,2
         hlrz    013,2
-        pushj   17,mach_pi_disable
-        movem   1,-3(17)
         move    1,010
         pushj   17,mm_delete
         move    1,013
@@ -472,8 +483,16 @@ mm_move_restore_pi:
         sub     17,[015,,015]
         popj    17,
 
-mm_move_bad_table_v1689:
+mm_move_bad_table_locked_v1694:
         movni   1,4                   ; MM_ERR_INVAL, no owner mutation
+        jrst    mm_move_locked_refuse_v1694
+mm_move_pinned_locked_v1694:
+        movni   1,5                   ; MM_ERR_BUSY, existing pin retained
+mm_move_locked_refuse_v1694:
+        movem   1,-1(17)
+        move    1,-3(17)
+        pushj   17,mach_pi_restore
+        move    1,-1(17)
         movei   0,010
         hrli    0,-014(17)
         blt     0,016

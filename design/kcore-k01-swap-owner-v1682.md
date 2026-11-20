@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1693
+# K01 swap MM owner and rollback safety, v1679-v1694
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -289,6 +289,32 @@ Removing the exact-length guard causes its negative mutant to fail.
 Older relocation fixtures now encode the actual process VM length
 instead of leaving it zero, and compare the physical-base right half
 where appropriate. Full physical guest fault injection remains open.
+
+### v1694: serialize MM relocation owner validation under PI
+
+The compactor checked that the candidate descriptor was a PROCESS
+extent without pins, but its check ran with PI enabled. `mm_move_extent`
+then copied the descriptor **before** disabling PI. A pin or descriptor
+change at that boundary could be overwritten by the stale saved copy:
+relocation could move an extent which had acquired a physical pin.
+
+`mm_move_extent` now disables global PI before reading its source
+descriptor, then checks count/capacity, a nonnegative source slot,
+PROCESS type and zero pins under the same exclusion used for delete,
+fit, copy and publication. Invalid descriptors return `MM_ERR_INVAL`
+(-4); a newly pinned extent returns `MM_ERR_BUSY` (-5). Both restore
+the previous PI state without changing the descriptor or VM owner.
+Successful relocation and its owner-loss HALTs remain unchanged. This
+costs no permanent RAM, only a short validation inside the existing
+critical section.
+
+Native PDP-6 `daimos-k01-relocate-pin-race-v1694.sh` injects a source
+pin at `mach_pi_disable`, after the compactor's earlier check but before
+its protected descriptor read. It verifies preservation of the pin,
+owner, extent count, PI balance, no VM call, invalid type and negative
+slot refusal, then a normal VM refusal and successful relocation. A
+mutation removing the pinned guard is rejected. The earlier capacity,
+rollback, publication and full-path relocation tests remain applicable.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and
