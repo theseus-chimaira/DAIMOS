@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1703):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1704):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -72,13 +72,18 @@ unmerged from its development line; mode3 remains disabled.
   256K PDP-6 full-system guests: owners and WAIT remain quarantined,
   retries are bounded in rate, diagnostics stay exact and independent
   users progress. The v1703 testkit gate records per-case evidence.
+  v1704 revalidated the real-PI6 mixed physical recovery guest after
+  repairing old test-only MM-free hooks for v1697 PI restoration:
+  PIPE, DPY, VM and u-area each reject a live pin then release exactly
+  once; full FILE->VM->u-area->ZOMB ordering, 55 qualified PI6 ticks,
+  live bystander progress and 48 WAIT/PID cycles pass without errors.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
   `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
-  rebase, restore and other owner failure paths, physical transient
-  retry-to-completion and qualified PI6 interleavings, plus a final
-  cross-subsystem source/guest acceptance sweep.
+  rebase, restore and other owner failure paths, outstanding full-guest
+  swap/restore refusal evidence and a final cross-subsystem source/guest
+  acceptance sweep. Hardware interrupt tests cannot exhaust all races.
 - [ ] **K02 - Process resource cleanup.** Complete failure-safe cleanup
   of process-owned MM, VM, FD, PIPE/FIFO and related resources during
   EXIT, EXEC and failed or unpublished RUN. Do not claim provider-specific

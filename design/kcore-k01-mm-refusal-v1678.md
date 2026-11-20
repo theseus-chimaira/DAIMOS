@@ -297,6 +297,44 @@ the v1695-v1702 MM/VM changes before they can be counted as current
 acceptance. K01 remains open for those tests and a final integrated
 ownership/refusal audit; no forced administrative MM release is added.
 
+### v1704: real PI6 and physical VM/u-area retry-to-completion
+
+The v997/v1106/v1153 copied-kernel recovery injector still expected an
+old `mm_free` success sequence ending in `POPJ 17,`. Since v1697,
+successful physical release must branch to `mm_free_restore_pi_v1697`
+before returning, or the caller's interrupt state is lost. The test
+injector was brought up to date at both VM and mixed-DPY MM release
+sites; the production kernel required **no change**.
+
+New `daimos-k01-recovery-injection-v1704.sh` exercises all four
+production-source injection modes (base, physical VM, integrated and
+mixed PIPE/DPY/VM/u-area) and rejects a negative mutant with the old
+MM-free `POPJ` tail. All four modes and that mutant pass on native
+source, before attempting the expensive full-guest build.
+
+The combined v1153 disposable 256K PDP-6 guest then booted and
+**passed all independent v997/v1103/v1106/v1117/v1144/v1153 guest
+counter assertions**, with its explicit HALT and zero error counters:
+
+* Process VM: one real MM pin, one real unpin, two checked MM frees,
+  one genuine MM_BUSY refusal, one accepted free and one backing detach.
+* PIPE, DPY and u-area: each had one live pin, one matching unpin,
+  one MM_BUSY refusal and one exactly-once physical free. All four
+  physical allocation bases were distinct.
+* The FILE->VM->u-area->ZOMB publication order was checked after
+  the final release; refused provider/FILE/HUP steps did not fabricate
+  completion. The foreign filesystem lease persisted.
+* Qualified PI6 clock advanced by 55 ticks, a separate user advanced
+  3 times during the measured span, and the full test registered
+  48 independent stale WAIT/PID/event refusals without process-MM
+  or slot growth. Bystander counter reached 36; all error counts zero.
+
+These results close K01's transient physical MM recovery and mixed
+PI6-progress acceptance gap. They do not establish that every possible
+interrupt interleaving was executed. K01 stays open for the remaining
+physical swap/restore refusal matrix, final source-wide MM ownership
+and failure-propagation review, and an integrated acceptance sign-off.
+
 Verify permanent actual MM free/pin/unpin/rebase and process restore
 refusals through all live owners, including ambiguous or missing extents,
 bounded retry/reaper state, consistent typed GETTEARDOWN diagnostics, and
