@@ -1,3 +1,15 @@
+## 2026-11-20 v1720a: existing v890 physical fatal EXEC regression PASS
+
+The existing daimos-testkit v890 256K PDP-6 full-system guest was rerun
+against copied v1720 production sources. It reports one real old-VM
+destruction, a failed replacement load, three FILE close passes, two
+VFS refusals, two retry sleeps, exact FD witness/owner retention and
+cleanup, one eventual EXIT, parent WAIT, and `error=0`. This confirms
+the established fatal FILE/EXIT path still works with v1720. This guest
+does **not** fault the earlier old-VM backing detach *after* PROCESS MM
+free. The v1720 native guard test covers that distinct case; its real
+physical injection remains K02 work. No production changes in v1720a.
+
 ## 2026-11-20 v1720: K02 destructive low-memory EXEC owner recovery (partial)
 
 The fallback `exec_replace_current_lowmem` can destroy the current user

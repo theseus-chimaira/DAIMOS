@@ -63,6 +63,17 @@ The following independent native regressions also pass with v1720:
 v1719 staged EXEC owner, v200 EXEC transaction (8 cases), v20 PURE
 mount/rollback, and v1706 launch-copy MM refusal with negative control.
 
+The pre-existing **v890 full-system 256K PDP-6 EXEC fault guest** also
+passes against copied v1720 production kernel sources. It records one
+real old-VM destruction and one later replacement-loader failure,
+three FILE-close VFS calls (two refusals), three close passes, two
+sleep/retries, a held FD during refusal, its eventual clear, a clean
+fatal-process exit and final WAIT. Test error count: zero. This verifies
+that v1720 did not regress the established post-commit fatal-FILE
+recovery path. The v890 guest **does not** inject the new case of a
+backing detach refusal *after* committed PROCESS MM free. Do not use
+this result as acceptance of that different K02 physical fault gate.
+
 ## Exact measured footprint
 
 Matched GCC lowmem/disk-root links against committed v1719:
