@@ -394,10 +394,20 @@ exec_replace_current_lowmem:
         pushj   17,vm_space_destroy
         jumpe   1,exec_lowmem_old_gone
 
-        ; Destruction failed before proc_swap_detach; the old image remains
-        ; valid, so restore its user-map hold and return non-destructively.
+        ; A failed backing detach can follow a committed MM free. In that
+        ; case VM_NONE is already published: the old APR is no longer owned,
+        ; and the caller must enter fatal EXIT rather than resume userspace.
+        move    1,1(15)
+        camn    1,[-1]
+        jrst    exec_lowmem_fatal_v1720
+        ; The old VM is still physically owned. Restore its mapped-argument
+        ; hold and allow ordinary EXEC failure to return to the old image.
         pushj   17,vm_user_mapping_hold
         seto    16,
+        jrst    exec_lowmem_free
+
+exec_lowmem_fatal_v1720:
+        movni   16,2                    ; committed old VM, no user resume
         jrst    exec_lowmem_free
 
 exec_lowmem_old_gone:
@@ -470,6 +480,12 @@ exec_lowmem_success:
         jrst    exec_lowmem_free
 
 exec_lowmem_fatal:
+        ; The replacement loader runs directly on the current descriptor.
+        ; It can overwrite META with its entry PC and clear that left half
+        ; during its own failed VM rollback. Restore the stable u-area owner
+        ; before the fatal FILE/VM/EXIT continuation inspects this process.
+        move    1,EXEC_LM_META(17)
+        movem   1,(15)
         movni   16,2                    ; EXEC_REPLACE_FATAL
 
 exec_lowmem_free:

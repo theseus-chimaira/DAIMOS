@@ -123,6 +123,12 @@ unmerged from its development line; mode3 remains disabled.
   than resumable failure if the old VM is already VM_NONE. Native staged
   backing and failure-path tests pass. Full EXIT/RUN/EXEC cleanup and
   physical fault-pressure acceptance remain open; K02 is NOT closed.
+  **v1720:** destructive low-memory EXEC now distinguishes refused VM
+  teardown before physical release from post-release backing refusal;
+  the latter enters fatal cleanup instead of resuming a freed APR.
+  Replacement loader failure also restores the original stable u-area
+  descriptor before fatal FILE/VM/EXIT. Seven source-linked native cases
+  and two unsafe mutants pass. K02 remains OPEN.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.

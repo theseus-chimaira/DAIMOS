@@ -1,3 +1,41 @@
+## 2026-11-20 v1720: K02 destructive low-memory EXEC owner recovery (partial)
+
+The fallback `exec_replace_current_lowmem` can destroy the current user
+VM but fail while detaching its separately owned backing record. Current
+`vm_space_destroy` publishes VM_NONE immediately after the irreversible
+PROCESS MM free; the older fallback unconditionally restored its user-map
+hold and returned an ordinary EXEC error on *any* destructor refusal. It
+could therefore resume a user PC against an already freed physical APR.
+v1720 tests the descriptor's complete VM_NONE word after refusal: only a
+still-owned old VM may resume; VM_NONE instead returns the existing
+EXEC_REPLACE_FATAL status and enters the private fatal FILE/EXIT path.
+
+The fallback loader also operates directly on the live process descriptor.
+During an unsuccessful load, `exec_load_process` may replace its metadata
+left half with the entry or clear it after rollback, hiding the stable
+executive u-area needed by fatal teardown. v1720 restores the saved exact
+original descriptor metadata before reporting loader/startup fatal failure.
+Both corrections reuse stack-local records and existing ownership state;
+no persistent data or ABI additions are introduced.
+
+The testkit v1720 native PDP-6 harness exercises seven physical-status
+paths with the production lowmem assembly plus source-matched mock
+interfaces: old-VM pre-release and post-release refusal, early/late
+replacement-loader rejection, successful replace, failed startup with
+replacement teardown and failure to allocate launch-copy scratch. Two
+mutations (resuming VM_NONE and failing to restore u-area metadata) are
+rejected. Existing v1719 staged EXEC, v200 transaction, v20 PURE backing,
+and K01 v1706 exact launch-copy MM free gates also pass. Matched GCC
+lowmem disk-root links v1719 -> v1720 show KCORE 10,454 -> 10,461 words
+(+7); KCORE+MRES 17,179 -> 17,186 and permanent last 17,226 -> 17,233.
+The pre-existing 040000-octal permanent-address gate still fails for both;
+v1720 remains 850 free-word accounting units above the limit. No added
+permanent RAM. K02 and K03 remain OPEN; this native evidence is not a
+substitute for physical injected backing-failure acceptance.
+
+See `design/kcore-k02-exec-lowmem-owner-v1720.md` and
+`daimos-testkit/tests/validation/daimos-k02-exec-lowmem-owner-v1720.sh`.
+
 ## 2026-11-20 v1719: K02 staged EXEC cleanup ownership (partial)
 
 In `exec_replace_current`, the old-VM failure path previously restored the
