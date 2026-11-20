@@ -1,3 +1,34 @@
+## 2026-11-20 v1721: physical PDP-6 post-MM-free EXEC backing refusal
+
+The DAIMOS production source is unchanged. A new daimos-testkit v1721
+full-system 256K PDP-6 guest extends the existing v890 fatal-EXEC test
+by instrumenting `proc_swap_detach` only in a disposable copied kernel.
+The actual `vm_space_destroy` and MM allocator are left intact. At the
+specific old-VM owner, a complete VM_NONE and zero remaining PROCESS MM
+extents are required before injecting two separate backing-detach
+refusals. The original backing record is checked unmodified on all
+three calls: one from the EXEC owner and two from slot zero. The third
+call executes production detach and the process finishes fatal FILE
+close, EXIT and parent WAIT. Counters: attempts 3, refusals 2, owner
+calls 1, slot-zero calls 2, retained backing 037 octal, errors 0.
+Independent v890 FILE refusal calls 3, refused closes 2, close passes
+3, timer sleeps 2, eventual exit 1, with zero errors. Old-VM destroy
+success and replacement-load counters are correctly zero in this
+post-free-detach refusal path; the original successful-destroy branch
+was not traversed. This is genuine PROCESS MM release with test-only
+injection at the backing-detach boundary, not a claim that a physical
+backstore provider failed organically.
+
+The testkit also repaired source extraction and cold-branch fixture
+symbols in native FILE close regressions v865/v867/v923; those three,
+v870 PIPE MM close and v892 unpublished RUN rollback now all pass.
+The final v1721 standalone test script returned success on the built
+guest; its KCORE/SIMH SHA-256 witnesses are in the versioned design file.
+No KCORE source, binary size, ABI or permanent RAM changes in v1721.
+K02 remains OPEN for the remaining physical provider/PIPE/FIFO and
+EXIT/RUN interleavings, and K03 OOM termination stays disabled. See
+`design/kcore-k02-postfree-detach-v1721.md`.
+
 ## 2026-11-20 v1720a: existing v890 physical fatal EXEC regression PASS
 
 The existing daimos-testkit v890 256K PDP-6 full-system guest was rerun

@@ -129,6 +129,12 @@ unmerged from its development line; mode3 remains disabled.
   Replacement loader failure also restores the original stable u-area
   descriptor before fatal FILE/VM/EXIT. Seven source-linked native cases
   and two unsafe mutants pass. K02 remains OPEN.
+  **v1721:** the full 256K PDP-6 guest now exercises two intentionally
+  refused backing-detach calls *after* the real PROCESS MM free. The
+  original owner enters fatal EXIT, slot zero retries twice, and the
+  third call accepts without a second PROCESS MM release. Backing
+  identity survives both refusals; FILE retry and parent WAIT pass.
+  K02 remains OPEN for other resource and provider interleavings.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.
