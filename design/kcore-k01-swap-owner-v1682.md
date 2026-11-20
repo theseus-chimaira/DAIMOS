@@ -1,4 +1,4 @@
-# K01 swap-out MM owner and rollback safety, v1679-v1682
+# K01 swap-out MM owner and rollback safety, v1679-v1683
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -47,6 +47,23 @@ These changes add no permanent kernel data, process fields, owner tables,
 allocator workarounds or OOM policy. The v1682 additional verification
 call is inside the swap-out service path, not the interrupt scheduler.
 
+### v1683: physical release refused after successful swap write
+
+The normal swap-out path first writes a backing-store image, unpins the
+resident process extent and then calls `mm_free(base,PROCESS,slot)`.
+Previously a nonzero `mm_free` result entered `proc_swap_out_record_fail`,
+released the newly allocated backing run and ultimately cleared the
+process TRANSITION flag. That is unsafe: a missing or wrong-owner MM
+descriptor, or a newly pinned extent, has *not* been released and cannot
+be treated as ordinary failed backing allocation. The caller may not
+resume the process with unproven resident ownership.
+
+The v1683 refusal now enters the existing `proc_swap_storage_invariant_v30`
+fail-stop immediately. It retains the transition lock and the original
+MM descriptor unchanged; it does not free the unpublished backing run
+or invent a physical release. No additional persistent RAM is used.
+The ordinary successful `mm_free` and swap publication remain unchanged.
+
 ## Native validation
 
 All tests reside in `daimos-testkit`, not in the DAIMOS source tree:
@@ -63,6 +80,11 @@ All tests reside in `daimos-testkit`, not in the DAIMOS source tree:
   MM pin plus exact `mm_process_verify_pinned_v792` and production branch.
   Wrong type, owner, size and pre-existing pin fail closed; an exact
   source is accepted. Removing the verifier error guard fails.
+- `tests/validation/daimos-k01-swap-free-v1683.sh` runs the production
+  post-write free branch with real PDP-6 `mm_free` and `mm_delete`.
+  Wrong owner and a pinned extent must retain TRANSITION and physical
+  descriptors; a valid owner is freed. Restoring the unsafe rollback
+  branch fails the regression.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and

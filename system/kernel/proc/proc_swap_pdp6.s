@@ -1767,7 +1767,12 @@ proc_swap_out_verified:
         movei   2,MM_TYPE_PROCESS
         move    3,10
         pushj   17,mm_free
-        jumpn   1,proc_swap_out_record_fail
+        ; The written swap record is not yet published. A refused MM
+        ; release means that the resident extent's owner is unproven;
+        ; freeing backing and clearing TRANSITION would let a process
+        ; run on memory that MM has explicitly refused to release.
+        ; Keep the physical extent and transaction locked for diagnosis.
+        jumpn   1,proc_swap_storage_invariant_v30
 
         hllzs   1(11)                  ; clear VM base, preserve extent LH
         hrlz    1,(17)
