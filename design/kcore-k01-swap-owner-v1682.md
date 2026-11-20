@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1686
+# K01 swap MM owner and rollback safety, v1679-v1687
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -147,6 +147,26 @@ All tests reside in `daimos-testkit`, not in the DAIMOS source tree:
   The existing source-authentic v1316/v1317 swap-in fixture now also
   extracts this verifier from production MM; its original complete
   transaction and rollback tests pass with mocked backing-store reads.
+
+### v1687: reject stale process-table source base before relocation
+
+`mm_move_extent` temporarily removes the MM descriptor while searching
+for an upward destination, then asks `vm_extent_move` to copy and publish
+the process image. At that point the process-table physical base is the
+remaining independent owner witness. Previously the VM routine checked
+the transition bit, user mapping and scheduling state but did not check
+that its supplied source base still matched the process-table base.
+On mismatch, the copy could read unrelated memory and publish a false
+resident owner. The VM routine now compares the process-table RH base
+to the supplied old base before changing process state or copying words.
+It returns `MM_ERR_BUSY` on mismatch, so the MM caller can reinsert its
+saved extent and propagate the refusal. No permanent data or retry
+policy is introduced.
+
+`tests/validation/daimos-k01-relocate-owner-v1687.sh` extracts real VM
+and FS copy code, tests stale-base refusal with unchanged destination
+and process state, verifies valid relocation, and rejects a bypassed
+source-base check under native PDP-6 stepping.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and

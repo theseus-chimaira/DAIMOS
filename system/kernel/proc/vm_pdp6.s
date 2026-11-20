@@ -797,6 +797,14 @@ vm_extent_move:
         lsh     14,1
         add     14,10
         add     14,proc_table
+        ; Compaction temporarily removes the MM descriptor before calling
+        ; us. The process table is the remaining physical owner witness:
+        ; never copy from or publish a stale base supplied by MM.
+        hrrz    1,1(14)
+        camn    1,11
+        jrst    vm_extent_move_base_ok_v1687
+        jrst    vm_extent_move_busy
+vm_extent_move_base_ok_v1687:
         camn    13,11
         jrst    vm_extent_move_busy
         move    1,13
