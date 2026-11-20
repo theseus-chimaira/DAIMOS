@@ -88,6 +88,8 @@ unmerged from its development line; mode3 remains disabled.
   objects, D6FS mount readers and both TSFS decoder scratch cleanup
   paths. Four native PDP-6 owner-refusal mutants are rejected; all
   ordinary successful-release paths retain their previous behavior.
+  v1711 snapshots the advisory `mm_is_pinned` base lookup and pin read
+  atomically under PI; swap-out still requires its own checked pin.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and

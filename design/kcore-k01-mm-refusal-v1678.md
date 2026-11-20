@@ -446,3 +446,24 @@ root and secondary-mount cases and four unsafe mutants pass. The
 independent v899 real PDP-6 physical PIPE-close test also passed:
 one pin, one -5 refusal, one unpin, successful eventual release and
 three checked close attempts, without errors.
+
+### v1711: atomic swap-victim advisory pin snapshot
+
+`mm_is_pinned` was the remaining lookup-then-read MM pin observer
+running with global PI enabled. A PI-side free/pin/descriptor movement
+could change the extent between matching the physical base and reading
+its pin field. Swap victim selection uses this advisory answer, so a
+mixed-time result could select the wrong candidate or bypass a live
+pin preflight (the actual swap still has independent checked pinning).
+
+The v1711 leaf excludes PI from the base lookup through the pin read,
+then restores the original caller PI state while retaining exactly
+the existing boolean 0/1 result, including missing-base behavior.
+No permanent metadata or new retry state is introduced. The source-
+linked native PDP-6 `daimos-k01-is-pinned-pi-v1711.sh` verifies stable
+unpinned/pinned/missing-base outcomes and PI initially on/off. It
+injects an interrupt-side pin exactly after lookup, and the mutant
+without PI exclusion fails. The v1698 atomic pin regression and
+v1710 active-owner compaction test pass alongside it. The result is
+not a lasting ownership lease; the swap-out transaction must still
+acquire and verify its own physical pin before committing a swap.

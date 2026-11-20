@@ -122,6 +122,15 @@ mm_find_base_loop:
 
 ; int mm_is_pinned(kword_t base)
 mm_is_pinned:
+        ; An interrupt-side MM mutation must not replace the selected
+        ; descriptor between the base lookup and pin-field read.  The
+        ; result is advisory: the swap transaction still pins and proves
+        ; exact ownership independently before using physical memory.
+        move    5,1
+        coni    0004,1
+        push    17,1                   ; prior global PI state
+        cono    0004,000400
+        move    1,5
         pushj   17,mm_find_base
         caml    1,mm_extent_count
         jrst    mm_is_pinned_no
@@ -131,9 +140,16 @@ mm_is_pinned:
         jrst    mm_is_pinned_yes
 mm_is_pinned_no:
         setz    1,
-        popj    17,
+        jrst    mm_is_pinned_restore_pi_v1711
 mm_is_pinned_yes:
         movei   1,1
+mm_is_pinned_restore_pi_v1711:
+        push    17,1                   ; preserve boolean across restore
+        move    1,-1(17)
+        trne    1,000200
+        cono    0004,000200
+        pop     17,1
+        sub     17,[1,,1]
         popj    17,
 
 ; Read-only u-area extent ownership/pin diagnostic. AC1 exact base,
