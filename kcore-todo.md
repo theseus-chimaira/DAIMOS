@@ -112,7 +112,7 @@ unmerged from its development line; mode3 remains disabled.
   `design/kcore-k01-swap-owner-v1682.md`. Hardware interrupt tests do
   not exhaust all possible interleavings. K02 process-resource cleanup
   and K03 OOM policy remain independent open work.
-- [ ] **K02 - Process resource cleanup.** Complete failure-safe cleanup
+- [x] **K02 - Process resource cleanup.** Complete failure-safe cleanup
   of process-owned MM, VM, FD, PIPE/FIFO and related resources during
   EXIT, EXEC and failed or unpublished RUN. Do not claim provider-specific
   filesystem or device implementation work as part of this task.
@@ -226,6 +226,25 @@ unmerged from its development line; mode3 remains disabled.
   code/data delta. K02 OPEN for organic media and post-free backing
   failure gates plus full regression/size audit; K04 and K03 remain
   separately gated.
+  **v1730 CLOSED:** nine native source-linked PDP-6 cleanup gates and
+  four full-system 256K PDP-6 physical guests all PASS on the
+  unchanged v1720 production kernel: post-real-MM-free backing
+  detach refusal and retry (v1721), concurrent PIPE/D6FS RUN owners
+  (v1726), permanent D6FS/session HUP with independent destructive
+  fatal EXEC (v1729), and named FIFO pinned-MM final-close retry
+  (v900). No unowned FD, double MM release, invalid old VM resume,
+  repeated finalized-member HUP, premature TTY retire, private-stack
+  destruction or stuck unrelated scheduler progress. Prior native
+  unsafe mutations and six v1729 transcript mutations are rejected.
+  The v1729 postfree OPEN note is superseded: that exact physical
+  gate already passed v1721 and passes again in v1730. Provider-
+  specific device/media implementation is excluded by K02 scope.
+  No production KCORE text/RAM changes since v1720; total K02
+  executable growth was 30 words in v1719/v1720, fixed/per-process
+  growth zero. The strict 32K permanent-address limit still fails
+  independently. K03 OOM killing remains disabled; K04 permanently
+  refused recovery policy remains OPEN. Full closure details:
+  design/kcore-k02-closure-v1730.md.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.

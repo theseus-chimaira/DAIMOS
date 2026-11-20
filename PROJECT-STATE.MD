@@ -1,3 +1,43 @@
+## 2026-11-20 v1730: K02 process-resource cleanup CLOSED
+
+K02 is now CLOSED under its explicitly bounded process-owned
+MM/VM/FILE/PIPE/FIFO cleanup contract. The final daimos-testkit
+v1730 acceptance retested nine native PDP-6 source-linked gates
+(staged and destructive EXEC, unpublished RUN, FILE/PIPE, repeated
+session HUP, typed FIFO, fatal owner exclusion and reaper backoff)
+and four full 256K PDP-6 physical guests: v1721 post-real-MM-free
+backing-detach refusal, v1726 concurrent D6FS/PIPE RUN ownership,
+v1729 session-wide HUP with permanent D6FS refusal and independent
+fatal EXEC, and v900 named-FIFO pinned MM final close/reopen.
+All 13 gates passed independently; none accepts a mere HALT
+without exact owner/refusal/WAIT witnesses. The grouped native
+runner retained a versioned nine-pass result manifest; fresh
+physical-run output checksums are in design/kcore-k02-closure-v1730.md
+and the testkit closure report. Six unsafe v1729 transcript changes
+and the prior native unsafe mutations remain rejected.
+
+Important correction: the post-process-MM-free backing-detach
+refusal was already physically accepted in v1721 and has now been
+rerun successfully. Its old OPEN wording in the v1729 report is
+historical, not an outstanding K02 gate. A naturally failing
+filesystem or hardware implementation is provider-specific and
+explicitly outside K02's process-resource cleanup definition.
+K04 still owns the policy for permanently unreleasable resources,
+and K03 automatic OOM termination remains disabled.
+
+Production system/kernel source is unchanged since the v1720 EXEC
+fix 5d6e91c1. v1719 added 23 KCORE executable words and v1720
+added 7, with zero new persistent/per-process data. v1721-v1730
+have added zero further production text or RAM. The last matched
+GCC low-memory disk-root size remains KCORE 10,461, KCORE+MRES
+17,186, permanent-last 17,233 decimal; the strict 040000 octal
+32K address gate is still OVER BUDGET (-850 accounting) and is
+not claimed as accepted by K02 closure.
+
+Testkit sign-off: 6be1309. See
+design/kcore-k02-closure-v1730.md. Completed K02 behavior is now
+eligible for pdp10-doc, without introducing a separate handoff.
+
 ## 2026-11-20 v1729: full PDP-6 permanent D6FS/session HUP and fatal EXEC PASS
 
 The daimos-testkit v1729 full 256K PDP-6 guest combines a real
