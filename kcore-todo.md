@@ -155,6 +155,16 @@ unmerged from its development line; mode3 remains disabled.
   WAIT returns the correct exit status; no process/FILE/VM word leak.
   Isolated guest calls 2, pins 1, unpins 1, BUSY 1, accepted free 1,
   errors 0. No KCORE text or data change. K02 remains OPEN.
+  **v1724:** another complete 256K PDP-6 guest extends that same RUN
+  child with an inherited D6FS regular-file FD6. The first ordinary
+  EXIT retains both the pinned anonymous PIPE writer FD4 and a refused
+  VFS_SYNC FD6. The second EXIT commits one real PIPE MM free but the
+  independent file sync refuses again; the third exits after successful
+  original VFS sync. FILE occupancy transitions 2 -> 1 -> 0, parent
+  WAIT and MEMINFO succeed; PIPE attempts 2, actual BUSY 1, pin/unpin
+  1/1, successful free 1, file sync calls/refusals 3/2, errors 0.
+  Refusals at the VFS boundary are test-injected, not organic provider
+  failures. No production changes; K02 and remaining K03 gate OPEN.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.

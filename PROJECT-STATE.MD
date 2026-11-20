@@ -1,3 +1,36 @@
+## 2026-11-20 v1724: physical RUN child EXIT with PIPE MM and file sync refusal PASS
+
+The daimos-testkit v1724 full-system 256K PDP-6 guest extends v1723
+without touching production KCORE. Its C89 INIT creates the original
+two PIPEs and opens `/SYSTEM/INIT` as the additional regular FILE FD7.
+RUN maps that file to child FD6 alongside both data-PIPE ends and the
+control PIPE. The parent closes its copies before sending the control
+byte, so child EXIT sees independently owned PIPE and file resources.
+
+The test-only PIPE hook physically pins the last PIPE MM extent in the
+child's first close pass; real `mm_free` reports MM_ERR_BUSY (-5) and
+preserves FD4 and its `0,,1` reference word. Separately, test-only
+instrumentation at the actual `vfs_sync` entry identifies only the
+child's FD6 canonical vnode and refuses its first two syncs with -5;
+the third call follows the original provider dispatch. Ordinary EXIT
+returns failure twice; after the first failure child MEMINFO counts
+two live FILEs (FD4 and FD6), and after the second it counts only FD6.
+The third EXIT succeeds, and the parent WAIT receives exit status 065;
+its process/FILE/memory occupancy is back at the pre-RUN baseline.
+
+Observed live 256K guest: child slot 2; PIPE last-close calls 2, real
+MM pin 1/unpin 1, BUSY 1, accepted MM release 1; VFS sync calls 3,
+injected refusals 2, owner errors 0. Exact parent output marker `P`
+and expected HALT confirmed. This tests independent failure retention
+across repeated EXIT; it does not emulate an organic filesystem/media
+fault. All hooks are isolated and versioned in the daimos-testkit
+generator, and the actual production FILE/PIPE/VM/RUN implementations
+are unchanged. Previous v1722 source-linked and v1723 physical guest
+checks pass. KCORE text/data/ABI delta 0; K02 remains OPEN, and K03
+automatic OOM termination remains disabled.
+
+See `design/kcore-k02-run-mixed-exit-v1724.md` for acceptance details.
+
 ## 2026-11-20 v1723: physical RUN child ordinary EXIT / final PIPE MM refusal PASS
 
 The new `daimos-k02-run-pipe-exit-v1723.sh` builds a complete 256K PDP-6
