@@ -164,6 +164,10 @@ exec_replace_validate_done:
 
         move    1,(16)
         movem   1,EXEC_R_STAGED(17)     ; staged.meta = current->meta
+        ; A loader failure can occur before it has allocated any staged VM.
+        ; Give the transient descriptor an unambiguous empty owner so an
+        ; unsuccessful loader rollback is distinguishable from no allocation.
+        setom   EXEC_R_STAGED+1(17)
         movei   1,EXEC_R_STAGED(17)
         move    2,13
         movei   3,3(10)                 ; validated path
@@ -183,7 +187,7 @@ exec_replace_validate_done:
         jrst    exec_replace_return
 
 exec_replace_loaded:
-        jumpl   1,exec_replace_restore_fail
+        jumpl   1,exec_replace_load_failed_v1719
         movei   1,EXEC_R_STAGED(17)
         move    2,15
         move    3,EXEC_R_COUNTS(17)
@@ -194,6 +198,22 @@ exec_replace_loaded:
         movei   1,EXEC_R_STAGED(17)
         move    2,13
         pushj   17,vm_space_destroy
+        ; This is an unpublished, stack-owned image. Returning on refused
+        ; teardown would lose the only descriptor identifying its MM owner.
+        jumpn   1,exec_replace_staged_invariant_v1719
+        jrst    exec_replace_restore_fail
+
+exec_replace_load_failed_v1719:
+        ; exec_load_process normally destroys a partially loaded VM itself.
+        ; Its destructor may have refused MM or backing release, however.
+        ; Retry a remaining staged owner before the transient frame vanishes.
+        move    1,EXEC_R_STAGED+1(17)
+        camn    1,[-1]
+        jrst    exec_replace_restore_fail
+        movei   1,EXEC_R_STAGED(17)
+        move    2,13
+        pushj   17,vm_space_destroy
+        jumpn   1,exec_replace_staged_invariant_v1719
         jrst    exec_replace_restore_fail
 
 exec_replace_startup_ok:
@@ -226,7 +246,15 @@ exec_replace_startup_ok:
         movem   2,PROC_FDCTL_OFFSET(1)
         movei   1,EXEC_R_STAGED(17)
         move    2,13
+        ; The old VM still owns the old backing on a failed destroy.
+        ; Destruction of the *staged* VM must see the new backing record,
+        ; otherwise proc_swap_detach can retire the old executable instead.
+        move    3,proc_swap_records
+        add     3,13
+        move    4,EXEC_R_NEW_SWAP(17)
+        movem   4,(3)
         pushj   17,vm_space_destroy
+        jumpn   1,exec_replace_staged_invariant_v1719
         jrst    exec_replace_restore_fail
 
 exec_replace_commit:
@@ -289,14 +317,29 @@ exec_replace_restore_swap:
         hlrz    1,(16)
         move    2,EXEC_R_OLD_EXT(17)
         dpb     2,[POINT 1,PROC_CRED_OFFSET(1),8]
+        ; An old-VM destructor may free the PROCESS extent, publish VM_NONE
+        ; and subsequently refuse backing detach. That commit is irreversible:
+        ; the caller must enter fatal process teardown, not resume the old PC.
+        move    1,1(16)
+        camn    1,[-1]
+        jrst    exec_replace_irreversible_v1719
 exec_replace_invalid:
         seto    1,
+        jrst    exec_replace_return
+exec_replace_irreversible_v1719:
+        movni   1,2                    ; EXEC_REPLACE_FATAL
 exec_replace_return:
         movei   0,010
         hrli    0,EXEC_R_SAVE_FIRST(17)
         blt     0,016
         sub     17,[EXEC_R_FRAME,,EXEC_R_FRAME]
         popj    17,
+
+exec_replace_staged_invariant_v1719:
+        ; Unlike a failed RUN, a staged EXEC has no permanent descriptor
+        ; or slot-0 retry owner. Never return to user with this owner lost.
+        halt    4
+        jrst    .-1
 
         ; Frame offsets relative to the fully advanced AC17.
         .equ    EXEC_LM_SAVE_FIRST,-011

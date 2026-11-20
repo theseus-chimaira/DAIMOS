@@ -116,6 +116,13 @@ unmerged from its development line; mode3 remains disabled.
   of process-owned MM, VM, FD, PIPE/FIFO and related resources during
   EXIT, EXEC and failed or unpublished RUN. Do not claim provider-specific
   filesystem or device implementation work as part of this task.
+  **In progress (v1719):** transactional EXEC now identifies a surviving
+  staged VM after loader failure, checks staged teardown results instead of
+  discarding its only stack-owned descriptor, uses the new backing record
+  when rolling back a failed old-VM destruction, and returns fatal rather
+  than resumable failure if the old VM is already VM_NONE. Native staged
+  backing and failure-path tests pass. Full EXIT/RUN/EXEC cleanup and
+  physical fault-pressure acceptance remain open; K02 is NOT closed.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.

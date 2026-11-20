@@ -1,3 +1,36 @@
+## 2026-11-20 v1719: K02 staged EXEC cleanup ownership (partial)
+
+In `exec_replace_current`, the old-VM failure path previously restored the
+old one-word backing record before destroying the new staged VM. Because
+`proc_swap_detach` indexes the same process slot for both descriptors, the
+staged destroy could clear the old executable's backing identity instead
+of the staged image's. The v1719 correction installs the saved *new*
+record for staged destruction and restores the old record and mount
+extension after its successful rollback.
+
+The transient staged VM is initialized to VM_NONE before loading. A failed
+loader that left a VM owner now attempts cleanup before returning; refused
+staged cleanup at all three call sites stops at a distinct invariant HALT
+instead of returning with no permanent teardown owner. A failed old VM
+destroy that already published VM_NONE returns `EXEC_REPLACE_FATAL` after
+staged rollback, never a resumable EXEC error. No process-table width,
+extra persistent RAM, or filesystem provider ABI changed.
+
+Native PDP-6 v1719 source-linked tests exercise six rollback/commit
+conditions, reject a wrong-backing negative mutation, and prove a real
+HALT 4 when staged MM destruction refuses. Existing v200 eight-case
+staged EXEC and v20 PURE bit tests pass. The GCC kernel source build and
+full lowmem assembly/link succeed. Matched fresh v1718 HEAD/v1719 links
+show KCORE 10,431 -> 10,454 words (+23), KCORE+MRES 17,156 -> 17,179,
+and permanent endpoint 17,203 -> 17,226, with no new permanent data.
+Both links fail the separate strict 040000-octal permanent-address gate:
+baseline already exceeds it by 820 free-word accounting units, v1719
+by 843. A physical fault-injection guest has not been run for this change.
+This is a K02 partial safety correction, not a claim of complete process-
+resource cleanup or an OOM-killer enablement. K01 remains closed;
+K02-K16 remain open. Details: `design/kcore-k02-exec-rollback-v1719.md` and testkit
+`tests/validation/daimos-k02-exec-stage-owner-v1719.sh`.
+
 ## 2026-11-20 v1718: K01 permanent-MM failure handling CLOSED
 
 Final acceptance reran the v1717 integrated gate against two completed
