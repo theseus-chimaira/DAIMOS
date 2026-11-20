@@ -1,3 +1,46 @@
+## 2026-11-20 v1727: permanent D6FS refusal with independent fatal HUP PASS
+
+The new daimos-testkit v1727 physical 256K PDP-6 guest extends v1726:
+B(slot2)'s D6FS provider permanently refuses FILE FD6 close, and a
+real user APR fault enters B's private-stack fatal close continuation.
+Production proc_fatal_close_current_v879 retains the owner and sleeps
+between rejected SYNCs. Test-only probes confirm eight successive
+exponential delays (1,2,4,8,16,32,64,128 decimal clock ticks) with no
+errors, and nine targeted provider calls, nine refusals, nine correct
+serialization leases, zero wrong leases. B remains live and nonwaitable.
+
+A(slot3) closes a real shared PIPE: first final release gets real
+pinned MM_ERR_BUSY, second unpins/frees once during self-delivered
+fatal HUP. The PIPE hook inspects B's stable u-area at both attempts:
+FD6 and the FATAL_CLOSE protection bit remain present. Cross-owner
+overlap 2, PIPE attempts 2, pin/unpin 1/1, BUSY 1, free 1, errors 0.
+INIT successfully WAITs for A with EVENT_HUP status. Its attempted
+foreign HUP to B is refused; B is still not waitable after further
+timer progress. System-wide occupied process slots are baseline+1.
+SYS_MEMINFO.file_slots_used is caller-local and stays at INIT's
+baseline, independently of physically verified B FD6 ownership.
+
+The initial test-only hook rejected its own newly referenced symbols;
+the check was narrowed to definitions. One physical run then reached
+user error !C because the test mistakenly treated caller-local FILE
+usage as global. The corrected full physical run emitted BP and
+reached intended HALT, with the above exact counters. An initial
+post-run verifier expected B and P on different lines even though
+dsys_writechar emits individual characters. The corrected strict
+verifier replay passed against the complete preserved guest log and
+rejected four unsafe transcript mutants (missing B, fatal-delay
+error, mismatched provider refusals, invalid delay). The v1102
+reaper-backoff and v1099 typed-PIPE native gates passed; the stale
+v970 fatal-owner/HUP fixture was repaired in testkit v1727a and
+passed. All errors found were test-harness errors, not KCORE defects.
+
+No production KCORE or MRES changes, extra permanent words, new
+per-process state or owner registry. This demonstrates bounded
+retry CPU work and independent scheduler progress while a provider
+refuses forever, but NOT bounded resource reclamation. K02 remains
+OPEN; K04 permanent-release recovery and K03 OOM victim termination
+are still gated. Full details: design/kcore-k02-permanent-fatal-v1727.md.
+
 ## 2026-11-20 v1726: physically overlapping PIPE/D6FS owners in separate RUN children PASS
 
 The new daimos-testkit v1726 guest boots a real 256K PDP-6 with INIT

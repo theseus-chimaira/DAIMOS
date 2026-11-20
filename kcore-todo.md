@@ -184,6 +184,20 @@ unmerged from its development line; mode3 remains disabled.
   ownership errors 0. Both children finish through ordinary EXIT,
   parent WAIT receives both exit statuses, and MEMINFO returns to
   baseline. No production KCORE change; K02 remains OPEN.
+  **v1727:** a physical 256K PDP-6 guest keeps B(slot2)'s D6FS FD6
+  permanently refused while a real APR fault enters its private-stack
+  fatal FILE-close continuation. Eight sleeps follow exponentially
+  doubled intervals 1..0200 octal ticks with no mismatches; all nine
+  provider SYNC calls are refused under the correct MRES lease.
+  A(slot3) recovers from genuine pinned PIPE MM_BUSY, finishes
+  self-HUP, and is reaped independently. Foreign HUP against B is
+  refused without freeing its protected stack or FD6. B is the only
+  additional occupied process slot and remains nonwaitable.
+  Two physical overlap observations, zero ownership errors; four
+  verifier mutations rejected. Test-only fixes corrected caller-local
+  MEMINFO FILE accounting and single-character console formatting.
+  This proves **bounded backoff and scheduler progress**, not bounded
+  reclamation. K02 OPEN; K04 policy and K03 OOM remain gated.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.
