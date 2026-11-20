@@ -165,6 +165,15 @@ unmerged from its development line; mode3 remains disabled.
   1/1, successful free 1, file sync calls/refusals 3/2, errors 0.
   Refusals at the VFS boundary are test-injected, not organic provider
   failures. No production changes; K02 and remaining K03 gate OPEN.
+  **v1725:** the real 256K PDP-6 RUN/PIPE/regular-FD EXIT sequence now
+  injects two sync refusals inside the *D6FS provider entry*, after
+  registered MRES dispatch, rather than at VFS. All three targeted
+  calls observe the serialized provider lease held by child slot 2
+  (owner_slot+1 in LH, busy in RH); zero lease violations. The real
+  PIPE MM pin/BUSY/unpin/free remains 1/1/1/1 across two final-close
+  calls; provider calls/refusals 3/2, all ownership errors 0 and parent
+  WAIT PASS. Provider errors are still test-injected, not actual media
+  faults. K02 OPEN; K03 automatic OOM termination disabled.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.

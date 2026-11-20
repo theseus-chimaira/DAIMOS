@@ -1,3 +1,35 @@
+## 2026-11-20 v1725: physical RUN/PIPE EXIT and serialized D6FS provider refusal PASS
+
+No production KCORE or MRES source was changed. The daimos-testkit
+v1725 physical 256K PDP-6 guest builds on the v1724 C89 child/parent
+RUN scenario. A disposable copy of d6fs_runtime.s rejects the first
+two targeted regular FILE FD6 SYNC calls from child slot 2 inside the
+actual registered D6FS provider. The resident VFS and filesystem
+serialization gateway remain unmodified. All three targeted provider
+calls see fs_provider_ready owned by slot 2+1 in LH with busy/zero RH;
+the third call returns original D6FS sync success. Separately, a
+test-only MM pin forces a real PIPE mm_free MM_ERR_BUSY on first child
+EXIT. Child FILE occupancy after the first and second failed EXIT is
+2 and 1 respectively, then the third EXIT and parent WAIT status 065
+complete successfully.
+
+Accepted guest counters: child slot 2, PIPE final-close calls 2, real
+MM pin 1/unpin 1, MM BUSY 1, committed PIPE release 1; D6FS provider
+SYNC calls 3, injected refusals 2, correct provider lease observations
+3, wrong-lease observations 0, other ownership errors 0. The guest
+reaches the expected parent completion marker and HALT.
+
+The initial v1725 diagnostic attempt could not read counters from the
+KCORE map because they resided in a movable D6FS MRES. The generator
+was corrected to allocate those four witness words only in the copied
+resident fs_mres.s, resolvable through the ordinary KCORE symbol map.
+The corrected full guest passed. D6FS sync normally returns zero, so
+these are provider-entry test injections, NOT organic disk-media fault
+coverage. Production executable and permanent data delta is 0.
+K02 remains OPEN; K03 automatic OOM termination stays disabled.
+
+See design/kcore-k02-run-provider-lease-v1725.md.
+
 ## 2026-11-20 v1724: physical RUN child EXIT with PIPE MM and file sync refusal PASS
 
 The daimos-testkit v1724 full-system 256K PDP-6 guest extends v1723
