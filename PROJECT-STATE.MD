@@ -1,3 +1,25 @@
+## 2026-11-20 v1718: K01 permanent-MM failure handling CLOSED
+
+Final acceptance reran the v1717 integrated gate against two completed
+256K PDP-6 F07 physical guests and current production source. The
+clean baseline passed independent-owner release (v1336), no-partner
+swap/cooldown (v1303), and owner lifecycle (v1349): 34 physical
+swap-outs, 34 swap-ins and zero final backing. The separate v1713
+faulted guest passed real BACKSTORE bitmap-refusal/repair, two deferred
+TERM events and exact final owner/backing cleanup. Native acceptance
+passed 33 source-linked tests, and v1716 checked all 26 `mm_free`
+callers with five rejected unsafe mutations. Earlier v1703 permanent
+-4/-5 quarantine and v1704 mixed PI6 recovery guests remain accepted.
+
+K01 is CLOSED under the documented physical owner quarantine, exact
+diagnostics, capped 16..512-tick retry frequency and controlled
+offline repair/restart contract. No forced release or new persistent
+RAM was introduced. This is not exhaustive interrupt-interleaving
+proof; K02 process cleanup and K03 OOM policy remain open. Full
+acceptance details and SHA-256 guest evidence are recorded in
+`design/kcore-k01-mm-refusal-v1678.md` and testkit
+`tests/validation/daimos-k01-closure-v1718.md`.
+
 ## 2026-11-19 v1676: KCORE documentation condensed (no code changes)
 
 The root `KCORE.MD` is now a 235-line engineering reference covering

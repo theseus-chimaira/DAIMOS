@@ -544,3 +544,36 @@ K01 remains open for the independent **clean** v1349 physical F07
 baseline, any source/guest regressions it finds, and final integrated
 ownership acceptance. The v1713-v1716 stages added no persistent
 KCORE RAM and did not modify production MM implementation.
+
+### v1718: K01 accepted and CLOSED
+
+The independent original **clean** 256K PDP-6 F07 guest passed all
+three unmodified physical owner/swap postflights: v1336 (34 swap-outs,
+34 swap-ins, complete MM and backing release), v1303 (actual no-partner
+pressure and cooldown with no backing leakage), and v1349 (four
+independent owner extents retained and eventually freed; no errors).
+The separate **faulted** F07 guest passed the v1713 BACKSTORE bitmap
+refusal/repair profile, with two deferred TERM events and final
+BACKSTORE zero. Both guests reached the explicit simulator HALT.
+
+The final `daimos-k01-integrated-acceptance-v1717.sh` gate was rerun
+against these retained real physical guests, all 33 source-linked
+native PDP-6 MM/VM/swap/provider ownership regressions and the v1716
+structural audit of 26 direct MM-free callers with five unsafe mutants.
+All six integrated gates passed. The verifier checks matching production
+kernel revision, rejects uncommitted production changes and records
+SHA-256 hashes of its guest evidence. Complete evidence details are in
+`daimos-testkit/tests/validation/daimos-k01-closure-v1718.md`.
+
+The permanent real-pin/incorrect-owner/foreign-provider refusal cases
+(v1703) and genuine mixed PIPE/DPY/VM/u-area retry-to-completion under
+live PI6 (v1704) remain separately accepted and are not replaced by
+the F07 results. The accepted K01 policy is **fail closed** on an
+unproven extent, preserve its owner and diagnostics, retry at bounded
+frequency when safe, and require controlled offline repair/restart for
+irreconcilable ownership. It never forces unpin/free or fabricates
+completion. No persistent KCORE RAM was introduced by this sign-off.
+
+**K01 CLOSED v1718.** This is a verified implementation and test
+boundary, not a proof of all possible interrupt timings. Subsequent
+K02 process-resource cleanup and K03 OOM policy remain open.

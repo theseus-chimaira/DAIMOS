@@ -15,12 +15,12 @@ unmerged from its development line; mode3 remains disabled.
 
 ## Mandatory KCORE: process and memory correctness
 
-- [ ] **K01 - Permanent MM failure handling.** Correct ownership and
+- [x] **K01 - Permanent MM failure handling (CLOSED v1718).** Correct ownership and
   recovery when memory cannot be freed, pinned, rebased, relocated or
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1716):** MM compaction and reclaim preserve hard
+  **Accepted (v1678-v1718):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -101,15 +101,17 @@ unmerged from its development line; mode3 remains disabled.
   v1714 restores the native v870 PIPE-close source extraction;
   v1715 passes 33 source-linked native K01 regressions; v1716 audits
   all 26 MM-free callers in 12 files and rejects five unsafe changes.
-  Native PDP-6
-  tests and KCC KCORE source builds pass;
-  see `design/kcore-k01-mm-refusal-v1678.md` and
-  `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
-  rebase, restore and other owner failure paths (including other
-  temporary provider scratch on failed setup), the independent clean
-  F07 baseline, and the final
-  cross-subsystem source/guest acceptance sweep. Hardware interrupt
-  tests cannot exhaust all races.
+  Final v1717 integrated acceptance was rerun and all six gates passed:
+  clean v1336/v1303/v1349 F07, faulted v1713 F07, 33 native source-linked
+  PDP-6 regressions and v1716's 26-site MM-free refusal audit. Permanent
+  -4/-5 quarantine (v1703) and real PI6 retry-to-completion (v1704)
+  also passed independently. K01 is closed under the existing bounded
+  retry-rate and controlled offline-recovery contract, without forced
+  release or added permanent RAM. See
+  `design/kcore-k01-mm-refusal-v1678.md` and
+  `design/kcore-k01-swap-owner-v1682.md`. Hardware interrupt tests do
+  not exhaust all possible interleavings. K02 process-resource cleanup
+  and K03 OOM policy remain independent open work.
 - [ ] **K02 - Process resource cleanup.** Complete failure-safe cleanup
   of process-owned MM, VM, FD, PIPE/FIFO and related resources during
   EXIT, EXEC and failed or unpublished RUN. Do not claim provider-specific
