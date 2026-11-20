@@ -1931,7 +1931,11 @@ proc_swap_in_read_offset:
         jumpn   1,proc_swap_in_read_fail
         move    1,(17)
         pushj   17,mm_unpin
-        jumpn   1,proc_swap_in_free_fail
+        ; A refused unpin leaves the new resident extent pinned or its
+        ; ownership uncertain. Never attempt mm_free on that descriptor:
+        ; it cannot be released safely, and a second MM error would
+        ; overwrite the exact unpin refusal before diagnosis.
+        jumpn   1,proc_swap_storage_invariant_v30
 
         ; The disk record and DISK storage mode are still authoritative.
         ; Free the existing backing run before publishing any RAM owner or

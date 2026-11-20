@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1684
+# K01 swap MM owner and rollback safety, v1679-v1685
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -76,6 +76,18 @@ and on several refusal paths. Subsequent disk-tail cleanup and request
 publication could address unrelated words. The MM leaf now saves and
 restores AC10/AC11 on all exits. No permanent RAM or new policy is used.
 
+### v1685: refused swap-in unpin must not attempt MM free
+
+After restoring a process image, the swap-in transaction calls
+`mm_unpin` before releasing the old backing run. The refusal branch
+previously entered `proc_swap_in_free_fail`, which immediately called
+`mm_free` on the same extent. A refused unpin means the pin count or
+physical ownership is unproven: the attempted free cannot safely
+recover the transaction and may replace the exact unpin error with
+another MM error. The branch now directly enters the existing invariant
+fail-stop, leaving TRANSITION and the physical MM descriptor untouched.
+Successful unpin and subsequent backing publication are unchanged.
+
 ## Native validation
 
 All tests reside in `daimos-testkit`, not in the DAIMOS source tree:
@@ -101,6 +113,13 @@ All tests reside in `daimos-testkit`, not in the DAIMOS source tree:
   real PDP-6 growth leaf and checks AC10/AC11 after growth, no-space
   refusal and owner refusal. Removing the register saves/restores
   fails the test; the earlier v769 native growth regression also passes.
+- `tests/validation/daimos-k01-restore-unpin-v1685.sh` runs the
+  source-linked swap-in unpin decision on native PDP-6 with injected
+  refusal. It verifies exact -4 preservation and no secondary MM-free
+  attempt, normal success continuation, and rejects the historical
+  free-on-unpin-refusal mutation. The existing v1316/v1317 source-linked
+  swap-in transaction/rollback suite also passes; its backing read is
+  mocked and it is not complete booted-guest acceptance.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and

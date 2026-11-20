@@ -20,11 +20,12 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1684):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1685):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
-  AC10/AC11 preservation during pinned MM growth (v1684). Native PDP-6
+  AC10/AC11 preservation during pinned MM growth (v1684), and direct
+  fail-stop on refused swap-in unpin (v1685). Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
   `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
