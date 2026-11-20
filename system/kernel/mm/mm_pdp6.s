@@ -303,7 +303,8 @@ mm_find_fit_return:
 mm_alloc_aligned_noreclaim:
         move    5,-1(17)
         move    6,-2(17)
-        add     17,[011,,011]
+        ; Seven saved ACs, two descriptor locals, and one PI snapshot.
+        add     17,[012,,012]
         movei   0,-010(17)
         hrli    0,010
         blt     0,-2(17)
@@ -330,6 +331,14 @@ mm_alloc_aligned_noreclaim:
         tdne    014,[-2]
         jrst    mm_alloc_nr_inval
 
+        ; The free-gap search and descriptor insertion are one physical
+        ; ownership transaction. An interrupt-side MM release/allocate
+        ; must not alter the sorted table between the fit and publish.
+        ; -2(17) belongs to the saved AC16 image: reserve the new
+        ; -011(17) local instead, without adding permanent KCORE RAM.
+        coni    0004,1
+        movem   1,-011(17)             ; previous global PI state
+        cono    0004,000400
         movei   4,-1(17)
         move    1,010
         move    2,011
@@ -376,11 +385,16 @@ mm_alloc_nr_descriptors:
         jrst    mm_alloc_nr_return
 mm_alloc_nr_inval:
         movni   1,4
+        jrst    mm_alloc_nr_return_unlocked_v1702
 mm_alloc_nr_return:
+        move    0,-011(17)
+        trne    0,000200
+        cono    0004,000200
+mm_alloc_nr_return_unlocked_v1702:
         movei   0,010
         hrli    0,-010(17)
         blt     0,016
-        sub     17,[011,,011]
+        sub     17,[012,,012]
         popj    17,
 
 ; Move one process extent upward. AC1=slot, AC2=alignment.

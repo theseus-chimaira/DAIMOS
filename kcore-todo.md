@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1701):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1702):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -61,12 +61,18 @@ unmerged from its development line; mode3 remains disabled.
   mixed-time extent size and owner/type/pin observations under PI.
   v1701 likewise snapshots the u-area MM owner, type and pins for
   GETTEARDOWN detail under PI, preventing a stale diagnostic slot.
+  v1702 also protects the allocation free-gap search through MM
+  descriptor insertion; a PI-side owner cannot steal the selected gap.
+  The existing slot-0 finalizer has a capped 16..512-tick retry interval
+  (v1102/v1098 tests), with offline operator recovery for permanent
+  ownership corruption; neither forced release nor a new retry table
+  is permitted.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
   `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
-  rebase, restore and other owner failure paths, bounded administrative
-  recovery and complete physical guest acceptance.
+  rebase, restore and other owner failure paths, cross-subsystem
+  bounded-retry acceptance and complete physical guest fault injection.
 - [ ] **K02 - Process resource cleanup.** Complete failure-safe cleanup
   of process-owned MM, VM, FD, PIPE/FIFO and related resources during
   EXIT, EXEC and failed or unpublished RUN. Do not claim provider-specific

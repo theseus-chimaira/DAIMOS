@@ -213,6 +213,58 @@ cause, v955 failure-matrix and v956 u-area lifetime tests. Both KCC
 KCORE build modes pass. Full physical guest PI6 injection, bounded
 recovery and other cross-subsystem ownership checks remain open.
 
+### v1702: atomic free-gap allocation and descriptor publication
+
+`mm_alloc_aligned_noreclaim` previously found a free physical gap in
+the sorted MM table, then determined the insertion slot and called
+`mm_extent_insert` with global PI enabled throughout. An interrupt-side
+MM allocation/free could change the descriptor table in between: a
+previously free gap could become occupied before its new PROCESS or
+MODULE descriptor was published. This is a separate transaction from
+the v1697-v1701 release/pin/verifier work.
+
+After successful argument validation, the allocator now saves the
+previous PI state, disables global PI before `mm_find_fit`, and
+restores PI after every fit, no-space, fragmentation, descriptor-full
+or successful publication path. The invalid-argument path never
+acquires the PI lock. The existing frame gains **one transient stack
+word**, not permanent RAM, for the saved PI state. AC10..AC16 still
+occupy -010(17)..-2(17), so the PI snapshot is at -011(17); it must
+never overwrite the saved AC16 image. The normal return value and
+caller output base remain unchanged.
+
+The first v1702 implementation incorrectly used -2(17) for that PI
+snapshot. The existing v545 production compaction/VM regression caught
+the resulting AC16 corruption. This was corrected before commit, and
+the v1702 test now checks AC16 explicitly and rejects a second unsafe
+mutant recreating the same frame overwrite. Its first mutant removes
+PI exclusion and injects another allocation into the chosen gap
+immediately before descriptor insertion. Both mutants fail; the
+production native PDP-6 test passes exact type/owner publication,
+descriptor capacity (-3), no-space (-1), invalid args (-4), preserved
+caller PI on/off and unchanged AC16. v545/v548/v538 full MM/VM/source
+integration and both KCC PURE modes pass. The old v749 boot-image
+test cannot run without a separately prepared clean PDP-6 image.
+
+### Existing bounded-retry and operator policy (reviewed v1702)
+
+`proc_finish_mark_pending_v892`, `proc_finish_service_v881` and
+`proc_finish_backoff_advance_v885` already keep the original VM/MM
+owner quarantined while the slot-0 reaper retries allocation-free
+cleanup no sooner than a shared 16/32/64/.../512 tick interval.
+v1098 and v1102 source-linked native tests pass, including negative
+mutants for an unarmed clock and a reset interval. This is bounded
+**retry rate**, not a finite number of attempts or a promise that
+permanently corrupt ownership can ever be reconciled automatically.
+`pdp10-doc/KERNEL/OOM-FAIL-CLOSED-RECOVERY-V1185.MD` explicitly
+requires offline repair and controlled restart for an unprovable MM
+owner; it forbids forced unpin/free. No new administrative bypass or
+per-owner recovery table is justified by this review.
+
+Remaining K01 gates include full physical guest PI6 and MM fault
+injection on final source, verification of owner quarantine and
+bystander progress, and a residual cross-subsystem refusal audit.
+
 Verify permanent actual MM free/pin/unpin/rebase and process restore
 refusals through all live owners, including ambiguous or missing extents,
 bounded retry/reaper state, consistent typed GETTEARDOWN diagnostics, and
