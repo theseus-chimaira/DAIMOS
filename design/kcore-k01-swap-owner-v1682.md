@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1691
+# K01 swap MM owner and rollback safety, v1679-v1692
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -238,6 +238,35 @@ is absent when PURE verification is disabled. The native PDP-6 test
 `daimos-k01-pure-restore-v1691.sh` executes the production failure
 branch with a refused backing read, matches the HALT PC and rejects
 an unsafe branch-removal mutation.
+
+### v1692: runtime process-slot boundary for physical relocation
+
+`mm_move_extent` passes the MM extent's process owner number to
+`vm_extent_move`, which used to index `proc_table` before checking the
+owner. The process table is runtime-sized (typically far smaller than
+the 8-bit MM owner field), so a corrupt owner could read a neighboring
+allocation, interpret it as a process descriptor and move words from
+an unrelated physical address. The v1687 source-base witness did not
+protect the memory access used to obtain that witness.
+
+`vm_extent_move` now refuses any owner at or beyond `proc_slots` before
+computing the descriptor address. Valid owners still go through the
+existing current-slot, exact-source-base, mapping-hold and TRANSITION
+checks. No MM extent, VM descriptor or permanent RAM is changed on a
+refusal, and there is no additional permanent state.
+
+`tests/validation/daimos-k01-relocate-slot-v1692.sh` extracts the
+production VM and filesystem move leaves, plants a forged matching
+descriptor immediately beyond the two-slot table, and checks that the
+out-of-bounds owner cannot publish a new base or overwrite destination
+words. The highest MM owner (0377) is also refused. A valid in-range
+owner still moves, and a mutant deleting the bound fails the native
+PDP-6 test. All 11 other source-linked VM relocation/compaction
+fixtures were supplied their runtime slot count, with no mocked VM
+guard; older v541 user-HALT and v548 missing arena-preflight fixture
+defects were corrected in testkit. Native tests and KCC builds with
+PURE verification disabled/enabled pass. A full physical guest fault
+injection is not yet claimed.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and

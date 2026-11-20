@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1691):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1692):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -35,6 +35,8 @@ unmerged from its development line; mode3 remains disabled.
   descriptor reinsertion or post-VM publication unexpectedly fails.
   v1691 fail-stops if diagnostic PURE verification cannot restore the
   original resident image after erasing the PURE prefix.
+  v1692 validates relocated MM process-slot numbers against the actual
+  runtime-sized process table before accessing a process descriptor.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and

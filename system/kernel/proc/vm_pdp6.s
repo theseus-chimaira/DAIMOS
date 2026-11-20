@@ -41,6 +41,7 @@
         .globl  proc_current_slot
         .globl  proc_current_ptr
         .globl  proc_table
+        .globl  proc_slots
         .globl  proc_slot_ptr
         .globl  proc_record_kernel_sp
         .globl  mach_kernel_sp
@@ -791,6 +792,12 @@ vm_extent_move:
         move    12,3                   ; words
         move    13,4                   ; new base
 
+        ; The MM descriptor contains an owner number, not a trusted
+        ; process-table pointer. A stale/corrupt owner must not address
+        ; memory beyond the runtime-sized process table. Perform this
+        ; check before reading or modifying any process state.
+        caml    10,proc_slots
+        jrst    vm_extent_move_busy
         camn    10,proc_current_slot
         jrst    vm_extent_move_busy
         move    14,10
