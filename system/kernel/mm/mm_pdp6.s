@@ -406,6 +406,9 @@ mm_move_extent:
         move    1,010
         movei   2,-5(17)
         pushj   17,mm_extent_insert
+        ; Failure here means the source owner was removed from MM.
+        ; Neither fragmentation nor a retry may be reported safely.
+        jumpn   1,mm_move_rollback_lost_v1690
         skipn   (17)
         jrst    mm_move_fragmented
         move    015,-2(17)
@@ -440,7 +443,21 @@ mm_move_publish:
         move    1,014
         movei   2,-5(17)
         pushj   17,mm_extent_insert
+        ; VM has already published the new physical base. If MM cannot
+        ; publish its matching descriptor, returning would expose that
+        ; memory as free to unrelated allocations. Fail closed with PI
+        ; still disabled and the exact insertion error in AC1.
+        jumpn   1,mm_move_publish_lost_v1690
         jrst    mm_move_restore_pi
+
+        .globl  mm_move_rollback_lost_v1690
+        .globl  mm_move_publish_lost_v1690
+mm_move_rollback_lost_v1690:
+        halt    .                       ; original MM owner unpublished
+        jrst    .-1
+mm_move_publish_lost_v1690:
+        halt    .                       ; moved VM owner unpublished in MM
+        jrst    .-1
 
 mm_move_fragmented:
         movni   1,2
