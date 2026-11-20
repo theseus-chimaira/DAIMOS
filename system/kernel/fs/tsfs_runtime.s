@@ -11,6 +11,7 @@
         .globl  tsfs_parent
         .globl  tsfs_parent_name
         .globl  tsfs_read_words
+        .globl  proc_swap_storage_invariant_v30
 
 tsfs_mres_dispatch:
         cain    6,022                    ; FS_MRES_OP_MOUNT_UNIT
@@ -592,6 +593,9 @@ tsfs_read_block:
         movei   2,3
         movei   3,TSFS_DECODE_OWNER
         pushj   17,mm_free
+        ; Decoder scratch is owned only by the local stack word.  If
+        ; MM refuses to free it, returning would orphan physical RAM.
+        jumpn   1,proc_swap_storage_invariant_v30
         sub     17,kconst_1_1
         jumpn   1,tsfs_read_words_fail
         jumpn   012,tsfs_read_restart
@@ -602,6 +606,9 @@ tsfs_read_block_free:
         movei   2,3
         movei   3,TSFS_DECODE_OWNER
         pushj   17,mm_free
+        ; Same failure on the decode-error path: no persistent owner
+        ; exists after dropping the scratch address from the stack.
+        jumpn   1,proc_swap_storage_invariant_v30
 tsfs_read_block_drop:
         sub     17,kconst_1_1
         jrst    tsfs_read_words_fail

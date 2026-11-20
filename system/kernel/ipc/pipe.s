@@ -23,6 +23,7 @@
         .globl  file_new_fd
         .globl  mm_alloc
         .globl  mm_free
+        .globl  proc_swap_storage_invariant_v30
         .globl  proc_wait_event
         .globl  proc_wait_event_intr
         .globl  proc_wakeup_event
@@ -156,6 +157,10 @@ pipe_create_free:
         movei   2,3                     ; MM_TYPE_KERNEL_DYNAMIC
         movei   3,5                     ; PIPE_MM_OWNER
         pushj   17,mm_free
+        ; The PIPE object was never published to a live descriptor.
+        ; Refusing this release leaves only the transient AC10 pointer;
+        ; returning would discard the last record of MM ownership.
+        jumpn   1,proc_swap_storage_invariant_v30
 pipe_create_fail:
         seto    1,
 pipe_create_done:

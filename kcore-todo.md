@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1706):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1707):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -84,12 +84,16 @@ unmerged from its development line; mode3 remains disabled.
   v1706 stops destructive low-memory EXEC if release of its transient
   launch-copy MM extent returns -4/-5; its stack-local owner must never
   vanish on a reported EXEC result. No permanent RAM is added.
+  v1707 likewise fail-stops on refused MM release of unpublished PIPE
+  objects, D6FS mount readers and both TSFS decoder scratch cleanup
+  paths. Four native PDP-6 owner-refusal mutants are rejected; all
+  ordinary successful-release paths retain their previous behavior.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
   `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
-  rebase, restore and other owner failure paths (including temporary
-  provider scratch on failed setup), diagnosing the F07 6/18 RUN
+  rebase, restore and other owner failure paths (including other
+  temporary provider scratch on failed setup), diagnosing the F07 6/18 RUN
   admission failure before swap-refusal injection, and a final
   cross-subsystem source/guest acceptance sweep. Hardware interrupt
   tests cannot exhaust all races.

@@ -400,3 +400,40 @@ returns to normal EXEC completion after a refused MM free fails. The
 existing v200 low-memory EXEC rollback, v1 ABI and v20 PURE tests pass,
 as do both KCC KCORE builds with PURE verification on/off. No new
 permanent KCORE RAM was introduced.
+
+### v1707: unpublished provider scratch cannot survive MM refusal
+
+An audit of all production `pushj 17,mm_free` callers revealed three
+more owner-only-in-transient-state hazards after the v1706 EXEC fix.
+`pipe_create_free` released a newly allocated PIPE object after FILE
+descriptor creation failed. If MM refused release, `pipe_create_fail`
+returned -1 and discarded AC10, the object's only owner. Similarly,
+`d6fs_mount_free` discarded the private, not-yet-installed D6FS reader
+on failed `vfs_mount_prevalidated`; neither the mount table nor the
+stack frame would retain its physical base after return.
+
+TSFS `tsfs_read_words` allocates a decoder buffer only for a compressed
+restart block and keeps its address on the transient stack. Both
+successful decode cleanup and the error branch to
+`tsfs_read_block_free` formerly dropped this pointer after `mm_free`
+returned -4/-5. Since the caller has no durable reference to that
+buffer, retry or graceful error return would silently orphan a still
+MM-owned extent.
+
+All four physical-free call sites now branch on a nonzero `mm_free`
+return to the existing `proc_swap_storage_invariant_v30` KCORE HALT.
+An ordinary accepted free still follows the original return, mount
+cleanup and decoder result. This is a strict ownership-integrity stop,
+not an automatic recovery algorithm. It neither unpins another owner
+nor allocates resident state; no permanent RAM or new owner encoding.
+
+`daimos-k01-temp-owner-free-v1707.sh` source-links the four actual
+PDP-6 production cleanup leaves, using only test-side MM and result
+stubs to inject exact -4 and -5 refusals. It verifies release arguments,
+one accepted free on the normal path, exactly one invariant stop on
+each hard refusal, and rejects four mutants with the refusal branches
+removed. Both KCC KCORE PURE variants build. The legacy v870 pipe-close
+fixture currently fails to link because it extracts code without the
+later `vfs_dtfs_poisoned_slot_v1531` dependency; it is not credited as
+a passing v1707 regression. The F07 admission failure remains an
+independent unclosed physical-guest gate for K01.

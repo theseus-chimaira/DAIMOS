@@ -717,6 +717,7 @@ d6fs_provider_space_fail:
         .globl  vfs_mount_prevalidated
         .globl  mm_alloc
         .globl  mm_free
+        .globl  proc_swap_storage_invariant_v30
 ; Provider-private runtime mount entry.
 ; AC1=validated 14-word handoff, AC2=target vnode, AC3=flags.
 ; Secondary mounts are read-only until the later remount/recovery phase defines
@@ -784,6 +785,9 @@ d6fs_mount_free:
         movei   2,3
         movei   3,010
         pushj   17,mm_free
+        ; Unpublished reader has no durable mount owner on rollback.
+        ; Never discard its stack-local address after a refused free.
+        jumpn   1,proc_swap_storage_invariant_v30
         seto    1,
         jrst    d6fs_mount_done
 
