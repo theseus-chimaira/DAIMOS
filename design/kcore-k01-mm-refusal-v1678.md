@@ -493,3 +493,22 @@ without PI exclusion fails. The v1698 atomic pin regression and
 v1710 active-owner compaction test pass alongside it. The result is
 not a lasting ownership lease; the swap-out transaction must still
 acquire and verify its own physical pin before committing a swap.
+
+### v1712: source-linked F07 TERM stack-witness correction
+
+The v1494 strict physical BACKSTORE refusal injector's TERM witness
+formerly read the pending swap slot at -3(17). In the real service,
+the slot is on the stack before `PUSHJ`, and the witness saves AC4,
+AC5 and AC6 on entry: the correct slot address is **-4(17)**.
+The fixture now reads that exact word without affecting production
+swap-in, TERM delivery or finalizer behavior.
+
+`daimos-k01-f07-term-stack-v1712.sh` injects the actual v1494
+diagnostic leaf into a disposable source copy and runs the extracted
+witness in native PDP-6 with the exact stack shape. It verifies a
+matched owner/transition/PREVM/backing record, rejection of a different
+owner, and that a genuinely missing PREVM mark remains a reported
+integrity error. A mutant reverting to -3(17) fails. This completes
+only the witness-correctness test; the strict full-guest F07 bitmap
+failure still reports two TERM events and other diagnostic errors
+and is not accepted until separately explained and corrected.

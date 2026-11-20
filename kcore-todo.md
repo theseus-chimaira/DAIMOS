@@ -93,6 +93,8 @@ unmerged from its development line; mode3 remains disabled.
   hard refusal. Genuine other-owner busy errors stay fail-closed.
   v1711 snapshots the advisory `mm_is_pinned` base lookup and pin read
   atomically under PI; swap-out still requires its own checked pin.
+  v1712 corrects the test-only v1494 TERM stack witness to -4(17)
+  and checks it in native PDP-6; the full physical F07 gate remains open.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
