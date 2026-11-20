@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1685
+# K01 swap MM owner and rollback safety, v1679-v1686
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -88,6 +88,24 @@ another MM error. The branch now directly enters the existing invariant
 fail-stop, leaving TRANSITION and the physical MM descriptor untouched.
 Successful unpin and subsequent backing publication are unchanged.
 
+### v1686: verify swap-in's physical destination before any restore writes
+
+Swap-in previously accepted successful `mm_pin` as proof that a newly
+allocated physical base belonged to the process being restored. The
+pin primitive proves only that the base is present in the extent table.
+If the allocated base or MM metadata is inconsistent, a successful pin
+could authorize writing executable and swapped words into another
+owner's extent, or outside its size. The ordinary post-read unpin/free
+checks occur too late to prevent that memory corruption.
+
+Immediately after acquiring the new pin, swap-in now uses the existing
+`mm_process_verify_pinned_v792(base,slot,words)` read-only verifier.
+It requires exact PROCESS type, owning slot, full aligned word count
+and precisely one pin. Mismatch enters `proc_swap_storage_invariant_v30`
+without attempting image writes or release of the uncertain owner.
+`TRANSITION` remains held and the original disk image remains authoritative.
+This adds no permanent kernel data and does not change normal success.
+
 ## Native validation
 
 All tests reside in `daimos-testkit`, not in the DAIMOS source tree:
@@ -120,6 +138,15 @@ All tests reside in `daimos-testkit`, not in the DAIMOS source tree:
   free-on-unpin-refusal mutation. The existing v1316/v1317 source-linked
   swap-in transaction/rollback suite also passes; its backing read is
   mocked and it is not complete booted-guest acceptance.
+- `tests/validation/daimos-k01-restore-owner-v1686.sh` extracts the
+  production swap-in pin and verification branch plus actual PDP-6
+  `mm_pin` and `mm_process_verify_pinned_v792`. Wrong slot, type, size
+  and pre-existing pin retain the physical descriptor, TRANSITION and
+  disk record. The exact owner advances; a mutant bypassing the
+  post-verification error branch is rejected.
+  The existing source-authentic v1316/v1317 swap-in fixture now also
+  extracts this verifier from production MM; its original complete
+  transaction and rollback tests pass with mocked backing-store reads.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and

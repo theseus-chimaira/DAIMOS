@@ -1903,6 +1903,17 @@ proc_swap_in:
         move    1,(17)
         pushj   17,mm_pin
         jumpn   1,proc_swap_in_pin_fail
+        ; A successful physical pin proves only that the base exists.
+        ; Before writing executable or swapped words into the newly
+        ; allocated extent, verify the full PROCESS owner, length and
+        ; exactly one pin. A wrong-owner or stale MM descriptor must
+        ; never receive a restored image or be returned to the scheduler.
+        ; Preserve the disk owner and TRANSITION for diagnosis.
+        move    1,(17)
+        move    2,10
+        move    3,13
+        pushj   17,mm_process_verify_pinned_v792
+        jumpn   1,proc_swap_storage_invariant_v30
         move    1,14
         pushj   17,proc_swap_skip_words
         move    3,1
