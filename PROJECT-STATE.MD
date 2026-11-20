@@ -1,3 +1,43 @@
+## 2026-11-20 v1726: physically overlapping PIPE/D6FS owners in separate RUN children PASS
+
+The new daimos-testkit v1726 guest boots a real 256K PDP-6 with INIT
+slot1 and two independently scheduled RUN children. Provider child B,
+slot2, inherits a D6FS regular FILE FD6 and is started first. The
+copied D6FS provider refuses the first SYNC; ordinary EXIT returns to
+B, which still owns FD6 and sleeps. The separate PIPE child A, slot3,
+inherits both data-PIPE ends, starts while B is live, and encounters
+the existing test-only real MM pin/BUSY at last-reference PIPE close.
+The test-only PIPE hook physically checks B's descriptor-table pointer,
+its nonzero FD6 word and exactly one completed D6FS provider refusal
+on BOTH A's failed and accepted last-close attempts. It requires two
+overlap observations, not merely a prior provider call. A completes
+its second EXIT while B still retains FD6. B later resumes, refuses
+a second D6FS sync and completes its third EXIT, with the original
+MRES lease correctly owned at all three provider invocations.
+
+Both processes are independently waited on by INIT with distinct
+expected exit codes, and MEMINFO checks process slots, process words
+and file occupancy against their pre-RUN baseline. Physical samples:
+PIPE owner slot3, PIPE base decimal 21,611, final-close attempts 2,
+real MM pin 1/unpin 1, actual MM_BUSY 1, accepted free 1; overlap 2,
+wrong-owner/refcount errors 0. D6FS provider calls 3, injected
+refusals 2, correct lease observations 3, wrong lease 0. The exact
+parent completion marker and expected user HALT are present.
+
+Initial v1726 preflight exposed a generated path pointing into a
+temporary directory; the test generator was corrected. Source review
+also identified that closing the control writers before the children
+exited would have selected a control PIPE instead of the data PIPE.
+The C89 test retains those independent parent-owned control writers
+until child A has finished. The corrected complete physical guest
+passed. These are *test fixture* fixes, not changes to production.
+The D6FS error is still injected inside the provider (not a real
+media fault), whereas MM_BUSY arises from physical MM pin/free.
+Production KCORE/MRES text and data deltas are zero; K02 OPEN, K03
+automatic OOM termination disabled.
+
+See design/kcore-k02-concurrent-owners-v1726.md.
+
 ## 2026-11-20 v1725: physical RUN/PIPE EXIT and serialized D6FS provider refusal PASS
 
 No production KCORE or MRES source was changed. The daimos-testkit

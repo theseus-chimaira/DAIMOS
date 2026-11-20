@@ -174,6 +174,16 @@ unmerged from its development line; mode3 remains disabled.
   calls; provider calls/refusals 3/2, all ownership errors 0 and parent
   WAIT PASS. Provider errors are still test-injected, not actual media
   faults. K02 OPEN; K03 automatic OOM termination disabled.
+  **v1726:** a real three-process 256K PDP-6 guest runs independent
+  children: B(slot2) retains an inherited regular-file FD6 after a
+  refused D6FS provider SYNC, while A(slot3) attempts last-reference
+  PIPE MM release. The PIPE hook physically verifies B's live u-area
+  FD6 and its first refused provider call at BOTH A's MM attempts.
+  The real MM pin/BUSY/unpin/free sequence is 1/1/1/1, overlap 2/2,
+  provider calls/refusals 3/2, correct leases 3, violations 0,
+  ownership errors 0. Both children finish through ordinary EXIT,
+  parent WAIT receives both exit statuses, and MEMINFO returns to
+  baseline. No production KCORE change; K02 remains OPEN.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.
