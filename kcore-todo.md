@@ -209,6 +209,23 @@ unmerged from its development line; mode3 remains disabled.
   fatal-owner/HUP native regressions all pass. This is source-linked
   acceptance only; a combined physical session/provider/EXEC guest
   and K04 permanently refused ownership policy remain OPEN.
+  **v1729:** full 256K PDP-6 combined session-HUP/permanent D6FS/
+  destructive-EXEC guest PASS. Job2 slot4 permanently refuses real
+  provider-entry SYNC for FD3, then a true APR fault enters its
+  private-stack FATAL_CLOSE owner. Three session HUPs refuse without
+  re-HUPing already committed job1 slot3, releasing the leader TTY,
+  touching job2's protected stack or losing FD3. Physical D6FS
+  calls/refusals 5/5, correct leases 5, wrong leases 0; session
+  failures 3, ownership errors 0. Independent EXEC child slot5
+  physically destroys old VM to VM_NONE, encounters a replacement
+  load refusal and completes its genuine fatal exit; INIT WAIT and
+  MEMINFO PASS. Six unsafe transcript mutations rejected; v1728,
+  v1720, v970 and v922 native gates PASS. Prior foreign-HUP test
+  designs failed because the safe scheduler path deferred them,
+  not because the D6FS vnode mask needed a workaround. No KCORE
+  code/data delta. K02 OPEN for organic media and post-free backing
+  failure gates plus full regression/size audit; K04 and K03 remain
+  separately gated.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.

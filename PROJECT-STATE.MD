@@ -1,3 +1,51 @@
+## 2026-11-20 v1729: full PDP-6 permanent D6FS/session HUP and fatal EXEC PASS
+
+The daimos-testkit v1729 full 256K PDP-6 guest combines a real
+controlling-TTY session, a first stopped member whose HUP commits
+VM_NONE+FINALIZE but retains a physically pinned u-area, a second
+member whose real D6FS FD3 permanently refuses provider SYNC, and an
+independent destructive low-memory EXEC child. Job2's first ordinary
+EXIT retains FD3; a real APR fault places the same process on its
+private-stack fatal close continuation. INIT waits for the production
+GETTEARDOWN stage 1 before sending three session-wide HUPs.
+
+All three HUPs are refused while the leader TTY and job2's actual
+stable FD3/FATAL_CLOSE owner remain preserved. The already committed
+job1 is not signaled twice. Another RUN child exercises staged NOMEM,
+real old-VM destruction to VM_SPACE_NONE, test-induced replacement-
+loader failure, genuine fatal EXEC exit and successful parent WAIT
+for status 1; no process/FILE count regression in INIT.
+
+Accepted physical counters: session slots leader/job1/job2/EXEC
+2/3/4/5; first-owner MM pin 1/unpin 0; session refusal 3/owner
+assertion failures 0; D6FS provider calls/refusals 5/5 under five
+correct MRES leases, wrong leases 0; unsafe foreign close/defer 0;
+EXEC NOMEM/post-VM-NONE/load-refusal/fatal entry each 1, ownership
+errors 0. Exact <P user witness and intended HALT, physical runner
+return code 0. Six unsafe transcript mutations rejected by replay of
+the exact physical verifier. Supporting native v1728 session HUP,
+v1720 destructive EXEC, v970 fatal owner/HUP and v922 repeated HUP
+tests all passed.
+
+Earlier v1729 variants assumed a foreign HUP would synchronously
+close job2's FD3; physical counters showed that the existing
+private-stack safety guard legitimately deferred the HUP before any
+D6FS SYNC. Trying to STOP job2 was also insufficient; INIT cannot
+consume its grandchild's STOPPED WAIT. The accepted guest does not
+disable that safety guard: it proves a real provider-originated
+owner-side failure first, then HUP's refusal to reclaim the protected
+owner. These were test-scenario corrections, not production changes.
+
+The accepted kernel DXR hash and simulator transcript hash are
+recorded in design/kcore-k02-session-exec-v1729.md. All production
+KCORE/MRES text, fixed RAM and per-process RAM deltas are zero.
+This closes the combined physical session/provider/fatal-EXEC
+interleaving gate, NOT K02 as a whole. Organic media/provider failure,
+physical post-process-MM-free backing detach refusal and the final
+consolidated regression/footprint audit remain open. K04 permanent
+resource recovery policy and K03 automatic OOM termination are
+independently gated; pdp10-doc remains untouched.
+
 ## 2026-11-20 v1728: source-linked permanent session HUP and EXEC audit PASS
 
 An additional PDP-6 native regression links the actual resident
