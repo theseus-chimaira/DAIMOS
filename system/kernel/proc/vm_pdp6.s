@@ -812,6 +812,14 @@ vm_extent_move:
         jrst    vm_extent_move_base_ok_v1687
         jrst    vm_extent_move_busy
 vm_extent_move_base_ok_v1687:
+        ; The MM descriptor's length is also untrusted. The resident VM
+        ; word count is the independent witness; never copy across an
+        ; extent boundary or publish a partial process image.
+        hlrz    1,1(14)
+        camn    1,12
+        jrst    vm_extent_move_length_ok_v1693
+        jrst    vm_extent_move_busy
+vm_extent_move_length_ok_v1693:
         camn    13,11
         jrst    vm_extent_move_busy
         move    1,13

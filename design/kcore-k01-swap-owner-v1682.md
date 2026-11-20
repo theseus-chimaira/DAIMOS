@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1692
+# K01 swap MM owner and rollback safety, v1679-v1693
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -267,6 +267,28 @@ guard; older v541 user-HALT and v548 missing arena-preflight fixture
 defects were corrected in testkit. Native tests and KCC builds with
 PURE verification disabled/enabled pass. A full physical guest fault
 injection is not yet claimed.
+
+### v1693: exact process VM length before MM relocation
+
+The v1687 base and v1692 slot checks still allowed `vm_extent_move`
+to trust the extent length supplied by `mm_move_extent`. A stale MM
+descriptor could request a shorter copy (leaving the published process
+image incomplete) or a longer copy (reading and overwriting another
+physical owner's words). The process table already records the exact
+resident VM extent length in the left half of its VM word.
+
+Before any process-state or physical-memory mutation, `vm_extent_move`
+now compares that independent length against the MM request and returns
+`MM_ERR_BUSY` on mismatch. The normal source-base, owner-slot, mapping
+hold and runqueue checks remain in force. No new permanent data is used.
+
+The native PDP-6 source-linked `daimos-k01-relocate-length-v1693`
+regression tests a correct base with an oversized MM request, unchanged
+destination and process descriptor, and a valid matching-length move.
+Removing the exact-length guard causes its negative mutant to fail.
+Older relocation fixtures now encode the actual process VM length
+instead of leaving it zero, and compare the physical-base right half
+where appropriate. Full physical guest fault injection remains open.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and
