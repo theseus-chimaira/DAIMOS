@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1694
+# K01 swap MM owner and rollback safety, v1679-v1695
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -315,6 +315,35 @@ owner, extent count, PI balance, no VM call, invalid type and negative
 slot refusal, then a normal VM refusal and successful relocation. A
 mutation removing the pinned guard is rejected. The earlier capacity,
 rollback, publication and full-path relocation tests remain applicable.
+
+### v1695: retire the VM owner before fallible backing detach
+
+The ordinary non-XIP `vm_space_destroy` path previously freed the
+PROCESS extent through `mm_free` and then called `proc_swap_detach`,
+while still publishing the old physical base in the process VM word.
+On a refused backing detach it returned failure without clearing that
+VM word. A subsequent PREVM retry could attempt a second `mm_free` on
+already-released memory, or continue holding a stale VM pointer to
+memory already reusable by a different owner.
+
+After a successful MM free, the VM destructor now publishes the full
+`VM_SPACE_NONE` sentinel before calling the independently fallible
+backing detach. A refused MM free still retains the original VM and
+backing records, unchanged. If detach fails after an accepted MM free,
+only the backing metadata remains pending; the next retry recognizes
+VM_NONE, skips MM entirely and retries the detach. This uses the
+existing VM word, with no new persistent recovery state or data words.
+For MEMFS XIP, the earlier v1471 detach-before-unpin order remains
+unchanged; DISK-mode backing detach with no resident base also retains
+its original retry semantics.
+
+The native PDP-6 source-linked `daimos-k01-vm-retire-v1695.sh` injects
+first a refused typed MM free, then a successful physical free followed
+by refused backing detach, then a successful backing retry. It checks
+exact descriptor, MM ownership and call counts throughout, including
+that MM is never called a third time. The unsafe mutant removing early
+VM_NONE publication fails. Existing VM_NONE, XIP and DISK retries are
+re-run separately to guard the other ownership contracts.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and

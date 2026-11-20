@@ -601,10 +601,17 @@ vm_space_destroy_maybe_process:
         move    3,(17)
         pushj   17,mm_free
         jumpn   1,vm_space_destroy_fail
+        ; MM no longer owns the resident extent. Publish VM_NONE before
+        ; the independently fallible backing detach: if that operation
+        ; refuses, PREVM can retry it without freeing this base again or
+        ; retaining a stale VM pointer to memory available to another
+        ; allocator. The swap record remains owned until detach succeeds.
+        move    2,-1(17)
+        setom   1(2)
 vm_space_destroy_detach:
         move    1,(17)
         pushj   17,proc_swap_detach
-        jumpn   1,vm_space_destroy_fail  ; keep VM and swap record retryable
+        jumpn   1,vm_space_destroy_fail  ; keep unreleased backing retryable
 vm_space_destroy_publish_v1471:
         move    2,-1(17)
         setom   1(2)                   ; VM_SPACE_NONE
