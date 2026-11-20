@@ -447,6 +447,32 @@ independent v899 real PDP-6 physical PIPE-close test also passed:
 one pin, one -5 refusal, one unpin, successful eventual release and
 three checked close attempts, without errors.
 
+### v1710: never relocate the executing PROCESS in MM compaction
+
+`vm_extent_move` correctly refuses to relocate the currently running
+process because its active APR continues to reference that physical
+image. The compactor previously tried ALL unpinned PROCESS entries,
+including that active owner, collected the resulting expected -5 and
+treated it as a hard MM error after scanning the remaining candidates.
+That turns ordinary fragmentation into a false invariant refusal and
+prevents further swap reclamation by `mm_alloc_aligned`.
+
+`mm_compact` now skips a nonzero `proc_current_slot` owner before
+calling `mm_move_extent`. Other owners still undergo exactly the
+existing physical/VM checks; their hard -4/-5 errors are still
+preserved. No owner record, persistent RAM or retry state is added.
+`daimos-k01-compact-current-v1710.sh` source-links the production
+compactor and proves: active-owner immobility yields ordinary -2 (not
+spurious -5), a different owner genuinely refusing move still yields
+-5, and a movable noncurrent owner can resolve the fit. The mutant
+without the active-owner skip is rejected. Historical v1678 compactor
+and pressure, v535 dispatch and v545 full VM/FS compaction regressions
+also pass. The subsequent physical F07 diagnostic admitted and reaped
+18 of 18 children, up from 6/18. The v1494 bitmap fault was armed,
+its backing bitmap repaired, and final backing usage reached zero, but
+strict F07 acceptance still FAILED: TERM events were 2 instead of 1
+and witness errors were 5. That separate failure needs investigation.
+
 ### v1711: atomic swap-victim advisory pin snapshot
 
 `mm_is_pinned` was the remaining lookup-then-read MM pin observer

@@ -586,6 +586,18 @@ mm_compact_scan:
         jrst    mm_compact_next
         tlne    2,03770
         jrst    mm_compact_next
+        ; The active process is intentionally immovable: its APR and
+        ; instruction stream still refer to this extent. Asking
+        ; vm_extent_move to relocate it returns MM_ERR_BUSY, but that
+        ; is not a failed ownership transaction and must not poison
+        ; every later allocation with a spurious hard MM refusal.
+        ; Keep the existing hard-refusal handling for other owners.
+        skipn   proc_current_slot
+        jrst    mm_compact_candidate_ready_v1710
+        hrrz    3,2
+        camn    3,proc_current_slot
+        jrst    mm_compact_next
+mm_compact_candidate_ready_v1710:
         move    1,012
         movei   2,VM_EXTENT_ALIGN_WORDS
         pushj   17,mm_move_extent
