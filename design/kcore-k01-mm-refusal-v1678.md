@@ -344,3 +344,59 @@ OOM victim choice or RAW PURE transaction acceptance. Complete physical
 fault injection and mainline/feature-branch integration before closing
 K01. No `pdp10-doc` completed-feature documentation is published while
 K01 remains open.
+
+### v1705: strict F07 swap-in fault gate blocked before injection
+
+The physical v1494 BACKSTORE bitmap-refusal injector expected the
+pre-v1507 `proc_swap_service_failed` event path. Current production
+first saves `PROC_SWAP_RETRY_LH` in the owner's existing u-area word,
+then delivers `SYS_EVENT_TERM` at
+`proc_swap_service_failed_event_v1507`. The test-only injection point
+was moved after that event, retaining the production retry deadline.
+`daimos-k01-swap-restore-injection-v1705.sh` tests both v1494 and
+v1495 source-backed instruments and rejects a missing-event mutation.
+The v1494 verifier rejects 12 synthetic negative controls, and seven
+native swap owner/restore regression suites passed. No production
+kernel source was altered in v1705.
+
+The subsequent **real 256K PDP-6 F07 run did NOT pass**. The guest
+booted, but its strict original v1207 admission test observed only
+6 of 18 requested RUN child acknowledgments and halted on user-side
+`fail('n')`. Physical swap-out count advanced to 10 and swap-in to 3
+in the live sampler, so the swap engine had operated; the v1494
+instrumentation counters remained `armed=0`, `faults=0`, `errors=0`.
+The final backing usage was 1264 blocks, not the required clean zero,
+because the guest stopped at that earlier workload check. These
+counters do NOT support a swap-in bitmap-fault recovery claim. The
+F07 RUN admission cause requires separate investigation; do not weaken
+its original 18-child check or move the injected fault to fabricate
+success. The local pre-existing change to the v1494 TERM witness's
+stack offset was preserved, not committed as v1705.
+
+### v1706: no orphaned destructive-EXEC launch copy on MM refusal
+
+`exec_replace_current_lowmem` keeps a kernel-dynamic MM allocation
+(owner 013) containing the validated launch block while it destroys
+the old user image and stages a new one. At
+`exec_lowmem_free`, both successful and fatal-after-commit paths
+previously ignored `mm_free` and returned the EXEC result. If MM
+refused release with -4/-5, the stack frame then disappeared, losing
+the only pointer to still-owned physical RAM without an administrative
+or process-owned retry record. That would falsely report completion
+after an unproven permanent MM release.
+
+The v1706 code checks the actual `mm_free` result and branches to the
+existing distinct `proc_swap_storage_invariant_v30` HALT on refusal.
+The accepted normal free still returns the exact original EXEC status;
+it does not fabricate a release, force-unpin an extent or allocate a
+new persistent recovery table. The fail-stop is deliberate because
+the existing transient launch-copy owner has no safe surviving retry
+record. Future process-lifetime recovery design remains K02/K04.
+
+`daimos-k01-exec-launch-free-v1706.sh` source-links the real EXEC
+cleanup leaf to a native PDP-6 fixture with a validated owner 013,
+testing normal release and independent -4/-5 failures. A mutant that
+returns to normal EXEC completion after a refused MM free fails. The
+existing v200 low-memory EXEC rollback, v1 ABI and v20 PURE tests pass,
+as do both KCC KCORE builds with PURE verification on/off. No new
+permanent KCORE RAM was introduced.

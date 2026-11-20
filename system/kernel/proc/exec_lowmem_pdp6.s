@@ -27,6 +27,7 @@
         .globl  exec_replace_current_lowmem
         .globl  mm_alloc
         .globl  mm_free
+        .globl  proc_swap_storage_invariant_v30
         .globl  vm_space_destroy
         .globl  vm_space_startup
         .globl  vm_user_mapping_hold
@@ -433,6 +434,12 @@ exec_lowmem_free:
         movei   2,MM_TYPE_KERNEL_DYNAMIC
         movei   3,EXEC_LAUNCH_MM_OWNER
         pushj   17,mm_free
+        ; The launch copy was never published as a persistent owner.
+        ; On a refused free it is still MM-owned, but returning would
+        ; discard the only pointer with the transient EXEC stack frame.
+        ; Stop rather than report success/fatal completion with orphaned
+        ; physical RAM. Do not force unpin or invent a release.
+        jumpn   1,proc_swap_storage_invariant_v30
         move    1,16
         jrst    exec_lowmem_return
 

@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1704):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1706):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -77,13 +77,22 @@ unmerged from its development line; mode3 remains disabled.
   PIPE, DPY, VM and u-area each reject a live pin then release exactly
   once; full FILE->VM->u-area->ZOMB ordering, 55 qualified PI6 ticks,
   live bystander progress and 48 WAIT/PID cycles pass without errors.
+  v1705 realigned the strict F07 swap-in refusal *test* with v1507's
+  per-owner retry epoch; the full guest now boots but fails its earlier
+  18-child RUN admission gate at 6/18, before the injected bitmap fault
+  can arm. Neither swap-refusal nor F07 final acceptance is claimed.
+  v1706 stops destructive low-memory EXEC if release of its transient
+  launch-copy MM extent returns -4/-5; its stack-local owner must never
+  vanish on a reported EXEC result. No permanent RAM is added.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
   `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
-  rebase, restore and other owner failure paths, outstanding full-guest
-  swap/restore refusal evidence and a final cross-subsystem source/guest
-  acceptance sweep. Hardware interrupt tests cannot exhaust all races.
+  rebase, restore and other owner failure paths (including temporary
+  provider scratch on failed setup), diagnosing the F07 6/18 RUN
+  admission failure before swap-refusal injection, and a final
+  cross-subsystem source/guest acceptance sweep. Hardware interrupt
+  tests cannot exhaust all races.
 - [ ] **K02 - Process resource cleanup.** Complete failure-safe cleanup
   of process-owned MM, VM, FD, PIPE/FIFO and related resources during
   EXIT, EXEC and failed or unpublished RUN. Do not claim provider-specific
