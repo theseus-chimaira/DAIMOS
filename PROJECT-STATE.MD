@@ -1,3 +1,38 @@
+## 2026-11-20 v1723: physical RUN child ordinary EXIT / final PIPE MM refusal PASS
+
+The new `daimos-k02-run-pipe-exit-v1723.sh` builds a complete 256K PDP-6
+guest with a user program compiled as C89 and a disposable kernel copy.
+The parent creates a data PIPE and a separate control PIPE, RUNs a real
+child inheriting both data endpoints and the control reader, closes its
+own data reader/writer, and sends a control byte. The child cannot enter
+its EXIT until it has observed that byte; this removes any scheduler
+order ambiguity about which process owns the final data-PIPE refs.
+
+Test-only instrumentation at `pipe_close_free_v870` physically pins the
+exact first last-reference MM owner during the child's ordinary EXIT.
+The real MM rejects that final writer free with MM_ERR_BUSY (-5), while
+the preceding reader FD remains closed and the writer FILE entry and
+`0,,1` object reference count remain intact. Ordinary `SYS_EXIT` returns
+-1 to the still-live child (it does not use the separate fatal-EXEC
+retry continuation). The child retries EXIT; instrumentation unpins the
+same MM extent, and the actual `mm_free` succeeds exactly once. The
+parent's WAIT reports `SYS_WAIT_EXITED` status 065 and MEMINFO confirms
+that process slots, process words and its FILE slots returned to baseline.
+
+Full-system SIMH sample: object base decimal 21,567; child slot 2;
+final-close attempts 2; real MM pins 1; unpins 1; BUSY refusals 1;
+accepted final frees 1; ownership errors 0. The guest emitted the exact
+parent-completion marker and HALT. The stricter verifier that demands an
+entire `P` output line was replayed successfully on the same guest.
+Existing v1722 inheritance, v892 unpublished RUN rollback and v1099
+typed PIPE/FIFO close gates also passed. No production assembly, ABI,
+text, resident data or memory-accounting changes. This closes the
+ordinary parent/child PIPE EXIT refusal test gap, NOT the entire K02
+resource-cleanup task. K03 OOM termination remains disabled.
+
+See `design/kcore-k02-run-pipe-exit-v1723.md` and the v1723 testkit
+guest sources for the exact probe, results and reproducible commands.
+
 ## 2026-11-20 v1722a: physical named FIFO pin/reopen and typed refusal PASS
 
 The pre-existing daimos-testkit v900 full-system 256K PDP-6 named-FIFO

@@ -146,6 +146,15 @@ unmerged from its development line; mode3 remains disabled.
   refusal, FIFO re-listing/reopen, unpin and successful retry. Native
   typed -4/-5 FIFO tests v1099 (four mutants), pinned OPEN rollback
   v1084 and direct-mount isolation v417 also pass. No KCORE change.
+  **v1723:** full 256K PDP-6 guest now runs an actual parent/child RUN
+  inheritance of both anonymous PIPE endpoints. The child waits until
+  the parent has released its own refs; its first ordinary EXIT closes
+  the reader but gets a real pinned-MM BUSY refusal on the final writer.
+  The FILE entry/ref count remains owned, EXIT returns an error, the
+  child retries, and its second EXIT unpins/frees exactly once. Parent
+  WAIT returns the correct exit status; no process/FILE/VM word leak.
+  Isolated guest calls 2, pins 1, unpins 1, BUSY 1, accepted free 1,
+  errors 0. No KCORE text or data change. K02 remains OPEN.
 - [ ] **K03 - OOM handling.** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.
