@@ -94,6 +94,32 @@ The ordinary MM `mm_pin_adjust` update remains a separate PI audit
 target. Physical full-guest interrupt injection and bounded K01
 administrative recovery are still open.
 
+### v1698: atomic MM pin and unpin publication
+
+`mm_pin_adjust` previously searched the descriptor table, read the
+physical pin field and wrote a new count with global PI enabled. If
+an interrupt-side `mm_free` released the descriptor between lookup
+and pin publication, the pending pin could write into an unowned MM
+slot. If a separate pin arrived after an unpin read, the stale unpin
+could overwrite and lose the second consumer's pin count. v1697
+protected the release side, but not this reverse interrupt window.
+
+The pin-adjust leaf now saves the exact prior PI state, disables global
+PI before its descriptor search, and restores the prior enable state
+after success, absent/underflow (-4) or saturation (-5). It uses the
+same short inline `CONI/CONO PI` sequence as the BRK critical section;
+no permanent RAM, helper call or new ownership state is introduced.
+
+`daimos-k01-mm-pin-pi-v1698.sh` tests source-linked real MM pin/unpin
+code on a native PDP-6, including two pins, two unpins, empty unpin,
+missing base, an interrupt-side free at the pin store, an additional
+pin at the unpin store, and restoration of both enabled and disabled
+PI states. It rejects an unsafe mutation omitting PI exclusion while
+using the simulator's real PI hardware state for the interrupt gate.
+Related source-linked swap, TTY, u-area, DPY, FIFO and DTFS tests still
+exercise the unchanged owner/error classes. K01 remains open for full
+guest PI6 fault injection, bounded owner recovery and residual audits.
+
 Verify permanent actual MM free/pin/unpin/rebase and process restore
 refusals through all live owners, including ambiguous or missing extents,
 bounded retry/reaper state, consistent typed GETTEARDOWN diagnostics, and

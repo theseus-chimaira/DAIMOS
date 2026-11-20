@@ -998,6 +998,13 @@ mm_grow_return_v1684:
 ; AC1=base, AC2=+1/-1. Shared pin adjustment.
 mm_pin_adjust:
         move    6,2
+        move    5,1                    ; preserve base across PI snapshot
+        ; An interrupt-side MM free or another pin update must not occur
+        ; between locating a descriptor and publishing its new pin count.
+        coni    0004,1
+        push    17,1                   ; exact prior PI enable state
+        cono    0004,000400             ; disable global PI
+        move    1,5
         pushj   17,mm_find_base
         caml    1,mm_extent_count
         jrst    mm_pin_inval
@@ -1008,23 +1015,30 @@ mm_pin_adjust:
         jrst    mm_pin_sub
 mm_pin_inval:
         movni   1,4
-        popj    17,
+        jrst    mm_pin_restore_pi_v1698
 mm_pin_add:
         move    5,4
         and     5,[MM_PIN_FIELD]
         came    5,[MM_PIN_FIELD]
         jrst    mm_pin_add_ok
         movni   1,5
-        popj    17,
+        jrst    mm_pin_restore_pi_v1698
 mm_pin_add_ok:
         add     4,[MM_PIN_ONE]
         movem   4,mm_extents+1(1)
         setz    1,
-        popj    17,
+        jrst    mm_pin_restore_pi_v1698
 mm_pin_sub:
         sub     4,[MM_PIN_ONE]
         movem   4,mm_extents+1(1)
         setz    1,
+mm_pin_restore_pi_v1698:
+        push    17,1                   ; preserve typed result during restore
+        move    1,-1(17)
+        trne    1,000200               ; previously enabled?
+        cono    0004,000200
+        pop     17,1
+        sub     17,[1,,1]
         popj    17,
 
 mm_pin:
