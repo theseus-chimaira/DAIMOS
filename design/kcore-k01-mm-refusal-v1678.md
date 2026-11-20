@@ -437,3 +437,12 @@ fixture currently fails to link because it extracts code without the
 later `vfs_dtfs_poisoned_slot_v1531` dependency; it is not credited as
 a passing v1707 regression. The F07 admission failure remains an
 independent unclosed physical-guest gate for K01.
+
+The v1707a follow-up uses the real TSFS decoder owner value 011
+(octal), with a source assertion preventing fixture drift. It gives
+the older v1538 TSFS source-linked I/O test an unreachable test-side
+invariant-HALT symbol for the newly imported KCORE entry. All v1538
+root and secondary-mount cases and four unsafe mutants pass. The
+independent v899 real PDP-6 physical PIPE-close test also passed:
+one pin, one -5 refusal, one unpin, successful eventual release and
+three checked close attempts, without errors.
