@@ -743,6 +743,12 @@ mm_free:
         move    5,1
         move    6,2
         move    7,3
+        ; An interrupt can acquire a physical pin after the old pin
+        ; check but before mm_delete. Serialize the owner/type/pin
+        ; proof with deletion, including the no-op refusal exits.
+        pushj   17,mach_pi_disable
+        push    17,1                   ; exact prior PI state
+        move    1,5
         pushj   17,mm_find_base
         caml    1,mm_extent_count
         jrst    mm_free_inval
@@ -760,12 +766,18 @@ mm_free:
         jrst    mm_free_busy
         pushj   17,mm_delete
         setz    1,
-        popj    17,
+        jrst    mm_free_restore_pi_v1697
 mm_free_inval:
         movni   1,4
-        popj    17,
+        jrst    mm_free_restore_pi_v1697
 mm_free_busy:
         movni   1,5
+mm_free_restore_pi_v1697:
+        push    17,1                   ; preserve exact typed result
+        move    1,-1(17)
+        pushj   17,mach_pi_restore
+        pop     17,1
+        sub     17,[1,,1]              ; discard saved PI word
         popj    17,
 
 ; int mm_process_transfer_pinned(base,old_owner,new_owner)

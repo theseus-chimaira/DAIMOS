@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1696):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1697):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -48,6 +48,9 @@ unmerged from its development line; mode3 remains disabled.
   v1696 preserves the exact hard MM reclaim result in the early BRK
   rebase fallback, preventing additional pressure after -4/-5 while
   retaining the bounded -1 resource-pressure allocation path.
+  v1697 serializes the core MM free type/owner/pin check with descriptor
+  deletion under global PI exclusion, preventing a new interrupt-side
+  physical pin from being lost during release.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and

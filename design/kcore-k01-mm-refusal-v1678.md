@@ -65,6 +65,35 @@ it did **not** produce a pass/fail result for this change.
 
 ## Outstanding K01 work
 
+### v1697: atomic MM owner release against interrupt-side pins
+
+`mm_free` formerly called `mm_find_base`, verified type and owner,
+checked that the pin count was zero, then deleted the descriptor with
+global PI enabled. A pin acquired by an interrupt between the check
+and `mm_delete` could leave that physical user holding memory whose MM
+owner had already been deleted and made available for allocation.
+
+`mm_free` now calls the existing `mach_pi_disable` before searching the
+extent table and restores the exact prior global PI state on success,
+wrong-type/owner/missing-base (-4) and pinned (-5) refusal. The return
+code is preserved across restoration, and no permanent RAM or extra
+MM descriptors are introduced. This does not force-release a refused
+owner; the caller retains its existing typed recovery contract.
+
+`daimos-k01-mm-free-pi-v1697.sh` source-links the production MM find,
+free and delete leaves on a native PDP-6. It checks owner refusal,
+existing pins, a pin arriving just as PI closes, a simulated pinning
+interrupt at the delete boundary, balanced PI and normal release.
+Removing the PI exclusion rejects the negative mutant. Existing MM
+pin lifetime, swap release, TTY, u-area, FIFO, DPY and DTFS scratch
+fixtures now source-link the real production PI helpers, rather than
+introduce extra copies of their logic. Their source-extraction ranges
+were updated where unrelated later helpers had made them stale.
+
+The ordinary MM `mm_pin_adjust` update remains a separate PI audit
+target. Physical full-guest interrupt injection and bounded K01
+administrative recovery are still open.
+
 Verify permanent actual MM free/pin/unpin/rebase and process restore
 refusals through all live owners, including ambiguous or missing extents,
 bounded retry/reaper state, consistent typed GETTEARDOWN diagnostics, and
