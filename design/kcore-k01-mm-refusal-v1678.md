@@ -155,6 +155,35 @@ were not changed as part of this ownership fix. Full guest PI6 injection,
 bounded administrative recovery and subsequent read-only ownership
 verification audit remain open K01 requirements.
 
+### v1700: atomic exact pinned-process descriptor verification
+
+`mm_process_verify_pinned_v792` is a read-only MM transaction used
+before swap-out writes, swap-in restores and process exchange. It
+previously compared the extent length with the expected size, then
+read the type/owner/pin word while global PI was enabled. If a PI-side
+MM operation changed the size between those reads, the verifier could
+return success based on a length from an older MM descriptor and
+ownership/pins from the current one. An inconsistent snapshot is not
+proof that the physical image being used still fits its descriptor.
+
+The v1700 verifier now saves the previous PI state and excludes
+interrupts across descriptor lookup and all four comparisons. It
+restores that state on success or refusal, retains the original 0/-1
+return ABI and preserves AC10/AC11 without persistent words. Invalid
+arguments still refuse before touching PI. This guarantees only one
+consistent point-in-time snapshot; the calling swap transaction must
+still maintain its pin and transition ownership afterwards.
+
+`daimos-k01-verify-pi-v1700.sh` runs the actual leaf in native PDP-6
+and injects a changed extent length precisely between its size and
+metadata reads if global PI is enabled. The protected verifier leaves
+the descriptor unchanged, preserves AC10/AC11 and both enabled and
+disabled PI states, and still rejects wrong size/owner/multiple pins.
+Removing the PI exclusion makes the negative mutant fail. Source-linked
+v792 and v1682 ownership tests and both KCC KCORE build modes pass.
+Full guest PI6 testing, bounded recovery and the separate u-area
+diagnostic-snapshot audit remain open.
+
 Verify permanent actual MM free/pin/unpin/rebase and process restore
 refusals through all live owners, including ambiguous or missing extents,
 bounded retry/reaper state, consistent typed GETTEARDOWN diagnostics, and

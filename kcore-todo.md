@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1699):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1700):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -57,6 +57,8 @@ unmerged from its development line; mode3 remains disabled.
   v1699 likewise serializes the pinned PROCESS transfer, shrink and
   grow descriptor checks with publication. Exact owner/pin/size
   refusals remain intact; no permanent RAM is added.
+  v1700 protects the read-only exact pinned-PROCESS verifier against
+  mixed-time extent size and owner/type/pin observations under PI.
   Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and

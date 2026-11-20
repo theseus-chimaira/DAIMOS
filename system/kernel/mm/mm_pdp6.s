@@ -797,6 +797,14 @@ mm_process_verify_pinned_v792:
         push    17,011
         move    010,2
         move    011,3
+        ; The size and owner/pin words must describe ONE MM snapshot.
+        ; A PI-side extent mutation between the two reads could make
+        ; a torn descriptor appear to match this swap transaction.
+        move    5,1                    ; base across saved PI state
+        coni    0004,1
+        push    17,1                   ; prior global PI enable state
+        cono    0004,000400
+        move    1,5
         pushj   17,mm_find_base
         caml    1,mm_extent_count
         jrst    mm_verify_fail_v792
@@ -820,6 +828,12 @@ mm_process_verify_pinned_v792:
 mm_verify_fail_v792:
         seto    1,
 mm_verify_done_v792:
+        push    17,1                   ; keep success/refusal across restore
+        move    1,-1(17)
+        trne    1,000200
+        cono    0004,000200
+        pop     17,1
+        sub     17,[1,,1]
         pop     17,011
         pop     17,010
         popj    17,
