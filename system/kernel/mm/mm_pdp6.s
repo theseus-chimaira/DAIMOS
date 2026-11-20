@@ -141,6 +141,14 @@ mm_is_pinned_yes:
 ; 0401 wrong type, 0402 wrong owner. No allocation, no mutation.
 mm_uarea_probe_v887:
         move    6,2
+        move    5,1                    ; base across PI snapshot
+        ; GETTEARDOWN must not report a stale slot's type/owner/pins
+        ; when an interrupt frees or moves an MM descriptor between
+        ; the base search and the metadata read.
+        coni    0004,1
+        push    17,1                   ; prior global PI enable state
+        cono    0004,000400
+        move    1,5
         pushj   17,mm_find_base
         caml    1,mm_extent_count
         jrst    mm_uarea_probe_missing_v887
@@ -157,15 +165,22 @@ mm_uarea_probe_v887:
         move    1,4
         lsh     1,-025                 ; pin field starts at bit 21
         andi    1,0377
-        popj    17,
+        jrst    mm_uarea_probe_return_v1701
 mm_uarea_probe_missing_v887:
         movei   1,0400
-        popj    17,
+        jrst    mm_uarea_probe_return_v1701
 mm_uarea_probe_type_v887:
         movei   1,0401
-        popj    17,
+        jrst    mm_uarea_probe_return_v1701
 mm_uarea_probe_owner_v887:
         movei   1,0402
+mm_uarea_probe_return_v1701:
+        push    17,1                   ; preserve exact diagnostic result
+        move    1,-1(17)
+        trne    1,000200
+        cono    0004,000200
+        pop     17,1
+        sub     17,[1,,1]
         popj    17,
 
 ; Find a fitting free gap.

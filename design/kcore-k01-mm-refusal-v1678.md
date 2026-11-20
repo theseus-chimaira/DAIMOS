@@ -151,9 +151,9 @@ fixtures (v805, v812, v854) currently fail to link because their
 extractions omit later production dependencies such as
 `PROC_UAREA_RH`, `PROC_SWAP_RETRY_LH` and `vfs_namespace_root`.
 They are not counted as passing integrated acceptance for v1699 and
-were not changed as part of this ownership fix. Full guest PI6 injection,
-bounded administrative recovery and subsequent read-only ownership
-verification audit remain open K01 requirements.
+were not changed as part of this ownership fix. Read-only ownership
+verification is covered by the subsequent v1700-v1701 stages. Full
+guest PI6 injection and bounded administrative recovery remain open.
 
 ### v1700: atomic exact pinned-process descriptor verification
 
@@ -181,8 +181,37 @@ the descriptor unchanged, preserves AC10/AC11 and both enabled and
 disabled PI states, and still rejects wrong size/owner/multiple pins.
 Removing the PI exclusion makes the negative mutant fail. Source-linked
 v792 and v1682 ownership tests and both KCC KCORE build modes pass.
-Full guest PI6 testing, bounded recovery and the separate u-area
-diagnostic-snapshot audit remain open.
+The u-area diagnostic snapshot is addressed by v1701 below. Full
+guest PI6 testing and bounded recovery remain open.
+
+### v1701: accurate GETTEARDOWN MM ownership diagnostics
+
+`mm_uarea_probe_v887` searches the MM extent table by the stable
+u-area physical base, then reports the matching record's type, owner
+and pin count to `GETTEARDOWN(pid|0400)`. Previously the lookup and
+metadata read ran with PI enabled. An interrupt-side MM release,
+relocation or owner update could invalidate the slot between those
+operations, producing a stale or misleading diagnostic error or pin
+count during permanent-MM failure investigation.
+
+The diagnostic now saves the caller's global PI enable state and
+disables PI across the MM lookup and its type/owner/pin comparisons.
+It preserves all existing return encodings: a valid pin count 0..255,
+0400 for missing base, 0401 for wrong extent type and 0402 for wrong
+owner. It restores the previous PI state on every return. No new
+resident metadata, allocation or recovery policy is introduced.
+This protects the MM snapshot only, not the entire process-control
+query against subsequent state changes.
+
+`daimos-k01-uarea-probe-pi-v1701.sh` exercises the source-linked
+native PDP-6 diagnostic with an injected owner change after MM lookup
+but before metadata read. The protected version leaves the descriptor
+unchanged and returns the exact pin count; removing PI exclusion
+rejects its negative mutant. All error classes and both initial PI
+states pass, as do the existing v887/v886/v894 GETTEARDOWN, v888 MM
+cause, v955 failure-matrix and v956 u-area lifetime tests. Both KCC
+KCORE build modes pass. Full physical guest PI6 injection, bounded
+recovery and other cross-subsystem ownership checks remain open.
 
 Verify permanent actual MM free/pin/unpin/rebase and process restore
 refusals through all live owners, including ambiguous or missing extents,
