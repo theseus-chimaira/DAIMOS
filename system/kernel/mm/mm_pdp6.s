@@ -832,6 +832,13 @@ mm_verify_bad_v792:
 mm_process_transfer_pinned:
         move    5,2
         move    6,3
+        move    7,1                    ; base must survive PI snapshot
+        ; A concurrent pin/free must not change the descriptor between
+        ; verifying its sole pin and publishing the new slot owner.
+        coni    0004,1
+        push    17,1                   ; prior global PI state
+        cono    0004,000400
+        move    1,7
         jumpe   5,mm_transfer_inval
         jumpe   6,mm_transfer_inval
         caile   5,0377
@@ -859,12 +866,19 @@ mm_process_transfer_pinned:
         hrr     4,6
         movem   4,mm_extents+1(1)
         setz    1,
-        popj    17,
+        jrst    mm_transfer_return_v1699
 mm_transfer_busy:
         movni   1,5
-        popj    17,
+        jrst    mm_transfer_return_v1699
 mm_transfer_inval:
         movni   1,4
+mm_transfer_return_v1699:
+        push    17,1                   ; keep typed result through PI restore
+        move    1,-1(17)
+        trne    1,000200
+        cono    0004,000200
+        pop     17,1
+        sub     17,[1,,1]
         popj    17,
 
 ; int mm_process_shrink_pinned(base,owner,new_words)
@@ -873,6 +887,13 @@ mm_transfer_inval:
 mm_process_shrink_pinned:
         move    5,2
         move    6,3
+        move    7,1                    ; source base across CONI PI
+        ; The sole-pin owner and physical extent size form one MM
+        ; transaction; do not expose a stale size after a concurrent pin.
+        coni    0004,1
+        push    17,1
+        cono    0004,000400
+        move    1,7
         jumpe   5,mm_shrink_inval
         caile   5,0377
         jrst    mm_shrink_inval
@@ -900,12 +921,19 @@ mm_process_shrink_pinned:
         jrst    mm_shrink_inval
         hrlm    6,mm_extents(1)
         setz    1,
-        popj    17,
+        jrst    mm_shrink_return_v1699
 mm_shrink_busy:
         movni   1,5
-        popj    17,
+        jrst    mm_shrink_return_v1699
 mm_shrink_inval:
         movni   1,4
+mm_shrink_return_v1699:
+        push    17,1
+        move    1,-1(17)
+        trne    1,000200
+        cono    0004,000200
+        pop     17,1
+        sub     17,[1,,1]
         popj    17,
 
 ; int mm_process_grow_pinned(base,owner,new_words)
@@ -918,6 +946,13 @@ mm_process_grow_pinned:
         push    17,011
         move    5,2
         move    6,3
+        move    7,1                    ; physical base across PI snapshot
+        ; Hold stable pin/owner, arena and successor checks through the
+        ; extent-size store. A stale gap may overlap another owner.
+        coni    0004,1
+        push    17,1
+        cono    0004,000400
+        move    1,7
         jumpe   5,mm_grow_inval
         caile   5,0377
         jrst    mm_grow_inval
@@ -991,6 +1026,12 @@ mm_grow_busy:
 mm_grow_inval:
         movni   1,4
 mm_grow_return_v1684:
+        push    17,1                   ; retain exact return across restore
+        move    1,-1(17)
+        trne    1,000200
+        cono    0004,000200
+        pop     17,1
+        sub     17,[1,,1]
         pop     17,011
         pop     17,010
         popj    17,

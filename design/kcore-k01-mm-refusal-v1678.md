@@ -120,6 +120,41 @@ Related source-linked swap, TTY, u-area, DPY, FIFO and DTFS tests still
 exercise the unchanged owner/error classes. K01 remains open for full
 guest PI6 fault injection, bounded owner recovery and residual audits.
 
+### v1699: serialize pinned process owner and extent-size publication
+
+The three pinned PROCESS descriptor operations (`mm_process_transfer_pinned`,
+`mm_process_shrink_pinned` and `mm_process_grow_pinned`) previously
+validated exact owner and sole physical pin with PI enabled, then
+updated owner or extent size in a separate instruction. An interrupt
+could change the pin count, release an owner or take an adjacent gap
+between validation and the final store. This is a distinct read/write
+window from the `mm_free` and `mm_pin_adjust` fixes in v1697-v1698.
+
+Each operation now saves the caller's global PI state, excludes PI
+through descriptor lookup, type/owner/pin validation, arena and next
+extent checks where applicable, and physical descriptor publication.
+The prior PI enable state is then restored on success or the original
+typed failure. `mm_process_grow_pinned` still preserves AC10/AC11;
+the physical base is kept in scratch AC7 across the PI snapshot.
+No new persistent data, MM owner representation or retry state exists.
+
+The source-linked native PDP-6 test
+`daimos-k01-pinned-mutate-pi-v1699.sh` uses real production mutation
+leaves and injects a conflicting physical pin immediately before
+owner transfer/shrink publication, or a successor extent intruding into
+the gap just before a grow publication. Three distinct mutants omit PI
+disable in one leaf each; all are rejected. Legacy v767/v768 scripts
+now extract only their named production routines rather than pulling
+unrelated MM code. The v769/v1684 grow and existing swap exchange
+unit tests pass. Several older source-linked swap-exchange integration
+fixtures (v805, v812, v854) currently fail to link because their
+extractions omit later production dependencies such as
+`PROC_UAREA_RH`, `PROC_SWAP_RETRY_LH` and `vfs_namespace_root`.
+They are not counted as passing integrated acceptance for v1699 and
+were not changed as part of this ownership fix. Full guest PI6 injection,
+bounded administrative recovery and subsequent read-only ownership
+verification audit remain open K01 requirements.
+
 Verify permanent actual MM free/pin/unpin/rebase and process restore
 refusals through all live owners, including ambiguous or missing extents,
 bounded retry/reaper state, consistent typed GETTEARDOWN diagnostics, and
