@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1695
+# K01 swap MM owner and rollback safety, v1679-v1696
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -344,6 +344,34 @@ exact descriptor, MM ownership and call counts throughout, including
 that MM is never called a third time. The unsafe mutant removing early
 VM_NONE publication fails. Existing VM_NONE, XIP and DISK retries are
 re-run separately to guard the other ownership contracts.
+
+### v1696: preserve typed hard MM error from the early BRK reclaim
+
+`vm_space_brk_current` first tries an in-place or downward-in-gap
+resize. When neither fits, it briefly restores PI, invokes
+`proc_swap_reclaim`, and rescans the MM table. Previously the result
+of that reclaim was ignored. `proc_swap_reclaim` deliberately returns
+`MM_ERR_INVAL` (-4) or `MM_ERR_BUSY` (-5) for a hard compaction/owner
+refusal; ignoring it could cause BRK to retry and enter the general
+allocator's further compaction/swapping pressure, even though an MM
+owner was already unproven or permanently pinned.
+
+After the reclaim call, BRK now returns these exact hard errors in AC2
+with the existing user ABI failure in AC1, restores the previous PI
+enable state and leaves the current process's physical extent, APR,
+VM descriptor and BRK word unchanged. Ordinary no-victim (-1) remains
+allowed to recheck the adjacent gap and try the existing bounded full
+allocation fallback. No extra resident state or tables are introduced.
+
+The source-linked native PDP-6 `daimos-k01-brk-reclaim-v1696.sh`
+executes the actual BRK and MM arena-feasibility leaves with two
+neighboring extents that force early reclaim. It injects -4, -5 and
+-1, checks exact typed results, unchanged MM/VM/BRK, no physical-copy
+or premature free, no allocator invocation for hard refusals, and one
+allocator invocation for normal resource pressure. Removing the guard
+fails the negative mutation. The v1074 double-MM rollback and v1260
+impossible-capacity tests also pass. Full-guest failure injection and
+bounded administrative recovery remain outstanding K01 criteria.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and

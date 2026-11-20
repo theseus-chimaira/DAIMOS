@@ -339,6 +339,11 @@ vm_brk_fallback:
         movei   2,02000
         move    3,proc_current_slot
         pushj   17,proc_swap_reclaim
+        ; A hard MM refusal (-4/-5) is not ordinary fragmentation.
+        ; Preserve it for the BRK caller; do not re-enter MM or swap
+        ; unrelated owners after compaction could not prove ownership.
+        camge   1,[-3]
+        jrst    vm_brk_reclaim_refused_v1696
         setom   (17)                    ; do not repeat reclaim indefinitely
         coni    0004,1
         movem   1,-003(17)
@@ -422,6 +427,9 @@ vm_brk_commit:
 
 vm_brk_fail_pi:
         movni   2,4                    ; invalid mapping/extent state
+        jrst    vm_brk_fail_cause_pi_v999
+vm_brk_reclaim_refused_v1696:
+        move    2,1                     ; original hard MM refusal
 vm_brk_fail_cause_pi_v999:
         move    1,-003(17)
         trne    1,000200
