@@ -376,6 +376,15 @@ mm_move_extent:
         blt     0,-6(17)
         move    010,1
         move    011,2
+        ; Reinsertion is mandatory on every relocation exit. Prove that
+        ; the original descriptor table is valid before deleting an
+        ; owner; otherwise rollback could fail with MM_ERR_DESCRIPTORS
+        ; and silently orphan the process's physical memory.
+        move    1,mm_extent_count
+        camle   1,mm_extent_capacity
+        jrst    mm_move_bad_table_v1689
+        caml    010,1
+        jrst    mm_move_bad_table_v1689
         move    1,010
         lsh     1,1
         move    2,mm_extents(1)
@@ -440,6 +449,14 @@ mm_move_restore_pi:
         move    1,-3(17)
         pushj   17,mach_pi_restore
         move    1,-1(17)
+        movei   0,010
+        hrli    0,-014(17)
+        blt     0,016
+        sub     17,[015,,015]
+        popj    17,
+
+mm_move_bad_table_v1689:
+        movni   1,4                   ; MM_ERR_INVAL, no owner mutation
         movei   0,010
         hrli    0,-014(17)
         blt     0,016

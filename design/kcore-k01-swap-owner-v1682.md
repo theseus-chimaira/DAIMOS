@@ -1,4 +1,4 @@
-# K01 swap MM owner and rollback safety, v1679-v1687
+# K01 swap MM owner and rollback safety, v1679-v1689
 
 Date: 2026-11-19. Status: **implemented and native-tested partial K01
 correctness repairs; K01 remains open**. Base: mainline KCORE after
@@ -182,6 +182,23 @@ rejected. The existing production implementation passes unchanged.
 This test does not simulate failure of the descriptor insertion itself;
 that would be a separate MM table-integrity invariant, not ordinary
 fragmentation or a recoverable VM refusal.
+
+### v1689: reject invalid MM table before destructive relocation
+
+The relocation implementation temporarily deletes the source descriptor
+and then reinserts it, irrespective of whether the fit search succeeds.
+The insertion can fail when the descriptor count already exceeds table
+capacity, and an invalid source slot could delete the wrong descriptor.
+`mm_move_extent` now checks `mm_extent_count <= mm_extent_capacity`
+and that its source slot is below the count before disabling PI or
+deleting any descriptor. It returns `MM_ERR_INVAL` on failure, retaining
+the original table and physical owner. Successful relocation and the
+existing rollback path are unchanged; no permanent RAM is added.
+
+`tests/validation/daimos-k01-relocate-capacity-v1689.sh` executes the
+real MM relocation leaf with corrupt capacity and invalid source slot,
+then the ordinary VM refusal and successful publication cases. Its
+unsafe capacity-check bypass mutation fails native PDP-6 assertions.
 - The earlier v1678 compactor and reclaim-pressure tests PASS, as do
   legacy v667 unpin invariant/native checks and v792 MM verification.
 - KCORE KCC source generation builds with `PROC_SWAP_VERIFY_PURE=0` and

@@ -20,7 +20,7 @@ unmerged from its development line; mode3 remains disabled.
   restored. Fail closed on ambiguous ownership; retain exact diagnostics
   and provide bounded retry or safe administrative recovery, never forced
   release of unproven extents.
-  **In progress (v1678-v1687):** MM compaction and reclaim preserve hard
+  **In progress (v1678-v1689):** MM compaction and reclaim preserve hard
   refusal types. Swap-out now fails closed on unsuccessful pin acquisition,
   exact type/owner/length/pin verification, PURE verification rollback
   unpin refusal, post-write MM-free refusal (v1683), and swap-prepare
@@ -29,7 +29,9 @@ unmerged from its development line; mode3 remains disabled.
   verification before restoring a swapped image (v1686), and rejection
   of stale process-table source bases before VM relocation (v1687).
   Native PDP-6 v1688 also verifies no-fit descriptor rollback and PI
-  restoration, including an unsafe rollback mutation. Native PDP-6
+  restoration, including an unsafe rollback mutation. v1689 checks
+  descriptor capacity and source slot before destructive relocation.
+  Native PDP-6
   tests and KCC KCORE source builds pass;
   see `design/kcore-k01-mm-refusal-v1678.md` and
   `design/kcore-k01-swap-owner-v1682.md`. Still open: other permanent free,
