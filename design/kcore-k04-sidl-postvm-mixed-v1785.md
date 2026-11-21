@@ -1,9 +1,9 @@
 # K04 v1785: unpublished SIDL A / post-VM B physical owners
 
-Date: 2026-11-21. Initial status: **independent-owner and
-exact first-retry timing PASS**. Eventual A release, guest HALT
-and final D6FS verification are recorded below once completed.
-K04 remains OPEN.
+Date: 2026-11-21. Status: **PASS** for independent mixed SIDL/
+post-VM physical MM owners, exact first retry timing, complete
+release of both owners, safe PID reuse and clean guest HALT.
+The overall K04 acceptance matrix remains OPEN.
 
 ## Objective
 
@@ -87,11 +87,32 @@ TD=3, RETRY=512, DETAIL=2051 and no premature reuse:
 
 ## Final recovery / shutdown
 
-Pending end-of-test inspection and orderly guest HALT.
+Continue the guest. A remains physically pinned and retryable
+through attempt octal 025 (21 decimal). On attempt octal 030
+(24 decimal), A calls real mm_unpin and the ordinary SIDL
+discard finishes. Read-only SIMH final snapshot:
+
+    25121: 000000025100    ; pending flag and retry delay cleared
+    25123: 000000000000    ; A VM extent released
+    25124: 000000000030    ; A 24 VM destroy attempts
+    25125: 777777777777    ; A real MM unpin complete
+    25126: 000000000000    ; B u-area released
+    25127: 000000000005    ; B five mm_free attempts
+    25130: 777777777777    ; B real MM unpin complete
+
+CTY `PS` reused PID 5 with TD=0 RETRY=0 PVM=0 DETAIL=0
+ERR=0, confirming no premature reusable slot had been
+published while the SIDL owner was pinned. Guest `HALT` stopped
+at octal PC 022616, and normal SIMH `exit` returned status 0.
+Final read-only `d6fsck -n 4` selected superblock 742 seq=3
+CLEAN, 179196 blocks, 360 FCBs.
 
 ## Remaining coverage
 
-The first refusal, full independent B recovery, exact B retry
-timing and SIDL A preservation have passed. The SIDL/PREVM
-mixed ordering, clock wrap, FILE/HUP, dying-parent WAIT and
-permanent-refusal scenarios remain OPEN.
+Both physical post-VM/SIDL orderings now PASS: post-VM A ->
+SIDL B (v1784), and SIDL A -> post-VM B (v1785). This includes
+the actual first retry gate and complete independent MM
+recovery for both orders. SIDL/PREVM combinations, clock wrap,
+FILE/HUP, dying-parent WAIT and permanent-refusal scenarios
+remain OPEN. No production code, ABI, fixed RAM or external
+testkit changes were required.
