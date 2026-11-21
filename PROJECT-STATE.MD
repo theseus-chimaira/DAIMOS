@@ -1,3 +1,15 @@
+## 2026-11-21 v1765: K04 first-refusal backoff phase order
+
+DAIMOS 419ed004 advances existing retry backoff before the idle
+reaper scan rather than afterward. That prevents a newly registered
+PREVM or post-VM owner from having its fresh 020-octal-tick delay
+immediately doubled to 040 in the same pass. Successful completion
+also clears the now-unused delay alongside the shared pending bit.
+Native PDP-6 DAS and diff checks PASS; pdp10-doc 9404724 updated.
+K04 remains OPEN for physical multi-owner, provider-refusal,
+clock-wrap and WAIT/PID reuse acceptance. Testkit and KCORE size
+work remain untouched.
+
 ## 2026-11-21 v1764: K04 WAIT and HUP owner consistency
 
 DAIMOS 42ded8c3 excludes TRANSITION teardown owners from stale

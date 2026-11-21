@@ -288,6 +288,10 @@ unmerged from its development line; mode3 remains disabled.
   **Progress v1764:** WAIT no longer consumes stale STOP/CONT from
   TRANSITION finalizers; zero-base u-area owners fail closed in WAIT
   reporting and session HUP. DAS PASS; physical K04 acceptance OPEN.
+  **Progress v1765:** Moved shared backoff advancement before the
+  reaper scan so a first refusal registered during that pass keeps
+  its 020-octal-tick initial interval. Fully completed scans clear
+  the unused delay. DAS PASS; physical K04 acceptance OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 
