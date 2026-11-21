@@ -6,7 +6,7 @@ DAS ?= das
 DASFLAGS ?= -F
 DXRCONVERT ?= dxrconvert
 STAGE1 = ${PROJECT_ROOT}/system/stand/pdp6/mtc/stage1.s
-STAGE1_COMMON = ${PROJECT_ROOT}/system/stand/pdp6/common/decompressor.inc \
+STAGE1_COMMON = ${PROJECT_ROOT}/system/stand/pdp6/common/block_decompressor_v1458.inc \
 	${PROJECT_ROOT}/system/stand/pdp6/common/stage1-error.inc
 STAGE1_DXR = ${BUILD}/stage1-mtc-v1.dxr
 STAGE1_TAPE = ${BUILD}/stage1-mtc-v1.pt
