@@ -92,10 +92,32 @@ DETAIL=6, RETRY=512), B is safely reusable (all fields zero),
 and the global backoff has returned to the maximum while A
 remains pending.
 
+## Eventual A release and clean shutdown
+
+Keep the PDP-6 guest running until A's 24th deferred attempt.
+The CTY `TRUE` then returns to its shell. CTY `PS` reuses PID 5
+with TD=0 RETRY=0 PVM=0 DETAIL=0 ERR=0. Read-only SIMH monitor
+examination after both owners have finished records:
+
+    25116: 000000030106    ; no pending bit, no retry delay
+    25120: 000000000000    ; B exact VM base cleared
+    25121: 000000000005    ; B five VM destroy attempts
+    25122: 777777777777    ; B real MM unpin completed
+    25123: 000000000000    ; A exact u-area base cleared
+    25124: 000000000030    ; A 24 mm_free attempts
+    25125: 777777777777    ; A real MM unpin completed
+
+The shared pending retry state has cleared, both exact MM
+extents are released, and both process slots were safely reused.
+Guest `HALT` stopped at octal PC 022613, SIMH `exit` completed
+normally, and final read-only `d6fsck -n 4` selected superblock
+742, seq=3, state=CLEAN (179196 blocks, 360 FCBs).
+
 ## Scope
 
-Reverse **post-VM A / PREVM B** physical independence and
-qualified first-retry timing PASS. The remaining K04 acceptance
+Reverse **post-VM A / PREVM B** physical independence, qualified
+first-retry timing, both owners' release, safe PID reuse and
+clean guest shutdown **PASS**. The remaining K04 acceptance
 includes SIDL mixed-stage ordering, clock wrap, FILE/HUP,
 dying-parent WAIT, and any untested permanent refusal patterns.
 The fixture adds only disposable TEXT/BSS; production KCORE
