@@ -1809,6 +1809,28 @@ proc_session_teardown_deliver_v905:
         movei   2,2                    ; default-fatal HUP
         pushj   17,proc_event_apply
         jumpn   1,proc_session_teardown_fail
+        ; A zero result may mean HUP was only queued on a private
+        ; executive continuation. That is not terminal delivery:
+        ; retain the leader's TTY until this member actually exits.
+        ; Immediate foreign finalization publishes ZOMB/FREE or a
+        ; committed FINALIZE owner; never spin on a pending event.
+        move    6,(012)
+        trnn    6,0400000             ; no u-area: terminal publication
+        jrst    proc_session_teardown_next
+        trnn    6,PROC_TRANSITION_RH
+        jrst    proc_session_teardown_fail
+        hlrz    4,6
+        jumpe   4,proc_session_teardown_fail
+        move    6,PROC_FINALIZE_OFFSET(4)
+        tlnn    6,PROC_FINALIZE_MARK_LH
+        jrst    proc_session_teardown_fail
+        tlne    6,0200000             ; DISCARD is not delivered HUP
+        jrst    proc_session_teardown_fail
+        move    5,1(012)
+        camn    5,[-1]                ; post-VM FINALIZE is committed
+        jrst    proc_session_teardown_next
+        tlnn    6,PROC_FINALIZE_PREVM_LH
+        jrst    proc_session_teardown_fail
 proc_session_teardown_next:
         addi    012,PROC_WORDS
         aoja    011,proc_session_teardown_loop
