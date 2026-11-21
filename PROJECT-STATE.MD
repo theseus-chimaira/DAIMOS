@@ -1,3 +1,24 @@
+## 2026-11-21 v1785: physical SIDL A / post-VM B owners PASS
+
+DAIMOS 252f1d0f and 81c965b0 record a real 256K PDP-6
+physical-MM test. PID5's initial RUN was rejected into the
+original SIDL rollback; the exact VM extent remained pinned
+while the shared retry interval saturated at octal 01000.
+PID6 then entered independent post-VM u-area MM refusal. Its
+first refusal reset the shared interval to octal 020, and
+measured actual MM attempt clocks 007120 -> 007140 prove an
+exact 020-tick first retry. B unpinned on attempt 005, and
+DCS PS reused PID6 with all teardown fields zero while A
+remained unpublished SIDL (S=1 TD=3 RETRY=512 DETAIL=2051).
+A unpinned after attempt 030 (24 decimal); both exact bases
+cleared, pending flag reset, and CTY PS reused PID5 with zero
+teardown fields. Guest HALT PC 022616, read-only D6FS CLEAN
+seq=3 PASS. Native DAS/full image PASS. No production code,
+ABI, fixed RAM, or external testkit edits. pdp10-doc 6d311aa.
+Both SIDL/post-VM mixed orderings now PASS. SIDL/PREVM owner
+ordering, 17-bit clock wrap, FILE/HUP, dying-parent WAIT and
+permanent-refusal coverage remain OPEN.
+
 ## 2026-11-21 v1784: physical post-VM A / SIDL B MM owners PASS
 
 DAIMOS c0c9db41 documents a live 256K PDP-6 disposable

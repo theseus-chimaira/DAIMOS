@@ -399,6 +399,17 @@ unmerged from its development line; mode3 remains disabled.
   Reverse SIDL/post-VM, SIDL/PREVM, clock wrap, FILE/HUP and
   dying-parent WAIT remain OPEN.
 
+  **Progress v1785:** Real PDP-6 unpublished SIDL PID5 /
+  post-VM PID6 physical-MM mixed owners PASS. With SIDL A at
+  maximum octal 01000, B first refusal resets to 020; its
+  second actual MM attempt is exactly 020 qualified ticks
+  later. B unpins on attempt 005 and PID6 is reused while A
+  remains SIDL TD=3 RETRY=512. A unpins on attempt 030, PID5
+  reused, pending clears; guest HALT and D6FS CLEAN seq=3.
+  Only disposable scratch instrumentation, no production edit.
+  Both SIDL/post-VM orderings PASS. SIDL/PREVM, clock wrap,
+  FILE/HUP, dying-parent WAIT and permanent refusal OPEN.
+
 ## Mandatory KCORE: PDP-6 RAW PURE
 
 - [ ] **K05 - Reclaim/restore failure handling.** Complete safe RAW
