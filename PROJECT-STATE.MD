@@ -1,3 +1,18 @@
+## 2026-11-21 v1780: real PDP-6 SIDL VM-pin rollback PASS
+
+DAIMOS ee597108 demonstrates a disposable 256K PDP-6 RUN child
+forced into SIDL rollback after owning VM/u-area. Real mm_pin held
+its exact VM extent, ordinary vm_space_destroy encountered refusal,
+and real mm_unpin on fifth attempt allowed rollback to complete.
+Read-only scratch state: base=0, calls=005, done=all ones.
+Subsequent PS reused PID5 with all teardown fields zero; guest
+HALT PC 022536, read-only D6FS CLEAN seq=3 PASS. The initial
+repeating-failure v1779 fixture was discarded; accepted v1780
+used a one-shot failure and fresh clean media. No production code,
+ABI, fixed RAM or external testkit changes. pdp10-doc 91ce2ff.
+Permanent SIDL and mixed-owner orderings, PREVM EXIT, clock wrap,
+FILE/HUP and dying-parent WAIT remain OPEN.
+
 ## 2026-11-21 v1778: real PDP-6 maximum-backoff first-refusal timing PASS
 
 DAIMOS ea875bbf records an uncontaminated dual-owner physical MM-pin

@@ -356,6 +356,13 @@ unmerged from its development line; mode3 remains disabled.
   Guest HALT/D6FS CLEAN seq=7; no production/testkit changes.
   SIDL/PREVM, 17-bit wrap, FILE, HUP, dying-parent WAIT OPEN.
 
+  **Progress v1780:** Real SIDL VM MM-pin rollback PASS on disposable
+  PDP-6: one fully owned RUN child failed; actual mm_pin held its VM
+  extent through four refused destroy attempts, real mm_unpin on
+  fifth allowed discard. PID5 reused, guest HALT and D6FS CLEAN
+  seq=3. No production/testkit edits. Permanent SIDL/mixed owner,
+  PREVM EXIT, clock wrap, FILE/HUP, dying-parent WAIT remain OPEN.
+
 ## Mandatory KCORE: PDP-6 RAW PURE
 
 - [ ] **K05 - Reclaim/restore failure handling.** Complete safe RAW
