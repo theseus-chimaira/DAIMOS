@@ -292,6 +292,9 @@ unmerged from its development line; mode3 remains disabled.
   reaper scan so a first refusal registered during that pass keeps
   its 020-octal-tick initial interval. Fully completed scans clear
   the unused delay. DAS PASS; physical K04 acceptance OPEN.
+  **Progress v1766:** Session HUP now requires terminal or committed
+  FINALIZE publication, not merely a queued asynchronous fatal event,
+  before retiring the controlling TTY. DAS PASS; physical K04 OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

@@ -1,3 +1,15 @@
+## 2026-11-21 v1766: K04 queued HUP versus committed teardown
+
+DAIMOS 047a4ac1 prevents a session leader from retiring its TTY
+after a foreign HUP was only queued on a saved private executive
+continuation. The scanner now verifies terminal publication or
+an exact non-DISCARD FINALIZE owner after a successful event call;
+otherwise it retains the TTY and private-stack retry. No change
+to the asynchronous event-send API or permanent RAM. Native PDP-6
+DAS PASS; pdp10-doc 10d32b9 updated. K04 OPEN for physical deferred
+HUP, multi-owner, refusal, clock-wrap and WAIT/PID reuse acceptance.
+Testkit and size work untouched.
+
 ## 2026-11-21 v1765: K04 first-refusal backoff phase order
 
 DAIMOS 419ed004 advances existing retry backoff before the idle
