@@ -577,10 +577,30 @@ proc_adopt_children_pdp6:
         cain    10,1
         jrst    proc_adopt_scan_start
 proc_adopt_check_init:
-        move    1,proc_table
-        move    1,5(1)                 ; slot 1 scheduler word
-        and     1,[0300000000000]      ; FREE/ZOMB both clear low state bits
+        move    2,proc_table
+        move    1,5(2)                 ; slot 1 scheduler word
+        lsh     1,-041                 ; numeric state
+        caie    1,2                    ; RUN
+        cain    1,3                    ; SLEEP
+        jrst    proc_adopt_init_owner_v1767
+        caie    1,6                    ; STOP can still continue and WAIT
+        jrst    proc_adopt_scan_start  ; no FREE/ZOMB/SIDL adopter
+proc_adopt_init_owner_v1767:
+        move    1,3(2)                 ; slot 1 metadata
+        ; A deferred EXIT retains its scheduler state and stable
+        ; u-area while MM refuses release. It cannot WAIT for orphans.
+        trne    1,PROC_TRANSITION_RH
+        jrst    proc_adopt_scan_start
+        trnn    1,0400000              ; require resident u-area
+        jrst    proc_adopt_scan_start
+        hlrz    1,1
         jumpe   1,proc_adopt_scan_start
+        ; Fatal FILE close also owns a nonreturning private executive
+        ; continuation before TRANSITION is published. Do not adopt
+        ; new children into that irreversibly dying INIT either.
+        move    1,PROC_FDCTL_OFFSET(1)
+        trne    1,PROC_FATAL_CLOSE_BIT
+        jrst    proc_adopt_scan_start
         movei   11,1
 proc_adopt_scan_start:
         movei   12,1
@@ -2317,7 +2337,13 @@ proc_notify_parent:
         move    4,2(2)
         and     4,[0300000000000]      ; FREE/ZOMB have low state bits clear
         jumpe   4,proc_notify_parent_done
-        hlrz    4,(2)
+        ; A nonterminal state alone does not establish a valid u-area.
+        ; Never post CHLD into low core for an inconsistent parent.
+        move    4,(2)
+        trnn    4,0400000             ; parent has resident u-area
+        jrst    proc_notify_parent_done
+        hlrz    4,4
+        jumpe   4,proc_notify_parent_done
         movsi   3,0200                 ; pending CHLD in control-word LH
         iorm    3,PROC_FDCTL_OFFSET(4)
         move    4,2(2)
