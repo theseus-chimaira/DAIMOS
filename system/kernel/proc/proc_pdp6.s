@@ -923,6 +923,10 @@ proc_finish_service_post_vm_v894:
         jrst    proc_finish_service_next_v881
 proc_finish_service_check_v881:
         hlrz    3,3
+        ; The u-area flag alone does not prove a valid base. A corrupt
+        ; zero base must neither read FINALIZE at low memory nor clear
+        ; the shared pending bit as if this owner had been released.
+        jumpe   3,proc_finish_service_failed_v1102
         move    4,PROC_FINALIZE_OFFSET(3)
         tlnn    4,PROC_FINALIZE_MARK_LH
         jrst    proc_finish_service_next_v881
