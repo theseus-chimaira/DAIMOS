@@ -1,3 +1,14 @@
+## 2026-11-21 v1760: K04 committed PREVM fatal HUP recovery
+
+DAIMOS d29efc4d corrects a session-HUP retry deadlock: foreign
+fatal delivery now recognizes exact FINALIZE|PREVM EXIT ownership
+as committed, and subsequent session HUP passes avoid redelivery
+to TRANSITION owners. Unmarked failures still fail, and providers
+retain resources until their actual release commits. Isolated PDP-6
+DAS and diff checks PASS; pdp10-doc 2f7cda2 updated. K04 remains
+OPEN for physical multi-owner, refusal, clock-wrap and WAIT/PID
+reuse acceptance. Testkit and KCORE size work untouched.
+
 ## 2026-11-21 v1759: K04 exact PREVM diagnostic fallback
 
 DAIMOS 68200592 preserves the fatal FILE-stage GETTEARDOWN check
