@@ -304,6 +304,10 @@ unmerged from its development line; mode3 remains disabled.
   INIT or frees its terminal slot if INIT cannot WAIT. Adoption,
   zombie publication and CHLD use matching teardown ownership
   checks. DAS PASS; physical refusal/WAIT/PID tests remain OPEN.
+  **Progress v1769:** Repaired obsolete Stage-1 Makefile decoder
+  prerequisites for DSK/DTC/DRM/MTC/PTR. Fresh isolated full
+  `make -C system build` PASS; emulator fault-injection and
+  WAIT/PID acceptance still OPEN. External testkit untouched.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

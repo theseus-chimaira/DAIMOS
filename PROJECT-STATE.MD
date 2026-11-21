@@ -1,3 +1,16 @@
+## 2026-11-21 v1769: K04 full-system build prerequisite repair
+
+DAIMOS 5228712d repairs stale Stage-1 Makefile dependencies on
+the removed `common/decompressor.inc` across DSK/DTC/DRM/MTC/PTR.
+All now depend on the existing source-included
+`common/block_decompressor_v1458.inc`. A fresh isolated full
+`make -C system build` under a versioned `$TMPDIR` root PASSED,
+including Stage-1 assembly and media conversion. pdp10-doc
+7aa7699 updated. This is a build gate, not booted K04 fault
+injection: multi-owner refusal, clock wrap, WAIT/PID reuse and
+operator recovery acceptance remain OPEN. External testkit
+untouched; no permanent RAM or KCORE size change.
+
 ## 2026-11-21 v1768: K04 late child EXIT under dying parent
 
 DAIMOS 0a15e82b closes the complementary orphan leak left by
