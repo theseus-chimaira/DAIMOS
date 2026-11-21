@@ -1,3 +1,17 @@
+## 2026-11-21 v1767: K04 orphan adoption when INIT is dying
+
+DAIMOS 821d8be5 prevents dying INIT (slot 1) from adopting new
+orphans merely because its scheduler state remains non-FREE/ZOMB.
+Adoption now requires RUN/SLEEP/STOP, a nonzero resident u-area,
+no TRANSITION, and no fatal FILE-close ownership. If INIT cannot
+WAIT, the existing parentless fallback reaps orphan zombies and
+detaches live children instead of pinning their slots indefinitely.
+Parent CHLD notification also rejects an invalid absent/zero
+u-area before accessing the control word. Isolated PDP-6 DAS and
+diff checks PASS; pdp10-doc 667278a updated. K04 remains OPEN for
+physical INIT refusal, orphan/WAIT/PID reuse and multi-owner tests.
+No additional RAM, testkit changes, or size optimization.
+
 ## 2026-11-21 v1766: K04 queued HUP versus committed teardown
 
 DAIMOS 047a4ac1 prevents a session leader from retiring its TTY

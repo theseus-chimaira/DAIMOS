@@ -295,6 +295,10 @@ unmerged from its development line; mode3 remains disabled.
   **Progress v1766:** Session HUP now requires terminal or committed
   FINALIZE publication, not merely a queued asynchronous fatal event,
   before retiring the controlling TTY. DAS PASS; physical K04 OPEN.
+  **Progress v1767:** INIT cannot adopt orphans while it owns a
+  deferred EXIT or fatal FILE-close continuation; zombies use the
+  parentless cleanup fallback. Parent CHLD notification checks a
+  valid resident u-area before writing. DAS PASS; K04 physical OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 
