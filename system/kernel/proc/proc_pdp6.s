@@ -1727,20 +1727,27 @@ proc_session_teardown_loop:
         came    5,010
         jrst    proc_session_teardown_next
         ; A previous HUP may have committed its fatal exit but deferred
-        ; u-area MM release. If another member failed in that pass, retry
-        ; must not signal this already-dead member again: event_apply
-        ; refuses TRANSITION and would block TTY release indefinitely.
-        ; Skip only the exact irreversible VM_NONE+FINALIZE owner, not an
-        ; arbitrary transition or temporarily busy living process.
+        ; VM or u-area release. If another member failed in that pass,
+        ; retry must not signal this already-dead member again:
+        ; event_apply refuses TRANSITION, blocking session HUP forever.
+        ; Keep the existing VM_NONE+FINALIZE exception; add only exact
+        ; EXIT PREVM owners. Other transitions still require delivery.
         move    6,(012)
         trnn    6,PROC_TRANSITION_RH
         jrst    proc_session_teardown_deliver_v905
         move    6,1(012)
         camn    6,[-1]                 ; VM_SPACE_NONE
         jrst    proc_session_teardown_pending_v905
+        move    6,PROC_FINALIZE_OFFSET(4)
+        tlnn    6,PROC_FINALIZE_PREVM_LH
         jrst    proc_session_teardown_deliver_v905
+        ; DISCARD is an unpublished RUN rollback, not fatal HUP.
+        tlne    6,0200000
+        jrst    proc_session_teardown_deliver_v905
+        jrst    proc_session_teardown_marked_v1760
 proc_session_teardown_pending_v905:
         move    6,PROC_FINALIZE_OFFSET(4)
+proc_session_teardown_marked_v1760:
         tlne    6,PROC_FINALIZE_MARK_LH
         jrst    proc_session_teardown_next
 proc_session_teardown_deliver_v905:
@@ -1878,9 +1885,9 @@ proc_event_fatal_other:
         iori    2,0400000
         pushj   17,proc_finish_slot
         jumpe   1,proc_event_fatal_other_done_v883
-        ; A post-VM u-area MM_BUSY means fatal delivery committed.
-        ; Its TRANSITION/VM_NONE owner is queued for slot-0 completion.
-        ; Do not make the session leader retry an already delivered HUP.
+        ; An irreversible post-VM or PREVM refusal means fatal delivery
+        ; has committed. Both owners are queued for slot-0 completion;
+        ; the session leader must not retry an already delivered HUP.
         move    3,(012)
         trnn    3,PROC_TRANSITION_RH
         jrst    proc_event_fatal_other_done_v883
@@ -1889,12 +1896,20 @@ proc_event_fatal_other:
         move    4,1(012)
         camn    4,[-1]
         jrst    proc_event_fatal_other_pending_v883
+        hlrz    3,3
+        jumpe   3,proc_event_fatal_other_done_v883
+        move    4,PROC_FINALIZE_OFFSET(3)
+        tlnn    4,PROC_FINALIZE_PREVM_LH
         jrst    proc_event_fatal_other_done_v883
+        jrst    proc_event_fatal_other_marked_v1760
 proc_event_fatal_other_pending_v883:
         hlrz    3,3
         jumpe   3,proc_event_fatal_other_done_v883
         move    4,PROC_FINALIZE_OFFSET(3)
+proc_event_fatal_other_marked_v1760:
         tlnn    4,PROC_FINALIZE_MARK_LH
+        jrst    proc_event_fatal_other_done_v883
+        tlne    4,0200000            ; DISCARD is not delivered EXIT
         jrst    proc_event_fatal_other_done_v883
         setz    1,                   ; irreversible delivery accepted
 proc_event_fatal_other_done_v883:
