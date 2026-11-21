@@ -1,3 +1,15 @@
+## 2026-11-21 v1777: independent physical MM owners PASS
+
+Disposable 256K PDP-6 scratch KCORE used real mm_pin/mm_unpin and
+unmodified mm_free on two post-VM u-area owners. PID5 remained
+pinned (base 054441) while PID6 (base 055051) completed its fifth
+retry and real unpin. The DCS TRUE parent resumed and PS reused
+PID6 with all teardown diagnostics zero; CTY PID5 remained in
+TD=2, RETRY=512, DETAIL=6. Independent owner progress PASS;
+first-refusal 020-tick timing, SIDL/PREVM, clock wrap, FILE/HUP
+and dying-parent WAIT remain OPEN. Evidence DAIMOS 37bf2680;
+pdp10-doc f5d004a. No production KCORE or testkit changes.
+
 ## 2026-11-21 v1776: K04 physical MM pin and real deferred recovery PASS
 
 DAIMOS 6af842d9 documents a real 256K SIMH PDP-6 experiment

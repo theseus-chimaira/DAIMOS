@@ -333,6 +333,11 @@ unmerged from its development line; mode3 remains disabled.
   556 qualified ticks. Restored original MM call; TRUE resumed,
   PS reused PID5, HALT/D6FS CLEAN PASS. Physical MM pin and
   multi-owner/clock-wrap/FILE/HUP acceptance still OPEN.
+  **Progress v1777:** Two simultaneous real MM-pinned post-VM
+  owners tested on disposable PDP-6: PID6 unpinned and reused by
+  PS while PID5 stayed pinned in TD=2 RETRY=512 DETAIL=6.
+  Independent-owner progress PASS; exact first-refusal timing,
+  SIDL/PREVM, clock wrap, FILE/HUP, dying-parent WAIT still OPEN.
   **Progress v1776:** Real physical u-area MM pin exercised on a
   disposable PDP-6 image using mm_pin/mm_unpin, with normal mm_free
   rejecting the live pin. PID5 post-VM TD=2, RETRY=512, DETAIL=6
