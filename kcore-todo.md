@@ -348,6 +348,14 @@ unmerged from its development line; mode3 remains disabled.
   RAM growth, testkit untouched. Multiple owners, SIDL, FILE/HUP,
   clock wrap and dying-parent WAIT still require physical tests.
 
+  **Progress v1778:** Physical PDP-6 two-owner maximum-delay
+  acceptance PASS: owner A saturated shared interval 01000;
+  genuinely new owner B reset to 020 after first real MM refusal.
+  Captured qualified clock delta to B's next retry exactly 020.
+  B unpinned and PID6 reused while A stayed pinned at RETRY=512.
+  Guest HALT/D6FS CLEAN seq=7; no production/testkit changes.
+  SIDL/PREVM, 17-bit wrap, FILE, HUP, dying-parent WAIT OPEN.
+
 ## Mandatory KCORE: PDP-6 RAW PURE
 
 - [ ] **K05 - Reclaim/restore failure handling.** Complete safe RAW

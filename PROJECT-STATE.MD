@@ -1,3 +1,22 @@
+## 2026-11-21 v1778: real PDP-6 maximum-backoff first-refusal timing PASS
+
+DAIMOS ea875bbf records an uncontaminated dual-owner physical MM-pin
+PDP-6 test. With CTY owner A (PID5) pinned, read-only SIMH examine
+showed shared pending retry word 401000005134 (octal: saturated 01000
+ticks). No DCS child had run, and PID6's scratch state was all zero.
+DCS TRUE introduced B (PID6); the kernel's real first MM refusal
+changed the shared word to 400020005477 (fresh 020-tick interval).
+Captured first/second retry clocks 005477/005517 differ by exactly
+020 octal (16 decimal) ticks. B's real MM unpin/free completed,
+its parent resumed and PS reused PID6 with TD/RETRY/PVM/DETAIL/ERR
+all zero while A remained TD=2, RETRY=512, DETAIL=6. Guest HALT
+PC 022607 and D6FS CLEAN seq=7 PASS. Earlier PS-triggered fixture
+interference was identified and excluded from acceptance evidence.
+This closes K04's post-VM maximum-delay new-owner first-retry gate.
+SIDL/PREVM, clock wrap, FILE, HUP and dying-parent WAIT still OPEN.
+No production code/RAM/ABI or external testkit changed; pdp10-doc
+1898882 updated.
+
 ## 2026-11-21 v1777: independent physical MM owners PASS
 
 Disposable 256K PDP-6 scratch KCORE used real mm_pin/mm_unpin and
