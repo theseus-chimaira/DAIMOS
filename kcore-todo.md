@@ -253,6 +253,11 @@ unmerged from its development line; mode3 remains disabled.
   retained owners, zombies, finalizer/reaper retries and permanently
   refused resources without double release, lost ownership or unbounded
   retry loops.
+  **Progress v1754:** Opt-in GETTEARDOWN/PS distinguishes retained
+  pre-VM EXIT from unpublished RUN rollback without altering existing
+  query ABI. Isolated assembler and C compilation pass. Still OPEN:
+  booted permanent/temporary multi-owner retry, WAIT/slot reuse and
+  controlled operator recovery; external testkit sweep is untouched.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

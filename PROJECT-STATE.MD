@@ -1,3 +1,14 @@
+## 2026-11-21 v1754: K04 retained pre-VM EXIT owner diagnostics
+
+Production GETTEARDOWN now has an opt-in 01000-octal query for a
+TRANSITION+FINALIZE+PREVM EXIT owner that still retains its VM. It
+returns stage 3 with a distinct bit-18 EXIT marker, leaving the old
+GETTEARDOWN and detail contracts unchanged. PS reports the new PVM
+column. Isolated PDP-6 DAS/KCC compile+assembly PASS; no booted guest
+or testkit run is claimed. DAIMOS e34461e2, pdp10-doc 5cf2a76.
+K04 remains OPEN for physical retry/WAIT/clock-wrap verification and
+safe permanent refusal policy. K03 remains disabled; no size work.
+
 ## 2026-11-21 v1751: native KCC phase FP36 ABI link repair PASS
 
 Current-source native KCC overflow regression on a freshly built
