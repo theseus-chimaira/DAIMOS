@@ -317,6 +317,11 @@ unmerged from its development line; mode3 remains disabled.
   **Progress v1771:** Source-audited physical acceptance matrix
   committed (design/kcore-k04-multiowner-acceptance-plan-v1771.md).
   No refusal injection run; all K04 recovery acceptance gates OPEN.
+  **Progress v1772:** Real PDP-6 ROOT/DSH ran five TRUE children;
+  subsequent PS reused PID 5, all normal teardown fields zero.
+  Guest HALT and D6FS CLEAN seq=7 PASS. Intermittent host SIMH
+  signal 11 on an earlier launch remains unresolved. Refusal-held
+  owner/WAIT/PID acceptance OPEN; external testkit untouched.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

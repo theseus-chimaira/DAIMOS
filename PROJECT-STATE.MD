@@ -1,3 +1,16 @@
+## 2026-11-21 v1772: K04 repeated normal child reuse on PDP-6
+
+DAIMOS 6769687d documents a real 256K PDP-6 session: ROOT/DSH
+ran TRUE five consecutive times, each returning normally; PS
+then occupied PID 5 with TD/RETRY/PVM/DETAIL/ERR all zero.
+Guest HALT PC 022464 and D6FS CLEAN seq=7 (179196 blocks,
+360 FCBs) PASS. An initial emulator invocation crashed with
+host signal 11 after TTY LOADED, leaving CLEAN media; a second
+invocation booted normally. This host emulator anomaly remains
+unresolved, not attributed to K04. pdp10-doc d55c5eb updated.
+No fault injection or refusal-held PID reuse was performed:
+K04 remains OPEN. Testkit and KCORE size work untouched.
+
 ## 2026-11-21 v1771: K04 multi-owner acceptance matrix
 
 DAIMOS 84fb8a33 records the source-audited physical acceptance
