@@ -43,3 +43,35 @@ correctness fix for any demonstrated ownership or progress defect.
 Do not enable K03 OOM killing. Run source-level or physical validation
 only after the ongoing external testkit sweep finishes; do not edit
 `pdp10-testkit` during that sweep. No size optimization is in scope.
+
+## v1753: source-path verification
+
+Inspected `proc_finish_service_v881`, `proc_finish_slot`,
+`proc_slot_discard`, `proc_uarea_release`, `proc_wait_status`, and the
+slot-0 backoff service in `system/kernel/proc/proc_pdp6.s`.
+
+* A service pass scans every slot from 1 to `proc_high_slot - 1`;
+  a failed owner does not abort the scan. The service records both
+  completion and refusal and retains the shared pending flag if any
+  retry failed. Thus one permanently refused owner does not by itself
+  prevent another eligible deferred owner from being attempted.
+* `proc_finish_slot` calls `proc_uarea_release` before clearing the
+  descriptor or publishing ZOMB. A failed MM release retains the
+  transition and FINALIZE marker. `proc_wait_status` only reaps ZOMB,
+  so an MM-refused owner cannot be reported as successfully exited.
+* Unpublished RUN rollback uses `proc_slot_discard`, which never
+  publishes ZOMB. A pre-VM failure retains the SIDL retry tag;
+  a post-VM failure retains FINALIZE+DISCARD and the u-area owner.
+* `proc_uarea_release` clears the u-area flag/base only after a
+  successful `mm_free`; -4 and -5 preserve both for later retry.
+* The shared clock uses a masked wrapping elapsed interval and a
+  nonzero delay. New pending owners can rearm the shared clock at
+  020 octal ticks; existing failures retain their capped backoff.
+
+These are source-level invariants, **not** a new physical acceptance
+claim. The remaining tests should exercise multiple pending owners
+through timer wrap, one permanent refusal alongside successful
+finalization, and WAIT/descriptor reuse before and after release.
+GETTEARDOWN's exact provider/MM diagnostics and operator recovery
+policy require a separate contract review. No defect requiring a
+production patch was established by this inspection.
