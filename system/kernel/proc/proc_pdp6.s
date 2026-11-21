@@ -2395,13 +2395,15 @@ proc_control_table:
 ; Return 0 for normal process or zombie, 1 for owner-stack FILE
 ; cleanup, (retry_ticks << 2)|2 for deferred post-VM MM cleanup,
 ; or (retry_ticks << 2)|3 for pre-VM unpublished RUN rollback.
+; An opt-in query with bit 01000 also exposes an EXIT PREVM owner
+; as stage 3 with bit 18 set. Legacy queries remain unchanged.
 ; The shared retry interval is already resident in the LH of
 ; proc_finish_last_tick_v881. Do not expose private stack addresses.
         .globl  proc_control_getteardown_v886
 proc_control_getteardown_v886:
         move    7,2
         move    6,2
-        andi    6,0777000             ; reject unsupported argument flags
+        andi    6,0776000             ; permit detail 0400 and opt-in 01000
         jumpn   6,kret_neg1
         andi    2,0377                ; PID is still an 8-bit slot
         jumpe   2,kret_neg1           ; slot 0 is not a user process
@@ -2449,7 +2451,22 @@ proc_control_td_uarea_v894:
         move    6,1(3)
         camn    6,[-1]                ; VM_SPACE_NONE only
         jrst    proc_control_td_vm_none_v886
+        ; Before VM destruction an EXIT finalizer owns the still-live
+        ; VM and u-area, but legacy GETTEARDOWN reports stage NONE.
+        ; Expose this owner only to callers requesting the extension.
+        trnn    7,01000
         jrst    kret_zero
+        move    6,PROC_FINALIZE_OFFSET(5)
+        tlnn    6,PROC_FINALIZE_MARK_LH
+        jrst    kret_zero
+        tlnn    6,PROC_FINALIZE_PREVM_LH
+        jrst    kret_zero
+        hlrz    1,proc_finish_last_tick_v881
+        andi    1,0377777
+        lsh     1,2
+        ori     1,3                   ; stage 3: pending pre-VM release
+        tlo     1,1                   ; bit 18: EXIT, not SIDL RUN
+        popj    17,
 proc_control_td_vm_none_v886:
         move    6,PROC_FINALIZE_OFFSET(5)
         tlnn    6,PROC_FINALIZE_MARK_LH

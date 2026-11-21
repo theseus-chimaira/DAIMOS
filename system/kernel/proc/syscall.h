@@ -168,7 +168,21 @@ struct sys_fsinfo {
 #define SYS_TEARDOWN_STAGE(word) \
         ((unsigned int)(word) & SYS_TEARDOWN_STAGE_MASK)
 #define SYS_TEARDOWN_RETRY_TICKS(word) \
-        ((unsigned int)(word) >> SYS_TEARDOWN_RETRY_SHIFT)
+        (((unsigned int)(word) & 0777777U) >> SYS_TEARDOWN_RETRY_SHIFT)
+/* Opt-in K04 visibility for a finalizing EXIT that still owns its VM.
+ * This extends, but does not change, GETTEARDOWN(pid) or its existing
+ * detail query: both still return NONE during the pre-VM EXIT stage.
+ * GETTEARDOWN(pid|01000) returns stage 3 plus bit 18 for this case;
+ * uncommitted RUN rollback remains stage 3 without the bit.
+ * A detailed request can combine bits 0400 and 01000.  The high bit
+ * is not part of the shared retry interval (see RETRY_TICKS above).
+ */
+#define SYS_TEARDOWN_PREVM_QUERY_FLAG 01000U
+#define SYS_TEARDOWN_PREVM_QUERY_ARG(pid) \
+        (((unsigned int)(pid) & 0377U) | SYS_TEARDOWN_PREVM_QUERY_FLAG)
+#define SYS_TEARDOWN_EXIT_PREVM_FLAG 01000000U
+#define SYS_TEARDOWN_IS_EXIT_PREVM(word) \
+        (((unsigned int)(word) & SYS_TEARDOWN_EXIT_PREVM_FLAG) != 0U)
 /* Request a live resource snapshot, without changing the v886 query.
  * The low 8 bits select the process slot; bit 8 enables detail.
  * FILE: stage 1 | (open descriptor count << 2) | (first fd << 8) |
