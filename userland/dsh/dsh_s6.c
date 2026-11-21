@@ -29,14 +29,22 @@ dsh_line_clear(struct dsh_line *line)
 int
 dsh_s6_append(struct dsh_s6 *s, int ch)
 {
+        unsigned int rem;
         unsigned int wi;
         unsigned int sh;
 
         if (s == 0 || ch < 040 || ch > 0137 ||
             s->len >= DSH_S6_MAX_CHARS)
                 return -1;
-        wi = s->len / 6U;
-        sh = 30U - (s->len % 6U) * 6U;
+        /* There are at most six SIXBIT words.  Repeated subtraction uses
+         * no general unsigned divide or temporary double-word register. */
+        rem = s->len;
+        wi = 0U;
+        while (rem >= DSH_S6_CHARS_PER_WORD) {
+                rem -= DSH_S6_CHARS_PER_WORD;
+                ++wi;
+        }
+        sh = 30U - rem * 6U;
         s->words[wi] |= ((kword_t)(ch - 040) & 077UL) << sh;
         ++s->len;
         return 0;
@@ -45,13 +53,19 @@ dsh_s6_append(struct dsh_s6 *s, int ch)
 int
 dsh_s6_get(const struct dsh_s6 *s, unsigned int pos)
 {
+        unsigned int rem;
         unsigned int wi;
         unsigned int sh;
 
-        if (s == 0 || pos >= s->len)
+        if (s == 0 || pos >= s->len || pos >= DSH_S6_MAX_CHARS)
                 return -1;
-        wi = pos / 6U;
-        sh = 30U - (pos % 6U) * 6U;
+        rem = pos;
+        wi = 0U;
+        while (rem >= DSH_S6_CHARS_PER_WORD) {
+                rem -= DSH_S6_CHARS_PER_WORD;
+                ++wi;
+        }
+        sh = 30U - rem * 6U;
         return (int)(((s->words[wi] >> sh) & 077UL) + 040U);
 }
 
