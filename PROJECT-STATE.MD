@@ -1,3 +1,22 @@
+## 2026-11-21 v1784: physical post-VM A / SIDL B MM owners PASS
+
+DAIMOS c0c9db41 documents a live 256K PDP-6 disposable
+physical-MM test. A PID5 stayed pinned in post-VM u-area
+cleanup with shared delay capped at octal 01000. B PID6's
+first RUN deliberately failed through the original hierarchy
+rollback path; its exact SIDL VM was physically pinned.
+B's first failure reset the shared pending interval to 020,
+and the next actual VM destroy attempt occurred exactly 020
+qualified ticks later (004471 -> 004511 octal). B unpinned
+at attempt 005 and PID6 was safely reused while A remained
+TD=2 RETRY=512 DETAIL=6. A unpinned at attempt 030; both
+bases cleared, pending reset, PID5 safely reused. Guest HALT
+PC 022617 and D6FS CLEAN seq=3 PASS. Native DAS/full 256K
+image PASS. Only disposable scratch TEXT/BSS modified, no
+production KCORE, ABI, fixed RAM or testkit change.
+pdp10-doc e12fecc. Reverse SIDL/post-VM ordering, SIDL/PREVM,
+clock wrap, FILE/HUP and dying-parent WAIT remain OPEN.
+
 ## 2026-11-21 v1783: reverse physical post-VM/PREVM owners PASS
 
 DAIMOS 2aac803c/b6c93009 record a real 256K PDP-6 test in
