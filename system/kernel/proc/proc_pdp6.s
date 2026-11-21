@@ -1054,7 +1054,11 @@ proc_discard_prevm_fail_v1085:
         tdne    4,2(10)
         jrst    proc_discard_vm_rearm_v894
         iorm    4,2(10)
-        hrrz    5,proc_finish_last_tick_v881
+        ; A newly refused SIDL rollback must start its first delay
+        ; at the current clock, not at a previous owner's old epoch.
+        ; Otherwise a stale epoch can make the first retry immediate.
+        move    5,proc_timer_clock
+        andi    5,PROC_TIMER_CLOCK_MASK
         hrli    5,020
         movem   5,proc_finish_last_tick_v881
 proc_discard_vm_rearm_v894:
@@ -2442,6 +2446,21 @@ proc_control_td_uarea_v894:
         jrst    kret_zero
         hlrz    5,5
         jumpe   5,kret_neg1           ; inconsistent stable owner
+        ; Fatal APR/EXEC exits retain PROC_FATAL_CLOSE_BIT after their
+        ; private FILE close has succeeded and they hand off to slot 0.
+        ; If VM release then refuses, the opt-in query must report the
+        ; PREVM EXIT owner, not a stale FILE-close stage. Legacy calls
+        ; still see the historical FILE stage until final release.
+        trnn    7,01000
+        jrst    proc_control_td_file_check_v1755
+        move    6,(3)
+        trnn    6,PROC_TRANSITION_RH
+        jrst    proc_control_td_file_check_v1755
+        move    6,1(3)
+        camn    6,[-1]
+        jrst    proc_control_td_file_check_v1755
+        jrst    proc_control_td_prevm_check_v1755
+proc_control_td_file_check_v1755:
         move    6,PROC_FDCTL_OFFSET(5)
         trne    6,PROC_FATAL_CLOSE_BIT
         jrst    proc_control_td_file_v887
@@ -2456,6 +2475,7 @@ proc_control_td_uarea_v894:
         ; Expose this owner only to callers requesting the extension.
         trnn    7,01000
         jrst    kret_zero
+proc_control_td_prevm_check_v1755:
         move    6,PROC_FINALIZE_OFFSET(5)
         tlnn    6,PROC_FINALIZE_MARK_LH
         jrst    kret_zero
