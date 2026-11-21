@@ -348,13 +348,14 @@ mm_alloc_aligned_noreclaim:
         jrst    mm_alloc_nr_inval
 
         ; The free-gap search and descriptor insertion are one physical
-        ; ownership transaction. An interrupt-side MM release/allocate
-        ; must not alter the sorted table between the fit and publish.
+        ; ownership transaction. Scheduler PI6 must not alter the sorted
+        ; table between fit and publish. Keep PI3/PI5 enabled: a long fit
+        ; scan under global PI disable starves DCT disk transfers (DRL).
         ; -2(17) belongs to the saved AC16 image: reserve the new
         ; -011(17) local instead, without adding permanent KCORE RAM.
         coni    0004,1
-        movem   1,-011(17)             ; previous global PI state
-        cono    0004,000400
+        movem   1,-011(17)             ; previous PI6 enable state
+        cono    0004,01002             ; inhibit scheduler PI6 only
         movei   4,-1(17)
         move    1,010
         move    2,011
@@ -404,8 +405,8 @@ mm_alloc_nr_inval:
         jrst    mm_alloc_nr_return_unlocked_v1702
 mm_alloc_nr_return:
         move    0,-011(17)
-        trne    0,000200
-        cono    0004,000200
+        trne    0,000002              ; restore PI6 only if previously on
+        cono    0004,02002
 mm_alloc_nr_return_unlocked_v1702:
         movei   0,010
         hrli    0,-010(17)
