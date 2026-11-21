@@ -50,11 +50,7 @@ dsh_line_set(struct dsh_line *line, unsigned int pos, int ch)
 static void
 dsh_line_copy(struct dsh_line *dst, const struct dsh_line *src)
 {
-        unsigned int i;
-
-        dst->len = src->len;
-        for (i = 0U; i < DSH_LINE_MAX_WORDS; ++i)
-                dst->words[i] = src->words[i];
+        *dst = *src;
 }
 #endif
 
