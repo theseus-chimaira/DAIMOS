@@ -1,3 +1,29 @@
+## 2026-11-21 v1751: native KCC phase FP36 ABI link repair PASS
+
+Current-source native KCC overflow regression on a freshly built
+256K D6FS ROOT guest PASS (zero compiler status, no spurious constant
+expression overflow, emitted assembly). Host C89 constant folding
+optimized and unoptimized PDP-6 executions PASS.
+
+Fresh source-built native KCC phase linking exposed missing compiler
+runtime symbols: KPARSE `__kcc_fixdfsi`, KGEN `__kcc_floatsisf`.
+KCC `6492d96` builds a separate archive from the existing exact
+signed/unsigned D-format conversion assembly, linked after the
+native phase objects; `fb2210d` adds the same archive to target
+MAKE rules. DAIMOS `6ac48272` stages that archive and repairs
+stale bootstrap object filenames in the native source package.
+Source-linked pdp10-testkit `00b81dd` PASS: all five fresh native
+phase DXRs, complete source staging and exact archive comparison.
+No kernel code or memory-limit changes. See
+`pdp10-doc/TOOLCHAIN/KCC-NATIVE-FP36-PHASE-LINK-V1751.MD`.
+
+Standalone native KPARSE KPT4-to-KIR1 physical execution and
+native self-hosting are still OPEN. Historical v1401 physical fixture
+was blocked before guest start by a missing old v1370 LOGIN DXR;
+that is not a successful phase runtime test. KIR writer's linear
+pointer identity lookup/performance remains open. Strict KCORE size
+optimization remains explicitly DEFERRED.
+
 ## 2026-11-21 v1748: measured strict low-memory KCORE gate FAIL
 
 Fresh isolated `BOOT_PROFILE=lowmem COMPILER=gcc BOOT=dsk ROOT=disk`
