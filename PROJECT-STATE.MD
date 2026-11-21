@@ -1,3 +1,14 @@
+## 2026-11-21 v1755: K04 fatal PREVM and retry-epoch corrections
+
+DAIMOS 8b32e91e corrects two source-path teardown defects: an opt-in
+GETTEARDOWN now prioritizes EXIT FINALIZE+PREVM over the retained fatal
+FILE bit, and a newly failed SIDL RUN rollback starts its initial
+retry interval at the current clock rather than a stale shared epoch.
+The legacy diagnostic ABI and resource ownership are unchanged.
+Isolated PDP-6 DAS assembly PASS. pdp10-doc e9ff167 records operator
+interpretation. No physical recovery or testkit PASS is claimed;
+K04 OPEN, K03 disabled, size optimization deferred.
+
 ## 2026-11-21 v1754: K04 retained pre-VM EXIT owner diagnostics
 
 Production GETTEARDOWN now has an opt-in 01000-octal query for a

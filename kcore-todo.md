@@ -258,6 +258,9 @@ unmerged from its development line; mode3 remains disabled.
   query ABI. Isolated assembler and C compilation pass. Still OPEN:
   booted permanent/temporary multi-owner retry, WAIT/slot reuse and
   controlled operator recovery; external testkit sweep is untouched.
+  **Progress v1755:** Fixed stale fatal-FILE diagnostic precedence for
+  opt-in PREVM EXIT and stale initial epoch for newly refused SIDL
+  rollback. Kernel assembly PASS; physical acceptance remains OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 
