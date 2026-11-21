@@ -1649,7 +1649,9 @@ proc_nice_store:
 ; int proc_tty_session_has(unsigned int session, unsigned int pgrp,
 ;     unsigned int skip_slot)
 ; Scan the compact process table without a C save frame.  AC1..AC3 carry
-; arguments; AC1 is the boolean result.  AC2..AC7 are caller-scratch.
+; arguments; AC1 is 0/1, or -1 for an inconsistent u-area owner.
+; AC2..AC7 are caller-scratch. TTY release retains ownership on -1;
+; foreground-group selection must reject it.
         .globl  proc_tty_session_has
 proc_tty_session_has:
         move    5,1                    ; session
@@ -1676,11 +1678,40 @@ proc_tty_session_scope:
         trnn    4,0400000               ; resident u-area flag
         jrst    proc_tty_session_next
         hlrz    4,(3)                   ; stable u-area base
+        ; A zero base with UAREA set is inconsistent. Preserve any
+        ; TTY until it is resolved, but do not authorize SETFG on it.
+        jumpe   4,kret_neg1
         move    4,PROC_FDCTL_OFFSET(4)                ; packed control word
         lsh     4,-3
         andi    4,0377                  ; session id
-        camn    4,5
+        came    4,5
+        jrst    proc_tty_session_next
+        ; A committed post-VM finalizer retains its u-area and session
+        ; id until MM accepts the free, but no longer owns TTY cleanup.
+        ; Counting it as a live member can strand the session's TTY:
+        ; the last actual member skips release, then this finalizer
+        ; frees its u-area without revisiting the TTY. PREVM still
+        ; counts: its TTY release may itself have been refused.
+        move    4,(3)
+        trnn    4,PROC_TRANSITION_RH
         jrst    kret_one
+        move    4,1(3)
+        camn    4,[-1]                 ; VM_SPACE_NONE
+        jrst    proc_tty_session_postvm_v1761
+        jrst    kret_one
+proc_tty_session_postvm_v1761:
+        hlrz    4,(3)
+        move    4,PROC_FINALIZE_OFFSET(4)
+        tlnn    4,PROC_FINALIZE_MARK_LH
+        jrst    kret_one
+        ; A PREVM owner must revisit TTY cleanup before completing,
+        ; even when the VM base is already NONE after partial detach.
+        tlne    4,PROC_FINALIZE_PREVM_LH
+        jrst    kret_one
+        ; VM_NONE+FINALIZE without PREVM is a post-VM MM-only owner,
+        ; not a remaining TTY/session participant. The MM retry still
+        ; owns its u-area, descriptor and identity until success.
+        jrst    proc_tty_session_next
 proc_tty_session_next:
         addi    3,PROC_WORDS
         aoja    2,proc_tty_session_scan
@@ -2922,7 +2953,7 @@ proc_control_tty_setfg:
         pushj   17,proc_tty_session_has
         pop     17,2
         pop     17,4                   ; tty id
-        jumpe   1,kret_neg1
+        jumple  1,kret_neg1           ; no member or invalid u-area
         move    5,proc_tty_records(4)
         move    6,5
         lsh     6,-010
