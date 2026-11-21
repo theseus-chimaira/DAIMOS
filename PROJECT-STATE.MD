@@ -1,3 +1,38 @@
+## 2026-11-21 v1747: MM compaction PI-safe and current-KCC DSH fit PASS
+
+DAIMOS `d475fcd3` removes the long global PI disable across
+`mm_move_extent`/`vm_extent_move`, preserving disk PI3/PI5 during
+physical process image copying. An actual source-linked PDP-6
+wake-up race was reproduced: a PI5 disk completion cleared a sleeping
+process's wait but the old mover restored stale SLEEP. The fix uses
+short PI5-only protection for STOP_MM/runqueue transitions and
+restores RUN when the wait has completed, preserving the exact prior
+PI5 enable state. MM owner loss still fails closed with global PI
+inhibited at the two original distinct HALT locations. K01 native
+acceptance passes 34/34 cases, including the new v1745 PI and wake
+injection tests. The KCC 256K physical compaction v1747 guest PASS:
+two genuine `mm_compact` and two `vm_extent_move` breakpoint hits,
+completed child-data integrity/CQ and HALT. See testkit `aca082a`
+and pdp10-doc `KERNEL/MM-COMPACTION-DCT-WAKE-V1747.MD`.
+
+The newer KCC `551f406` had increased DSH from 035751 to 036017
+(octal), 15 decimal words beyond EXEC's strict 036000 limit. The
+bounded, validated SIXBIT indexing in DAIMOS `cbcd7a7e` avoids
+unnecessary generic unsigned divisions. DSH image is now 035775
+(octal), BSS unchanged 001763, a three-decimal-word margin under
+EXEC. Native PDP-6 SIXBIT positions 0..35, counted conversion,
+invalid bounds and one unsafe mutant PASS; the strict image, resource
+and command limits PASS. A fresh committed-source KCC 256K D6FS
+ROOT/DSH/ECHO/TRUE/HALT/CLEAN guest PASS. See pdp10-doc
+`TOOLCHAIN/KCC-DSH-BOUNDED-SIXBIT-V1746.MD`.
+
+The historical GCC v561 compaction fixture still HALTs at PC 000000
+before reaching compaction under current sources; the new KCC v1747
+physical fixture supplies independently verified relocation evidence,
+not a reclassification of that failed old run. Strict 32K KCORE
+memory-budget acceptance and K04 permanent-provider recovery remain
+OPEN. Other short global PI critical sections remain audit candidates.
+
 ## 2026-11-21 v1744: BRK relocation PI6-safe, physical login PASS
 
 DAIMOS `d385fd6d`: `vm_brk_resize` no longer disables global PI
