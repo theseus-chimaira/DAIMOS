@@ -1,3 +1,22 @@
+## 2026-11-21 v1748: measured strict low-memory KCORE gate FAIL
+
+Fresh isolated `BOOT_PROFILE=lowmem COMPILER=gcc BOOT=dsk ROOT=disk`
+`kcore-32k-gate` build against `ecfbe674`: link succeeded, but the
+strict endpoint `__kcore_low_end=024451` exceeds `020000` octal by
+2345 decimal words. DXR image `023754` octal, BSS `000415`.
+The limit is 8192 decimal KCORE endpoint words; the separate
+`040000`-octal permanent-address ceiling is 16384 decimal words;
+physical 32K is 32768 words. They must not be conflated.
+
+Independent KCC 256K full-profile disk-root resident accounting:
+KCORE 10660, KCORE+MRES 20717 decimal, permanent-last 20764,
+strict single-root permanent free=-4381 (multi-root free=-4414).
+The full profile is not the GCC low-memory acceptance profile.
+KCORE folding already uses `p10fold -m 2`; lowering to two is not
+an available further size reduction. No production code, limits,
+mandatory modules, or policies were changed in this measurement pass.
+See `pdp10-doc/KERNEL/KCORE-LOWMEM-BUDGET-AUDIT-V1748.MD`.
+
 ## 2026-11-21 v1747: MM compaction PI-safe and current-KCC DSH fit PASS
 
 DAIMOS `d475fcd3` removes the long global PI disable across
