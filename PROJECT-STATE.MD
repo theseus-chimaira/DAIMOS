@@ -6,6 +6,9 @@ pinned (base 054441) while PID6 (base 055051) completed its fifth
 retry and real unpin. The DCS TRUE parent resumed and PS reused
 PID6 with all teardown diagnostics zero; CTY PID5 remained in
 TD=2, RETRY=512, DETAIL=6. Independent owner progress PASS;
+Both owners subsequently unpinned (PID5 attempt octal 030, PID6
+at attempt 005), CTY TRUE resumed, guest HALT PC 022566 and
+D6FS CLEAN seq=3 PASS. DAIMOS a22dd30d; pdp10-doc ec2fd16.
 first-refusal 020-tick timing, SIDL/PREVM, clock wrap, FILE/HUP
 and dying-parent WAIT remain OPEN. Evidence DAIMOS 37bf2680;
 pdp10-doc f5d004a. No production KCORE or testkit changes.

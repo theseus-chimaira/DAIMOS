@@ -336,6 +336,8 @@ unmerged from its development line; mode3 remains disabled.
   **Progress v1777:** Two simultaneous real MM-pinned post-VM
   owners tested on disposable PDP-6: PID6 unpinned and reused by
   PS while PID5 stayed pinned in TD=2 RETRY=512 DETAIL=6.
+  Both owners finally released; PID5 attempt 030, PID6 005,
+  guest HALT and D6FS CLEAN seq=3 PASS.
   Independent-owner progress PASS; exact first-refusal timing,
   SIDL/PREVM, clock wrap, FILE/HUP, dying-parent WAIT still OPEN.
   **Progress v1776:** Real physical u-area MM pin exercised on a
