@@ -2471,6 +2471,14 @@ proc_control_td_uarea_v894:
         move    6,1(3)
         camn    6,[-1]
         jrst    proc_control_td_file_check_v1755
+        ; The fast path may bypass FILE precedence only for an exact
+        ; PREVM owner. A live VM and TRANSITION alone are insufficient:
+        ; otherwise a malformed/unmarked fatal FILE owner is hidden.
+        move    6,PROC_FINALIZE_OFFSET(5)
+        tlnn    6,PROC_FINALIZE_MARK_LH
+        jrst    proc_control_td_file_check_v1755
+        tlnn    6,PROC_FINALIZE_PREVM_LH
+        jrst    proc_control_td_file_check_v1755
         jrst    proc_control_td_prevm_check_v1755
 proc_control_td_file_check_v1755:
         move    6,PROC_FDCTL_OFFSET(5)
