@@ -273,6 +273,10 @@ unmerged from its development line; mode3 remains disabled.
   **Progress v1760:** Prevented HUP redelivery to committed PREVM
   EXIT owners; foreign fatal delivery now accepts exact pending PREVM
   state while provider release remains deferred. DAS PASS; K04 OPEN.
+  **Progress v1761:** Post-VM MM-only finalizers no longer count as
+  TTY session members; PREVM and incomplete owners retain their
+  ownership. Invalid u-area bases fail closed for release and SETFG.
+  DAS PASS, physical multi-owner acceptance OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

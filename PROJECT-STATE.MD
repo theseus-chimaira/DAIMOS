@@ -1,3 +1,16 @@
+## 2026-11-21 v1761: K04 post-VM TTY membership fix
+
+DAIMOS 95fd5e65 removes committed post-VM FINALIZE owners from
+TTY session membership checks without releasing their retained
+MM u-areas or process identities. This prevents a departing last
+member from being blocked from TTY cleanup by a finalizer which
+will never recheck the TTY. PREVM remains a member until its
+TTY/VM release stage succeeds. Invalid u-area bases now fail closed
+for TTY release and SETFG. Native PDP-6 DAS and diff checks PASS;
+pdp10-doc 5f59593 updated. Physical multi-owner, clock-wrap,
+WAIT/PID reuse and permanent-refusal acceptance remain OPEN.
+Testkit and KCORE size work untouched.
+
 ## 2026-11-21 v1760: K04 committed PREVM fatal HUP recovery
 
 DAIMOS d29efc4d corrects a session-HUP retry deadlock: foreign
