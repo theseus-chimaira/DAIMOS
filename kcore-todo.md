@@ -266,6 +266,8 @@ unmerged from its development line; mode3 remains disabled.
   Isolated PDP-6 assembly PASS; physical acceptance remains OPEN.
   **Progress v1757:** Extended zero-u-area-base validation to the
   non-NONE VM PREVM marker read; DAS PASS, physical acceptance OPEN.
+  **Progress v1758:** EXIT resume rejects FINALIZE|DISCARD; rollback
+  cannot be misclassified as an EXIT owner. DAS PASS; K04 OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

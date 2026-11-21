@@ -1,3 +1,10 @@
+## 2026-11-21 v1758: K04 EXIT/DISCARD ownership separation
+
+DAIMOS 72ca8a9c rejects FINALIZE|DISCARD from the EXIT resume
+entry point, preserving unpublished RUN rollback ownership.
+Isolated PDP-6 DAS assembly PASS. pdp10-doc 26f1d56 updated.
+K04 remains OPEN pending physical acceptance; testkit untouched.
+
 ## 2026-11-21 v1757: K04 pre-VM zero-base guard
 
 DAIMOS 0f7a783f closes the remaining non-NONE VM PREVM marker
