@@ -1,3 +1,31 @@
+## 2026-11-21 v1743: K03 physical refusal matrix PASS; D6FS DRL fixed
+
+Production requester-only BRK OOM remains ON under the accepted F12/F13
+v1298 policy. The three independent 256K PDP-6 KCC K03 physical gates
+(RUN parent under real -3 MM exhaustion, held foreign FS lease under
+requester OOM, and permanent wrong-owner MM -4 with retained owner and
+independent bystander) were rerun against DAIMOS `03dcb0e9` and all PASS.
+Permanent refusal is not automatically reclaimed; K04 remains OPEN.
+The post-fix K01 native suite also passes all 33 cases. Exact transcript
+hashes and witnesses are in daimos-testkit v1743 (`ea27f7f`).
+
+A separate default 256K D6FS ROOT/DSH guest had halted at PC 004270
+on Type 270 DRL (data request late). CPU PI tracing found the MM
+allocator disabling global PI for roughly 1360 simulator ticks during
+`mm_alloc_aligned_noreclaim` publication. Production v1742
+`03dcb0e9` now inhibits scheduler PI6 only, keeping disk PI3/PI5
+live. The fresh full DCS0 ROOT login, DSH ECHO, external TRUE, orderly
+HALT and CLEAN D6FS postflight all PASS. The v1742 native PI6-only
+allocation test rejects three unsafe mutations. No additional KCORE
+instructions or permanent/per-process RAM were introduced.
+
+The earlier DSH EXEC image regression was resolved by KCC v1735
+(`1dca382`) and two-word p10fold (`2eb0b2ee`): DSH image 035751
+versus strict 036000 octal cap, unchanged BSS 001763. The installed
+DAS/DAS2 host pair was rebuilt together after a stale phase-2 binary
+caused DASIR2 incompatibility. Strict 32K KCORE fit and K04 recovery
+policy remain OPEN. Older K03-disabled status text below is historical.
+
 ## 2026-11-20 v1730: K02 process-resource cleanup CLOSED
 
 K02 is now CLOSED under its explicitly bounded process-owned
