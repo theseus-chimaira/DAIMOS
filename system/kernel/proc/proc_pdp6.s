@@ -577,30 +577,9 @@ proc_adopt_children_pdp6:
         cain    10,1
         jrst    proc_adopt_scan_start
 proc_adopt_check_init:
-        move    2,proc_table
-        move    1,5(2)                 ; slot 1 scheduler word
-        lsh     1,-041                 ; numeric state
-        caie    1,2                    ; RUN
-        cain    1,3                    ; SLEEP
-        jrst    proc_adopt_init_owner_v1767
-        caie    1,6                    ; STOP can still continue and WAIT
-        jrst    proc_adopt_scan_start  ; no FREE/ZOMB/SIDL adopter
-proc_adopt_init_owner_v1767:
-        move    1,3(2)                 ; slot 1 metadata
-        ; A deferred EXIT retains its scheduler state and stable
-        ; u-area while MM refuses release. It cannot WAIT for orphans.
-        trne    1,PROC_TRANSITION_RH
-        jrst    proc_adopt_scan_start
-        trnn    1,0400000              ; require resident u-area
-        jrst    proc_adopt_scan_start
-        hlrz    1,1
+        movei   1,1                    ; candidate adoptive INIT
+        pushj   17,proc_parent_waitable_v1768
         jumpe   1,proc_adopt_scan_start
-        ; Fatal FILE close also owns a nonreturning private executive
-        ; continuation before TRANSITION is published. Do not adopt
-        ; new children into that irreversibly dying INIT either.
-        move    1,PROC_FDCTL_OFFSET(1)
-        trne    1,PROC_FATAL_CLOSE_BIT
-        jrst    proc_adopt_scan_start
         movei   11,1
 proc_adopt_scan_start:
         movei   12,1
@@ -648,6 +627,44 @@ proc_adopt_done:
         pop     17,11
         pop     17,10
         jrst    proc_trim_high
+
+; int proc_parent_waitable_v1768(unsigned int slot)
+; The same parent eligibility rule is used for adoption and for
+; publishing a new zombie after its parent has entered deferred EXIT.
+; Return AC1=1 only for an owner that can eventually execute WAIT.
+; Uses scratch AC2/AC3, no stack and no additional resident state.
+proc_parent_waitable_v1768:
+        jumpe   1,kret_zero
+        caml    1,proc_high_slot
+        jrst    kret_zero
+        move    2,1
+        lsh     2,1
+        add     2,1
+        add     2,proc_table
+        move    3,2(2)
+        lsh     3,-041                 ; numeric scheduler state
+        caie    3,2                    ; RUN
+        jrst    proc_parent_check_sleep_v1768
+        jrst    proc_parent_state_ok_v1768
+proc_parent_check_sleep_v1768:
+        caie    3,3                    ; SLEEP
+        jrst    proc_parent_check_stop_v1768
+        jrst    proc_parent_state_ok_v1768
+proc_parent_check_stop_v1768:
+        caie    3,6                    ; STOP
+        jrst    kret_zero
+proc_parent_state_ok_v1768:
+        move    3,(2)                  ; parent metadata
+        trne    3,PROC_TRANSITION_RH
+        jrst    kret_zero
+        trnn    3,0400000              ; resident u-area flag
+        jrst    kret_zero
+        hlrz    3,3
+        jumpe   3,kret_zero
+        move    3,PROC_FDCTL_OFFSET(3)
+        trne    3,PROC_FATAL_CLOSE_BIT
+        jrst    kret_zero
+        jrst    kret_one
 
 /**
  * @brief Release heavy process resources and publish FREE or ZOMB state.
@@ -813,13 +830,28 @@ proc_finish_uarea_retry_v881:
         move    1,10
         pushj   17,proc_adopt_children_pdp6
 
-        jumpn   13,proc_finish_zombie
+        jumpn   13,proc_finish_check_parent_v1768
+proc_finish_orphan_free_v1768:
         setzm   (12)
         setom   1(12)
         setzm   2(12)
         pushj   17,proc_trim_high
         setz    1,
         jrst    proc_finish_restore
+proc_finish_check_parent_v1768:
+        ; Parent identity remains only a slot number while a pending
+        ; EXIT retains its u-area. Never publish a zombie under a
+        ; nonreturning parent that can no longer execute WAIT.
+        move    1,13
+        pushj   17,proc_parent_waitable_v1768
+        jumpn   1,proc_finish_zombie
+        ; Match orphan adoption: a healthy INIT inherits the zombie.
+        ; If INIT too is exiting, reclaim this already-free child's
+        ; slot rather than retaining an unreachable WAIT record.
+        movei   1,1
+        pushj   17,proc_parent_waitable_v1768
+        jumpe   1,proc_finish_orphan_free_v1768
+        movei   13,1
 proc_finish_zombie:
         move    1,14
         move    2,13
@@ -2340,10 +2372,18 @@ proc_notify_parent:
         ; A nonterminal state alone does not establish a valid u-area.
         ; Never post CHLD into low core for an inconsistent parent.
         move    4,(2)
+        ; Terminal cleanup and fatal FILE-close owners cannot resume
+        ; a child WAIT. Keep their private continuation untouched;
+        ; their later child adoption handles already-dead children.
+        trne    4,PROC_TRANSITION_RH
+        jrst    proc_notify_parent_done
         trnn    4,0400000             ; parent has resident u-area
         jrst    proc_notify_parent_done
         hlrz    4,4
         jumpe   4,proc_notify_parent_done
+        move    3,PROC_FDCTL_OFFSET(4)
+        trne    3,PROC_FATAL_CLOSE_BIT
+        jrst    proc_notify_parent_done
         movsi   3,0200                 ; pending CHLD in control-word LH
         iorm    3,PROC_FDCTL_OFFSET(4)
         move    4,2(2)
