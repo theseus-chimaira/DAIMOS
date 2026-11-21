@@ -308,6 +308,12 @@ unmerged from its development line; mode3 remains disabled.
   prerequisites for DSK/DTC/DRM/MTC/PTR. Fresh isolated full
   `make -C system build` PASS; emulator fault-injection and
   WAIT/PID acceptance still OPEN. External testkit untouched.
+  **Progress v1770:** Native KCC bootstrap packaging repaired and
+  installed; fresh 256K PDP-6 full boot image PASS. Actual SIMH
+  INIT/ROOT/DSH/PS/TRUE/guest HALT PASS; a second clean boot and
+  D6FS CLEAN fsck PASS. No fault injection performed. Retained
+  owner, multi-owner, clock-wrap, HUP, WAIT/PID and operator
+  recovery physical acceptance still OPEN; testkit untouched.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

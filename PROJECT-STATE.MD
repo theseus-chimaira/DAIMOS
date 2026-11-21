@@ -1,3 +1,22 @@
+## 2026-11-21 v1770: K04 real PDP-6 boot and clean reboot smoke
+
+Native KCC bootstrap staging was blocked by unversioned runtime
+object requests and a missing installed FP36 archive. DAIMOS
+c1155cd6 now consumes the versioned KCC startup objects; KCC
+fe6dff8 builds and installs fp36-conversions-v1750.a. Fresh
+native KCC install and full 256K PDP-6 DSK boot-image build PASS.
+Real Open SIMH boots reached INIT V1, ROOT login, DSH V1, PS
+with normal zero TD/RETRY/PVM diagnostics, TRUE child completion,
+and guest HALT at octal PC 022464. D6FS remained CLEAN after
+HALT (seq=3) and after a clean reboot and second HALT (seq=5):
+179196 blocks, 360 FCBs. An earlier forced simulator stop left
+DIRTY media and correctly caused root ?RT; fresh test media
+resolved that unrelated interruption artifact. Full evidence:
+design/kcore-k04-native-boot-smoke-v1770.md (de20f1be),
+pdp10-doc 670b051. K04 remains OPEN for *fault-injected* refusal,
+multi-owner progress, wrap, HUP, WAIT/PID reuse and controlled
+operator recovery. External testkits and KCORE size untouched.
+
 ## 2026-11-21 v1769: K04 full-system build prerequisite repair
 
 DAIMOS 5228712d repairs stale Stage-1 Makefile dependencies on
