@@ -285,6 +285,9 @@ unmerged from its development line; mode3 remains disabled.
   FINALIZE word 067 so a newly failed prepublished EXIT PREVM owner
   starts its first retry interval at the current epoch even when
   another owner is already pending. No added resident RAM; DAS PASS.
+  **Progress v1764:** WAIT no longer consumes stale STOP/CONT from
+  TRANSITION finalizers; zero-base u-area owners fail closed in WAIT
+  reporting and session HUP. DAS PASS; physical K04 acceptance OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

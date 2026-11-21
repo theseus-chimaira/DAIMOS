@@ -1,3 +1,14 @@
+## 2026-11-21 v1764: K04 WAIT and HUP owner consistency
+
+DAIMOS 42ded8c3 excludes TRANSITION teardown owners from stale
+STOP/CONT WAIT reports, retaining their child identity until ZOMB.
+The WAIT report and session HUP member scan now reject a flagged
+zero u-area base before accessing its control word. HUP retains
+the TTY and owner on inconsistency. Native PDP-6 DAS PASS;
+pdp10-doc 1149dcc updated. Physical multi-owner refusal,
+clock-wrap and WAIT/PID reuse acceptance remain OPEN. No testkit,
+KCORE size work or additional persistent RAM.
+
 ## 2026-11-21 v1763: K04 first-refusal registration per owner
 
 DAIMOS 36859b24 distinguishes a prepublished EXIT FINALIZE|PREVM
