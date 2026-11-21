@@ -264,6 +264,8 @@ unmerged from its development line; mode3 remains disabled.
   **Progress v1756:** Guarded zero stable-u-area base before deferred
   finalizer marker read; preserve pending quarantine on inconsistency.
   Isolated PDP-6 assembly PASS; physical acceptance remains OPEN.
+  **Progress v1757:** Extended zero-u-area-base validation to the
+  non-NONE VM PREVM marker read; DAS PASS, physical acceptance OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

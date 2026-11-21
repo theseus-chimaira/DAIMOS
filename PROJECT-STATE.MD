@@ -1,3 +1,11 @@
+## 2026-11-21 v1757: K04 pre-VM zero-base guard
+
+DAIMOS 0f7a783f closes the remaining non-NONE VM PREVM marker
+dereference before zero-base validation. Inconsistent owners retain
+pending retry quarantine. Isolated PDP-6 DAS assembly PASS;
+pdp10-doc b08708b updated. K04 OPEN pending physical acceptance.
+No testkit or size work.
+
 ## 2026-11-21 v1756: K04 zero u-area finalizer guard
 
 DAIMOS 6c1b3478 guards the deferred slot-zero FINALIZE marker read
