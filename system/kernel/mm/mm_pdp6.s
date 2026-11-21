@@ -422,12 +422,13 @@ mm_move_extent:
         blt     0,-6(17)
         move    010,1
         move    011,2
-        ; The compactor's preceding PROCESS/unpinned test was made with
-        ; PI enabled. An interrupt may have pinned or changed the owner
-        ; meanwhile. Lock the MM descriptor table BEFORE reading the
-        ; source, and revalidate the exact descriptor under that lock.
-        pushj   17,mach_pi_disable
+        ; PI6 alone can preempt MM descriptor ownership.  Do not suppress
+        ; disk PI3/PI5 across vm_extent_move's full physical image copy.
+        ; Recheck the source after inhibiting the scheduler, because the
+        ; preceding compactor scan ran with interrupts enabled.
+        coni    0004,1
         movem   1,-3(17)
+        cono    0004,01002
         ; Reinsertion is mandatory on every relocation exit. The table
         ; must be valid before we delete its original physical owner.
         move    1,mm_extent_count
@@ -465,7 +466,7 @@ mm_move_slot_nonnegative_v1694:
         pushj   17,mm_extent_insert
         ; Failure here means the source owner was removed from MM.
         ; Neither fragmentation nor a retry may be reported safely.
-        jumpn   1,mm_move_rollback_lost_v1690
+        jumpn   1,mm_move_rollback_fatal_v1745
         skipn   (17)
         jrst    mm_move_fragmented
         move    015,-2(17)
@@ -503,15 +504,19 @@ mm_move_publish:
         ; VM has already published the new physical base. If MM cannot
         ; publish its matching descriptor, returning would expose that
         ; memory as free to unrelated allocations. Fail closed with PI
-        ; still disabled and the exact insertion error in AC1.
-        jumpn   1,mm_move_publish_lost_v1690
+        ; still protected from PI6 and the exact insertion error in AC1.
+        jumpn   1,mm_move_publish_fatal_v1745
         jrst    mm_move_restore_pi
 
         .globl  mm_move_rollback_lost_v1690
         .globl  mm_move_publish_lost_v1690
+mm_move_rollback_fatal_v1745:
+        cono    0004,000400           ; fail-stop: inhibit all PI before HALT
 mm_move_rollback_lost_v1690:
         halt    .                       ; original MM owner unpublished
         jrst    .-1
+mm_move_publish_fatal_v1745:
+        cono    0004,000400           ; fail-stop: inhibit all PI before HALT
 mm_move_publish_lost_v1690:
         halt    .                       ; moved VM owner unpublished in MM
         jrst    .-1
@@ -521,7 +526,8 @@ mm_move_fragmented:
         movem   1,-1(17)
 mm_move_restore_pi:
         move    1,-3(17)
-        pushj   17,mach_pi_restore
+        trne    1,000002
+        cono    0004,02002
         move    1,-1(17)
         movei   0,010
         hrli    0,-014(17)
@@ -537,7 +543,8 @@ mm_move_pinned_locked_v1694:
 mm_move_locked_refuse_v1694:
         movem   1,-1(17)
         move    1,-3(17)
-        pushj   17,mach_pi_restore
+        trne    1,000002
+        cono    0004,02002
         move    1,-1(17)
         movei   0,010
         hrli    0,-014(17)

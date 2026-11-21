@@ -852,6 +852,11 @@ vm_extent_move_length_ok_v1693:
         jrst    vm_extent_move_busy
 
 vm_extent_move_state:
+        ; PI5 disk completion may wake a sleeping owner.  Suppress it only
+        ; while changing the scheduler record; leave PI3 data service live.
+        push    17,16
+        coni    0004,16
+        cono    0004,01004
         move    15,2(14)
         lsh     15,-041                ; original process state
         move    1,(14)
@@ -874,11 +879,17 @@ vm_extent_move_state:
 vm_extent_move_nouarea:
         caie    15,2                   ; resident SRUN without u-area cannot move
         jrst    vm_extent_move_mark
+        trne    16,000004
+        cono    0004,02004
+        pop     17,16
         jrst    vm_extent_move_busy
 
 vm_extent_move_mark:
         movei   1,0200000
         iorm    1,(14)
+        trne    16,000004
+        cono    0004,02004
+        pop     17,16
         move    1,11
         move    2,13
         move    3,12
@@ -890,23 +901,45 @@ vm_extent_move_mark:
 
         trnn    1,0400000
         jrst    vm_extent_move_ok
+        ; Serialize the final STOP_MM/wait-state decision with PI5 wakeup.
+        ; This small PI5-only window does not suppress DCT PI3 transfers.
+        push    17,16
+        coni    0004,16
+        cono    0004,01004
         hlrz    2,1
         move    3,024(2)
         tlz     3,01000                ; clear only PROC_STOP_MM
         movem   3,024(2)
         tlne    3,01400                ; another stop reason remains
-        jrst    vm_extent_move_ok
+        jrst    vm_extent_move_unmask_pi5_v1745
         move    1,2(14)
         tlz     1,0700000
         move    2,15
         andi    2,7
+        ; A completed PI5 wake clears the wait class while STOP_MM held
+        ; the process stopped.  Honor that wake rather than restoring the
+        ; stale pre-copy SLEEP state and leaving the process stranded.
+        caie    2,3
+        jrst    vm_extent_move_state_ready_v1745
+        move    3,1
+        tlne    3,060000
+        jrst    vm_extent_move_state_ready_v1745
+        movei   2,2
+vm_extent_move_state_ready_v1745:
         lsh     2,041
         ior     1,2
         movem   1,2(14)
-        caie    15,2
-        jrst    vm_extent_move_ok
+        ; The restored state, not the pre-copy state, decides runnability.
+        hlrz    2,1
+        andi    2,0700000
+        caie    2,0200000
+        jrst    vm_extent_move_unmask_pi5_v1745
         move    1,10
         pushj   17,proc_runq_add
+vm_extent_move_unmask_pi5_v1745:
+        trne    16,000004
+        cono    0004,02004
+        pop     17,16
 
 vm_extent_move_ok:
         setz    1,
