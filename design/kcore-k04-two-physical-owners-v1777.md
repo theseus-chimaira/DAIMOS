@@ -63,6 +63,23 @@ This verifies independent MM owner quarantine, continued deferred
 retry for the refused owner, real MM release for the second owner,
 and PID reuse without prematurely freeing the first owner.
 
+The guest was then allowed to run until PID 5 reached its own
+twenty-fourth attempt. The CTY foreground TRUE also returned to
+its shell prompt. Final SIMH read-only fixture state:
+
+    25073: 000000000000   ; PID 5 base released
+    25074: 000000000030   ; 24 attempts
+    25075: 777777777777   ; PID 5 unpin complete
+    25076: 000000000000   ; PID 6 base released
+    25077: 000000000005   ; 5 attempts
+    25100: 777777777777   ; PID 6 unpin complete
+
+Guest `HALT` stopped at octal PC 022566, followed by SIMH
+`exit`. Final read-only `d6fsck -n 4` selected superblock 742
+seq=3 CLEAN, 179196 blocks and 360 FCBs. Thus both independent
+owners eventually completed and the writable guest shut down
+cleanly. No production source or testkit was changed.
+
 ## Boundaries
 
 The test does not independently establish that PID 6's *first*
