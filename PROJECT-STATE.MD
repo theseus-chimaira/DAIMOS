@@ -1,3 +1,17 @@
+## 2026-11-21 v1763: K04 first-refusal registration per owner
+
+DAIMOS 36859b24 distinguishes a prepublished EXIT FINALIZE|PREVM
+marker from an owner that has actually registered a refused release.
+An existing bit in u-area word 067 records first-failure arming
+for FINALIZE owners, independently of the shared pending clock.
+New owners get a current epoch and 020-octal-tick delay even when
+another owner is pending; repeated failures retain bounded backoff.
+The bit shares storage with the mutually exclusive swapped-RUN
+retry tag, without increasing permanent RAM. Native PDP-6 DAS PASS;
+pdp10-doc 29282f7 updated. K04 remains OPEN for physical recovery,
+multi-owner, clock-wrap and WAIT/PID reuse acceptance. Testkit and
+size work untouched.
+
 ## 2026-11-21 v1762: K04 DISCARD versus HUP completion
 
 DAIMOS 22278d35 closes the VM_NONE session-HUP diagnostic gap:
@@ -48,9 +62,10 @@ K04 remains OPEN pending physical acceptance; testkit untouched.
 
 ## 2026-11-21 v1757: K04 pre-VM zero-base guard
 
-DAIMOS 0f7a783f closes the remaining non-NONE VM PREVM marker
-dereference before zero-base validation. Inconsistent owners retain
-pending retry quarantine. Isolated PDP-6 DAS assembly PASS;
+DAIMOS 0f7a783f changes the existing zero-base branch from SKIP
+to FAILED on the non-NONE VM PREVM path. The old branch already
+avoided a low-memory read; the fix preserves pending quarantine
+instead of silently skipping an invalid owner. DAS assembly PASS;
 pdp10-doc b08708b updated. K04 OPEN pending physical acceptance.
 No testkit or size work.
 

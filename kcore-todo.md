@@ -264,8 +264,9 @@ unmerged from its development line; mode3 remains disabled.
   **Progress v1756:** Guarded zero stable-u-area base before deferred
   finalizer marker read; preserve pending quarantine on inconsistency.
   Isolated PDP-6 assembly PASS; physical acceptance remains OPEN.
-  **Progress v1757:** Extended zero-u-area-base validation to the
-  non-NONE VM PREVM marker read; DAS PASS, physical acceptance OPEN.
+  **Progress v1757:** Changed the preexisting zero-base PREVM guard
+  from SKIP to FAILED to preserve pending quarantine. The original
+  path already avoided low-memory dereference; DAS PASS, physical OPEN.
   **Progress v1758:** EXIT resume rejects FINALIZE|DISCARD; rollback
   cannot be misclassified as an EXIT owner. DAS PASS; K04 OPEN.
   **Progress v1759:** Opt-in PREVM diagnosis bypasses fatal FILE
@@ -280,6 +281,10 @@ unmerged from its development line; mode3 remains disabled.
   **Progress v1762:** VM_NONE FINALIZE|DISCARD rollback cannot satisfy
   fatal HUP completion; EXIT and rollback remain distinct. DAS PASS;
   K04 physical acceptance OPEN.
+  **Progress v1763:** Added an owner-local armed marker in existing
+  FINALIZE word 067 so a newly failed prepublished EXIT PREVM owner
+  starts its first retry interval at the current epoch even when
+  another owner is already pending. No added resident RAM; DAS PASS.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 
