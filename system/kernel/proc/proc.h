@@ -145,12 +145,15 @@
 #define PROC_USER_MAP_BIT              02UL
 #define PROC_FATAL_CLOSE_BIT           04UL
 #define PROC_FINALIZE_OFFSET          067UL
-/* Shared word 067: FINALIZE bit 35 and exit status, or, exclusively for
- * ordinary nonresident RUN owners, retry bit 32 plus a 17-bit timer epoch.
- * Successful restoration and expiration retire the transient retry bit.
- * Do not combine retry and FINALIZE owners in one descriptor. */
+/* Shared word 067: FINALIZE bit 35 and exit status, or for ordinary
+ * nonresident RUN owners, swap-retry bit 32 plus a 17-bit timer epoch.
+ * With FINALIZE set, bit 32 instead records that this specific teardown
+ * owner has already registered its first refusal (v1763). These owners
+ * are exclusive: a process cannot restore from swap while finalizing.
+ * Successful restoration and expiration retire the swap retry tag. */
 #define PROC_FINALIZE_MARK            ((kword_t)1UL << 35U)
 #define PROC_FINALIZE_PREVM           ((kword_t)1UL << 33U)
+#define PROC_FINISH_RETRY_ARMED_V1763  ((kword_t)1UL << 32U)
 #define PROC_SWAP_RETRY_TAG_V1507     ((kword_t)1UL << 32U)
 #define PROC_SWAP_RETRY_TICKS_V1507   0100U
 #define PROC_TIMER_TAG_RH            0400000UL

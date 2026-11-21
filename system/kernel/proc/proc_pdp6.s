@@ -29,6 +29,9 @@
         .equ    PROC_FINALIZE_OFFSET,067
         .equ    PROC_FINALIZE_MARK_LH,0400000
         .equ    PROC_FINALIZE_PREVM_LH,0100000
+        ; Finalizing owners use the ordinary swap-retry tag bit as an
+        ; armed marker. FINALIZE and swap restore are mutually exclusive.
+        .equ    PROC_FINISH_ARMED_LH_V1763,040000
         .equ    PROC_SWAP_RETRY_LH,040000
         .equ    PROC_SWAP_RETRY_TICKS,0100
         .equ    PROC_WAIT_LH_MASK,060000
@@ -838,17 +841,20 @@ proc_finish_defer_uarea_v881:
 /** Register a post-VM cleanup owner without additional resident state.
  * AC3 is the owned u-area and AC4 the complete terminal marker.  Both
  * finalized EXIT and unpublished RUN rollback use the same retry clock.
- * A second failure preserves backoff rather than resetting it.
+ * A second failure preserves backoff rather than resetting it. The
+ * FINALIZE marker may precede the first failure (owner-stack EXIT), so
+ * use a distinct armed bit within that same u-area word.
  */
 proc_finish_mark_pending_v892:
         move    5,PROC_FINALIZE_OFFSET(3)
         tlnn    5,PROC_FINALIZE_MARK_LH
         jrst    proc_finish_new_pending_v1098
-        ; Owner EXIT prepublishes FINALIZE+PREVM before switching away
-        ; from its private stack, but that publication has no retry
-        ; clock. The first failed VM free must arm the clock even though
-        ; the marker already exists. A genuine prior failure has both
-        ; the marker and the shared pending flag; preserve its backoff.
+        ; Owner EXIT prepublishes FINALIZE+PREVM before its first VM
+        ; refusal. A second slot may already have the shared pending
+        ; bit set, so FINALIZE+global-pending does NOT prove this owner
+        ; has failed before. Arm each owner on its own first failure.
+        tlnn    5,PROC_FINISH_ARMED_LH_V1763
+        jrst    proc_finish_new_pending_v1098
         move    5,proc_finish_last_tick_v881
         tlne    5,0400000
         jrst    proc_finish_rearm_v885
@@ -860,6 +866,7 @@ proc_finish_new_pending_v1098:
         hrli    5,020               ; first retry after 16 ticks
         movem   5,proc_finish_last_tick_v881
 proc_finish_rearm_v885:
+        tlo     4,PROC_FINISH_ARMED_LH_V1763
         movem   4,PROC_FINALIZE_OFFSET(3)
         movsi   5,0400000
         iorm    5,proc_finish_last_tick_v881 ; pending; no extra RAM word
