@@ -191,11 +191,12 @@ vm_brk_resize:
         movei   2,02000
         pushj   17,mm_arena_fits_v1260
         jumpe   1,vm_brk_impossible_v1260
-        ; Freeze scheduler/MM observers while the current mapping transaction
+        ; Inhibit scheduler PI6 while the current mapping transaction
         ; is represented inconsistently by the descriptor table and APR.
+        ; Leave disk PI3/PI5 live across potentially long copy/zero loops.
         coni    0004,1
         movem   1,-003(17)
-        cono    0004,000400
+        cono    0004,001002
 
         ; Find and validate the current MM_TYPE_PROCESS descriptor.
         setz    16,
@@ -332,8 +333,8 @@ vm_brk_fallback:
         move    1,(17)
         jumpl   1,vm_brk_full_alloc
         move    1,-003(17)
-        trne    1,000200
-        cono    0004,000200
+        trne    1,000002
+        cono    0004,002002
         move    1,15
         sub     1,13                    ; growth delta only
         movei   2,02000
@@ -347,18 +348,18 @@ vm_brk_fallback:
         setom   (17)                    ; do not repeat reclaim indefinitely
         coni    0004,1
         movem   1,-003(17)
-        cono    0004,000400
+        cono    0004,001002
         ; Reclaim deletes/reorders extent descriptors.  Retry the search
         ; from slot zero, not the stale pre-reclaim index in AC16.
         setz    16,
         jrst    vm_brk_find_extent
 
 vm_brk_full_alloc:
-        ; Second try still has no adjacent room.  Restore PI while the general
+        ; Second try still has no adjacent room.  Restore PI6 while the general
         ; allocator attempts the fragmentation fallback using a full new image.
         move    1,-003(17)
-        trne    1,000200
-        cono    0004,000200
+        trne    1,000002
+        cono    0004,002002
         movei   1,(17)                  ; sixth arg: &new_base
         push    17,1
         push    17,[1]                  ; fifth arg: MM_ALLOC_HIGH
@@ -374,7 +375,7 @@ vm_brk_full_alloc:
         ; publication.  The current process itself is excluded from swap/move.
         coni    0004,1
         movem   1,-003(17)
-        cono    0004,000400
+        cono    0004,001002
         move    1,14
         move    2,(17)
         move    3,13
@@ -407,8 +408,8 @@ vm_brk_rollback_new_v1074:
         jrst    vm_brk_fail_cause_pi_v999
 
 vm_brk_commit:
-        ; Publish logical allocation and exact break before loading APR.  PI is
-        ; still disabled, so no observer can see a half-committed mapping.
+        ; Publish logical allocation and exact break before loading APR.  PI6 is
+        ; still inhibited, so no observer can see a half-committed mapping.
         hrlz    4,15
         hrr     4,(17)
         movem   4,1(11)
@@ -432,8 +433,8 @@ vm_brk_reclaim_refused_v1696:
         move    2,1                     ; original hard MM refusal
 vm_brk_fail_cause_pi_v999:
         move    1,-003(17)
-        trne    1,000200
-        cono    0004,000200
+        trne    1,000002
+        cono    0004,002002
         jrst    vm_brk_fail_return_v999
 vm_brk_alloc_fail_v999:
         move    2,1                     ; exact allocator failure cause
@@ -464,8 +465,8 @@ vm_brk_return_commit:
         sub     17,[015,,015]
         movem   2,vm_pdp6_apr
         datao   0000,vm_pdp6_apr
-        trne    3,000200
-        cono    0004,000200
+        trne    3,000002
+        cono    0004,002002
         popj    17,
 
 /**
