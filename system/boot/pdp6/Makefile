@@ -547,7 +547,7 @@ KCC_SOURCE_ARGS = $(foreach n,$(filter-out Makefile daimos.mk,$(KCC_SOURCE_REL))
 	-f "/OPTION/SOURCE/KCC/MAKEFILE:$(KCC_SOURCE_BUILD)/MAKEFILE:644:binwords" \
 	-f "/OPTION/SOURCE/KCC/DAIMOS.MK:$(KCC_SOURCE_BUILD)/DAIMOS.MK:644:binwords" \
 	$(foreach n,u.h dsys.h syscall.h file.h vfs.h kcore.h storage.h pdp10-sixbit.h,-f "/OPTION/SOURCE/KCC/ABI/$(shell echo $(n) | tr '[:lower:]' '[:upper:]'):$(KCC_SOURCE_BUILD)/ABI/$(n):644:binwords") \
-	$(foreach n,CRT0.DOBJ BOOT.DOBJ SYS.DOBJ HELP.DOBJ LIBC.DARC,-f "/OPTION/SOURCE/KCC/BOOT/$(n):$(KCC_SOURCE_BUILD)/BOOT/$(n):644:binwords")
+	$(foreach n,CRT0.DOBJ BOOT.DOBJ SYS.DOBJ HELP.DOBJ FP36.DARC LIBC.DARC,-f "/OPTION/SOURCE/KCC/BOOT/$(n):$(KCC_SOURCE_BUILD)/BOOT/$(n):644:binwords")
 KCC_BOOT_BUILD ?= $(PDP10_PREFIX)/lib/kcc/bootstrap
 KCC_BOOT_DXRS = $(addprefix $(KCC_BOOT_BUILD)/,KCC.dxr KCPP.dxr KPARSE.dxr KGEN.dxr KOPT.dxr)
 KCC_BOOT_ARGS = -D /OPTION/BASE/LIBEXEC/KCC:0755 \
