@@ -1,3 +1,21 @@
+## 2026-11-21 v1782: mixed physical PREVM/post-VM owners PASS
+
+DAIMOS ad0adc85 and 1929d080 document a live PDP-6 256K
+mixed-stage MM refusal/recovery test. A (PID5) remained pinned
+in EXIT PREVM until its retry interval saturated at octal 01000.
+B (PID6) was separately pinned in post-VM u-area release.
+B's first failure reset the shared retry interval to octal 020;
+its second real attempt occurred precisely 020 qualified ticks
+later. B unpinned at attempt 005 and was safely reused while
+A remained PREVM (TD=3 PVM=1 RETRY=512). A eventually unpinned
+at attempt 030, both bases cleared and pending interval reset.
+CTY PS reused PID5 with all teardown fields zero. Guest HALT
+PC 022612, read-only D6FS CLEAN seq=3. Native DAS/full 256K
+image build PASS. Only disposable scratch instrumentation was
+used; no production KCORE size, ABI, or external testkit edit.
+pdp10-doc 020a244. Reverse owner ordering, SIDL B, clock wrap,
+FILE/HUP and dying-parent WAIT remain OPEN.
+
 ## 2026-11-21 v1781: real PDP-6 PREVM EXIT VM pin PASS
 
 DAIMOS 066858df demonstrates actual mm_pin refusal on the exact

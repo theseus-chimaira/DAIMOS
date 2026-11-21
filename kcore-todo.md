@@ -370,6 +370,15 @@ unmerged from its development line; mode3 remains disabled.
   seq=3. No production/testkit edits. Permanent PREVM refusal,
   two-owner ordering, clock wrap, FILE/HUP, dying-parent WAIT OPEN.
 
+  **Progress v1782:** Real PDP-6 mixed PREVM PID5 / post-VM PID6
+  physical MM pins PASS. With A already saturated at octal 01000,
+  B first refusal resets to 020; measured second attempt exactly
+  020 qualified ticks later. B MM release/reuse completes while
+  A retains TD=3/PVM=1, then A releases on its 24th attempt.
+  Shared pending resets, both slots reusable, guest HALT and
+  D6FS CLEAN seq=3. Scratch fixture only. Reverse ordering,
+  SIDL B, clock wrap, FILE/HUP, dying-parent WAIT remain OPEN.
+
 ## Mandatory KCORE: PDP-6 RAW PURE
 
 - [ ] **K05 - Reclaim/restore failure handling.** Complete safe RAW
