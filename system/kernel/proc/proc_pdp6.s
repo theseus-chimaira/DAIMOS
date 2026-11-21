@@ -1779,7 +1779,13 @@ proc_session_teardown_loop:
 proc_session_teardown_pending_v905:
         move    6,PROC_FINALIZE_OFFSET(4)
 proc_session_teardown_marked_v1760:
-        tlne    6,PROC_FINALIZE_MARK_LH
+        tlnn    6,PROC_FINALIZE_MARK_LH
+        jrst    proc_session_teardown_deliver_v905
+        ; A VM_NONE DISCARD owner is an unpublished RUN rollback,
+        ; never a committed fatal HUP. It must not satisfy the
+        ; session leader's HUP completion requirement.
+        tlne    6,0200000             ; PROC_FINALIZE_DISCARD_LH
+        jrst    proc_session_teardown_deliver_v905
         jrst    proc_session_teardown_next
 proc_session_teardown_deliver_v905:
         move    1,011
