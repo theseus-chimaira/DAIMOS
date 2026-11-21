@@ -1,3 +1,15 @@
+## 2026-11-21 v1781: real PDP-6 PREVM EXIT VM pin PASS
+
+DAIMOS 066858df demonstrates actual mm_pin refusal on the exact
+slot-5 VM extent in EXIT PREVM. Four destroy attempts retained
+ownership; real mm_unpin on attempt five allowed finalization.
+SIMH base=0, calls=005, done=all ones; subsequent PS reused PID5
+with zero teardown fields. Guest HALT PC 022532, D6FS CLEAN
+seq=3. Native DAS/full image PASS. Fixture-only changes; no
+production code, ABI, fixed RAM or testkit edits. pdp10-doc
+commit ec74acf. Permanent refusal, two owners, clock wrap,
+FILE/HUP and dying-parent WAIT remain OPEN.
+
 ## 2026-11-21 v1780: real PDP-6 SIDL VM-pin rollback PASS
 
 DAIMOS ee597108 demonstrates a disposable 256K PDP-6 RUN child

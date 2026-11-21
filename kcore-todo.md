@@ -363,6 +363,13 @@ unmerged from its development line; mode3 remains disabled.
   seq=3. No production/testkit edits. Permanent SIDL/mixed owner,
   PREVM EXIT, clock wrap, FILE/HUP, dying-parent WAIT remain OPEN.
 
+  **Progress v1781:** Physical PREVM EXIT VM pin/refusal/recovery
+  PASS in disposable PDP-6. Actual mm_pin blocked four VM destroy
+  attempts; real mm_unpin on fifth completed deferred teardown.
+  PID5 reused with zero TD diagnostics; guest HALT and D6FS CLEAN
+  seq=3. No production/testkit edits. Permanent PREVM refusal,
+  two-owner ordering, clock wrap, FILE/HUP, dying-parent WAIT OPEN.
+
 ## Mandatory KCORE: PDP-6 RAW PURE
 
 - [ ] **K05 - Reclaim/restore failure handling.** Complete safe RAW
