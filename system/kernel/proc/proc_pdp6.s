@@ -1384,10 +1384,16 @@ proc_wait_status_reap:
         jrst    proc_wait_status_return
 
 proc_wait_status_report:
+        ; A deferred EXIT or unpublished RUN rollback is not a live
+        ; STOP/CONT child. Its u-area remains pinned for MM retry, but
+        ; WAIT must not report stale job-control state from that owner.
+        trne    6,PROC_TRANSITION_RH
+        jrst    proc_wait_status_next
         ; A non-zombie can carry STOP/CONT reports only while its u-area lives.
         trnn    6,0400000              ; PROC_F_UAREA << PROC_FLAGS_SHIFT
         jrst    proc_wait_status_next
         hlrz    2,6                    ; u-area base
+        jumpe   2,proc_wait_status_next ; invalid owner: no low-core read
         move    3,PROC_FDCTL_OFFSET(2)
         move    1,3
         lsh     1,-034
@@ -1761,6 +1767,10 @@ proc_session_teardown_loop:
         trnn    3,0400000              ; no stable u-area: FREE/ZOMB
         jrst    proc_session_teardown_next
         hlrz    4,(012)
+        ; A flagged but zero-base member is not a deliverable HUP
+        ; target. Retain the leader's TTY and retry ownership instead
+        ; of reading a low-core control word and falsely committing.
+        jumpe   4,proc_session_teardown_fail
         ldb     5,[POINT 8,PROC_FDCTL_OFFSET(4),32]
         came    5,010
         jrst    proc_session_teardown_next
