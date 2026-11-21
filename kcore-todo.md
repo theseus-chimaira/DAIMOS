@@ -379,6 +379,16 @@ unmerged from its development line; mode3 remains disabled.
   D6FS CLEAN seq=3. Scratch fixture only. Reverse ordering,
   SIDL B, clock wrap, FILE/HUP, dying-parent WAIT remain OPEN.
 
+  **Progress v1783:** Real PDP-6 reverse mixed post-VM A /
+  PREVM B physical MM pin/refusal/recovery PASS. A capped at
+  octal 01000, B's new PREVM failure reset first retry to 020;
+  measured second attempt exactly 020 qualified ticks later.
+  B released and PID6 reused while A stayed TD=2 RETRY=512,
+  then A released after 24 attempts and PID5 reused. Final
+  guest HALT, D6FS CLEAN seq=3. Fixture-only image. Both
+  mixed PREVM/post-VM orderings now PASS. SIDL mixed ordering,
+  clock wrap, FILE/HUP, dying-parent WAIT remain OPEN.
+
 ## Mandatory KCORE: PDP-6 RAW PURE
 
 - [ ] **K05 - Reclaim/restore failure handling.** Complete safe RAW

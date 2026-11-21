@@ -1,3 +1,21 @@
+## 2026-11-21 v1783: reverse physical post-VM/PREVM owners PASS
+
+DAIMOS 2aac803c/b6c93009 record a real 256K PDP-6 test in
+which A (PID5) remained pinned in post-VM u-area teardown at
+saturated octal 01000 retry while B (PID6) first refused VM
+release in PREVM EXIT. B's new failure reset the shared interval
+to 020; measured clocks 012126 -> 012146 prove precisely 020
+qualified ticks to B's second attempt. B unpinned on fifth
+attempt and DCS PS reused PID6 while A remained TD=2,
+RETRY=512, DETAIL=6. A unpinned on its 24th attempt, both
+exact MM bases cleared, pending flag reset and CTY PS reused
+PID5 with zero teardown fields. Guest HALT PC 022613, final
+read-only D6FS CLEAN seq=3 PASS. Native DAS/full image PASS;
+only disposable scratch TEXT/BSS changed, no production KCORE,
+ABI, fixed RAM, or external testkit edit. pdp10-doc 00c67de.
+Both PREVM/post-VM mixed orderings now PASS. SIDL mixed order,
+clock wrap, FILE/HUP and dying-parent WAIT remain OPEN.
+
 ## 2026-11-21 v1782: mixed physical PREVM/post-VM owners PASS
 
 DAIMOS ad0adc85 and 1929d080 document a live PDP-6 256K
