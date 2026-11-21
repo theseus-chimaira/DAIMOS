@@ -322,6 +322,12 @@ unmerged from its development line; mode3 remains disabled.
   Guest HALT and D6FS CLEAN seq=7 PASS. Intermittent host SIMH
   signal 11 on an earlier launch remains unresolved. Refusal-held
   owner/WAIT/PID acceptance OPEN; external testkit untouched.
+  **Progress v1773:** Fixed fatal-event WAIT_CHILD hang and pending
+  event at WAIT entry. Native DAS/full 256K image PASS; real PDP-6
+  CTY/DCS negative control v1770 kept blocked USER/CAT after TERM;
+  v1773 released them, reusing PID5. Guest HALT/D6FS CLEAN both.
+  +5 KCORE TEXT words, no fixed DATA/BSS. MM/FILE refusal,
+  multi-owner, clock-wrap and refused-owner WAIT/PID still OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

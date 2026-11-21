@@ -1,3 +1,26 @@
+## 2026-11-21 v1773: K04 fatal WAIT_CHILD deadlock fixed and physically reproduced
+
+DAIMOS 6d99565a fixes queued fatal INT/TERM/HUP/PIPE delivery to
+an owner sleeping in WAIT_CHILD. The old path left its saved private
+executive stack asleep indefinitely if its child did not exit;
+proc_wait_child also accepted already-pending fatal events before
+sleeping. The fix wakes WAIT_CHILD via the existing interruptible
+SLEEP-to-RUN path and rejects fatal pending events at WAIT entry,
+without foreign FILE/MM release or new permanent state. Native DAS
+and fresh full 256K PDP-6 DSK image build PASS. KCORE low-end grows
+from octal 025121 to 025126 (+5 TEXT words, zero fixed DATA/BSS).
+
+Real two-terminal negative control: v1770 CTY USER PID2 waiting on
+CAT PID5 remained sleeping after DCS `KILL 2` (confirmed by two
+PS scans). Under v1773 the identical sequence freed the shell,
+replaced PID2 with LOGIN and reused PID5 for PS. Both systems
+completed guest HALT; read-only D6FS fsck CLEAN seq=11 (v1770
+copy) and seq=3 (v1773). Evidence DAIMOS 3ee406a0,
+design/kcore-k04-fatal-wait-child-wakeup-v1773.md; pdp10-doc
+0b2c3df. Testkit and unrelated working-tree edits untouched.
+K04 remains OPEN for physical MM/FILE refusals, independent
+multi-owner retries, clock wrap and refused-owner WAIT/PID reuse.
+
 ## 2026-11-21 v1772: K04 repeated normal child reuse on PDP-6
 
 DAIMOS 6769687d documents a real 256K PDP-6 session: ROOT/DSH
