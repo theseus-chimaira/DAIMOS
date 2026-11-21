@@ -971,11 +971,11 @@ proc_finish_service_done_v881:
         ; Keep the shared pending bit set THROUGH the retry scan.
         ; mark_pending must see the current backoff, rather than mistake
         ; the temporarily cleared bit for an unarmed EXIT prepublication.
-        ; Clear it only if no owner rejected this entire scan.
+        ; Clear the entire retry delay only if no owner rejected this
+        ; scan; an eventual new owner will arm its own fresh epoch.
         trne    11,2
         jrst    proc_finish_service_pending_v1102
-        movsi   4,0400000
-        andcam  4,proc_finish_last_tick_v881
+        hrrzs   proc_finish_last_tick_v881
 proc_finish_service_pending_v1102:
         andi    11,1                  ; retain historical completion ABI
         move    1,11
@@ -4286,6 +4286,12 @@ proc_idle_loop:
         move    2,(17)
         trne    2,000200
         cono    0004,000200           ; allow disk PI3/PI5
+        ; Advance the existing interval BEFORE servicing owners.
+        ; A new post-VM stage or another owner's first refusal may
+        ; reset the shared epoch/delay during the scan. Advancing
+        ; afterward would immediately double that fresh 020 delay
+        ; to 040, violating first-refusal timing (v1765).
+        pushj   17,proc_finish_backoff_advance_v885
         ; The reaper itself decides after scanning whether a retry is
         ; still pending. Clearing this bit here reset every persistent
         ; -4/-5 refusal to the initial 020-tick delay (v1102).
@@ -4293,7 +4299,6 @@ proc_idle_loop:
         move    3,1                   ; last deferred user now gone?
         pop     17,1
         jumpn   3,proc_exit_halt       ; do not reenable PI6 before HALT
-        pushj   17,proc_finish_backoff_advance_v885
         trne    1,000002
         cono    0004,02002
         ; Return control to runnable users immediately. Staying in
@@ -4314,12 +4319,15 @@ proc_idle_wait:
         jrst    proc_idle_loop
 proc_idle_loop_end:
 
-/** Retry interval update under PI6 inhibition (one existing word). */
+/** Advance the existing interval before the retry scan, under PI6
+ * inhibition. A first failure discovered during that scan can then
+ * restore its own initial 020-tick interval without being doubled.
+ */
         .globl  proc_finish_backoff_advance_v885
 proc_finish_backoff_advance_v885:
-        ; Successful release leaves no pending marker. Otherwise
-        ; increase the interval (16,32,64,...,512 ticks); this is
-        ; only one compact shared backoff word, not per-slot state.
+        ; Increase the interval for already pending retry owners
+        ; (16,32,64,...,512 ticks). A subsequent successful scan clears
+        ; the pending bit and interval; new owners reset the epoch.
         move    4,proc_finish_last_tick_v881
         tlnn    4,0400000
         jrst    proc_finish_idle_clear_v885
