@@ -88,10 +88,33 @@ while PID 6 was safely reusable with all teardown diagnostics
 zero. The shared retry word also returned to the saturated
 pending interval after B's first refusal was serviced.
 
+## Eventual independent A recovery and clean shutdown
+
+Keep the guest running with A still physically pinned. A's
+ordinary capped retry eventually reached attempt octal 030,
+invoked real `mm_unpin`, and allowed the unchanged PREVM EXIT
+finalizer to release the VM. CTY `TRUE` returned to its shell.
+The final read-only SIMH snapshot was:
+
+    25115: 000000026134    ; no pending flag, no retry interval
+    25117: 000000000000    ; A VM extent released
+    25120: 000000000030    ; A: 24 VM destroy attempts
+    25121: 777777777777    ; A real MM unpin complete
+    25122: 000000000000    ; B u-area released
+    25123: 000000000005    ; B: five MM free attempts
+    25124: 777777777777    ; B real MM unpin complete
+
+The CTY `PS` then reused PID 5, showing TD=0 RETRY=0 PVM=0,
+DETAIL=0, ERR=0. Both owners were free and the shared retry
+pending state cleared. Guest `HALT` stopped at octal PC 022612;
+SIMH exited normally. Final read-only `d6fsck -n 4` selected
+superblock 742 seq=3 CLEAN (179196 blocks and 360 FCBs).
+
 ## Scope
 
-This passes the **PREVM-A/post-VM-B** mixed-owner ordering and
-the exact B-first-retry gate. It does not prove the reverse
+This passes the **PREVM-A/post-VM-B** mixed-owner ordering,
+the exact B-first-retry gate, and both owners' eventual release
+and safe PID reuse. It does not prove the reverse
 post-VM-A/PREVM-B ordering or an unpublished SIDL B; those are
 separate tests. Clock wrap, FILE/HUP and dying-parent WAIT are
 also OPEN. No production KCORE, ABI, fixed RAM, or external
