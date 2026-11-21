@@ -1,3 +1,10 @@
+## 2026-11-21 v1759: K04 exact PREVM diagnostic fallback
+
+DAIMOS 68200592 preserves the fatal FILE-stage GETTEARDOWN check
+unless an opt-in live-VM EXIT owner has both FINALIZE and PREVM
+marks. Isolated PDP-6 DAS PASS; pdp10-doc 5e96fc5 updated.
+K04 OPEN for physical acceptance. No testkit or size work.
+
 ## 2026-11-21 v1758: K04 EXIT/DISCARD ownership separation
 
 DAIMOS 72ca8a9c rejects FINALIZE|DISCARD from the EXIT resume

@@ -268,6 +268,8 @@ unmerged from its development line; mode3 remains disabled.
   non-NONE VM PREVM marker read; DAS PASS, physical acceptance OPEN.
   **Progress v1758:** EXIT resume rejects FINALIZE|DISCARD; rollback
   cannot be misclassified as an EXIT owner. DAS PASS; K04 OPEN.
+  **Progress v1759:** Opt-in PREVM diagnosis bypasses fatal FILE
+  precedence only with exact FINALIZE|PREVM marks. DAS PASS; K04 OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 
