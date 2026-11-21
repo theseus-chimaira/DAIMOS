@@ -1,3 +1,11 @@
+## 2026-11-21 v1756: K04 zero u-area finalizer guard
+
+DAIMOS 6c1b3478 guards the deferred slot-zero FINALIZE marker read
+against a descriptor with UAREA set but a zero base, retaining the
+shared pending retry owner on inconsistency. Isolated PDP-6 DAS
+assembly PASS. pdp10-doc aacfb5c documents the recovery boundary.
+K04 remains OPEN for physical fault injection; no testkit or size work.
+
 ## 2026-11-21 v1755: K04 fatal PREVM and retry-epoch corrections
 
 DAIMOS 8b32e91e corrects two source-path teardown defects: an opt-in

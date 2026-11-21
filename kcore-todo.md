@@ -261,6 +261,9 @@ unmerged from its development line; mode3 remains disabled.
   **Progress v1755:** Fixed stale fatal-FILE diagnostic precedence for
   opt-in PREVM EXIT and stale initial epoch for newly refused SIDL
   rollback. Kernel assembly PASS; physical acceptance remains OPEN.
+  **Progress v1756:** Guarded zero stable-u-area base before deferred
+  finalizer marker read; preserve pending quarantine on inconsistency.
+  Isolated PDP-6 assembly PASS; physical acceptance remains OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 
