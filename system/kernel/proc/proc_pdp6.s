@@ -665,9 +665,14 @@ proc_finish_common_v932:
         hlrz    3,1
         jumpe   3,proc_finish_fail
         move    4,PROC_FINALIZE_OFFSET(3)
-        tlne    4,PROC_FINALIZE_MARK_LH
-        jrst    proc_finish_check_vm_v881
+        tlnn    4,PROC_FINALIZE_MARK_LH
         jrst    proc_finish_fail
+        ; DISCARD is an unpublished RUN rollback, not an EXIT owner.
+        ; A foreign fatal finalizer must never convert it to ZOMB or
+        ; adopt its children. The reaper dispatches DISCARD separately.
+        tlne    4,0200000             ; PROC_FINALIZE_DISCARD_LH
+        jrst    proc_finish_fail
+        jrst    proc_finish_check_vm_v881
 proc_finish_check_vm_v881:
         move    4,1(12)
         camn    4,[-1]
