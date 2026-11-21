@@ -299,6 +299,11 @@ unmerged from its development line; mode3 remains disabled.
   deferred EXIT or fatal FILE-close continuation; zombies use the
   parentless cleanup fallback. Parent CHLD notification checks a
   valid resident u-area before writing. DAS PASS; K04 physical OPEN.
+  **Progress v1768:** A child exiting while its parent is already
+  in deferred EXIT/fatal FILE close now publishes under healthy
+  INIT or frees its terminal slot if INIT cannot WAIT. Adoption,
+  zombie publication and CHLD use matching teardown ownership
+  checks. DAS PASS; physical refusal/WAIT/PID tests remain OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

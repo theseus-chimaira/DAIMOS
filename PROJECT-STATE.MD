@@ -1,3 +1,18 @@
+## 2026-11-21 v1768: K04 late child EXIT under dying parent
+
+DAIMOS 0a15e82b closes the complementary orphan leak left by
+v1767: a child finishing while its parent is already in deferred
+EXIT or fatal FILE-close no longer publishes an unreachable zombie
+under a nonreturning parent. A shared parent WAIT-eligibility helper
+is used by orphan adoption and child zombie publication. Healthy
+INIT receives such children; if INIT cannot WAIT either, the child
+is immediately freed after its own resources are released. CHLD
+notification no longer wakes an irreversible teardown parent.
+Native PDP-6 DAS and diff checks PASS; pdp10-doc bf72480 updated.
+K04 remains OPEN for physical parent refusal, PID/WAIT reuse,
+multi-owner and clock-wrap acceptance. External testkit untouched;
+no permanent RAM fields added and KCORE size work deferred.
+
 ## 2026-11-21 v1767: K04 orphan adoption when INIT is dying
 
 DAIMOS 821d8be5 prevents dying INIT (slot 1) from adopting new
