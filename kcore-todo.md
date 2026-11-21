@@ -328,6 +328,11 @@ unmerged from its development line; mode3 remains disabled.
   v1773 released them, reusing PID5. Guest HALT/D6FS CLEAN both.
   +5 KCORE TEXT words, no fixed DATA/BSS. MM/FILE refusal,
   multi-owner, clock-wrap and refused-owner WAIT/PID still OPEN.
+  **Progress v1774:** Real PDP-6 with synthetic MM_ERR_BUSY only at
+  u-area release retained child PID5 as post-VM FINALIZE+ARM over
+  556 qualified ticks. Restored original MM call; TRUE resumed,
+  PS reused PID5, HALT/D6FS CLEAN PASS. Physical MM pin and
+  multi-owner/clock-wrap/FILE/HUP acceptance still OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

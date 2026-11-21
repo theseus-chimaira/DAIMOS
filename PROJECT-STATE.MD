@@ -1,3 +1,19 @@
+## 2026-11-21 v1774: K04 live post-VM MM_ERR_BUSY and recovery
+
+DAIMOS 668d39f9 documents a real 256K PDP-6 synthetic MM
+refusal/recovery. In an isolated v1773 boot image, SIMH temporarily
+changed only the `proc_uarea_release` PUSHJ target from `mm_free`
+to `kret_neg5` (-5, MM_ERR_BUSY). DCS foreground TRUE blocked;
+the child PID5 descriptor retained TRANSITION, u-area 054363,
+VM_NONE and FINALIZE+ARM through 556 qualified clock ticks.
+Restoring the exact original instruction released the pending
+u-area on retry; TRUE's parent resumed and PS reused PID5 with
+TD/RETRY/PVM/DETAIL/ERR zero. Guest HALT PC 022471 and read-only
+D6FS CLEAN seq=5 PASS. No production binary/source or testkit
+modified. pdp10-doc 9386318 updated. This is a typed return-code
+refusal, NOT a physical MM pin; independent multi-owner, real
+pin accounting, clock wrap, FILE refusal and HUP remain OPEN.
+
 ## 2026-11-21 v1773: K04 fatal WAIT_CHILD deadlock fixed and physically reproduced
 
 DAIMOS 6d99565a fixes queued fatal INT/TERM/HUP/PIPE delivery to
