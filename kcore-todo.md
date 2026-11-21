@@ -314,6 +314,9 @@ unmerged from its development line; mode3 remains disabled.
   D6FS CLEAN fsck PASS. No fault injection performed. Retained
   owner, multi-owner, clock-wrap, HUP, WAIT/PID and operator
   recovery physical acceptance still OPEN; testkit untouched.
+  **Progress v1771:** Source-audited physical acceptance matrix
+  committed (design/kcore-k04-multiowner-acceptance-plan-v1771.md).
+  No refusal injection run; all K04 recovery acceptance gates OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

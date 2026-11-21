@@ -1,3 +1,15 @@
+## 2026-11-21 v1771: K04 multi-owner acceptance matrix
+
+DAIMOS 84fb8a33 records the source-audited physical acceptance
+matrix in design/kcore-k04-multiowner-acceptance-plan-v1771.md:
+temporary/permanent MM refusal, two independent owners and
+SIDL DISCARD, 17-bit clock wrap, deferred HUP, orphan WAIT/PID
+reuse, and private-stack FILE refusal. This is a completed
+acceptance *plan*, not executed fault injection or a kernel fix.
+The v1770 real PDP-6 boot and clean-reboot baseline remains PASS;
+K04 physical recovery acceptance remains OPEN. The external
+testkit and unrelated working-tree edits were not touched.
+
 ## 2026-11-21 v1770: K04 real PDP-6 boot and clean reboot smoke
 
 Native KCC bootstrap staging was blocked by unversioned runtime
