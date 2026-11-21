@@ -1,3 +1,18 @@
+## 2026-11-21 v1744: BRK relocation PI6-safe, physical login PASS
+
+DAIMOS `d385fd6d`: `vm_brk_resize` no longer disables global PI
+across potentially long physical image moves, copies and zeroing.
+All three BRK transaction entries now inhibit scheduler PI6 only;
+all four exits restore only the original PI6 enable state. Disk
+PI3/PI5 stay live; no instruction-count or persistent RAM increase.
+The v1744 source contract rejects four unsafe PI mutants. All 33
+native K01 cases PASS, and a fresh 256K D6FS ROOT/DSH/TRUE/HALT/CLEAN
+full-profile guest PASS. Evidence and detailed lock analysis are in
+pdp10-doc `KERNEL/VM-BRK-PI6-INTERRUPT-AUDIT-V1744.MD`.
+Next PI starvation audit target is `mm_move_extent` ->
+`vm_extent_move`, still globally PI-masked during process copying.
+Strict 32K KCORE fit and K04 policy remain open.
+
 ## 2026-11-21 v1743: K03 physical refusal matrix PASS; D6FS DRL fixed
 
 Production requester-only BRK OOM remains ON under the accepted F12/F13
