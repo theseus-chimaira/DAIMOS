@@ -2066,16 +2066,19 @@ evt_def_bits_v970:
         lsh     2,023                 ; event bits begin at bit 19
 evt_def_record_v970:
         iorm    2,PROC_FDCTL_OFFSET(1)
-        ; v1261: an interruptible user PIPE/FIFO waiter must unwind its
-        ; *own* saved executive stack after fatal delivery. The pending
-        ; event bit alone cannot wake it while the pipe writer remains
-        ; open. An internal noninterruptible EVENT/CHILD waiter retains
-        ; its continuation. The separate serialized FS gateway case
-        ; remains cancelable before the provider call starts.
+        ; Interruptible PIPE/FIFO and CHILD waiters must unwind their
+        ; *own* saved executive stacks after fatal delivery. WAIT_CHILD
+        ; checks fatal events on resume, but a child which never exits
+        ; cannot otherwise wake its parent. Internal EVENT waiters stay
+        ; noninterruptible except for the serialized FS gateway.
         move    5,2(012)
         hlrz    6,5
         andi    6,PROC_WAIT_LH_MASK
         caie    6,PROC_WAIT_INTR_LH
+        jrst    evt_def_child_class_v1773
+        jrst    evt_def_wake_v1261
+evt_def_child_class_v1773:
+        caie    6,PROC_WAIT_CHILD_LH
         jrst    evt_def_fs_class_v1261
         jrst    evt_def_wake_v1261
 evt_def_fs_class_v1261:
@@ -3724,12 +3727,16 @@ proc_sched_resched_current:
 ; int proc_wait_child(void)
 ; WAIT scans while executive code is non-preemptible.  If live children exist
 ; but none is reportable, arm a child wait and request PI6 immediately.
+; Fatal events, including PIPE, must not arm a wait whose only wakeup
+; would be a child completion that might never occur (v1773).
 proc_wait_child:
         skipn   proc_current_slot
         jrst    kret_neg1
         move    2,file_table
         move    2,-2(2)
-        tlne    2,0100                  ; ALRM interrupts user WAIT
+        tlne    2,0116                  ; ALRM or fatal INT/TERM/HUP
+        jrst    kret_neg1
+        trne    2,1                     ; fatal PIPE
         jrst    kret_neg1
         move    1,proc_current_slot
         pushj   17,proc_runq_remove
