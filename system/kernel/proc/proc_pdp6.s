@@ -917,7 +917,10 @@ proc_finish_service_post_vm_v894:
         jrst    proc_finish_service_check_v881
         ; Non-NONE VM can retry only with an explicit PREVM marker.
         hlrz    5,3
-        jumpe   5,proc_finish_service_next_v881
+        ; Check before dereferencing FINALIZE, not only in the
+        ; VM_NONE path below. A corrupt zero-base PREVM owner must
+        ; retain the pending retry bit instead of reading low memory.
+        jumpe   5,proc_finish_service_failed_v1102
         move    4,PROC_FINALIZE_OFFSET(5)
         tlnn    4,PROC_FINALIZE_PREVM_LH
         jrst    proc_finish_service_next_v881
