@@ -1,3 +1,13 @@
+## 2026-11-21 v1762: K04 DISCARD versus HUP completion
+
+DAIMOS 22278d35 closes the VM_NONE session-HUP diagnostic gap:
+FINALIZE|DISCARD from unpublished RUN rollback cannot count as
+committed fatal HUP. Valid non-DISCARD EXIT finalizers remain
+recognized; rollback ownership stays quarantined. Isolated PDP-6
+DAS PASS; pdp10-doc 71291e6 updated. K04 remains OPEN pending
+physical multi-owner, refusal, clock-wrap and WAIT/PID reuse tests.
+Testkit and size work untouched.
+
 ## 2026-11-21 v1761: K04 post-VM TTY membership fix
 
 DAIMOS 95fd5e65 removes committed post-VM FINALIZE owners from

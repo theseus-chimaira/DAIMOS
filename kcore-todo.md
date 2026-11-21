@@ -277,6 +277,9 @@ unmerged from its development line; mode3 remains disabled.
   TTY session members; PREVM and incomplete owners retain their
   ownership. Invalid u-area bases fail closed for release and SETFG.
   DAS PASS, physical multi-owner acceptance OPEN.
+  **Progress v1762:** VM_NONE FINALIZE|DISCARD rollback cannot satisfy
+  fatal HUP completion; EXIT and rollback remain distinct. DAS PASS;
+  K04 physical acceptance OPEN.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 
