@@ -333,6 +333,13 @@ unmerged from its development line; mode3 remains disabled.
   556 qualified ticks. Restored original MM call; TRUE resumed,
   PS reused PID5, HALT/D6FS CLEAN PASS. Physical MM pin and
   multi-owner/clock-wrap/FILE/HUP acceptance still OPEN.
+  **Progress v1776:** Real physical u-area MM pin exercised on a
+  disposable PDP-6 image using mm_pin/mm_unpin, with normal mm_free
+  rejecting the live pin. PID5 post-VM TD=2, RETRY=512, DETAIL=6
+  (one physical pin) persisted; release on attempt ten completed
+  and PID5 was reused. Guest HALT/D6FS CLEAN PASS. No production
+  RAM growth, testkit untouched. Multiple owners, SIDL, FILE/HUP,
+  clock wrap and dying-parent WAIT still require physical tests.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 

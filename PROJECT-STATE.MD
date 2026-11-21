@@ -1,3 +1,25 @@
+## 2026-11-21 v1776: K04 physical MM pin and real deferred recovery PASS
+
+DAIMOS 6af842d9 documents a real 256K SIMH PDP-6 experiment
+using only a disposable instrumented boot image: the authoritative
+mm_pin pinned PID 5's exact u-area, and unmodified mm_free refused
+the physical extent. CTY's foreground TRUE remained blocked while
+DCS PS reported TD=2, RETRY=512, DETAIL=6 (=one real MM pin),
+and the original process slot remained owned. Test-only BSS read
+through SIMH showed u-area 054424, attempt count 010 octal (8),
+and completion unset. After the tenth release attempt, real
+mm_unpin succeeded, normal mm_free completed, the parent resumed,
+and PS reused PID 5 with teardown diagnostics zero. Final test
+state: base 0, attempts 012, completion all ones. Guest HALT
+PC 022527 and read-only D6FS CLEAN seq=3 PASS. Native DAS/full
+scratch boot image PASS. pdp10-doc 022be65 updated.
+
+No production kernel source or testkit changes; the +041 octal
+KCORE low-end increase and three additional BSS words exist only
+in the scratch test image. K04 physical **single u-area pin**
+acceptance PASS; independent multi-owner, SIDL, retry clock wrap,
+FILE/HUP and dying-parent WAIT acceptance remain OPEN.
+
 ## 2026-11-21 v1774: K04 live post-VM MM_ERR_BUSY and recovery
 
 DAIMOS 668d39f9 documents a real 256K PDP-6 synthetic MM
