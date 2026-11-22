@@ -1,7 +1,8 @@
 # K04 v1799: VM_NONE DISCARD member versus session-leader HUP
 
-Date: 2026-11-22. Status: source-backed physical acceptance design;
-**NOT YET PHYSICALLY ACCEPTED**. K04 remains OPEN.
+Date: 2026-11-22. Status: source-backed physical acceptance design,
+**subsequently PASSED** by the booted v1799 test documented in
+`kcore-k04-vmnone-discard-hup-physical-v1799.md`. K04 remains OPEN.
 
 ## Distinct state to test
 
@@ -65,8 +66,9 @@ independent positive and negative verification controls.
 
 Build all hooks and guest code in versioned `daimos-testkit`
 fixtures and a disposable 256K PDP-6 image. Do not change
-production KCORE or active external test suites. No acceptance
-claim follows from this design or from source-only assembly.
+production KCORE or active external test suites. Acceptance
+requires the separate booted physical report; this design or
+source-only assembly alone is insufficient.
 
 ## Potential failure mode to distinguish
 
