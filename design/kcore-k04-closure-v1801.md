@@ -73,8 +73,9 @@ change appears; they do not block bounded K04 closure. The
 permanent-refusal policy intentionally **retains** the exact
 owner until recovery/operator intervention. It never silently
 reclaims an unreleased MM extent. K04 closure therefore does
-not authorize arbitrary OOM victim killing: K03 must separately
-prove safe allocation-free victim selection and reclaim policy.
+not authorize arbitrary OOM victim killing. The later v1803
+K03 policy decision rejects cross-process termination; see
+`design/kcore-k01-k04-closure-v1803.md`.
 
 ## Change control
 

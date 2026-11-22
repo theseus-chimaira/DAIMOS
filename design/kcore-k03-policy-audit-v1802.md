@@ -1,6 +1,8 @@
 # K03 v1802: OOM policy provenance and remaining scope
 
-Date: 2026-11-22. Status: source/history audit; **K03 OPEN**.
+Date: 2026-11-22. Status: source/history audit; K03 was OPEN
+at v1802 and is **CLOSED by policy at v1803**. See
+`design/kcore-k01-k04-closure-v1803.md`.
 
 ## Current production behavior
 
@@ -43,7 +45,9 @@ decision on whether cross-process killing is desirable, which
 owners may be targeted, what memory it can actually recover,
 and what happens on permanent FILE/MM refusal. Do not silently
 reuse the swap selector as a kill selector. For now, preserve
-the accepted requester-only behavior and leave K03 OPEN.
+the accepted requester-only behavior. The subsequent v1803
+decision explicitly rejects cross-process OOM killing and
+closes K03 without any production kernel change.
 
 ## Validation boundary
 

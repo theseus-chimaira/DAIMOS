@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-19.
+Updated: 2026-11-22 (K01-K04 closed at v1803).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -245,17 +245,15 @@ unmerged from its development line; mode3 remains disabled.
   independently. K03 OOM killing remains disabled; K04 permanently
   refused recovery policy remains OPEN. Full closure details:
   design/kcore-k02-closure-v1730.md.
-- [ ] **K03 - Nonrequester OOM policy.** Source audit v1802:
-  requester-only BRK physical-NOMEM termination is already ON and
-  accepted for the bounded v1298 256K profile (F12/F13). The
-  remaining question is whether to implement allocation-free
-  cross-process victim termination; it is not currently implemented
-  or authorized. See `design/kcore-k03-policy-audit-v1802.md`.
-  Do not alter the accepted requester-only policy implicitly.
-  **Historical K03 scope:** Define and implement an allocation-free,
-  safe victim-selection and termination path only after provider, VM,
-  descriptor, zombie, EXEC and unpublished-RUN teardown is safe.
-  Nonrequester OOM killing stays disabled until that condition is proved.
+- [x] **K03 - OOM policy (CLOSED v1803).** Retain the accepted
+  requester-only BRK physical-NOMEM termination (F12/F13 v1298,
+  `PROC_OOM_BRK_ENABLED_V1000,1`), and prefer existing process
+  swapping over killing unrelated processes. **Cross-process OOM
+  victim termination is explicitly rejected** as unnecessary kernel
+  complexity and does not become a deferred implementation task.
+  K04 still quarantines permanently refused owners rather than
+  promising immediate reclamation. No production code/RAM change.
+  See `design/kcore-k01-k04-closure-v1803.md` and the v1802 audit.
 - [x] **K04 - Process teardown recovery.** CLOSED v1801 (bounded
   physical ownership/recovery acceptance; see
   `design/kcore-k04-closure-v1801.md`). Handle incomplete teardown,
@@ -268,7 +266,7 @@ unmerged from its development line; mode3 remains disabled.
   post-HALT readouts and CLEAN D6FS reverified. Untested mixed-owner
   wrap, pinned published-member HUP and organic media errors are
   recorded as bounded residual risks, not accepted physical tests.
-  K03 OOM killing remains separately disabled pending K03 acceptance.
+  K03 cross-process OOM killing is explicitly out of scope (v1803).
   **Progress v1754:** Opt-in GETTEARDOWN/PS distinguishes retained
   pre-VM EXIT from unpublished RUN rollback without altering existing
   query ABI. Isolated assembler and C compilation pass. Still OPEN:

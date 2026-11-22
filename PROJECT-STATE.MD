@@ -1,3 +1,22 @@
+## 2026-11-22 v1803: K01-K04 CLOSED (K03 policy finalized)
+
+All four KCORE process/memory correctness tasks K01-K04 are now
+CLOSED for their bounded accepted profiles. K01 v1718 and K02
+v1730 remain unchanged; K04 v1801 is physically accepted.
+K03 closes **by explicit policy**, not by implementing a new
+killer: preserve the v1298 accepted requester-only BRK physical
+OOM termination (`PROC_OOM_BRK_ENABLED_V1000,1`) and existing
+swap-based reclamation, and do not select/kill unrelated
+processes. v1739/v1743 physical refusal checks and v1802
+source-contract negative controls support the existing policy.
+See `design/kcore-k01-k04-closure-v1803.md` and
+`design/kcore-k03-policy-audit-v1802.md`.
+
+No production KCORE text/DATA/BSS, ABI or RAM changed in v1803.
+Older OPEN/disabled statements below are dated history, not
+current TODO status. K04 residual untested combinations and
+permanently refused owner quarantine remain documented.
+
 ## 2026-11-22 v1802: K03 production OOM policy provenance audit
 
 The production BRK requester-only OOM switch is intentionally ON
