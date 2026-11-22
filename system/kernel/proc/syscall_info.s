@@ -6,6 +6,12 @@
  * PDP-6 trap mechanics, so the source intentionally has no machine suffix.
  * MEMINFO reuses its destination fields as a temporary filesystem request to
  * avoid a resident scratch buffer.
+ *
+ * v1605: sys_procinfo_user_comm still reads startup strings directly from
+ * the PDP-6 vm_state RH physical base. This is a VM-backend dependency,
+ * not generic process policy. A future KI10 implementation must use
+ * bounded VM reads (possibly across page boundaries), and a KA10 variant
+ * must select the correct segment. Keep current direct path until then.
  */
         .text
         .globl  kret_zero
@@ -52,6 +58,10 @@ sys_procinfo:
         andi    6,07
         movem   6,2(2)                 ; logical scheduler state
         hlrz    6,1(5)
+        ; VM_SPACE_NONE (-1) after EXIT is not a 0777777-word VM.
+        ; Preserve real logical sizes and report zero for zombies.
+        cain    6,0777777
+        setz    6,
         movem   6,3(2)                 ; logical user words
         move    3,proc_comm_words+2    ; fallback USER
         jumpe   4,sys_procinfo_swapper
@@ -177,6 +187,10 @@ sys_meminfo_proc_loop:
         hrrz    7,1(4)
         jumpe   7,sys_meminfo_proc_next
         hlrz    7,1(4)
+        ; VM_SPACE_NONE (-1) marks an EXITed child awaiting WAIT.
+        ; Its all-ones high half must not inflate PROCESS-WORDS.
+        cain    7,0777777
+        jrst    sys_meminfo_proc_next
         add     1,7
 sys_meminfo_proc_next:
         addi    4,PROC_WORDS

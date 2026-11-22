@@ -49,7 +49,32 @@ BLOCKSET_FS_ENABLED ?= 1
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 PROC_SWAP_VERIFY_PURE ?= 0
+DAIMOS_PURE_MRES_ENABLED ?= 0
+ifneq ($(filter $(DAIMOS_PURE_MRES_ENABLED),0 1),$(DAIMOS_PURE_MRES_ENABLED))
+$(error DAIMOS_PURE_MRES_ENABLED must be 0 or 1)
+endif
+DAIMOS_SWAPLESS_ONLY_V1668 ?= 0
+ifneq ($(filter $(DAIMOS_SWAPLESS_ONLY_V1668),0 1),$(DAIMOS_SWAPLESS_ONLY_V1668))
+$(error DAIMOS_SWAPLESS_ONLY_V1668 must be 0 or 1)
+endif
+DAIMOS_PBM_V1667 ?= 0
+ifneq ($(filter $(DAIMOS_PBM_V1667),0 1),$(DAIMOS_PBM_V1667))
+$(error DAIMOS_PBM_V1667 must be 0 or 1)
+endif
+ifeq ($(DAIMOS_PBM_V1667),1)
+ifneq ($(DAIMOS_PURE_MRES_ENABLED),1)
+$(error DAIMOS_PBM_V1667 requires PURE MRES enabled)
+endif
+endif
+KINIT_PURE_MODE_STAMP = ${BUILD}/.pure-mres-mode-v1611-${DAIMOS_PURE_MRES_ENABLED}-${DAIMOS_PBM_V1667}-${DAIMOS_SWAPLESS_ONLY_V1668}
+${KINIT_PURE_MODE_STAMP}:
+	@mkdir -p ${BUILD}
+	@rm -f ${BUILD}/.pure-mres-mode-v1611-*
+	@touch $@
 VM_BACKEND ?= pdp6
+# Source selection is a compile/link-time choice, never runtime dispatch.
+# No KA10 or KI10 backend has been validated yet.
+include arch/pdp6_source_map_v1605.mk
 VM_BACKEND_C = proc/vm_${VM_BACKEND}.c
 VM_BACKEND_H = proc/vm_${VM_BACKEND}.h
 VM_BACKEND_FIXED = proc/vm_${VM_BACKEND}.s
@@ -159,9 +184,9 @@ KINIT_LATE_C_ASM = $(BUILD)/proc_late.s \
 	$(BUILD)/mm_boot.s \
 	$(BUILD)/kinit_late.s
 
-KINIT_FIXED_SRCS = boot/kinit_io_pdp6.s \
+KINIT_FIXED_SRCS = ${DAIMOS_CPU_KINIT_IO_SOURCE} \
 	modules/module_io.s \
-	boot/kinit_late_begin_pdp6.s \
+	${DAIMOS_CPU_KINIT_LATE_SOURCE} \
 	boot/kinit_late_end.s
 
 KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io_pdp6.s ${BUILD}/module_io.s ${BUILD}/bootbanner_generated.s ${BUILD}/kinit_late_begin_pdp6.s ${BUILD}/kinit_late_end.s
@@ -186,24 +211,24 @@ ${PDP10_CC_ASM}: ${PDP10_CC_DEP}
 KCORE_FIXED_SRCS = core/ret.s \
 	drivers/dsk270.s \
 	drivers/drm236.s \
-	core/kfmt_pdp6.s \
+	${DAIMOS_CPU_KFMT_SOURCE} \
 	core/s6rec.s \
 	fs/vfs.s \
 	fs/fs_mres.s \
 	fs/tsfs_runtime.s \
 	fs/file_runtime.s \
 	ipc/pipe.s \
-		proc/proc_pdp6.s \
+	${DAIMOS_CPU_PROCESS_SOURCE} \
 	proc/proc_run.s \
 	drivers/device_state.s \
 	proc/syscall_info.s \
 	drivers/pclk.s \
 	drivers/lpt_io.s \
-	proc/syscall_dispatch_pdp6.s \
-	proc/mach_user_pdp6.s \
-	core/kcore_pi_pdp6.s \
+	${DAIMOS_CPU_SYSCALL_SOURCE} \
+	${DAIMOS_CPU_TRAP_SOURCE} \
+	${DAIMOS_CPU_PI_SOURCE} \
 	storage/backstore.s \
-	storage/bcache_pdp6.s \
+	${DAIMOS_CPU_BCACHE_SOURCE} \
 	storage/storage_router.s \
 	core/kcore_end.s
 
@@ -328,9 +353,9 @@ ${BUILD}/backstore_mres_v484.s: storage/backstore.s Makefile
 	      -e 's/\<backstore_free\>/backstore_mres_free_v484/g' \
 	      -e 's/\<backstore_verify_allocated_v795\>/backstore_mres_verify_allocated_v880/g' > $@
 
-${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE} ${MONITORFS_MODE_STAMP} ${KINIT_TAPE_MODE_STAMP} ${KINIT_STACK_MODE_STAMP}
+${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE} ${MONITORFS_MODE_STAMP} ${KINIT_TAPE_MODE_STAMP} ${KINIT_STACK_MODE_STAMP} ${KINIT_PURE_MODE_STAMP}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DKINIT_DRM_ENABLED=${KINIT_DRM_ENABLED} -DKINIT_TAPE_BOOT=${KINIT_TAPE_BOOT} -DMONITORFS_MRES_ENABLED=${MONITORFS_MRES_ENABLED} -DD6FS_FS_ENABLED=${D6FS_FS_ENABLED} -DBLOCKSET_FS_ENABLED=${BLOCKSET_FS_ENABLED} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DKINIT_DRM_ENABLED=${KINIT_DRM_ENABLED} -DKINIT_TAPE_BOOT=${KINIT_TAPE_BOOT} -DMONITORFS_MRES_ENABLED=${MONITORFS_MRES_ENABLED} -DD6FS_FS_ENABLED=${D6FS_FS_ENABLED} -DDAIMOS_PURE_MRES_ENABLED=${DAIMOS_PURE_MRES_ENABLED} -DDAIMOS_SWAPLESS_ONLY_V1668=${DAIMOS_SWAPLESS_ONLY_V1668} -DBLOCKSET_FS_ENABLED=${BLOCKSET_FS_ENABLED} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/bootbanner_generated.s: ${VERSION_FILE} ${MKBOOTBANNER_DEP}
 	@mkdir -p ${BUILD}
@@ -340,34 +365,34 @@ ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = wall_clock; then extra="-DWALL_CLOCK_HZ=${WALL_CLOCK_HZ} -Dwall_clock_set=softclock_mres_set"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
 
-${BUILD}/mm.s: mm/mm_pdp6.s ${KERNEL_HEADERS}
+${BUILD}/mm.s: ${DAIMOS_VM_CONTIG_MM_SOURCE} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	cp mm/mm_pdp6.s $@
+	cp ${DAIMOS_VM_CONTIG_MM_SOURCE} $@
 
 
 ${BUILD}/d6block_fixed_v1458.s: ../stand/pdp6/common/block_decompressor_v1458.inc
 	@mkdir -p ${BUILD}
 	cp $< $@
 
-${BUILD}/exec.s: proc/exec_lowmem_pdp6.s proc/exec_load.s ${KERNEL_HEADERS}
+${BUILD}/exec.s: ${DAIMOS_CPU_EXEC_LOW_SOURCE} proc/exec_load.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	cat proc/exec_lowmem_pdp6.s proc/exec_load.s > $@
+	cat ${DAIMOS_CPU_EXEC_LOW_SOURCE} proc/exec_load.s > $@
 
 ${BUILD}/d6block_v1458.s: core/d6block_vfs_fixed_v1458.s
 	@mkdir -p ${BUILD}
 	cp core/d6block_vfs_fixed_v1458.s $@
 
-${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp6.s ${KERNEL_HEADERS}
+${BUILD}/module_runtime.s: modules/module_runtime.c ${DAIMOS_CPU_MODULE_RUNTIME_SOURCE} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S modules/module_runtime.c -o $@.c
-	cat $@.c modules/module_runtime_pdp6.s > $@
+	cat $@.c ${DAIMOS_CPU_MODULE_RUNTIME_SOURCE} > $@
 	rm -f $@.c
 
 ${BUILD}/vm_backend.s: ${KERNEL_HEADERS} $(if $(filter pdp6,${VM_BACKEND}),,${VM_BACKEND_C})
 	@mkdir -p ${BUILD}
 	@if test "${VM_BACKEND}" = pdp6; then printf ' .text\n' > $@; else ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_BACKEND_C} -o $@; fi
 
-${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s proc/proc_pure_attach.c proc/proc_storage_map_v28.h ${KERNEL_HEADERS}
+${BUILD}/proc_swap.s: ${VM_SWAP_C} ${DAIMOS_VM_SWAP_SOURCE} ${DAIMOS_VM_BACKING_SOURCE} proc/proc_storage_runtime_v30.s proc/proc_pure_attach.c proc/proc_storage_map_v28.h ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} \
 	    -DPROC_SWAP_VERIFY_PURE=${PROC_SWAP_VERIFY_PURE} \
@@ -376,14 +401,77 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_
 	  '.equ PROC_SWAP_TEXT_MASK,037777' '.equ PROC_SWAP_MOUNT_SHIFT,022' \
 	  '.equ PROC_SWAP_BACKING_OFFSET,0406' '.equ EXEC_DXR_F_COMPRESSED,0100000' \
 	  '.equ EXEC_USER_ORIGIN,020'; \
-	  cat proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s; } > $@
+	  cat ${DAIMOS_VM_BACKING_SOURCE} proc/proc_storage_runtime_v30.s; } > $@
 	rm -f $@.c
 
-${BUILD}/proc_swap_mres_v481.s: proc/proc_swap_pdp6.s
+${BUILD}/proc_swap_mres_v481.s: ${DAIMOS_VM_SWAP_SOURCE}
 	@mkdir -p ${BUILD}
 	{ printf '.equ PROC_SWAP_VERIFY_PURE,%s\n' '${PROC_SWAP_VERIFY_PURE}'; \
-	  cat proc/proc_swap_pdp6.s; } > $@
+	  cat ${DAIMOS_VM_SWAP_SOURCE}; } > $@
 MRES_ASM += $(BUILD)/proc_swap_mres_v481.s
+
+# v1612: PURE MRES is a *separate* compile-time PDP-6 service.
+# Its source transactions do not add a single fixed KCORE word.
+ifeq ($(DAIMOS_PURE_MRES_ENABLED),1)
+MRES_ASM += $(BUILD)/proc_pure_service_v1612.s \
+    $(BUILD)/proc_pure_drop_v1611.s \
+    $(BUILD)/proc_pure_prefix_v1611.s \
+    $(BUILD)/proc_pure_full_v1611.s
+# The kcore target's prerequisites were expanded before these late rules.
+# Explicitly include every new generated source in that target.
+kcore: $(BUILD)/proc_pure_service_v1612.s \
+    $(BUILD)/proc_pure_drop_v1611.s \
+    $(BUILD)/proc_pure_prefix_v1611.s \
+    $(BUILD)/proc_pure_full_v1611.s
+endif
+
+$(BUILD)/proc_pure_service_v1612.s: $(DAIMOS_VM_PURE_SERVICE_SOURCE) $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PBM_V1667=$(DAIMOS_PBM_V1667) $(INCLUDES) -S $< -o $@
+
+# Source-linked opt-in bitmap MRES helpers. The fixed kernel and the
+# default PURE MRES contain none of these code words.
+ifeq ($(DAIMOS_PBM_V1667),1)
+MRES_ASM += $(BUILD)/proc_pure_term_v1667.s \
+    $(BUILD)/proc_pure_bitmap_terminal_v1667.s \
+    $(BUILD)/proc_pure_bitmap_restore_v1667.s \
+    $(BUILD)/proc_pure_bitmap_decode_v1667.s
+kcore: $(BUILD)/proc_pure_term_v1667.s \
+    $(BUILD)/proc_pure_bitmap_terminal_v1667.s \
+    $(BUILD)/proc_pure_bitmap_restore_v1667.s \
+    $(BUILD)/proc_pure_bitmap_decode_v1667.s
+
+$(BUILD)/proc_pure_term_v1667.s: proc/proc_pure_term_v1667.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PBM_V1667=1 $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_bitmap_terminal_v1667.s: proc/proc_pure_bitmap_terminal_v1661.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_BITMAP_TERMINAL_V1661=1 $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_bitmap_restore_v1667.s: proc/proc_pure_bitmap_restore_v1664.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PBR_V1664=1 -DDAIMOS_PBM_V1667=1 $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_bitmap_decode_v1667.s: proc/proc_pure_bitmap_decode_v1660.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_BITMAP_DECODE_V1660=1 $(INCLUDES) -S $< -o $@
+endif
+
+$(BUILD)/proc_pure_drop_v1611.s: proc/proc_pure_ram_v1381.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_SWAPLESS_PURE_RAM_V1381=1 \
+	    -DDAIMOS_PURE_DROP_ONLY_V1611=1 $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_prefix_v1611.s: proc/proc_pure_restore_v1384.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_SWAPLESS_PREFIX_V1384=1 \
+	    $(INCLUDES) -S $< -o $@
+
+$(BUILD)/proc_pure_full_v1611.s: proc/proc_pure_ram_restore_v1391.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_FULL_V1391=1 \
+	    $(INCLUDES) -S $< -o $@
 
 ${BUILD}/proc_swap_entry_v481.s: proc/proc_swap_entry_v481.s
 	@mkdir -p ${BUILD}
@@ -420,13 +508,13 @@ ${BUILD}/tsfs.s: fs/tsfs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/tsfs.c -o $@
 
-${BUILD}/kinit_io_pdp6.s: boot/kinit_io_pdp6.s ${KINIT_STACK_MODE_STAMP}
+${BUILD}/kinit_io_pdp6.s: ${DAIMOS_CPU_KINIT_IO_SOURCE} ${KINIT_STACK_MODE_STAMP}
 	@mkdir -p ${BUILD}
-	{ echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; echo ".set KINIT_STACK_RESERVE_WORDS,${KINIT_STACK_RESERVE_WORDS}"; cat boot/kinit_io_pdp6.s; } > $@
+	{ echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; echo ".set KINIT_STACK_RESERVE_WORDS,${KINIT_STACK_RESERVE_WORDS}"; cat ${DAIMOS_CPU_KINIT_IO_SOURCE}; } > $@
 
-${BUILD}/proc_pdp6.s: proc/proc_pdp6.s
+${BUILD}/proc_pdp6.s: ${DAIMOS_CPU_PROCESS_SOURCE}
 	@mkdir -p ${BUILD}
-	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; cat proc/proc_pdp6.s; } > $@
+	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; cat ${DAIMOS_CPU_PROCESS_SOURCE}; } > $@
 
 ${BUILD}/proc_run.s: proc/proc_run.s
 	@mkdir -p ${BUILD}
@@ -440,7 +528,7 @@ COPY_ASM_SRCS = core/ret.s \
 	fs/monitorfs_dispatch_v14.s \
 	drivers/dsk270.s \
 	drivers/drm236.s \
-	core/kfmt_pdp6.s \
+	${DAIMOS_CPU_KFMT_SOURCE} \
 	core/s6rec.s \
 	fs/vfs.s \
 	fs/fs_mres.s \
@@ -451,9 +539,9 @@ COPY_ASM_SRCS = core/ret.s \
 	proc/syscall_info.s \
 	drivers/pclk.s \
 	drivers/lpt_io.s \
-	proc/syscall_dispatch_pdp6.s \
-	proc/mach_user_pdp6.s \
-	core/kcore_pi_pdp6.s \
+	${DAIMOS_CPU_SYSCALL_SOURCE} \
+	${DAIMOS_CPU_TRAP_SOURCE} \
+	${DAIMOS_CPU_PI_SOURCE} \
 	storage/backstore.s \
 	storage/storage_router.s \
 	core/kcore_end.s \

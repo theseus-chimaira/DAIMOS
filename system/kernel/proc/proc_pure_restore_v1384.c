@@ -6,10 +6,11 @@
  * Prefix reserve/release use a PACKED_PROCESS full-span descriptor while
  * VFS I/O is performed. Thus the original writable suffix remains owned
  * and un-runnable, and every reader/allocator sees an occupied full span.
- * The final PROCESS descriptor plus VM/mode publication is PI-atomic.
+ * The final unpinned PROCESS descriptor plus VM/mode publication is
+ * PI-atomic. No fallible MM operation follows resident publication.
  *
- * Not production linked. Caller must hold PROCESS TRANSITION and executable
- * immutability/unmount exclusion for the entire operation.
+ * v1611: linked only in experimental opt-in PURE MRES. The caller must
+ * hold PROCESS TRANSITION and executable unmount exclusion throughout.
  */
 #include "proc_pure_restore_v1384.h"
 #include "proc_swap.h"
@@ -19,6 +20,8 @@
 #include "mm_internal.h"
 #include "mm_pure_expand_v1384.h"
 #include "fs_mres.h"
+#include "proc_pure_admit_v1608.h"
+#include "proc_pure_lifecycle_v1604.h"
 
 #if !defined(DAIMOS_SWAPLESS_PREFIX_V1384) || \
     DAIMOS_SWAPLESS_PREFIX_V1384 != 1
@@ -69,21 +72,21 @@ proc_pure_restore_v1384(unsigned int slot,
         kword_t pi_state;
         int rc;
 
-        if (!loader || !slot || !proc_table || !proc_swap_records ||
-            !proc_storage_runtime_v29.words ||
-            slot >= proc_storage_runtime_v29.slots)
+        if (!loader)
                 return MM_ERR_INVAL;
-        p = &proc_table[slot];
-        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
-            !PROC_UAREA_BASE(p) ||
-            (PROC_STATE(p) != PROC_SLEEP && PROC_STATE(p) != PROC_STOP))
-                return MM_ERR_INVAL;
+        rc = pure_life_prepare_v1604(slot, PURE_LIFE_RESTORE_V1610,
+            &p, &backing, &words);
+        if (rc != MM_OK)
+                return rc;
         u = PRP_PTR(PROC_UAREA_BASE(p));
-        if (u[PROC_FDCTL_OFFSET] &
-            (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT))
-                return MM_ERR_BUSY;
-        backing = proc_swap_records[slot].state;
-        words = VM_SPACE_WORDS(p);
+        /* v1609: fast in-place prefix restore must observe the SAME
+         * executable source admission as the bounded full restore.
+         * Check before pinning or claiming a physical MM gap. A missing
+         * mount cannot be replaced with stale or unrelated executable
+         * text; the inactive writable suffix stays intact for retry.
+         */
+        if (pure_admit_source_v1608(p, backing) != MM_OK)
+                return MM_ERR_INVAL;
         pure = (backing >> PROC_SWAP_TEXT_SHIFT) & PROC_SWAP_TEXT_MASK;
         if (!pure || pure > MM_HALF_MASK - EXEC_USER_ORIGIN ||
             !words || (words & (VM_PDP6_ALIGN_WORDS - 1UL)))
@@ -141,8 +144,10 @@ proc_pure_restore_v1384(unsigned int slot,
         }
 
         /* Prefix is completely initialized and immutable, writable RAM
-         * stayed bit-identical. The MM retype cannot allocate or fail
-         * after validation; publish the complete APR and mode atomically.
+         * stayed bit-identical. MM validates the exact single pin, then
+         * atomically retypes AND unpins in its final metadata store.
+         * Publish APR/mode and release TRANSITION under the same PI
+         * exclusion. No fallible MM unpin follows publication.
          */
         pi_state = mach_pi_disable();
         rc = mm_pure_commit_prefix_v1384(base, slot, prefix, words);
@@ -152,6 +157,7 @@ proc_pure_restore_v1384(unsigned int slot,
                 if (proc_storage_publish_v30(slot, PROC_STORAGE_PACKED,
                     PROC_STORAGE_RESIDENT) != 0)
                         proc_swap_storage_invariant_v30();
+                PROC_CLEAR_TRANSITION(p);
         }
         mach_pi_restore(pi_state);
         if (rc != MM_OK) {
@@ -167,8 +173,5 @@ proc_pure_restore_v1384(unsigned int slot,
                         return MM_ERR_BUSY;
                 return rc;
         }
-        if (mm_unpin(base) != MM_OK)
-                return MM_ERR_BUSY; /* committed, leave TRANSITION held */
-        PROC_CLEAR_TRANSITION(p);
         return MM_OK;
 }

@@ -1,3 +1,23 @@
+## 2026-11-22 v1804: isolated RAW PURE consolidation candidate
+
+The v1684 RAW PURE development head is being merged on the
+isolated `kcore-raw-pure-integration-v1804` branch against
+K01-K04 closed mainline `495060f6`. All 90 non-main local
+branch tips are ancestors of the RAW PURE tip. Mainline
+KCORE, TODO and state documents are retained as authoritative;
+old feature development history remains reachable through
+the merge parent. Testkit has two independent PURE branch
+heads and one independent detached DTFS fixture.
+No feature acceptance, default-mode change, mainline merge,
+or branch deletion is implied. See
+`design/daimos-branch-consolidation-v1804.md`.
+
+The isolated default-disabled Stage-1 assembler and KINIT/KCORE
+KCC source-generation checks PASSed. Testkit v1684 PURE
+two-owner source regression and K03/K04 historical guard/
+verifier checks PASSed; no integrated v1804 physical guest
+acceptance is implied.
+
 ## 2026-11-22 v1803: K01-K04 CLOSED (K03 policy finalized)
 
 All four KCORE process/memory correctness tasks K01-K04 are now

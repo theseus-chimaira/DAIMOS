@@ -517,7 +517,7 @@ vm_space_create_done:
         popj    17,
 
 /**
- * @brief Release one resident user extent and clear its VM state.
+ * @brief Release resident, disk-backed or inactive RAW PURE user state.
  *
  * @param AC1 Process descriptor.
  * @param AC2 MM owner/process slot.
@@ -526,10 +526,10 @@ vm_space_create_done:
 vm_space_destroy:
         push    17,1                    ; descriptor
         push    17,2                    ; owner
-        ; Do not destroy a PACKED/invalid process through the old disk-swap
-        ; cleanup path.  A packed image needs its registered MM extent
-        ; released first; no such image may be published until that path is
-        ; installed.  Reject before freeing any resident MM allocation.
+        ; v1609: accept PACKED only for exact terminal teardown through
+        ; proc_swap_detach, which validates and frees the single retained
+        ; PDP-6 raw suffix before retiring the storage mode. Never treat
+        ; its resident executable record as a disk swap allocation.
         move    1,(17)                 ; slot
         movei   2,0                    ; RESIDENT
         pushj   17,proc_storage_expect_v30
@@ -537,7 +537,12 @@ vm_space_destroy:
         move    1,(17)
         movei   2,1                    ; DISK
         pushj   17,proc_storage_expect_v30
+        jumpe   1,vm_space_destroy_check_absent_v1609
+        move    1,(17)
+        movei   2,2                    ; PACKED raw suffix
+        pushj   17,proc_storage_expect_v30
         jumpn   1,vm_space_destroy_fail
+vm_space_destroy_check_absent_v1609:
         move    2,-1(17)              ; DISK cannot have a resident VM base
         hrrz    3,1(2)
         jumpn   3,vm_space_destroy_fail

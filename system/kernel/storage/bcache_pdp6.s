@@ -86,11 +86,15 @@ bcache_store:
 ; Allocate without invoking reclaim, otherwise cache allocation could recurse
 ; through fs_memory_reclaim().  State is zero here, so let MM write the new
 ; slab base directly into bcache_state rather than reserving a third local.
+; This small reclaimable 0201-word slab belongs beside kernel-dynamic
+; allocations at the LOW end.  A HIGH allocation can obstruct the top
+; 02000-aligned user APR even though the slab itself occupies only 0201
+; words.  Keep large process APRs at HIGH, and retain this cache's exact
+; MM owner, allocation length, invalidation and reclaim semantics.
         add     17,kconst_2_2
         movei   1,bcache_state
         movem   1,-1(17)               ; arg 6: basep
-        movei   1,1
-        movem   1,(17)                  ; arg 5: MM_ALLOC_HIGH
+        setzm   (17)                    ; arg 5: MM_ALLOC_LOW
         movei   1,BCACHE_SLAB_WORDS
         movei   2,1
         movei   3,3                     ; MM_TYPE_KERNEL_DYNAMIC

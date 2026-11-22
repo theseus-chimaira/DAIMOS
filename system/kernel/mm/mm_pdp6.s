@@ -342,7 +342,14 @@ mm_alloc_aligned_noreclaim:
         and     1,011
         jumpn   1,mm_alloc_nr_inval
         jumpe   012,mm_alloc_nr_inval
-        tdne    012,[-4]
+        ; MM extent metadata has THREE type bits. The original test
+        ; accidentally permitted only 1..3, rejecting legitimate
+        ; MM_TYPE_PACKED_PROCESS=4 allocations even with a free gap.
+        ; Accept exactly 1..4; preserve invalid rejection for 5..7,
+        ; negative values and any high bits. No type5 alias is safe.
+        tdne    012,[-10]
+        jrst    mm_alloc_nr_inval
+        caile   012,4
         jrst    mm_alloc_nr_inval
         tdne    014,[-2]
         jrst    mm_alloc_nr_inval

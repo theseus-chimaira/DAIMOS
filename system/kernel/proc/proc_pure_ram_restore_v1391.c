@@ -12,8 +12,12 @@
  * exact capacity through the loader ABI, and overlays retained mutable
  * words only after the file read succeeds.
  *
- * NOT production-linked: a real scheduler, mount lifetime and teardown
- * owner still have to qualify every transition before activation.
+ * v1654: Unpin the destination BEFORE releasing the only authoritative
+ * PACKED source and publishing the runnable APR. A failed final unpin
+ * cannot leave a RESIDENT/TRANSITION process with its source already
+ * destroyed. Keep the short fallible commit window PI-atomic.
+ *
+ * Linked only by the opt-in PURE MRES. The default KCORE is unchanged.
  */
 #include "proc_pure_ram_restore_v1391.h"
 #include "proc_swap.h"
@@ -23,9 +27,11 @@
 #include "mm_internal.h"
 #include "mm_pure_rebase_v1381.h"
 #include "fs_mres.h"
+#include "proc_pure_lifecycle_v1604.h"
+#include "proc_pure_admit_v1608.h"
+#include "vm_pdp6_pure_range_v1604.h"
 
-#if !defined(DAIMOS_SWAPLESS_PURE_RAM_RESTORE_V1391) || \
-    DAIMOS_SWAPLESS_PURE_RAM_RESTORE_V1391 != 1
+#if !defined(DAIMOS_PURE_FULL_V1391) || DAIMOS_PURE_FULL_V1391 != 1
 #error proc_pure_ram_restore_v1391_requires_swapless_build
 #endif
 
@@ -34,8 +40,6 @@
 #else
 #define PRAM_PTR(x) ((kword_t *)(unsigned long)(x))
 #endif
-
-#define PRAM_SECTOR 0200UL
 
 /* Reuse the already linked assembler's exact two-bit mode operations. */
 extern int proc_storage_expect_v30(unsigned int, unsigned int);
@@ -81,37 +85,26 @@ pram_extent(unsigned int slot, unsigned int type, kword_t words,
  * nonresident guard scan. No new kernel word is needed.
  */
 static int
-pram_prepare(unsigned int slot, unsigned int terminal,
+pram_prepare(unsigned int slot, unsigned int action,
     struct proc **pp, kword_t *backingp, kword_t *wordsp,
     kword_t *skipp)
 {
         struct proc *p;
-        kword_t backing, words, text, skip;
-        kword_t *u;
+        kword_t backing, words, skip;
+        int rc;
 
-        if (!slot || !proc_table || !proc_swap_records ||
-            !proc_storage_runtime_v29.words ||
-            slot >= proc_storage_runtime_v29.slots)
-                return MM_ERR_INVAL;
-        p = &proc_table[slot];
-        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
-            !PROC_UAREA_BASE(p) ||
-            (terminal && PROC_STATE(p) == PROC_FREE) ||
-            (!terminal && PROC_STATE(p) != PROC_SLEEP &&
-             PROC_STATE(p) != PROC_STOP))
-                return MM_ERR_INVAL;
-        u = PRAM_PTR(PROC_UAREA_BASE(p));
-        if (!terminal && (u[PROC_FDCTL_OFFSET] &
-            (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT)))
-                return MM_ERR_BUSY;
-        backing = proc_swap_records[slot].state;
-        words = VM_SPACE_WORDS(p);
-        text = (backing >> PROC_SWAP_TEXT_SHIFT) & PROC_SWAP_TEXT_MASK;
-        if (!text || !words || text > MM_HALF_MASK - EXEC_USER_ORIGIN)
-                return MM_ERR_INVAL;
-        skip = (text + EXEC_USER_ORIGIN) & ~(PRAM_SECTOR - 1UL);
-        if (!skip || skip >= words)
-                return MM_ERR_INVAL;
+        rc = pure_life_prepare_v1604(slot, action, &p, &backing,
+            &words);
+        if (rc != MM_OK)
+                return rc;
+        if (action != PURE_LIFE_TERMINAL_V1610) {
+                rc = pure_admit_source_v1608(p, backing);
+                if (rc != MM_OK)
+                        return rc;
+        }
+        rc = pdp6_pure_skip_v1604(backing, words, &skip);
+        if (rc != MM_OK)
+                return rc;
         *pp = p;
         *backingp = backing;
         *wordsp = words;
@@ -133,6 +126,7 @@ proc_pure_ram_restore_v1391(unsigned int slot,
         struct proc *p;
         kword_t backing, words, skip, raw, source, target;
         kword_t *u;
+        kword_t pi_state;
         int rc;
         int source_pinned = 0;
         int target_pinned = 0;
@@ -140,7 +134,8 @@ proc_pure_ram_restore_v1391(unsigned int slot,
 
         if (!loader)
                 return MM_ERR_INVAL;
-        rc = pram_prepare(slot, 0U, &p, &backing, &words, &skip);
+        rc = pram_prepare(slot, PURE_LIFE_RESTORE_V1610,
+            &p, &backing, &words, &skip);
         if (rc != MM_OK)
                 return rc;
         if (proc_storage_expect_v30(slot, PROC_STORAGE_PACKED) != 0)
@@ -178,23 +173,37 @@ proc_pure_ram_restore_v1391(unsigned int slot,
          */
         fs_copy_words(PRAM_PTR(source), PRAM_PTR(target + skip),
             (unsigned int)raw);
+        /*
+         * Finish ALL fallible target cleanup while the authoritative
+         * source is still pinned and intact. Neither a target-unpin error
+         * nor a source-release refusal may publish a RESIDENT owner.
+         * No allocation or filesystem operation occurs with PI disabled.
+         */
+        pi_state = mach_pi_disable();
+        rc = mm_unpin(target);
+        if (rc != MM_OK) {
+                mach_pi_restore(pi_state);
+                goto fail_target;
+        }
+        target_pinned = 0;
         rc = mm_unpin(source);
         if (rc != MM_OK) {
                 source_uncertain = 1;
+                mach_pi_restore(pi_state);
                 goto fail_target;
         }
         source_pinned = 0;
         rc = mm_free(source, MM_TYPE_PACKED_PROCESS, slot);
-        if (rc != MM_OK)
+        if (rc != MM_OK) {
+                mach_pi_restore(pi_state);
                 goto fail_target;
+        }
 
         VM_PDP6_SET_BASE(p, target);
         u[PROC_SWAP_BACKING_OFFSET] = 0UL;
         pram_publish(slot, PROC_STORAGE_PACKED, PROC_STORAGE_RESIDENT);
-        rc = mm_unpin(target);
-        if (rc != MM_OK)
-                return MM_ERR_BUSY;
         PROC_CLEAR_TRANSITION(p);
+        mach_pi_restore(pi_state);
         return MM_OK;
 
 fail_target:

@@ -1,3 +1,12 @@
+# Branch consolidation candidate v1804
+
+The RAW PURE development history is being reconciled with the
+K01-K04 v1803 mainline in the isolated
+`kcore-raw-pure-integration-v1804` candidate. Default-OFF
+feature switches remain unchanged. This is not RAW PURE
+mainline acceptance. See
+`design/daimos-branch-consolidation-v1804.md`.
+
 # DAIMOS KCORE - architecture, accepted boundaries and RAM state (v1676)
 
 Updated 2026-11-19. This is the **current KCORE engineering reference**;

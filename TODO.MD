@@ -1,3 +1,10 @@
+# Branch consolidation candidate v1804
+
+Before K05-K09 implementation, validate the isolated RAW PURE
+integration candidate, reconcile associated testkit branches,
+and preserve dirty worktrees. No new feature is accepted.
+See `design/daimos-branch-consolidation-v1804.md`.
+
 # DAIMOS TODO - current open work (v1675r2)
 
 Updated: 2026-11-19. This is the consolidated open-only backlog for

@@ -2,11 +2,26 @@
  * @file mm.h
  * @brief DAIMOS contiguous physical-core allocator interface.
  *
- * PDP-6 has relocation/protection hardware but no paged MMU.  DAIMOS therefore
+ * PDP-6 has relocation/protection hardware but no paged MMU. DAIMOS therefore
  * allocates contiguous physical extents and moves stopped process images when
- * fragmentation prevents an otherwise affordable allocation.  Free space is
+ * fragmentation prevents an otherwise affordable allocation. Free space is
  * represented by gaps between sorted allocated extents inside up to three
  * managed arenas.
+ *
+ * This is a contiguous-core allocator, not an abstract page-frame manager.
+ * Its two-word descriptor has an 18-bit physical base. Preserve it for the
+ * existing PDP-6 KCORE and contiguous device/kernel allocations; do not
+ * widen it or force page-sized allocations for a hypothetical paged machine.
+ * Noncontiguous user mappings and wider physical frame identity belong to
+ * that machine's VM backend, not to this descriptor layout.
+ *
+ * Architecture boundary v1605: the two-word descriptor encodes an 18-bit
+ * physical base. This format remains valid for the current PDP-6/KA10
+ * contiguous-core implementation, but cannot describe the KI10's 22-bit
+ * page-frame addresses. A KI10 port should retain contiguous low-core
+ * allocation for KCORE/MRES/device workspaces and add a separate user-page
+ * frame allocator. Do not enlarge this hot descriptor or change PDP-6
+ * extent alignment in anticipation of paging.
  */
 #ifndef DAIMON_MM_H
 #define DAIMON_MM_H
@@ -30,7 +45,11 @@
 #define MM_TYPE_KERNEL_DYNAMIC  3U
 /**
  * Evicted writable state stored in core, not a runnable APR process image.
- * This type is reserved until the packed-process transaction is implemented.
+ * The no-reclaim allocator accepts this fourth defined MM type
+ * (v1659 fix). Reserved type values 5..7 remain invalid.
+ * v1609 accepts exact terminal cleanup of a PACKED_PROCESS owner.
+ * v1611 adds creation/restore in an opt-in experimental MRES only,
+ * not in the default KCORE or accepted physical boot profile.
  * In particular, mm_compact() must not treat it as a movable VM extent:
  * relocation of packed data requires updating the owner's packed descriptor.
  */

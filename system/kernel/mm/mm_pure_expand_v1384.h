@@ -33,9 +33,11 @@ int mm_pure_release_prefix_v1384(kword_t base, unsigned int owner,
 
 /*
  * Inputs as for release. After a completely successful prefix reload,
- * convert the pinned full-size PACKED_PROCESS descriptor into a PROCESS
- * descriptor. The caller publishes the resident process in the SAME
- * PI-disabled region before re-enabling interrupts.
+ * convert the pinned full-size PACKED_PROCESS descriptor into an UNPINNED
+ * PROCESS descriptor in one validated MM metadata store. This consumes
+ * exactly the transaction pin. The caller publishes the resident
+ * process and clears TRANSITION in the SAME PI-disabled region; no
+ * fallible final mm_unpin() remains.
  */
 int mm_pure_commit_prefix_v1384(kword_t base, unsigned int owner,
     kword_t prefix, kword_t full_words);

@@ -48,13 +48,15 @@
  * negative counts toward zero at 60 Hz without disturbing positive transfer
  * word counts. MTC spacing/rewind may legitimately span a full reel.
  */
-        ; One 18-bit DECtape end-to-end traversal is roughly 32 seconds at
-        ; nominal line speed.  A transport may legitimately coast near the
-        ; opposite end while another member is being scanned, so allow one
-        ; full traversal plus reversal/settling margin before declaring the
-        ; search dead.  This only extends the failure bound; successful seeks
-        ; still complete as soon as the requested block arrives.
-        .set DTC_SEARCH_TIMEOUT_TICKS,05214      ; 45 seconds
+        ; v1618: a physical rewind/reversal can take a full minute.  The
+        ; former 45-second limit could reject a healthy Type-551 transport
+        ; before it reached the next usable block mark.  Allow 120 seconds
+        ; (one full minute plus one full minute headroom) at 60 Hz.  This
+        ; is a per-search/mark bound, not a delay imposed on successful
+        ; requests: the PI3 block-number path still completes immediately
+        ; on a match and rearms the deadline only on a continuing search.
+        ; Type-516 MTC rewind/spacing retains its existing 15-minute bound.
+        .set DTC_SEARCH_TIMEOUT_TICKS,016040     ; 7200 ticks = 120 seconds
         .set MTC_CONTROL_TIMEOUT_TICKS,0151440   ; 15 minutes
         .set TAPE_DTC_DATA_TIMEOUT_TICKS,0454     ; 5 seconds at 60 Hz
         .set TAPE_MTC_DATA_TIMEOUT_TICKS,012430   ; 5400 ticks, 90 seconds at 60 Hz

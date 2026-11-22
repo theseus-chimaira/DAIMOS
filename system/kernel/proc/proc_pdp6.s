@@ -12,6 +12,14 @@
  * PI vectors, software PI requests, user/executive return state, and context
  * frame layout are machine-specific. Later PDP-10 implementations may replace
  * these paths while preserving the proc.h process/u-area ABI.
+ *
+ * v1605 cross-target boundary: this file currently contains both portable
+ * scheduling/TTY/exit policy and low-core PI6 context, APR switch, software
+ * PI request and physical VM-base assumptions. The whole PDP-6 object is
+ * selected from arch/pdp6_source_map_v1605.mk. A later source-only split
+ * should separate machine context/save/restore and PI kick code from policy,
+ * with instruction-for-instruction and native testkit acceptance first.
+ * Never add a hot-path call solely to introduce a new machine abstraction.
  */
 
         .equ    PROC_WORDS,3

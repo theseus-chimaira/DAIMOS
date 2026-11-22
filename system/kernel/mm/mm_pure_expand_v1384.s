@@ -1,8 +1,9 @@
-; Staged, not production linked.
+; Source-linked by the opt-in experimental v1611 PURE MRES only.
 ; Claim a free PURE prefix beside an inactive raw suffix, without copying it.
 ; The claim stays typed PACKED_PROCESS for the whole potentially fallible
 ; VFS read, and therefore cannot be scheduled. A failed read reverses the
-; exact MM claim; successful reads atomically retype to PROCESS.
+; exact MM claim; successful reads atomically retype to PROCESS and
+; release the transaction pin. No fallible unpin follows publication.
 ;
 ; C ABI: AC1 = suffix base (claim), or original base (release/commit).
 ;        AC2 = process owner, AC3 = PURE prefix, AC4 = full APR words.
@@ -155,8 +156,11 @@ mpure_claim_v1384:
 mpure_release_or_commit_v1384:
         caie    014,2
         jrst    mpure_release_v1384
+        ; Owner, geometry, and exactly one pin were checked above.
+        ; Retype and release that pin in one infallible metadata store.
         andcm   4,[07000000]           ; remove type without losing owner/pin
         ior     4,[01000000]           ; MM_TYPE_PROCESS
+        sub     4,[010000000]          ; consume exactly one verified pin
         movem   4,mm_extents+1(013)
         jrst    mpure_success_v1384
 mpure_release_v1384:

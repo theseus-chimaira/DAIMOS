@@ -69,7 +69,10 @@
         .globl monitorfs_mres_package
         .globl mfsdev_install_minit
         .globl proc_swap_minit_v481
+.if DAIMOS_SWAPLESS_ONLY_V1668
+.else
         .globl proc_swap_mres_package_v481
+.endif
         .globl cty_mres_package
         .globl clk_mres_package
         .globl pclk_mres_package
@@ -154,9 +157,19 @@ __minit_table_begin:
 .if KINIT_DRM_ENABLED
         .word drm236_minit,,drm236_mres_package
 .endif
-        ; Swap services are installed after physical storage discovery.
-        .word proc_swap_minit_v481,,proc_swap_mres_package_v481
+        ; Select the *actual* physical root before choosing the one
+        ; memory-management MRES. ROOT=auto may select DTC even with
+        ; DSK/DRM hardware present for auxiliary storage.
         .word root_select_minit,,0
+        ; SWAP/PURE selection now sees the chosen root and validated
+        ; AUXSTORE capacity. The unselected MRES is never installed.
+.if DAIMOS_SWAPLESS_ONLY_V1668
+        ; Exactly one candidate: PURE is installed directly by KINIT.
+        ; Never create a relocation/reference to DISK SWAP MRES.
+        .word proc_swap_minit_v481,,0
+.else
+        .word proc_swap_minit_v481,,proc_swap_mres_package_v481
+.endif
 .if KINIT_FULL
         .word auxstore_minit,,0
 .endif

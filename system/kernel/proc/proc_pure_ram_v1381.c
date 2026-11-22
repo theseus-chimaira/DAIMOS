@@ -10,8 +10,8 @@
  * allocation is needed. MM rebases the existing pinned process extent to
  * its high-address writable suffix without copying a single data word.
  *
- * NOT production-linked: a real scheduler, mount lifetime and teardown
- * owner still have to qualify every transition before activation.
+ * v1611: DROP is linked only in the explicit experimental swapless MRES.
+ * Default KCORE and the accepted disk-swap profile remain unaffected.
  */
 #include "proc_pure_ram_v1381.h"
 #include "proc_swap.h"
@@ -21,6 +21,9 @@
 #include "mm_internal.h"
 #include "mm_pure_rebase_v1381.h"
 #include "fs_mres.h"
+#include "proc_pure_lifecycle_v1604.h"
+#include "proc_pure_admit_v1608.h"
+#include "vm_pdp6_pure_range_v1604.h"
 
 #if !defined(DAIMOS_SWAPLESS_PURE_RAM_V1381) || \
     DAIMOS_SWAPLESS_PURE_RAM_V1381 != 1
@@ -32,8 +35,6 @@
 #else
 #define PRAM_PTR(x) ((kword_t *)(unsigned long)(x))
 #endif
-
-#define PRAM_SECTOR 0200UL
 
 /* Reuse the already linked assembler's exact two-bit mode operations. */
 extern int proc_storage_expect_v30(unsigned int, unsigned int);
@@ -79,37 +80,26 @@ pram_extent(unsigned int slot, unsigned int type, kword_t words,
  * nonresident guard scan. No new kernel word is needed.
  */
 static int
-pram_prepare(unsigned int slot, unsigned int terminal,
+pram_prepare(unsigned int slot, unsigned int action,
     struct proc **pp, kword_t *backingp, kword_t *wordsp,
     kword_t *skipp)
 {
         struct proc *p;
-        kword_t backing, words, text, skip;
-        kword_t *u;
+        kword_t backing, words, skip;
+        int rc;
 
-        if (!slot || !proc_table || !proc_swap_records ||
-            !proc_storage_runtime_v29.words ||
-            slot >= proc_storage_runtime_v29.slots)
-                return MM_ERR_INVAL;
-        p = &proc_table[slot];
-        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
-            !PROC_UAREA_BASE(p) ||
-            (terminal && PROC_STATE(p) == PROC_FREE) ||
-            (!terminal && PROC_STATE(p) != PROC_SLEEP &&
-             PROC_STATE(p) != PROC_STOP))
-                return MM_ERR_INVAL;
-        u = PRAM_PTR(PROC_UAREA_BASE(p));
-        if (!terminal && (u[PROC_FDCTL_OFFSET] &
-            (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT)))
-                return MM_ERR_BUSY;
-        backing = proc_swap_records[slot].state;
-        words = VM_SPACE_WORDS(p);
-        text = (backing >> PROC_SWAP_TEXT_SHIFT) & PROC_SWAP_TEXT_MASK;
-        if (!text || !words || text > MM_HALF_MASK - EXEC_USER_ORIGIN)
-                return MM_ERR_INVAL;
-        skip = (text + EXEC_USER_ORIGIN) & ~(PRAM_SECTOR - 1UL);
-        if (!skip || skip >= words)
-                return MM_ERR_INVAL;
+        rc = pure_life_prepare_v1604(slot, action, &p, &backing,
+            &words);
+        if (rc != MM_OK)
+                return rc;
+        if (action != PURE_LIFE_TERMINAL_V1610) {
+                rc = pure_admit_source_v1608(p, backing);
+                if (rc != MM_OK)
+                        return rc;
+        }
+        rc = pdp6_pure_skip_v1604(backing, words, &skip);
+        if (rc != MM_OK)
+                return rc;
         *pp = p;
         *backingp = backing;
         *wordsp = words;
@@ -133,7 +123,8 @@ proc_pure_ram_drop_v1381(unsigned int slot)
         kword_t *u;
         int rc;
 
-        rc = pram_prepare(slot, 0U, &p, &backing, &words, &skip);
+        rc = pram_prepare(slot, PURE_LIFE_DROP_V1610,
+            &p, &backing, &words, &skip);
         if (rc != MM_OK)
                 return rc;
         if (proc_storage_expect_v30(slot, PROC_STORAGE_RESIDENT) != 0)
@@ -187,6 +178,12 @@ proc_pure_ram_drop_v1381(unsigned int slot)
         return MM_OK;
 }
 
+/* v1611: the resident swapless MRES only needs the zero-copy DROP.
+ * The historical unbounded restore and staged terminal cleanup are
+ * retained for native regression, but neither is linked into that MRES.
+ * Production FULL restoration uses the capacity-bounded v1391 path;
+ * production terminal cleanup is already handled by v1609 KCORE. */
+#ifndef DAIMOS_PURE_DROP_ONLY_V1611
 int
 proc_pure_ram_restore_v1381(unsigned int slot,
     proc_pure_ram_reload_v1381 reload)
@@ -201,7 +198,8 @@ proc_pure_ram_restore_v1381(unsigned int slot,
 
         if (!reload)
                 return MM_ERR_INVAL;
-        rc = pram_prepare(slot, 0U, &p, &backing, &words, &skip);
+        rc = pram_prepare(slot, PURE_LIFE_RESTORE_V1610,
+            &p, &backing, &words, &skip);
         if (rc != MM_OK)
                 return rc;
         if (proc_storage_expect_v30(slot, PROC_STORAGE_PACKED) != 0)
@@ -272,7 +270,8 @@ proc_pure_ram_discard_v1381(unsigned int slot)
         kword_t *u;
         int rc;
 
-        rc = pram_prepare(slot, 1U, &p, &backing, &words, &skip);
+        rc = pram_prepare(slot, PURE_LIFE_TERMINAL_V1610,
+            &p, &backing, &words, &skip);
         if (rc != MM_OK)
                 return rc;
         u = PRAM_PTR(PROC_UAREA_BASE(p));
@@ -292,3 +291,4 @@ proc_pure_ram_discard_v1381(unsigned int slot)
         /* Teardown owns TRANSITION until the complete slot is retired. */
         return MM_OK;
 }
+#endif /* !DAIMOS_PURE_DROP_ONLY_V1611 */

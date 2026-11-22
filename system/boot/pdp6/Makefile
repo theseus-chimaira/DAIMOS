@@ -2,6 +2,9 @@
 PROJECT_ROOT != cd ../../.. && pwd
 KCC_REPO ?= $(PROJECT_ROOT)/../kcc
 KERNEL_DIR = $(PROJECT_ROOT)/system/kernel
+# The PDP-6 image keeps its exact historical generated object names/order.
+# Only source ownership is selected here; this is not a KA10/KI10 boot target.
+include $(KERNEL_DIR)/arch/pdp6_source_map_v1605.mk
 PICTURE_DIR ?= $(PROJECT_ROOT)/pictures
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
 BUILD ?= $(BUILD_ROOT)/system/boot/pdp6
@@ -87,6 +90,36 @@ ifeq ($(ROOT),tape)
 override KINIT_BADMAP = 0
 endif
 KINIT_STACK_WATERMARK ?= 0
+DAIMOS_PURE_MRES_ENABLED ?= 0
+ifneq ($(filter $(DAIMOS_PURE_MRES_ENABLED),0 1),$(DAIMOS_PURE_MRES_ENABLED))
+$(error DAIMOS_PURE_MRES_ENABLED must be 0 or 1)
+endif
+# v1668: explicitly swapless TSFS image, not a general-purpose
+# ROOT=auto image. Remove the DISK SWAP package from transient KINIT.
+# A validated positive BACKSTORE is a boot error in this profile.
+DAIMOS_SWAPLESS_ONLY_V1668 ?= 0
+ifneq ($(filter $(DAIMOS_SWAPLESS_ONLY_V1668),0 1),$(DAIMOS_SWAPLESS_ONLY_V1668))
+$(error DAIMOS_SWAPLESS_ONLY_V1668 must be 0 or 1)
+endif
+ifeq ($(DAIMOS_SWAPLESS_ONLY_V1668),1)
+ifneq ($(ROOT),tape)
+$(error DAIMOS_SWAPLESS_ONLY_V1668 requires ROOT=tape)
+endif
+ifneq ($(DAIMOS_PURE_MRES_ENABLED),1)
+$(error DAIMOS_SWAPLESS_ONLY_V1668 requires DAIMOS_PURE_MRES_ENABLED=1)
+endif
+endif
+# v1667 is a separate test-only PURE MRES linkage experiment.
+# Executable mode3 remains refused by fixed KCORE.
+DAIMOS_PBM_V1667 ?= 0
+ifneq ($(filter $(DAIMOS_PBM_V1667),0 1),$(DAIMOS_PBM_V1667))
+$(error DAIMOS_PBM_V1667 must be 0 or 1)
+endif
+ifeq ($(DAIMOS_PBM_V1667),1)
+ifneq ($(DAIMOS_PURE_MRES_ENABLED)$(KINIT_TAPE_BOOT),11)
+$(error DAIMOS_PBM_V1667 requires TSFS-capable PURE MRES)
+endif
+endif
 # MonitorFS runtime is exclusively in its pinned, boot-loaded MRES.
 override MONITORFS_MRES_ENABLED := 1
 MONITORFS_MODE_STAMP = $(BUILD)/.monitorfs-v17-mode-$(MONITORFS_MRES_ENABLED)
@@ -96,6 +129,11 @@ KINIT_TAPE_MODE_STAMP = $(BUILD)/.kinit-tape-v20-mode-$(KINIT_TAPE_BOOT)
 # changes; keep the diagnostic stack geometry and probes synchronized.
 KINIT_STACK_MODE_STAMP = $(BUILD)/.kinit-stack-v655-$(KINIT_STACK_RESERVE_WORDS)-$(KINIT_STACK_WATERMARK)
 PDP10_GCC ?= pdp10-dec-none-gcc
+# Switch v1611 PURE MRES on/off without reusing stale KINIT output.
+KINIT_PURE_MODE_STAMP = $(BUILD)/.kinit-pure-v1611-mode-$(DAIMOS_PURE_MRES_ENABLED)-$(DAIMOS_PBM_V1667)-$(DAIMOS_SWAPLESS_ONLY_V1668)
+$(KINIT_PURE_MODE_STAMP): | $(BUILD)
+	@rm -f $(BUILD)/.kinit-pure-v1611-mode-*
+	@touch $@
 PDP10_OBJDUMP ?= pdp10-objdump
 PDP10_KCC ?= kcc
 # The 32K profile is GCC-only for measured image and memory optimization.
@@ -136,6 +174,7 @@ KCORE_BUILD = $(BUILD)/kcore-asm
 KINIT_STAMP = $(BUILD)/.kinit-built
 KCORE_STAMP = $(BUILD)/.kcore-built
 KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
+	$(KERNEL_DIR)/arch/pdp6_source_map_v1605.mk \
 	$(KERNEL_DIR)/proc/proc_swap_entry_v481.s \
 	$(KERNEL_DIR)/storage/backstore_entry_v484.s \
 	$(PROJECT_ROOT)/system/stand/pdp6/common/block_decompressor_v1458.inc \
@@ -143,9 +182,9 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/boot/kinit.h \
 	$(KERNEL_DIR)/boot/kinit_boot.c \
 	$(KERNEL_DIR)/boot/kinit_diag.c \
-	$(KERNEL_DIR)/boot/kinit_io_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_KINIT_IO_SOURCE) \
 	$(KERNEL_DIR)/boot/kinit_late.c \
-	$(KERNEL_DIR)/boot/kinit_late_begin_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_KINIT_LATE_SOURCE) \
 	$(KERNEL_DIR)/boot/kinit_late_end.s \
 	$(KERNEL_DIR)/boot/root_select.c \
 	$(KERNEL_DIR)/boot/root_select.h \
@@ -153,9 +192,9 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/core/d6block_vfs_fixed_v1458.s \
 	$(KERNEL_DIR)/core/kcore.h \
 	$(KERNEL_DIR)/core/kcore_end.s \
-	$(KERNEL_DIR)/core/kcore_pi_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_PI_SOURCE) \
 	$(KERNEL_DIR)/core/kcore_pi.h \
-	$(KERNEL_DIR)/core/kfmt_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_KFMT_SOURCE) \
 	$(KERNEL_DIR)/core/ret.s \
 	$(KERNEL_DIR)/drivers/card.h \
 	$(KERNEL_DIR)/drivers/clk.h \
@@ -248,25 +287,33 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/modules/module_runtime.h \
 	$(KERNEL_DIR)/modules/module_table.s \
 	$(KERNEL_DIR)/proc/exec.h \
-	$(KERNEL_DIR)/proc/exec_lowmem_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_EXEC_LOW_SOURCE) \
 	$(KERNEL_DIR)/proc/exec_load.s \
 	$(KERNEL_DIR)/proc/mach_user.h \
-	$(KERNEL_DIR)/proc/mach_user_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_TRAP_SOURCE) \
 	$(KERNEL_DIR)/proc/proc.c \
 	$(KERNEL_DIR)/proc/proc.h \
 	$(KERNEL_DIR)/proc/proc_boot.c \
 	$(KERNEL_DIR)/proc/proc_late.c \
-	$(KERNEL_DIR)/proc/proc_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_PROCESS_SOURCE) \
 	$(KERNEL_DIR)/proc/proc_run.s \
 	$(KERNEL_DIR)/proc/proc_swap.h \
 	$(KERNEL_DIR)/proc/proc_swap_boot.c \
-	$(KERNEL_DIR)/proc/proc_swap_pdp6.s \
-	$(KERNEL_DIR)/proc/proc_pure_backing_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_VM_SWAP_SOURCE) \
+	$(KERNEL_DIR)/$(DAIMOS_VM_BACKING_SOURCE) \
+	$(KERNEL_DIR)/$(DAIMOS_VM_PURE_DETACH_SOURCE) \
+	$(KERNEL_DIR)/$(DAIMOS_VM_PURE_SERVICE_SOURCE) \
+	$(KERNEL_DIR)/$(DAIMOS_VM_PURE_REBASE_SOURCE) \
+	$(KERNEL_DIR)/$(DAIMOS_VM_PURE_EXPAND_SOURCE) \
+	$(KERNEL_DIR)/$(DAIMOS_VM_PURE_IMAGE_SOURCE) \
+	$(KERNEL_DIR)/proc/proc_pure_ram_v1381.c \
+	$(KERNEL_DIR)/proc/proc_pure_restore_v1384.c \
+	$(KERNEL_DIR)/proc/proc_pure_ram_restore_v1391.c \
 	$(KERNEL_DIR)/proc/proc_storage_runtime_v30.s \
 	$(KERNEL_DIR)/proc/proc_pure_attach.c \
 	$(KERNEL_DIR)/proc/proc_storage_map_v28.h \
 	$(KERNEL_DIR)/proc/syscall.h \
-	$(KERNEL_DIR)/proc/syscall_dispatch_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_SYSCALL_SOURCE) \
 	$(KERNEL_DIR)/proc/vm.h \
 	$(KERNEL_DIR)/proc/vm_$(VM_BACKEND).h \
 	$(if $(filter pdp6,$(VM_BACKEND)),,$(KERNEL_DIR)/proc/vm_$(VM_BACKEND).c) \
@@ -282,7 +329,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/storage/blockset_layout.h \
 	$(KERNEL_DIR)/storage/blockset_mres.h \
 	$(KERNEL_DIR)/storage/bcache.h \
-	$(KERNEL_DIR)/storage/bcache_pdp6.s \
+	$(KERNEL_DIR)/$(DAIMOS_CPU_BCACHE_SOURCE) \
 	$(KERNEL_DIR)/storage/bstore.h \
 	$(KERNEL_DIR)/storage/backstore.s \
 	$(KERNEL_DIR)/storage/auxstore_boot.c \
@@ -320,6 +367,15 @@ MRES_NAMES = cty_io clk_io ptr_io ptp_io lpt_io cr_io cp_io dcs_io ge_io dpy_io 
 	dpy_text tty_io wcnsls_io ocnsls_io dsk_io drm236_io tape_io slv_io memfs_runtime \
 	dtfs dtfs_runtime tsfs tsfs_runtime blockset_dispatch badmap_dispatch fs_backing d6fs_provider d6fs_validate d6fs_runtime
 MRES_ASM = $(KCORE_BUILD)/cty_io.s $(KCORE_BUILD)/clk_io.s $(KCORE_BUILD)/ptr_io.s $(KCORE_BUILD)/ptp_io.s $(KCORE_BUILD)/lpt_io.s $(KCORE_BUILD)/cr_io.s $(KCORE_BUILD)/cp_io.s $(KCORE_BUILD)/dcs_io.s $(KCORE_BUILD)/ge_io.s $(KCORE_BUILD)/dpy_io.s $(KCORE_BUILD)/dpy_text.s $(KCORE_BUILD)/tty_io.s $(KCORE_BUILD)/wcnsls_io.s $(KCORE_BUILD)/ocnsls_io.s $(KCORE_BUILD)/dsk_io.s $(KCORE_BUILD)/drm236_io.s $(KCORE_BUILD)/tape_io.s $(KCORE_BUILD)/slv_io.s $(KCORE_BUILD)/memfs_data.s $(KCORE_BUILD)/memfs_snapshot.s $(KCORE_BUILD)/memfs_runtime.s $(KCORE_BUILD)/dtfs.s $(KCORE_BUILD)/dtfs_runtime.s $(KCORE_BUILD)/tsfs.s $(KCORE_BUILD)/tsfs_runtime.s $(KCORE_BUILD)/blockset_dispatch.s $(KCORE_BUILD)/badmap_dispatch.s $(KCORE_BUILD)/fs_backing.s $(KCORE_BUILD)/logstore_runtime.s $(KCORE_BUILD)/d6fs_provider.s $(KCORE_BUILD)/d6fs_validate.s $(KCORE_BUILD)/d6fs_runtime.s
+# v1612 changes only the service policy; retain the accepted v1611
+# transaction objects and their standalone native regression coverage.
+PURE_MRES_ASM_V1612 = $(KCORE_BUILD)/proc_pure_service_v1612.s \
+	$(KCORE_BUILD)/proc_pure_drop_v1611.s \
+	$(KCORE_BUILD)/proc_pure_prefix_v1611.s \
+	$(KCORE_BUILD)/proc_pure_full_v1611.s
+ifeq ($(DAIMOS_PURE_MRES_ENABLED),1)
+MRES_ASM += $(PURE_MRES_ASM_V1612)
+endif
 
 KCORE_DXR = $(BUILD)/kcore.dxr
 KCORE_MAP = $(BUILD)/kcore.map
@@ -373,20 +429,30 @@ LOGSTORE_MRES_OBJ = $(BUILD)/logstore-mres.dobj
 D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MONITORFS_MRES_OBJ = $(BUILD)/monitorfs-mres.dobj
 SWAP_MRES_OBJ_V481 = $(BUILD)/swapv481-mres.dobj
+SWAP_MRES_INPUT_V1668 = $(if $(filter 1,$(DAIMOS_SWAPLESS_ONLY_V1668)),,$(SWAP_MRES_OBJ_V481))
+PURE_MRES_OBJ_V1612 = $(BUILD)/purev1612-mres.dobj
+PURE_MRES_FOLD_PLAN_V1612 = $(BUILD)/pure-mres-v1612.fold
 ifeq ($(BOOT_PROFILE),lowmem)
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PCLK_MRES_OBJ) $(SOFTCLOCK_MRES_OBJ) $(MONITORFS_MRES_OBJ) $(DCS_MRES_OBJ) \
-	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(TAPE_MRES_OBJ)) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) $(SWAP_MRES_OBJ_V481) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(DTFS_MRES_OBJ)) \
+	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(TAPE_MRES_OBJ)) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) $(SWAP_MRES_INPUT_V1668) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(DTFS_MRES_OBJ)) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 0
 else
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PCLK_MRES_OBJ) $(SOFTCLOCK_MRES_OBJ) $(MONITORFS_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(LPT_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
-	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) $(SWAP_MRES_OBJ_V481) \
+	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) $(SWAP_MRES_INPUT_V1668) \
 	$(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) $(LOGSTORE_MRES_OBJ) \
 	$(if $(filter 1,$(KINIT_BADMAP)),$(BADMAP_MRES_OBJ)) $(MEMFS_MRES_OBJ) $(if $(filter 1,$(TAPE_FS_ENABLED)),$(DTFS_MRES_OBJ)) $(SLV_MRES_OBJ) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 1
+endif
+ifeq ($(DAIMOS_PURE_MRES_ENABLED)$(KINIT_TAPE_BOOT),11)
+# Both ROOT=tape and ROOT=auto can select a DTC/TSFS root with no
+# validated BACKSTORE. KINIT installs PURE only in that case; a
+# positively validated BACKSTORE selects the old disk-swap MRES.
+# ROOT=disk/drum excludes PURE even if the opt-in flag is supplied.
+MRES_PACKAGE_OBJS += $(PURE_MRES_OBJ_V1612)
 endif
 KINIT_DRM_ENABLED = 1
 
@@ -733,12 +799,12 @@ $(KINIT_STACK_MODE_STAMP): | $(BUILD)
 $(MEDIA_DIR): | $(BUILD)
 	mkdir -p $@
 
-$(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(KINIT_TAPE_MODE_STAMP) $(KINIT_STACK_MODE_STAMP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kinit COMPILER='$(COMPILER)' BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' KINIT_DRM_ENABLED='$(KINIT_DRM_ENABLED)' KINIT_TAPE_BOOT='$(KINIT_TAPE_BOOT)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' MONITORFS_MRES_ENABLED='$(MONITORFS_MRES_ENABLED)' VM_BACKEND='$(VM_BACKEND)'
+$(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(KINIT_TAPE_MODE_STAMP) $(KINIT_STACK_MODE_STAMP) $(KINIT_PURE_MODE_STAMP) $(BUILD)
+	$(MAKE) -C $(KERNEL_DIR) kinit COMPILER='$(COMPILER)' BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' KINIT_DRM_ENABLED='$(KINIT_DRM_ENABLED)' KINIT_TAPE_BOOT='$(KINIT_TAPE_BOOT)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' DAIMOS_SWAPLESS_ONLY_V1668='$(DAIMOS_SWAPLESS_ONLY_V1668)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' MONITORFS_MRES_ENABLED='$(MONITORFS_MRES_ENABLED)' VM_BACKEND='$(VM_BACKEND)'
 	touch $@
 
-$(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(WALL_CLOCK_HZ_STAMP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' WALL_CLOCK_HZ='$(WALL_CLOCK_HZ)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' VM_BACKEND='$(VM_BACKEND)'
+$(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(WALL_CLOCK_HZ_STAMP) $(KINIT_PURE_MODE_STAMP) $(BUILD)
+	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' WALL_CLOCK_HZ='$(WALL_CLOCK_HZ)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' DAIMOS_PBM_V1667='$(DAIMOS_PBM_V1667)' VM_BACKEND='$(VM_BACKEND)'
 	touch $@
 
 $(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
@@ -750,14 +816,106 @@ $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
 KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/vfs_mount_slab_v4.dobj $(BUILD)/vfs_mount_capacity_v1.dobj $(BUILD)/vfs_mount_layout_v3.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/auxstore_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6block_fixed_v1458.dobj $(BUILD)/exec.dobj $(BUILD)/d6block_v1458.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/wall_clock.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj
 KERNEL_ASM_OBJS += $(BUILD)/proc_swap_entry_v481.dobj $(BUILD)/proc_swap_mres_v481.dobj
 KERNEL_ASM_OBJS += $(BUILD)/backstore_entry_v484.dobj $(BUILD)/backstore_mres_v484.dobj
+ifeq ($(DAIMOS_PURE_MRES_ENABLED),1)
+KERNEL_ASM_OBJS += $(BUILD)/proc_pure_service_v1612.dobj \
+	$(BUILD)/proc_pure_drop_v1611.dobj \
+	$(BUILD)/proc_pure_prefix_v1611.dobj \
+	$(BUILD)/proc_pure_full_v1611.dobj
+endif
+ifeq ($(DAIMOS_PBM_V1667),1)
+KERNEL_ASM_OBJS += $(BUILD)/proc_pure_term_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_terminal_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_restore_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_decode_v1667.dobj
+endif
 
 $(SWAP_MRES_OBJ_V481): $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres_v484.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/swap-mres-v481.dxr -M $(BUILD)/swap-mres-v481.map \
     -R $@ -N proc_swap_mres_package_v481 -X proc_swap_mres_reclaim_v481 -X proc_swap_mres_service_v481 \
     -X backstore_mres_bitmap_words_v484 -X backstore_mres_init_v484 \
     -X backstore_mres_alloc_v484 -X backstore_mres_free_v484 \
-    -X backstore_mres_verify_allocated_v880 \
+    -X backstore_mres_verify_allocated_v880 -X proc_swap_mres_terminal_v1666 \
     $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres_v484.dobj
+
+# Assemble RAW PURE terminal ownership exclusively into PURE MRES,
+# instead of carrying its process-MM scanner in permanent KCORE.
+# Reuse the exact v1609 PDP-6 leaf with the same constant mappings.
+$(BUILD)/pure-terminal-v1666.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_DETACH_SOURCE) | $(BUILD)
+	{ printf '%s\n' '.equ PROC_SWAP_TEXT_SHIFT,026' \
+	  '.equ PROC_SWAP_TEXT_MASK,037777' \
+	  '.equ PROC_SWAP_BACKING_OFFSET,0406' \
+	  '.equ EXEC_USER_ORIGIN,020'; \
+	  cat $<; } > $(BUILD)/pure-terminal-v1666.s
+	$(DAS) $(DASFLAGS) -C -O $@ $(BUILD)/pure-terminal-v1666.s
+
+ifeq ($(DAIMOS_PBM_V1667),1)
+# The original 30-word v1451 codec and the atomic v1664 MM finish
+# remain MRES-only. Nothing from the test-only bitmap chain enters
+# fixed KCORE or the disk-swap MRES.
+$(BUILD)/pure-bitmap-codec-v1667.dobj: $(KERNEL_DIR)/proc/proc_pure_bitmap_codec_v1659.s | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(BUILD)/pure-bitmap-finish-v1667.dobj: $(KERNEL_DIR)/mm/mm_pure_bitmap_finish_v1664.s | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+PURE_BITMAP_PARTS_V1667 = $(BUILD)/proc_pure_term_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_terminal_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_restore_v1667.dobj \
+	$(BUILD)/proc_pure_bitmap_decode_v1667.dobj \
+	$(BUILD)/pure-bitmap-codec-v1667.dobj \
+	$(BUILD)/pure-bitmap-finish-v1667.dobj
+PURE_TERMINAL_EXPORT_V1667 = proc_pure_term_v1667
+else
+PURE_BITMAP_PARTS_V1667 =
+PURE_TERMINAL_EXPORT_V1667 = pdp6_pure_detach_v1609
+endif
+
+$(BUILD)/pure-rebase-v1611.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_REBASE_SOURCE) | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(BUILD)/pure-expand-v1611.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_EXPAND_SOURCE) | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(BUILD)/pure-image-v1611.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_IMAGE_SOURCE) | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+PURE_MRES_PARTS_V1612 = $(BUILD)/proc_pure_service_v1612.dobj \
+	$(BUILD)/proc_pure_drop_v1611.dobj \
+	$(BUILD)/proc_pure_prefix_v1611.dobj \
+	$(BUILD)/proc_pure_full_v1611.dobj \
+	$(BUILD)/pure-rebase-v1611.dobj \
+	$(BUILD)/pure-expand-v1611.dobj \
+	$(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj \
+	$(PURE_BITMAP_PARTS_V1667)
+
+# A KCORE-safe, relocation-verified donor equivalence. The v1611
+# source-identical v1381/v1391 helper region saves 49 words without an
+# added JRST; keep the minimum run high to avoid fragile hotpath folds.
+$(PURE_MRES_FOLD_PLAN_V1612): $(PURE_MRES_PARTS_V1612) $(P10FOLD_DEP)
+	$(P10FOLD) -m 20 -P $@ $(PURE_MRES_PARTS_V1612) >/dev/null
+
+$(PURE_MRES_OBJ_V1612): $(BUILD)/proc_pure_service_v1612.dobj \
+	$(BUILD)/proc_pure_drop_v1611.dobj \
+	$(BUILD)/proc_pure_prefix_v1611.dobj \
+	$(BUILD)/proc_pure_full_v1611.dobj \
+	$(BUILD)/pure-rebase-v1611.dobj $(BUILD)/pure-expand-v1611.dobj \
+	$(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj \
+	$(PURE_BITMAP_PARTS_V1667) $(KCORE_MAP) $(PURE_MRES_FOLD_PLAN_V1612)
+	$(DLINK) -b 0 -A $(KCORE_MAP) \
+	    --fold-plan $(PURE_MRES_FOLD_PLAN_V1612) \
+	    -o $(BUILD)/pure-mres-v1612.dxr \
+	    -M $(BUILD)/pure-mres-v1612.map -R $@ \
+	    -N proc_pure_mres_package_v1612 \
+	    -X proc_pure_mres_reclaim_v1612 \
+	    -X proc_pure_mres_service_v1612 \
+	    -X $(PURE_TERMINAL_EXPORT_V1667) \
+	    $(BUILD)/proc_pure_service_v1612.dobj \
+	    $(BUILD)/proc_pure_drop_v1611.dobj \
+	    $(BUILD)/proc_pure_prefix_v1611.dobj \
+	    $(BUILD)/proc_pure_full_v1611.dobj \
+	    $(BUILD)/pure-rebase-v1611.dobj $(BUILD)/pure-expand-v1611.dobj \
+	    $(BUILD)/pure-image-v1611.dobj $(BUILD)/pure-terminal-v1666.dobj \
+	    $(PURE_BITMAP_PARTS_V1667)
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)
@@ -766,7 +924,7 @@ $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM
 force-minit-config:
 
 $(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(BUILD)
-	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_DRM_ENABLED,$(KINIT_DRM_ENABLED)"; echo ".set KINIT_TAPE_BOOT,$(KINIT_TAPE_BOOT)"; echo ".set MONITORFS_MRES_ENABLED,$(MONITORFS_MRES_ENABLED)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; echo ".set BLOCKSET_FS_ENABLED,$(BLOCKSET_FS_ENABLED)"; cat $<; } > $@
+	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_DRM_ENABLED,$(KINIT_DRM_ENABLED)"; echo ".set KINIT_TAPE_BOOT,$(KINIT_TAPE_BOOT)"; echo ".set MONITORFS_MRES_ENABLED,$(MONITORFS_MRES_ENABLED)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; echo ".set BLOCKSET_FS_ENABLED,$(BLOCKSET_FS_ENABLED)"; echo ".set DAIMOS_SWAPLESS_ONLY_V1668,$(DAIMOS_SWAPLESS_ONLY_V1668)"; cat $<; } > $@
 
 $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<

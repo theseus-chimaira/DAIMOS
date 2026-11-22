@@ -40,6 +40,10 @@
 #include "auxstore.h"
 #include "logstore.h"
 #include "root_select.h"
+#if DAIMOS_SWAPLESS_ONLY_V1668 && \
+    (!DAIMOS_PURE_MRES_ENABLED || !KINIT_TAPE_BOOT || D6FS_FS_ENABLED)
+#error v1668_requires_pure_tsfs_only_kinit
+#endif
 #include "badmap.h"
 #include "mm.h"
 #include "monitorfs.h"
@@ -461,38 +465,119 @@ minit_export(kword_t name, unsigned int base, unsigned int index)
 
 extern kword_t proc_swap_reclaim;
 extern kword_t proc_swap_service_one;
+extern kword_t proc_swap_term_v1666;
 extern kword_t backstore_bitmap_words;
 extern kword_t backstore_init;
 extern kword_t backstore_alloc;
 extern kword_t backstore_free;
 extern kword_t backstore_verify_allocated_v795;
+#if DAIMOS_PURE_MRES_ENABLED && KINIT_TAPE_BOOT
+/* ROOT=auto may select TSFS at runtime despite D6FS being compiled.
+ * Only a validated DTC root without BACKSTORE may select PURE.
+ * The two packages are transient KINIT input; only one is installed.
+ */
+extern const kword_t proc_pure_mres_package_v1612[];
+#endif
 
 void
 proc_swap_minit_v481(void)
 {
         kword_t name = (kword_t)SIXBIT("SWAP  ");
         unsigned int base;
+        unsigned int root = root_select_class();
 
-#if !D6FS_FS_ENABLED
-        /* A TSFS root does not load D6FS. Inspect only explicitly
-         * provisioned AUXST1 storage using transient KINIT code. Driver
-         * services were installed earlier in MINIT order. No device is
-         * formatted or written by discovery. */
-        if (auxstore_boot_discover() != 0 ||
-            auxstore_backstore_blocks == 0UL)
+#if DAIMOS_SWAPLESS_ONLY_V1668
+        /* This image physically has NO disk-swap candidate. Reject
+         * unexpected root selection rather than relying on an
+         * uninstalled module or continuing with an invalid policy.
+         */
+        if (root != KINIT_ROOT_DTC) {
+                minit_fatal(name);
                 return;
-        auxstore_post_minits();
+        }
 #endif
+        /* Root discovery precedes this MINIT. An unresolved selector
+         * cannot authorize installation of either memory backend.
+         * kinit_boot will diagnose an absent/unresolved root later.
+         */
+        if (root == KINIT_ROOT_AUTO)
+                return;
+#if KINIT_TAPE_BOOT
+        if (root == KINIT_ROOT_DTC) {
+        /* Only TSFS needs to inspect AUXST1 to decide which memory
+         * backend to install. DSK/DRM roots retain the original
+         * disk-swap MINIT and never try to install PURE.
+         */
+        /*
+         * Absence/invalid AUXST1 and a validated zero-size BACKSTORE
+         * both mean no swap. Neither a DSK/DRM controller nor a
+         * LOGSTORE-only AUXST1 implies usable disk swap storage.
+         */
+        if (auxstore_boot_discover() != 0 ||
+            auxstore_backstore_blocks == 0UL) {
+#if DAIMOS_PURE_MRES_ENABLED
+                const kword_t *pure = proc_pure_mres_package_v1612;
+                unsigned int reclaim, service, terminal;
+
+                if (mres_install(pure, &base) != 0)
+                        minit_fatal(name);
+                reclaim = mres_export(pure, base, 0U);
+                service = mres_export(pure, base, 1U);
+                terminal = mres_export(pure, base, 2U);
+                if (!reclaim || !service || !terminal)
+                        minit_fatal(name);
+                storage_patch_jump(&proc_swap_reclaim, reclaim);
+                storage_patch_jump(&proc_swap_service_one, service);
+                storage_patch_jump(&proc_swap_term_v1666,
+                    terminal);
+                /* Transient boot witness: an actual no-BACKSTORE
+                 * installation, not merely a linkable PURE package.
+                 * No resident KCORE or MRES diagnostic state. */
+                minit_diag_loaded((kword_t)SIXBIT("PURE  "));
+#endif
+                return;
+        }
+#if DAIMOS_SWAPLESS_ONLY_V1668
+        /* An actual AUXST1 BACKSTORE is incompatible with this image.
+         * Never continue into a missing DISK MRES installation, nor
+         * publish physical swap blocks for a nonexistent service.
+         */
+        minit_fatal(name);
+        return;
+#endif
+        auxstore_post_minits();
+        }
+#endif
+        /* A supported configured disk/drum root always uses the
+         * historical disk service. TSFS reaches here only with
+         * positively validated BACKSTORE. Unsupported classes
+         * fail closed. No per-call compatibility dispatcher.
+         */
+        if (root != KINIT_ROOT_DTC && root != KINIT_ROOT_DSK &&
+            root != KINIT_ROOT_DRM)
+                return;
+#if !D6FS_FS_ENABLED
+        if (root != KINIT_ROOT_DTC)
+                return;
+#endif
+#if !KINIT_TAPE_BOOT
+        if (root == KINIT_ROOT_DTC)
+                return;
+#endif
+#if !DAIMOS_SWAPLESS_ONLY_V1668
         base = minit_install(name);
 
         storage_patch_jump(&proc_swap_reclaim, minit_export(name, base, 0U));
         storage_patch_jump(&proc_swap_service_one, minit_export(name, base, 1U));
+        storage_patch_jump(&proc_swap_term_v1666,
+            minit_export(name, base, 7U));
         storage_patch_jump(&backstore_bitmap_words, minit_export(name, base, 2U));
         storage_patch_jump(&backstore_init, minit_export(name, base, 3U));
         storage_patch_jump(&backstore_alloc, minit_export(name, base, 4U));
         storage_patch_jump(&backstore_free, minit_export(name, base, 5U));
         storage_patch_jump(&backstore_verify_allocated_v795,
             minit_export(name, base, 6U));
+#endif
 }
 
 /** Register a resident PI handler and enable its hardware PI level. */
@@ -1392,6 +1477,16 @@ void
 auxstore_minit(void)
 {
         (void)auxstore_boot_discover();
+#if DAIMOS_SWAPLESS_ONLY_V1668
+        /* Full-profile AUXSTORE rediscovers for LOGSTORE setup. A
+         * positive descriptor appearing on this later probe must
+         * also fail closed before any backing is published.
+         */
+        if (auxstore_backstore_blocks != 0UL) {
+                minit_fatal((kword_t)SIXBIT("SWAP  "));
+                return;
+        }
+#endif
         if (auxstore_logstore_blocks != 0UL) {
                 logstore_boot_configure(auxstore_logstore_start,
                     auxstore_logstore_blocks);

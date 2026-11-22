@@ -510,7 +510,11 @@ definite_text_write(kword_t w)
             !opcode_writes_ea(op))
                 return 0;
         ea = nd_rh(w);
-        return ea >= nl_image_base && ea < nl_image_base + nl_text_words;
+        /* v1614: AC0..AC17 are registers, never writable user TEXT.
+         * Keep the same absolute TEXT-base test as the host DLINK;
+         * subtraction also avoids wrapping an 18-bit base+size sum. */
+        return ea >= 020UL && ea >= nl_image_base &&
+            ea - nl_image_base < nl_text_words;
 }
 
 static int
