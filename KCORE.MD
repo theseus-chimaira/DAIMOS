@@ -1,19 +1,18 @@
-# RAW PURE branch integration candidate v1808
+# RAW PURE Git consolidation in main v1809
 
-All named RAW PURE and testkit branch heads have been
-integrated into isolated candidate histories relative to
-K01-K04-closed mainline v1803. Default-OFF feature
-selection remains unchanged. Original KCORE remains
-unchanged in v1808; the optional PURE MRES fixes the
-loss of READY_ONCE after a committed restore's missing
-success reply and shrinks by one linked machine instruction.
-Native v1808 and bounded physical 48K GENERAL/STRICT
-plus 64K TSFS boot gates PASS. K05-K09 and mainline
-promotion remain OPEN. Dated branch/state statements
-below describe earlier historical stages, not the
-latest isolated integration candidate. See
-`design/daimos-branch-integration-validation-v1807.md`
-and `design/kcore-k05-restore-reply-v1808.md`.
+All named DAIMOS and testkit topic heads are ancestors of
+their local mainlines after the v1809 fast-forwards. RAW PURE
+and bitmap mode3 remain default OFF. The integrated v1808
+PURE MRES fixes missing READY_ONCE after a committed
+restore's lost success reply and removes one instruction.
+The combined native v1808 matrix and fresh default-OFF build
+PASS. Earlier bounded physical 48K GENERAL/STRICT and 64K
+TSFS results remain valid within their recorded scope.
+K05-K09 production acceptance is still OPEN. Dated statements
+below distinguishing an unmerged PURE branch from main
+are historical, not current ancestry. See
+`design/daimos-branch-consolidation-v1809.md` and
+`design/kcore-k05-restore-reply-v1808.md`.
 
 # DAIMOS KCORE - architecture, accepted boundaries and RAM state (v1676)
 
@@ -39,12 +38,13 @@ The accepted results remain in Git, `PROJECT-STATE.MD` and individual
 versioned design reports. This cleanup changes **documentation only**;
 it does not change a kernel object, simulator, ABI or test result.
 
-There are two distinct development states:
+At the time of the v1676 engineering cleanup there were
+two distinct development states (now historical):
 
-- **`main`** is the accepted PDP-6 KCORE baseline through the v1604
+- **`main`** was the accepted PDP-6 KCORE baseline through the v1604
   cross-target PURE architecture review, plus later independent toolchain
   work. Its linked default kernel has not merged v1611-v1674 PURE.
-- **`kcore-pure-reclaim-pressure-v1673-20261118`** is the unmerged
+- **`kcore-pure-reclaim-pressure-v1673-20261118`** was the unmerged
   PDP-6 PURE development branch. Its accepted v1674 RAW 48K physical
   work is recorded at `ae03d40f` and in
   `design/kcore-pure-runtime-highwater-48k-v1674.md` on that branch.

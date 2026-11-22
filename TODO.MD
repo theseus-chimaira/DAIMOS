@@ -1,21 +1,24 @@
-# RAW PURE consolidated integration candidate v1808
+# RAW PURE Git histories consolidated on main v1809
 
-The isolated RAW PURE and testkit integration histories are
-consolidated. Native v1807, physical 64K PURE boot and
+The RAW PURE and testkit histories are now fast-forwarded to
+main with no unmerged named topic heads. Native v1807,
+physical 64K PURE boot and
 independent 48K GENERAL/STRICT pressure A/B/C acceptance
 PASS; the v1808 K05 lost-success restore correction and
 combined native matrix also PASS. The v1808 change removes
 one removable MRES instruction; no fixed KCORE growth.
-K05-K09 acceptance, mainline promotion and branch cleanup
-remain pending. Preserve existing dirty worktrees and
-default-OFF feature selection. See
+K05-K09 production acceptance and safe retirement of
+superseded clean branch references remain separate work.
+Preserve existing dirty worktrees and default-OFF feature
+selection. See `design/daimos-branch-consolidation-v1809.md`,
 `design/daimos-branch-integration-validation-v1807.md`
 and `design/kcore-k05-restore-reply-v1808.md`.
 
 # DAIMOS TODO - current open work (v1675r2)
 
-Updated: 2026-11-19. This is the consolidated open-only backlog for
-DAIMOS mainline and the unmerged PDP-6 PURE development branch.
+Updated: 2026-11-22 (v1809 ancestry). This is the consolidated
+open-only backlog for DAIMOS mainline, including default-OFF
+PDP-6 PURE source history.
 Tasks are grouped by remaining acceptance condition, not by
 historical version or failed experiment.
 
@@ -36,7 +39,8 @@ appropriate daimos-testkit (or toolchain testkit) repository.
 committed-MM high-water is accepted: 3122 original MM writes per profile,
 minimum 1255 free words, complete nine-owner drop/restore and post-WAIT
 recovery. It does NOT accept PI6 fault pressure, bitmap mode3,
-KA10, alternate roots, or a mainline merge. P0-B trusted-operator
+KA10, alternate roots, or production RAW PURE enablement.
+P0-B trusted-operator
 DTVOL2, P1-C and P1-D are closed under their documented contracts.
 The existing grouped D6 block codec and restricted privileged MEMFS
 XIP are production-integrated; do not reopen their obsolete proposals.
@@ -64,10 +68,12 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   owners and readable diagnostics; provide safe bounded retry and
   administrative recovery without forced release. Extend whole-system
   fault injection to actual scheduler/EXIT/EXEC failure cases.
-- [ ] **OOM policy:** define/test an allocation-free, safe victim
-  termination path only after all provider, VM, FD, zombie, EXEC and
-  unpublished-RUN teardown states can be released or retained safely.
-  Keep automatic OOM killing disabled in the meantime.
+- [ ] **Cross-process OOM policy (optional):** define/test an
+  allocation-free, safe *other-process* victim termination path only
+  after all provider, VM, FD, zombie, EXEC and unpublished-RUN teardown
+  states can be released or retained safely. The accepted v1298/v1803
+  requester-only BRK OOM termination remains enabled; do not confuse
+  it with disabled cross-process victim killing.
 - [ ] **Real `?RT` failures:** retain failing image, original media,
   full SIMH transcript and root/INIT handoff; reproduce and identify
   the fault rather than using a clean rebuild as a purported fix.
@@ -105,20 +111,17 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   MRES cost. Compare feature OFF versus RAW with installed/transient
   KCORE+KINIT+MRES accounting and actual APR placement; no assumption
   of 32K full boot success.
-- [ ] **PDP-6 mainline integration and ALL branch consolidation:** after
-  the above gates, reconcile the PURE branch with newer mainline
-  source/API changes. Re-run the complete source-linked native and
-  physical boot/fault matrix before an authorized merge; PURE remains
-  default OFF until accepted. Refresh and audit every **local AND remote
-  DAIMOS branch**, including unmatched names and attached worktrees;
-  preserve unique commits and all dirty/untracked source before any
-  retirement. After merging and proving all topic tips reachable from
-  main, remove superseded clean local worktrees, local branches and
-  remote branches, then re-audit the final remote/local refs and retain
-  only explicit active branches. Apply the same audit, preservation,
-  test-branch merge and retirement rules to the dependent daimos-testkit
-  repository. No forced or unverified branch deletion. Full manifest
-  and procedure: `design/daimos-branch-consolidation-v1677.md`.
+- [ ] **PDP-6 production PURE acceptance and safe branch retirement:**
+  v1809 integrated the source history into main and passed the native
+  matrix plus default-OFF build; K05-K08 production safety/physical
+  gates remain open, so PURE must remain OFF by default. Every named
+  DAIMOS and testkit topic tip is now reachable from local main.
+  Before retiring superseded clean local/remote refs or worktrees,
+  revalidate exact branch IDs against the updated remote main and
+  preserve dirty/untracked worktree contents and unique detached
+  commits. Do not delete protected or checked-out dirty branches.
+  Historical procedure: `design/daimos-branch-consolidation-v1677.md`;
+  current manifest: `design/daimos-branch-consolidation-v1809.md`.
 - [ ] **KA10 target backend:** implement and accept its distinct
   mapping/APR/MM, interrupt and process-restore requirements using
   actual KA10-specific native/simulator tests. PDP-6 physical evidence

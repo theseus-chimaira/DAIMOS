@@ -1,3 +1,20 @@
+## 2026-11-22 v1809: DAIMOS and testkit history consolidated on main
+
+DAIMOS main fast-forwarded from v1803 `495060f6` to the tested
+default-OFF RAW PURE integration tip `ec4ec261`; testkit main
+fast-forwarded from `3a4604e` to `4841f2e`. All named topic
+heads in both repositories are now ancestors of local main.
+The exact v1808 native integration/negative matrix and a fresh
+default-OFF DAIMOS `make build` passed. The previously accepted
+256K default-OFF, 64K TSFS PURE and paired 48K RAW physical gates
+retain their original scope. No new physical acceptance is claimed.
+
+The RAW PURE and mode3 selectors remain OFF by default. K01-K04
+remain closed, K05-K09 production acceptance remains open.
+Existing dirty worktrees were preserved, not discarded; historic
+isolated-branch statements below are superseded as to Git ancestry.
+See `design/daimos-branch-consolidation-v1809.md`.
+
 ## 2026-11-22 v1808: K05 restore lost-reply correctness (scoped PASS)
 
 The original v1612 PURE MRES service failed to schedule a

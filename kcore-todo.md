@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-22 (K01-K04 closed at v1803).
+Updated: 2026-11-22 (v1809 history consolidation; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -10,8 +10,8 @@ part of each implementation task and belong in daimos-testkit.
 
 The accepted PDP-6 RAW PURE v1674 48K GENERAL/STRICT committed-MM
 high-water result is not a claim of PI6 fault-pressure, bitmap mode3,
-KA10, alternate-root or mainline-merge acceptance. RAW PURE remains
-unmerged from its development line; mode3 remains disabled.
+KA10, alternate-root or feature acceptance. Its default-OFF source
+history is now reachable from main (v1809); mode3 remains disabled.
 
 ## Mandatory KCORE: process and memory correctness
 
@@ -449,11 +449,13 @@ unmerged from its development line; mode3 remains disabled.
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
   progress without fabricated concurrent user dispatch.
-- [ ] **K09 - Mainline integration.** Reconcile the PDP-6 RAW PURE
-  implementation with current mainline KCORE interfaces and integrate
-  it only after its correctness dependencies are satisfied. Preserve
-  default-OFF behavior until accepted. Repository-wide branch cleanup,
-  hardware/root matrices and release acceptance are separate work.
+- [ ] **K09 - Production integration acceptance.** The v1809 Git
+  fast-forward has incorporated the PDP-6 RAW PURE source history
+  into main with the feature OFF by default. Do not confuse source
+  ancestry with accepted enablement. Complete K05-K08 correctness
+  dependencies and current-source physical/root matrices before
+  promoting a production PURE configuration. Repository-wide branch
+  retirement, hardware coverage and release acceptance are separate.
 
 ## Optional KCORE: compressed mutable memory (mode3)
 
