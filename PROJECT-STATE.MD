@@ -1,3 +1,16 @@
+## 2026-11-22 v1816: generated KCC and PDP-6 worktree dirt archived
+
+The KCC main worktree's 23 untracked generated build outputs and the
+PDP-6 simulator's single untracked compiled headless executable were
+classified as artifacts, not outstanding source. Each exact path was
+archived in a versioned tar.gz, its contents checked against per-file
+SHA256 values, and only those verified generated paths were removed.
+Both source checkouts are now clean, without resetting a tracked file.
+The original binaries, native objects, traces and manifests remain in
+`~/backups/daimos-generated-untracked-v1816-20261122/`.
+No compiler or simulator code change, guest test, or physical
+acceptance is implied by this repository housekeeping.
+
 ## 2026-11-22 v1815: physical STOP/foreign-TERM negative tests consolidated
 
 The previously dirty v1682 testkit source-authenticity verifier and
