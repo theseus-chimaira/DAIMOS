@@ -249,10 +249,19 @@ unmerged from its development line; mode3 remains disabled.
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.
   Automatic OOM killing stays disabled until that condition is proved.
-- [ ] **K04 - Process teardown recovery.** Handle incomplete teardown,
+- [x] **K04 - Process teardown recovery.** CLOSED v1801 (bounded
+  physical ownership/recovery acceptance; see
+  `design/kcore-k04-closure-v1801.md`). Handle incomplete teardown,
   retained owners, zombies, finalizer/reaper retries and permanently
   refused resources without double release, lost ownership or unbounded
   retry loops.
+  **Closure v1801:** physical PREVM/post-VM/SIDL, FILE, HUP,
+  permanent refusal, healthy/ineligible INIT and late-child FREE/WAIT
+  accepted. Consolidated testkit verifier PASS; final v1800-A/B
+  post-HALT readouts and CLEAN D6FS reverified. Untested mixed-owner
+  wrap, pinned published-member HUP and organic media errors are
+  recorded as bounded residual risks, not accepted physical tests.
+  K03 OOM killing remains separately disabled pending K03 acceptance.
   **Progress v1754:** Opt-in GETTEARDOWN/PS distinguishes retained
   pre-VM EXIT from unpublished RUN rollback without altering existing
   query ABI. Isolated assembler and C compilation pass. Still OPEN:

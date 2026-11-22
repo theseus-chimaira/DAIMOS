@@ -1,3 +1,24 @@
+## 2026-11-22 v1801: K04 process teardown recovery CLOSED
+
+K04 closes against its ownership/recovery invariants with a
+bounded acceptance decision, documented in
+`design/kcore-k04-closure-v1801.md`. The v1800-A healthy-INIT
+late-child adoption and v1800-B ineligible-INIT direct orphan
+FREE passed actual 256K PDP-6 execution, guest-owned HALT and
+read-only D6FS CLEAN checks. The final v1801 testkit suite
+reran ten verifier self-tests and independently reverified
+both physical post-HALT memory witness sets and CLEAN media.
+Earlier physical evidence includes permanent VM refusal,
+independent mixed-owner retries, SIDL, PREVM/post-VM, fatal
+FILE close, session HUP and single-owner 17-bit clock wrap.
+
+Residual untested combinations (two-owner clock wrap, physically
+pinned published PREVM/post-VM session HUP, organic controller/
+media errors) are explicitly recorded as risk, not claimed
+physical PASS. Production KCORE source/ABI/permanent RAM are
+unchanged by closure. K03 automatic OOM victim killing stays
+disabled pending its own separate acceptance.
+
 ## 2026-11-21 v1785: physical SIDL A / post-VM B owners PASS
 
 DAIMOS 252f1d0f and 81c965b0 record a real 256K PDP-6
