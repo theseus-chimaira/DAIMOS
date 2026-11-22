@@ -79,3 +79,32 @@ superseded references.
 This report supersedes the isolated-candidate status in v1804
 and v1807 only with respect to mainline Git ancestry. It does
 not expand any engineering acceptance claim in those reports.
+
+## Completed safe topic-ref retirement
+
+After both new mainline heads were pushed, the live GitHub head
+sets were checked for exact SHA/name equality with fetched
+remote-tracking refs. Every proposed deletion was separately
+proved an ancestor of the published origin/main. Only refs
+unattached to any existing worktree were eligible.
+
+Atomic remote deletion retired 87 DAIMOS and seven testkit
+superseded topic heads. Ordinary `git branch -d` then retired
+88 local DAIMOS and seven local testkit heads. No forced deletion,
+force-push or commit-history rewrite was used. All retired
+commits remain reachable from the published mainline and are
+recoverable using the exact pre-retirement TSV manifest at
+`design/daimos-branch-ref-inventory-v1809.tsv`.
+
+Final audit: DAIMOS retains four local branches and three live
+remote heads; testkit retains three local branches and three
+live remote heads. Each remaining non-main local branch is
+checked out in an existing worktree. Dirty D6CODEC, self-host
+and testkit worktrees were not altered. The two clean integration
+worktrees were also retained with their ignored build/test
+artifacts, rather than forcing their removal.
+
+Both local mainlines match origin/main, and zero local or remote
+topic heads are unmerged in either repository. The independently
+maintained pdp10-doc/toolchain/simulator repositories are outside
+this branch-retirement operation.

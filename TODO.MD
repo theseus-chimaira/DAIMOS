@@ -7,8 +7,9 @@ independent 48K GENERAL/STRICT pressure A/B/C acceptance
 PASS; the v1808 K05 lost-success restore correction and
 combined native matrix also PASS. The v1808 change removes
 one removable MRES instruction; no fixed KCORE growth.
-K05-K09 production acceptance and safe retirement of
-superseded clean branch references remain separate work.
+K05-K09 production acceptance remains separate work.
+Clean unattached superseded refs were safely retired in v1809;
+only worktree-attached topic refs remain.
 Preserve existing dirty worktrees and default-OFF feature
 selection. See `design/daimos-branch-consolidation-v1809.md`,
 `design/daimos-branch-integration-validation-v1807.md`
@@ -68,12 +69,6 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   owners and readable diagnostics; provide safe bounded retry and
   administrative recovery without forced release. Extend whole-system
   fault injection to actual scheduler/EXIT/EXEC failure cases.
-- [ ] **Cross-process OOM policy (optional):** define/test an
-  allocation-free, safe *other-process* victim termination path only
-  after all provider, VM, FD, zombie, EXEC and unpublished-RUN teardown
-  states can be released or retained safely. The accepted v1298/v1803
-  requester-only BRK OOM termination remains enabled; do not confuse
-  it with disabled cross-process victim killing.
 - [ ] **Real `?RT` failures:** retain failing image, original media,
   full SIMH transcript and root/INIT handoff; reproduce and identify
   the fault rather than using a clean rebuild as a purported fix.
@@ -111,15 +106,15 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   MRES cost. Compare feature OFF versus RAW with installed/transient
   KCORE+KINIT+MRES accounting and actual APR placement; no assumption
   of 32K full boot success.
-- [ ] **PDP-6 production PURE acceptance and safe branch retirement:**
+- [ ] **PDP-6 production PURE acceptance:**
   v1809 integrated the source history into main and passed the native
   matrix plus default-OFF build; K05-K08 production safety/physical
   gates remain open, so PURE must remain OFF by default. Every named
   DAIMOS and testkit topic tip is now reachable from local main.
-  Before retiring superseded clean local/remote refs or worktrees,
-  revalidate exact branch IDs against the updated remote main and
-  preserve dirty/untracked worktree contents and unique detached
-  commits. Do not delete protected or checked-out dirty branches.
+  v1809 retired 95 clean unattached local and 94 remote merged
+  topic refs. The remaining checked-out integration and dirty
+  worktrees retain their branch refs and ignored/untracked files;
+  do not remove them without separate preservation review.
   Historical procedure: `design/daimos-branch-consolidation-v1677.md`;
   current manifest: `design/daimos-branch-consolidation-v1809.md`.
 - [ ] **KA10 target backend:** implement and accept its distinct

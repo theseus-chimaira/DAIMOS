@@ -13,6 +13,10 @@ The RAW PURE and mode3 selectors remain OFF by default. K01-K04
 remain closed, K05-K09 production acceptance remains open.
 Existing dirty worktrees were preserved, not discarded; historic
 isolated-branch statements below are superseded as to Git ancestry.
+After publishing both mainlines, 95 merged unattached local and
+94 merged remote topic refs were safely retired; all remaining
+non-main refs are attached to retained worktrees. Final local/
+remote unmerged-topic counts are zero in both repositories.
 See `design/daimos-branch-consolidation-v1809.md`.
 
 ## 2026-11-22 v1808: K05 restore lost-reply correctness (scoped PASS)
