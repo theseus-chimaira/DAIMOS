@@ -1,3 +1,18 @@
+## 2026-11-22 v1815: physical STOP/foreign-TERM negative tests consolidated
+
+The previously dirty v1682 testkit source-authenticity verifier and
+five physical witness mutations are now on daimos-testkit main. On
+the preserved original 48K GENERAL and STRICT traces, the original
+v1673 A/B/C owner oracle and v1682 STOP/PACKED/user-PC/foreign-TERM
+oracle pass; all ten mutated controls fail as required (five per
+profile). This is a replay of original evidence, not fresh physical
+PDP-6 acceptance, and K05-K09 remain open. The two-file v1682 dirty
+state was preserved with SHA256 in
+`~/backups/daimos-v1682-dirty-promotion-v1815-20261122/`, then the
+old worktree was cleaned without removing its branch or worktree.
+See daimos-testkit
+`tests/validation/pure-stop-foreign-v1682/README-NEGATIVES-V1815.md`.
+
 ## 2026-11-22 v1814: CAT/MAKE source memory fixes from dirty selfhost branch
 
 The historical CAT/MAKE changes were imported without the v1413-v1414
