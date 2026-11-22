@@ -17,6 +17,11 @@ KCC source-generation checks PASSed. Testkit v1684 PURE
 two-owner source regression and K03/K04 historical guard/
 verifier checks PASSed; no integrated v1804 physical guest
 acceptance is implied.
+The full PDP-6 disk-root image build and combined testkit
+v1804 source gate also PASSed. Strict permanent-size reporting
+still fails the known 32K target (v1804 last address `050716`
+octal); net delta versus current main is pending a same-profile
+baseline measurement. No mainline or default-option promotion.
 
 ## 2026-11-22 v1803: K01-K04 CLOSED (K03 policy finalized)
 

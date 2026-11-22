@@ -7,6 +7,10 @@ an accepted or merged mainline release.
 ## Read-only ancestry inventory
 
 The DAIMOS mainline base is `495060f6` (K01-K04 v1803 closure).
+An exact commit-ID inventory for all three repositories,
+local/remote branch refs and attached worktrees is saved as
+`design/daimos-branch-ref-inventory-v1804.tsv`. It reflects
+the v1804 integration branches as well as their source heads.
 The latest RAW PURE development head is `5ef8b15a` on
 `kcore-pure-reclaim-pressure-v1673-20261118`. There are 91
 local DAIMOS branches, including main. All 90 non-main branch
@@ -20,6 +24,8 @@ a one-commit v1285 OOM-enable candidate not reachable from
 either named head. Its implementation must not replace the
 accepted v1298 requester-only OOM path. Preserve that object
 until the detached worktree is retired deliberately.
+The original commit is now protected on origin by annotated
+tag `archive-daimos-oom-candidate-v1285-v1804`.
 
 The initial four DAIMOS worktrees include dirty main, dirty
 D6CODEC and dirty native-selfhost worktrees, and the clean
@@ -40,6 +46,8 @@ An isolated `testkit-pure-integration-v1804` branch now joins
 the two PURE tips to main (merge commits `601cc99` and
 `2a19c80`); `c43d599` is cherry-picked as `10c32f4`.
 The testkit main branch remains unmodified.
+The detached v204 source commit is protected on origin by
+`archive-testkit-dtfs-v204-v1804`.
 
 `pdp10-doc` has only main `93e1985` as a named branch;
 both detached worktree heads are already its ancestors.
@@ -95,6 +103,16 @@ negative mutants. The K04 v1801 **read-only historical**
 closeout verifier PASSed, including its v1800-A/B D6FS CLEAN
 checks. These replayed witnesses are not new v1804 guests.
 
-The complete v1804 disk-root image build, physical boot and
-48K/64K pressure acceptance are separate gates; passing the
-earlier source-generation stages does not certify them.
+The complete v1804 PDP-6 DSK/disk-root **image build PASSed**,
+including compilation/linking and its media construction
+checks. The combined testkit `test-pure-integration-native-v1804`
+entrypoint also PASSed when run against this exact worktree.
+Neither is an integrated physical guest boot or 48K/64K
+pressure acceptance.
+
+The isolated disk-root permanent-size report returned a
+known strict-target failure: `PERMANENT_LAST=050716` octal,
+strict limit `040000` octal. The strict 32K target was already
+open on main before this merge. An identical baseline image
+build is needed to measure the candidate's exact net growth;
+do not attribute the existing excess to RAW PURE without it.
