@@ -38,8 +38,11 @@ rewrote the simulator's attachment paths to those copies,
 and PASSed through INIT/login with timeout 124.
 The source media is now never directly attached by the
 testkit smoke. The `?RT` on reused media remains an
-unresolved reboot/recovery question, not dismissed as a
-harmless simulator artifact.
+unresolved D6FS recovery requirement, not a harmless
+simulator artifact. A controlled same-profile two-boot
+v1803 mainline comparison reproduced the identical
+`?RT` failure on DIRTY sequence-2 media. See
+`design/daimos-d6fs-reboot-baseline-v1806.md`.
 
 This is **boot smoke only**, not a release acceptance:
 the build has RAW PURE, bitmap mode3 and swapless-only

@@ -1,5 +1,14 @@
 ## 2026-11-22 v1804: isolated RAW PURE consolidation candidate
 
+**v1806 baseline result:** Two consecutive physical boots
+against the same DSK media reproduce the DIRTY-root `?RT`
+HALT on both v1803 mainline and v1804 integration.
+The first writable boot publishes DIRTY seq 2; ordinary
+KINIT uses CLEAN-only writable mount and rejects it after
+an unclean stop. This is a pre-existing D6FS recovery gap,
+not a K01-K04 reopening or a new consolidation regression.
+See `design/daimos-d6fs-reboot-baseline-v1806.md`.
+
 **v1805 update:** A real 256K PDP-6 default-OFF DSK/disk-root
 guest from the integrated tree reached MEM 256K, DSK270 OK,
 DRM236 OK, D6FS LOADED, INIT V1 and LOGIN, and remained
