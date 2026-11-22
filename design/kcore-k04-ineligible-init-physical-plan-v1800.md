@@ -2,7 +2,9 @@
 
 Date: 2026-11-22. Status: v1800-A **physically accepted** in
 `kcore-k04-late-child-prevm-physical-v1800a.md`; v1800-B
-**NOT YET PHYSICALLY ACCEPTED**. K04 remains OPEN.
+**physically accepted** in
+`kcore-k04-ineligible-init-physical-v1800b.md`.
+K04 remains OPEN for other gates.
 
 ## Source-backed invariant
 
