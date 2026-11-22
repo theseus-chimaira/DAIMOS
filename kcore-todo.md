@@ -245,10 +245,17 @@ unmerged from its development line; mode3 remains disabled.
   independently. K03 OOM killing remains disabled; K04 permanently
   refused recovery policy remains OPEN. Full closure details:
   design/kcore-k02-closure-v1730.md.
-- [ ] **K03 - OOM handling.** Define and implement an allocation-free,
+- [ ] **K03 - Nonrequester OOM policy.** Source audit v1802:
+  requester-only BRK physical-NOMEM termination is already ON and
+  accepted for the bounded v1298 256K profile (F12/F13). The
+  remaining question is whether to implement allocation-free
+  cross-process victim termination; it is not currently implemented
+  or authorized. See `design/kcore-k03-policy-audit-v1802.md`.
+  Do not alter the accepted requester-only policy implicitly.
+  **Historical K03 scope:** Define and implement an allocation-free,
   safe victim-selection and termination path only after provider, VM,
   descriptor, zombie, EXEC and unpublished-RUN teardown is safe.
-  Automatic OOM killing stays disabled until that condition is proved.
+  Nonrequester OOM killing stays disabled until that condition is proved.
 - [x] **K04 - Process teardown recovery.** CLOSED v1801 (bounded
   physical ownership/recovery acceptance; see
   `design/kcore-k04-closure-v1801.md`). Handle incomplete teardown,

@@ -1,3 +1,15 @@
+## 2026-11-22 v1802: K03 production OOM policy provenance audit
+
+The production BRK requester-only OOM switch is intentionally ON
+since v1298 (`283b54dc`), accepted by F12/F13 for the bounded
+256K PDP-6 profile. The older K03 and K04 checklist statements
+that all automatic OOM termination is OFF are inaccurate: only
+cross-process OOM victim termination is not implemented/accepted.
+`design/kcore-k03-policy-audit-v1802.md` records the source and
+release history. The v1802 testkit guard PASSed with five negative
+mutations. No production source/RAM/ABI change or new physical run.
+K03 remains OPEN for any separately approved nonrequester policy.
+
 ## 2026-11-22 v1801: K04 process teardown recovery CLOSED
 
 K04 closes against its ownership/recovery invariants with a
