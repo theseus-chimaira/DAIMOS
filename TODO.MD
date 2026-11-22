@@ -63,12 +63,14 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   correctly rebuild and install a current source-matched host toolchain
   before judging native KCPP/KPARSE/KOPT/KGEN. Never accept stale
   binaries or paper over compiler errors in the kernel.
-- [ ] **v1810 recovered linker and test-harness defects:** source-link
-  and negative-test the archived unused-EXTERN DOBJ relocation fix
-  and SIMH Step/Time expired false-PASS fix. Review both
-  pdp10-tools and DAIMOS host copies, plus the distinct file-backed
-  native DLINK. Preserve existing dirty source until the tests pass;
-  see `design/daimos-dirty-worktree-audit-v1810.md`.
+- [ ] **v1812 native linker acceptance (host fixed):** the recovered
+  unused-EXTERN and P10RUN expiry defects now pass source-linked host
+  and negative-control regressions in both host implementations.
+  Native file-backed DLINK compiles and links from current sources
+  with a bounded three-word reference bitmap and zero BSS growth.
+  Execute actual guest-native selective-archive/missing-symbol and
+  RH18/LH18 tests before claiming native runtime acceptance. See
+  `design/toolchain-extern-expiry-v1812.md`.
 - [ ] **Permanent FILE and MM provider failures:** diagnose
   missing/type/owner MM extents and permanently refused VFS/FILE,
   PIPE/FIFO, display and process-teardown resources. Preserve exact

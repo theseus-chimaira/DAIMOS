@@ -5,6 +5,7 @@
 #define NL_MAX_DEFS         384U
 #define NL_DEF_NAME_CHARS   6144U
 #define NL_MAX_LOCAL_SYMS     96U
+#define NL_REF_WORDS         ((NL_MAX_LOCAL_SYMS + 35U) / 36U)
 #define NL_LOCAL_NAME_CHARS 2048U
 #define NL_MAX_IMAGE_WORDS 0300000UL
 #define NL_MAX_RELMAP_WORDS ((NL_MAX_IMAGE_WORDS + 35UL) / 36UL)
@@ -359,7 +360,56 @@ try_extract(const char *name)
                         return add_object(nl_archives[ai].path, off + 1UL);
                 }
         }
-        return 0;
+    return 0;
+}
+
+/* Reconstruct a bounded 36-bit use bitmap from the object's on-disk DOBJ1
+ * relocations.  An undefined symbol that has no relocation must not force
+ * archive extraction or a link failure.  Scan each relocation only once;
+ * the three-word stack bitmap adds no permanent resident data, and the
+ * file-backed native linker needs no per-symbol disk scans.
+ */
+static int
+load_references(unsigned int oi, kword_t *uses)
+{
+        const struct nd_obj *o;
+        kword_t row[3];
+        unsigned int ri;
+        unsigned int i;
+        unsigned int type;
+        unsigned int si;
+        int fd;
+        int rc;
+
+        for (i = 0U; i < NL_REF_WORDS; ++i)
+                uses[i] = 0UL;
+        o = &nl_objects[oi].obj;
+        if (o->reloc_count == 0UL)
+                return 0;
+        fd = dsys_open(nl_objects[oi].path, SYS_O_RDONLY);
+        if (fd < 0)
+                return -1;
+        rc = nd_seek(fd, o->reloc_off);
+        for (ri = 0U; rc == 0 && ri < (unsigned int)o->reloc_count; ++ri) {
+                if (nd_read_exact(fd, row, 3U) != 0) {
+                        rc = -1;
+                        break;
+                }
+                type = (unsigned int)((nd_lh(row[0]) >> 12) & 07UL);
+                if (type != ND_RELOC_SYMBOL_RH18 &&
+                    type != ND_RELOC_SYMBOL_LH18)
+                        continue;
+                if (nd_rh(row[1]) == 0UL ||
+                    nd_rh(row[1]) > (kword_t)nl_local_count) {
+                        rc = -1;
+                        break;
+                }
+                si = (unsigned int)nd_rh(row[1]) - 1U;
+                uses[si / 36U] |= 1UL << (si % 36U);
+        }
+        if (dsys_close(fd) != 0)
+                rc = -1;
+        return rc;
 }
 
 static int
@@ -368,15 +418,20 @@ resolve_archives(void)
         int changed;
         unsigned int oi;
         unsigned int si;
+        kword_t uses[NL_REF_WORDS];
         int rc;
         do {
                 changed = 0;
                 for (oi = 0U; oi < nl_object_count && !changed; ++oi) {
-                        if (load_local(oi) != 0)
+                        if (load_local(oi) != 0 ||
+                            load_references(oi, uses) != 0)
                                 return -1;
                         for (si = 0U; si < nl_local_count; ++si) {
                                 const char *name;
                                 if (nl_local[si].kind != ND_SYM_UNDEF)
+                                        continue;
+                                if ((uses[si / 36U] &
+                                    (1UL << (si % 36U))) == 0UL)
                                         continue;
                                 name = local_name(si);
                                 if (find_def(name) >= 0 ||
@@ -393,10 +448,13 @@ resolve_archives(void)
                 }
         } while (changed);
         for (oi = 0U; oi < nl_object_count; ++oi) {
-                if (load_local(oi) != 0)
+                if (load_local(oi) != 0 ||
+                    load_references(oi, uses) != 0)
                         return -1;
                 for (si = 0U; si < nl_local_count; ++si)
                         if (nl_local[si].kind == ND_SYM_UNDEF &&
+                            (uses[si / 36U] &
+                             (1UL << (si % 36U))) != 0UL &&
                             find_def(local_name(si)) < 0 &&
                             !(nl_relax && find_veneer(local_name(si)) != 0)) {
                                 (void)u_puts(2, "DLINK: UNDEFINED SYMBOL: ");

@@ -1,3 +1,22 @@
+## 2026-11-22 v1812: unused EXTERN and SIMH expiry source corrections
+
+DAIMOS host DLINK now ignores undefined DOBJ1 declarations unless a
+symbol relocation actually references them; P10RUN rejects SIMH
+`Step expired` and `Time expired` even if an initialized exit word
+still equals its expected zero value. Matching fixes are incorporated
+in independent pdp10-tools. Source-linked real DOBJ1/DARC and direct
+P10RUN evaluation tests pass in daimos-testkit; original host source
+fails both targeted negative controls. The native file-backed DLINK
+uses a three-word temporary reference bitmap, with no extra BSS or
+per-symbol disk scan. Native KCC/DAS object compilation and DXR link
+pass; native DLINK object TEXT 2650 -> 2800 words, BSS stays 8438.
+An actual source-matched PDP-6 bare-machine P10RUN check also passes:
+normal GO completes and one-step SIMH expiry is correctly rejected.
+Fresh default-OFF DAIMOS `make build` passed.
+Actual native guest acceptance and the full system matrix were NOT
+rerun. RAW PURE stays default OFF; no fixed KCORE growth. See
+`design/toolchain-extern-expiry-v1812.md`.
+
 ## 2026-11-22 v1810: dirty worktree preservation and source triage
 
 Seventeen dirty DAIMOS/testkit/toolchain/documentation/simulator

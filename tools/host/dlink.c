@@ -651,6 +651,22 @@ static int direct_pushj17_reloc(const struct dobj_object *o,
     return 1;
 }
 
+/* An undefined declaration requires a provider only when a relocation
+ * consumes that symbol.  DOBJ symbol indices are one-based in relocations.
+ * Reuse the object records instead of allocating a persistent use index.
+ */
+static int symbol_has_relocation(const struct dobj_object *o,
+                                 unsigned long index)
+{
+    unsigned long ri;
+    for (ri = 0UL; ri < o->reloc_count; ri++)
+        if ((o->relocs[ri].type == DOBJ_RELOC_SYMBOL_RH18 ||
+             o->relocs[ri].type == DOBJ_RELOC_SYMBOL_LH18) &&
+            o->relocs[ri].symbol == index + 1UL)
+            return 1;
+    return 0;
+}
+
 /*
  * A missing veneer definition is safe only when every reference to that
  * symbol is an exact direct PUSHJ 17 call which this linker can replace.
@@ -703,6 +719,8 @@ static int resolve_archives(struct linker *l)
                 int r;
                 if (o->symbols[si].kind != DOBJ_SYM_UNDEF)
                     continue;
+                if (!symbol_has_relocation(o, si))
+                    continue;
                 if (find_def(l, o->symbols[si].name) >= 0)
                     continue;
                 if (symbol_fully_daimos_uuo_relaxable(l,
@@ -734,6 +752,7 @@ static int check_undefined(struct linker *l)
         o = &l->objects[oi].obj;
         for (si = 0UL; si < o->symbol_count; si++) {
             if (o->symbols[si].kind == DOBJ_SYM_UNDEF &&
+                symbol_has_relocation(o, si) &&
                 find_def(l, o->symbols[si].name) < 0 &&
                 !symbol_fully_daimos_uuo_relaxable(l,
                                                     o->symbols[si].name)) {

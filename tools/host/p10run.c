@@ -904,7 +904,10 @@ static int evaluate(const struct options *o, const char *text)
 {
     static const char *bad[] = {
         "Format error", "Non-existent memory", "Unknown command",
-        "Invalid argument", "Command not allowed", "Illegal instruction"
+        "Invalid argument", "Command not allowed", "Illegal instruction",
+        /* Reaching a step/time budget is not a guest completion: an
+         * initialized exit word may retain the expected zero value. */
+        "Step expired", "Time expired"
     };
     int failures;
     int i;
