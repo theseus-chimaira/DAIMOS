@@ -1,3 +1,16 @@
+## 2026-11-22 v1813: DAIMOS libc heap and printf guest verification
+
+The existing KCC DAIMOS libc already provides BRK-backed malloc,
+calloc, realloc, free and WRITECHAR-backed printf. A new independent
+daimos-testkit regression compiles and links the actual libc sources
+and monitor syscall veneers into a source-built PDP-6 DAIMOS image.
+The guest verifies heap data preservation, calloc zeroing, realloc
+growth, free, printf formatting, console output and exit status zero:
+PASS. No DAIMOS kernel or libc implementation change was necessary.
+The GCC standalone arena allocator remains a distinct explicit-backend
+library; it is not substituted for the DAIMOS process heap. See
+`../pdp10-doc/TOOLCHAIN/DAIMOS-LIBC-HEAP-PRINTF-GUEST-20261122-V1813.MD`.
+
 ## 2026-11-22 v1812: unused EXTERN and SIMH expiry source corrections
 
 DAIMOS host DLINK now ignores undefined DOBJ1 declarations unless a
