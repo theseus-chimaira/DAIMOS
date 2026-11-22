@@ -1975,7 +1975,11 @@ main(int argc, kword_t **argv, kword_t **envp)
 {
         char arg[MAKE_LINE_MAX + 1U];
         char makefile[MAKE_NAME_MAX + 1U];
-        char goals[MAKE_MAX_GOALS][MAKE_NAME_MAX + 1U];
+        /* Store goal names in the existing relocatable string arena.
+         * A fixed 16 x 104-byte local array used over 400 stack words,
+         * nearly half the native 02000-word user-stack reservation.
+         * Stable arena offsets survive growth and the final shrink. */
+        unsigned int goals[MAKE_MAX_GOALS];
         char *eq;
         struct make_result result;
         unsigned int goal_count;
@@ -2037,10 +2041,9 @@ main(int argc, kword_t **argv, kword_t **envp)
                                                         ++j;
                                         } else if (j == 1U && arg[j + 1U] == 0 &&
                                             i + 1U < (unsigned int)argc) {
-                                                char next[MAKE_LINE_MAX + 1U];
                                                 if (make_counted_text(argv[i + 1U],
-                                                    next, sizeof(next)) == 0 &&
-                                                    next[0] >= '0' && next[0] <= '9')
+                                                    arg, sizeof(arg)) == 0 &&
+                                                    arg[0] >= '0' && arg[0] <= '9')
                                                         ++i;
                                         }
                                 } else if (make_flag_apply(arg[j]) != 0) {
@@ -2064,9 +2067,11 @@ main(int argc, kword_t **argv, kword_t **envp)
                 if (goal_count >= MAKE_MAX_GOALS ||
                     make_strlen(arg) > MAKE_NAME_MAX)
                         return 2;
-                for (j = 0U; arg[j] != 0; ++j)
-                        goals[goal_count][j] = arg[j];
-                goals[goal_count][j] = 0;
+                goals[goal_count] = make_store(arg);
+                if (goals[goal_count] == MAKE_NONE) {
+                        make_diag("GOAL STORAGE EXHAUSTED", arg);
+                        return 2;
+                }
                 ++goal_count;
         }
         if (make_flags_export() != 0) {
@@ -2130,18 +2135,12 @@ main(int argc, kword_t **argv, kword_t **envp)
                 if (make_strlen(make_text(make_rules[make_default_rule].name)) >
                     MAKE_NAME_MAX)
                         return 1;
-                i = 0U;
-                while (make_text(make_rules[make_default_rule].name)[i] != 0) {
-                        goals[0][i] =
-                            make_text(make_rules[make_default_rule].name)[i];
-                        ++i;
-                }
-                goals[0][i] = 0;
+                goals[0] = make_rules[make_default_rule].name;
                 goal_count = 1U;
         }
         failed = 0;
         for (i = 0U; i < goal_count; ++i) {
-                rc = make_build(goals[i], &result, 0U);
+                rc = make_build(make_text(goals[i]), &result, 0U);
                 if (rc != 0) {
                         failed = 1;
                         if (!make_keep_going)

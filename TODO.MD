@@ -48,6 +48,16 @@ XIP are production-integrated; do not reopen their obsolete proposals.
 
 ## P0. Correctness blockers (fix before optimization)
 
+- [ ] **v1814 source-linked CAT/MAKE guest acceptance:** focused host
+  CAT S6REC and native MAKE KCC/DAS frame tests pass; CAT and MAKE DXRs
+  link. The fresh 256K MAKE guest image was blocked by DSH TEXT
+  `036133` exceeding its `036000` limit. Reproduce and minimize the
+  actual DSH image or identify a source/compiler/folding regression;
+  do not raise the limit or claim physical runtime acceptance without
+  evidence. Retest native MAKE option/goal semantics and long CAT
+  record behavior on a source-matched boot. See
+  `design/cat-make-dirty-consolidation-v1814.md`.
+
 - [ ] **Native KCC KPARSE correctness:** investigate the still-reported
   constant-expression overflow on ordinary IDENTWDS and array sizes,
   including the original CHKOVF/JFCL semantics, generated code and

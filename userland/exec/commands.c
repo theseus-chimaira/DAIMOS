@@ -59,33 +59,26 @@ static int
 cmd_cat(int argc, kword_t **argv, struct u_io *io)
 {
         struct u_text_reader r;
-        char line[259];
         int i;
-        int n;
-        int own_sink;
         int rc;
+        int next;
 
-        own_sink = u_text_sink_attach(io->out_fd) == 0;
+        /* CAT forwards S6REC words directly to files/pipes and writes
+         * characters to the terminal.  A 258-character output sink would
+         * reintroduce the line limit removed from the input reader. */
         rc = 0;
         if (argc < 2) {
                 r.fd = -1;
                 if (u_text_open_fd(&r, io->in_fd) != 0) {
                         rc = cmd_err(io, "CAT", 0);
                 } else {
-                        for (;;) {
-                                n = u_text_getline(&r, line, sizeof(line));
-                                if (n == U_TEXT_EOF)
-                                        break;
-                                if (n < 0 || u_puts(io->out_fd, line) != 0 ||
-                                    u_crlf(io->out_fd) != 0) {
-                                        rc = 1;
-                                        break;
-                                }
-                        }
+                        while ((next = u_text_copy_line(&r,
+                            io->out_fd)) == 1)
+                                ;
+                        if (next != U_TEXT_EOF)
+                                rc = 1;
                         u_text_close(&r);
                 }
-                if (own_sink && u_text_sink_detach() != 0)
-                        rc = 1;
                 return rc;
         }
         for (i = 1; i < argc; ++i) {
@@ -98,19 +91,12 @@ cmd_cat(int argc, kword_t **argv, struct u_io *io)
                                 continue;
                         }
                 }
-                for (;;) {
-                        n = u_text_getline(&r, line, sizeof(line));
-                        if (n == U_TEXT_EOF) break;
-                        if (n < 0 || u_puts(io->out_fd, line) != 0 ||
-                            u_crlf(io->out_fd) != 0) {
-                                rc = 1;
-                                break;
-                        }
-                }
+                while ((next = u_text_copy_line(&r, io->out_fd)) == 1)
+                        ;
+                if (next != U_TEXT_EOF)
+                        rc = 1;
                 u_text_close(&r);
         }
-        if (own_sink && u_text_sink_detach() != 0)
-                rc = 1;
         return rc;
 }
 #endif

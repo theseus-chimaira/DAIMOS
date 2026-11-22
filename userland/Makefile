@@ -140,7 +140,10 @@ UTILITY_TEXT_LIB = $(USERLAND_BUILD)/libutility-text.darc
 UTILITY_DOC_LIB = $(USERLAND_BUILD)/libutility-doc.darc
 COMMAND_MEMBER_OBJS = $(addprefix $(USERLAND_BUILD)/command-member/,$(addsuffix .dobj,$(COMMAND_PROGRAMS)))
 COMMAND_COMMON_OBJS = $(COMMON_C_SRCS:%.c=$(USERLAND_BUILD)/command/%.dobj)
-COMMAND_LIB_OBJS = $(COMMAND_MEMBER_OBJS) $(COMMAND_COMMON_OBJS)
+# CAT's long-line stream forwarding is needed only by CAT.  A separate
+# archive member avoids adding its TEXT to unrelated commands and MAKE.
+COMMAND_CAT_STREAM_OBJ = $(USERLAND_BUILD)/command/libc/cat_stream_v1814.dobj
+COMMAND_LIB_OBJS = $(COMMAND_MEMBER_OBJS) $(COMMAND_COMMON_OBJS) $(COMMAND_CAT_STREAM_OBJ)
 UTILITY_MISC_MEMBER_OBJS = $(addprefix $(USERLAND_BUILD)/utility-member-misc/,$(addsuffix .dobj,$(UTILITY_MISC_PROGRAMS)))
 UTILITY_TEXT_MEMBER_OBJS = $(addprefix $(USERLAND_BUILD)/utility-member-text/,$(addsuffix .dobj,$(UTILITY_TEXT_PROGRAMS)))
 UTILITY_DOC_MEMBER_OBJS = $(addprefix $(USERLAND_BUILD)/utility-member-doc/,$(addsuffix .dobj,$(UTILITY_DOC_PROGRAMS)))

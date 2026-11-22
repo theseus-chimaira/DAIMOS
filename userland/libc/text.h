@@ -18,6 +18,9 @@ struct u_text_reader {
 int u_text_open(struct u_text_reader *r, const char *path);
 int u_text_open_fd(struct u_text_reader *r, int fd);
 int u_text_getline(struct u_text_reader *r, char *buf, unsigned int size);
+/* Stream one S6REC record to FD, with no maximum line length or line buffer.
+ * Returns 1 for a copied record, U_TEXT_EOF for EOF, U_TEXT_ERROR on failure. */
+int u_text_copy_line(struct u_text_reader *r, int out_fd);
 int u_text_gets6(struct u_text_reader *r, kword_t *buf, unsigned int words);
 void u_text_close(struct u_text_reader *r);
 

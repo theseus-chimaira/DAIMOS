@@ -1,3 +1,20 @@
+## 2026-11-22 v1814: CAT/MAKE source memory fixes from dirty selfhost branch
+
+The historical CAT/MAKE changes were imported without the v1413-v1414
+boot-image limit increase or native self-hosting feature policy. CAT
+now forwards long S6REC text records through a CAT-only 201-word TEXT
+archive member; common `libc/text.c` remains unchanged, avoiding 91
+extra words in every linked common text object. Source-linked short
+read/write, malformed record, TTY and 1000-character tests pass.
+MAKE stores goal offsets in the existing arena: its KCC main frame is
+587 -> 122 words (465 saved), native object TEXT 7876 -> 7748 and
+BSS unchanged at 839. Both CAT and MAKE DXRs link successfully.
+The fresh isolated MAKE guest boot was blocked before SIMH runtime:
+DSH image 036133 exceeded configured 036000 by 0133 octal words.
+This is NOT guest acceptance. Do not increase the limit without
+correctness and folding analysis. See
+`design/cat-make-dirty-consolidation-v1814.md`.
+
 ## 2026-11-22 v1813: DAIMOS libc heap and printf guest verification
 
 The existing KCC DAIMOS libc already provides BRK-backed malloc,
