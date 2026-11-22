@@ -1,5 +1,18 @@
 ## 2026-11-22 v1804: isolated RAW PURE consolidation candidate
 
+**v1805 update:** A real 256K PDP-6 default-OFF DSK/disk-root
+guest from the integrated tree reached MEM 256K, DSK270 OK,
+DRM236 OK, D6FS LOADED, INIT V1 and LOGIN, and remained
+alive through a controlled 45-second timeout (exit 124).
+See `design/daimos-branch-physical-smoke-v1805.md`.
+This is boot smoke, not RAW PURE pressure or K01-K04 live
+fault acceptance. No mainline promotion.
+An attempted second boot against previously written media
+HALTed at `074301` with `?RT`; the clean-image smoke
+subsequently PASSed with per-run DSK/DRM copies. Reused-media
+reboot/recovery behavior remains unaccepted. See the v1805
+physical smoke report.
+
 The v1684 RAW PURE development head is being merged on the
 isolated `kcore-raw-pure-integration-v1804` branch against
 K01-K04 closed mainline `495060f6`. All 90 non-main local
