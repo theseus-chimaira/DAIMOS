@@ -1,7 +1,8 @@
 # K04 v1800: ineligible INIT and late-child terminal publication
 
-Date: 2026-11-22. Status: source-audited acceptance design only.
-**NOT YET PHYSICALLY ACCEPTED.** K04 remains OPEN.
+Date: 2026-11-22. Status: v1800-A **physically accepted** in
+`kcore-k04-late-child-prevm-physical-v1800a.md`; v1800-B
+**NOT YET PHYSICALLY ACCEPTED**. K04 remains OPEN.
 
 ## Source-backed invariant
 
