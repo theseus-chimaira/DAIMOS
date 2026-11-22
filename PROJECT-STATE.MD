@@ -1,3 +1,23 @@
+## 2026-11-22 v1810: dirty worktree preservation and source triage
+
+Seventeen dirty DAIMOS/testkit/toolchain/documentation/simulator
+worktrees were inventoried and SHA256-verified into independent
+versioned archives under
+`~/backups/daimos-dirty-worktrees-v1810-20261122/`.
+The two v1809 parked-main dirty states were copied there as
+well. No source worktree was reset. The source review identifies
+high-value unmerged dlink/p10run correctness patches, CAT's
+S6REC streaming and MAKE's string-arena stack reduction, and
+native compiler/assembler/physical tests in old testkit trees.
+The older D6CODEC decoder variant is superseded by the 53-word
+production version. Unique detached MKSWAP and MM-model work
+is now also protected by explicit archival tags on origin.
+
+These are candidates, not new implementation or physical PASS
+claims; RAW PURE and bitmap mode3 remain default OFF. Exact
+inventory, preservation and next source/test gates:
+`design/daimos-dirty-worktree-audit-v1810.md`.
+
 ## 2026-11-22 v1809: DAIMOS and testkit history consolidated on main
 
 DAIMOS main fast-forwarded from v1803 `495060f6` to the tested
