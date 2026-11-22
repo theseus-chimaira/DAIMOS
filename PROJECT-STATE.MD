@@ -1,5 +1,21 @@
 ## 2026-11-22 v1804: isolated RAW PURE consolidation candidate
 
+**v1807 integrated validation (partial):** Combined native
+PDP-6 K03/K04/PURE owner, refusal, finalizer and source
+lifetime gates PASS. Original K04 parent WAIT eligibility
+and PI disable/restore leaves are now linked by the
+isolated v1680/v1681 testkit fixtures; no production
+change. A real source-built 64K TSFS/PURE/no-AUXSTORE
+guest reached PURE LOADED and INIT V1. A real 48K GENERAL
+RAW pressure guest completed A/B/C with nine PACKED
+owners, restored exact free MM after all nine WAITs,
+and rejected five physical transcript mutants plus a
+forged summary. The source-specific resident count is
+18173, versus historical 17729. The STRICT 48K physical
+pair remains pending, as do the K05-K09 tasks and mainline
+promotion. See
+`design/daimos-branch-integration-validation-v1807.md`.
+
 **v1806 baseline result:** Two consecutive physical boots
 against the same DSK media reproduce the DIRTY-root `?RT`
 HALT on both v1803 mainline and v1804 integration.
