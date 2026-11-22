@@ -1,19 +1,24 @@
 ## 2026-11-22 v1804: isolated RAW PURE consolidation candidate
 
-**v1807 integrated validation (partial):** Combined native
+**v1807 integrated validation (bounded PASS):** Combined native
 PDP-6 K03/K04/PURE owner, refusal, finalizer and source
 lifetime gates PASS. Original K04 parent WAIT eligibility
 and PI disable/restore leaves are now linked by the
 isolated v1680/v1681 testkit fixtures; no production
 change. A real source-built 64K TSFS/PURE/no-AUXSTORE
-guest reached PURE LOADED and INIT V1. A real 48K GENERAL
-RAW pressure guest completed A/B/C with nine PACKED
-owners, restored exact free MM after all nine WAITs,
-and rejected five physical transcript mutants plus a
-forged summary. The source-specific resident count is
-18173, versus historical 17729. The STRICT 48K physical
-pair remains pending, as do the K05-K09 tasks and mainline
-promotion. See
+guest reached PURE LOADED and INIT V1. **Both independently
+executed 48K GENERAL and STRICT RAW pressure guests** completed
+physical A/B/C with nine PACKED owners at pressure and exact
+MM recovery after all nine EXIT/WAIT paths. Both yielded
+free words 26997 -> 2350 -> 26997 and released 1152 PURE
+prefix words; both original physical transcript oracles
+rejected five mutants and one forged summary. Source-specific
+resident words = 18173 versus historical 17729; explicit
+v1807 paired verification PASSed, while the older comparator
+correctly rejected the new-source size as not v1673.
+The independent duplicated-guest negative was also rejected.
+Continuous high-water and K05-K09 feature acceptance remain
+open; no mainline promotion. See
 `design/daimos-branch-integration-validation-v1807.md`.
 
 **v1806 baseline result:** Two consecutive physical boots

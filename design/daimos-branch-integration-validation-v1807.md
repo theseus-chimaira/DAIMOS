@@ -52,8 +52,8 @@ linked low-resident bound while retaining all guest checks.
 No historical test default was weakened.
 
 The genuine 48K GENERAL/STRICT reclaim/restore pressure
-pair is a separate acceptance gate. Its result is not
-established by 64K boot reachability. The v1673 assembly
+pair is a separate acceptance gate from 64K boot reachability.
+The v1673 assembly
 child invokes SYS_EXT_SLEEP with `0104600` octal ticks
 (**35,200 decimal**, approximately **586.7 seconds**
 at 60 Hz) before checking its preserved suffix and
@@ -80,9 +80,51 @@ MM, owner, mode and state invariant unchanged. The old
 default rejects the new-source witness. All five
 negative physical-transcript mutations and the forged
 MM summary were rejected by the original oracle under
-the integrated profile. **Independent STRICT comparison
-remains pending**: one GENERAL execution is not a paired
-acceptance.
+the integrated profile. The independent STRICT
+comparison subsequently completed, as documented below.
+
+## Paired 48K physical acceptance
+
+Both the real GENERAL and STRICT source-built 48K TSFS
+guests independently completed original physical CTY A/B/C
+checkpoints. The tenth native RUN was refused with a spare
+process slot; nine original RAW PACKED owners at B were
+removed after nine successful native EXIT/WAIT lifecycles.
+At both guests the MM free-word sequence was
+**26997 -> 2350 -> 26997** and the largest free extent
+sequence was **26997 -> 1197 -> 26997**. Each retained
+1,152 words of former PURE prefix gain at pressure (nine
+owners times 128 words), with no residual PACKED owner or
+pin at C. Both show resident words 18,173, unchanged
+throughout their own lifecycles. Physical owner/mode/VM,
+arena and source-backed invariants matched across both
+profiles at each phase.
+
+The original v1673 runner's final historical comparison
+failed on the **expected 17729-vs-18173 source snapshot
+resident mismatch**, after both real PDP-6 guests and
+their source-linked physical decoders independently
+reported PASS. The testkit v1807 comparator explicitly
+selects the 18173-word integrated source profile and
+leaves the historical 17729-word default untouched.
+Its paired verification **PASSed**. Each independently
+captured guest transcript then rejected the original
+five physical MM/mode/CTY mutants and one forged-summary
+mutation, for **12 negative checks total**. A separate
+duplicated-guest-transcript mutation was rejected by
+the integrated verifier.
+
+Source evidence: `$TMPDIR/daimos-v1673-runtime-physical.QNmaZi`.
+The verified pair log is `$TMPDIR/daimos-v1807-paired-verified-fixed.log`.
+The two KINIT maps also confirm that STRICT lacks
+the disk SWAP MRES and GENERAL retains it. The control
+test has no attached DSK/DRM swap media.
+
+This closes **only** the paired 48K raw reclaim/restore
+and WAIT test profile. It does not prove physical fault
+injection into immutable backing, persistent MM refusal,
+continuous MM high-water, RAW 64K pressured reclaim,
+bitmap mode3, or the outstanding K05-K08 behavior matrix.
 
 ## Promotion boundary
 
