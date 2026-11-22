@@ -239,8 +239,14 @@ proc_pure_mres_service_v1612(void)
 #if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
         }
 #endif
-        if (rc == MM_OK &&
-            !PROC_TRANSITION(p) && VM_PDP6_BASE(p) &&
+        /* Both restore transactions publish the runnable APR/mode and
+         * clear TRANSITION only after every fallible MM commit succeeds.
+         * A lost successful return cannot revoke that committed state:
+         * READY_ONCE must be derived from the publication, not the rc.
+         * A failed transaction keeps TRANSITION or PACKED, so it cannot
+         * satisfy this existing fail-closed readiness predicate.
+         */
+        if (!PROC_TRANSITION(p) && VM_PDP6_BASE(p) &&
             proc_storage_expect_v30(slot, PROC_STORAGE_RESIDENT) == 0) {
                 proc_sched_cursor = (kword_t)slot |
                     PPURE_READY_ONCE_V1612;
