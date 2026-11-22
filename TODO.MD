@@ -48,6 +48,14 @@ XIP are production-integrated; do not reopen their obsolete proposals.
 
 ## P0. Correctness blockers (fix before optimization)
 
+- [ ] **v1817 DAS host expression fix publication/native acceptance:**
+  standalone DAS correctly rejects differences of independent DOBJ1
+  relocation bases; source-linked PDP10-testkit DAS fast checks pass
+  13/13. Push `ed2d2e5` and earlier local `aa74f42` to the authorized
+  DAS remote after GitHub repository write access is available; do
+  not rewrite credentials or bypass permissions. Separately verify
+  full native DAIMOS guest assembly behavior against matching images.
+
 - [ ] **v1814 source-linked CAT/MAKE guest acceptance:** focused host
   CAT S6REC and native MAKE KCC/DAS frame tests pass; CAT and MAKE DXRs
   link. The fresh 256K MAKE guest image was blocked by DSH TEXT

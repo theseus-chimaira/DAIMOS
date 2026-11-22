@@ -1,3 +1,25 @@
+## 2026-11-22 v1817: recovered DAS relocation identity bug
+
+The archived v1453 assembler fixture reproduced a live host DAS bug:
+subtraction of two independently relocated undefined exports was
+silently emitted as an absolute constant. The local DAS source fix
+checks identity of symbol/section bases before cancellation; the
+expanded PDP10-testkit registration passes four invalid and two
+valid expression cases, and the current DAS fast suite passes 13/13.
+A previously incomplete native relocation-spill mock was repaired in
+PDP10-testkit after verifying its failure also occurs on old DAS.
+Native DAS1/DAS2 compile and link, with generated assembly identical
+to the old source; no native guest execution is claimed.
+The testkit commit `b8b6021` was pushed; DAS fix `ed2d2e5` is committed
+locally but cannot be pushed to its configured GitHub remote with
+currently available credentials (SSH push permission denied). Its
+earlier `aa74f42` is also local-only. Four exact recovered DAS fixtures
+were verified against the published testkit, archived with hashes and
+retired from the historical detached testkit; nine older D6CODEC
+experiments remain there. The system kernel and RAW PURE policy were
+not changed. See pdp10-doc
+`TOOLCHAIN/DAS-RELOCATION-IDENTITY-20261122-V1817.MD`.
+
 ## 2026-11-22 v1816: generated KCC and PDP-6 worktree dirt archived
 
 The KCC main worktree's 23 untracked generated build outputs and the
