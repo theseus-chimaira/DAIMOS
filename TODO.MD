@@ -1,9 +1,16 @@
-# Branch consolidation candidate v1804
+# RAW PURE consolidated integration candidate v1808
 
-Before K05-K09 implementation, validate the isolated RAW PURE
-integration candidate, reconcile associated testkit branches,
-and preserve dirty worktrees. No new feature is accepted.
-See `design/daimos-branch-consolidation-v1804.md`.
+The isolated RAW PURE and testkit integration histories are
+consolidated. Native v1807, physical 64K PURE boot and
+independent 48K GENERAL/STRICT pressure A/B/C acceptance
+PASS; the v1808 K05 lost-success restore correction and
+combined native matrix also PASS. The v1808 change removes
+one removable MRES instruction; no fixed KCORE growth.
+K05-K09 acceptance, mainline promotion and branch cleanup
+remain pending. Preserve existing dirty worktrees and
+default-OFF feature selection. See
+`design/daimos-branch-integration-validation-v1807.md`
+and `design/kcore-k05-restore-reply-v1808.md`.
 
 # DAIMOS TODO - current open work (v1675r2)
 

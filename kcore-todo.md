@@ -430,6 +430,13 @@ unmerged from its development line; mode3 remains disabled.
   prefix reclaim and FULL restore on pin, MM, allocator, backing and
   interruption failures. Preserve original process state and ownership
   when publication cannot be completed.
+  - v1808 PASS: native PDP-6 both original prefix and FULL
+    restores remain runnable after a lost successful return.
+    Fixed KCORE unchanged; opt-in PURE MRES shrinks by one
+    instruction. Remaining: source/allocator loss and
+    genuine physical interrupted/faulted restore with exact
+    owner, pin and persistent failure witnesses. See
+    `design/kcore-k05-restore-reply-v1808.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

@@ -1,3 +1,24 @@
+## 2026-11-22 v1808: K05 restore lost-reply correctness (scoped PASS)
+
+The original v1612 PURE MRES service failed to schedule a
+process whose real prefix/FULL restoration had completed but
+whose success return was lost. The v1808 source-linked
+PDP-6 negative reproduced `__test_exit=02004` before
+correction. A single redundant `rc == MM_OK` readiness
+condition was removed: the authoritative committed APR,
+RESIDENT mode and cleared TRANSITION now determine
+`READY_ONCE`. Both original prefix and bounded FULL native
+transactions PASS the lost-reply oracle and the old-gate
+mutant is rejected. The v1612 refusal/unsafe-READY tests
+and full v1808 combined K03/K04/PURE native matrix PASS.
+The actual post-fix 64K TSFS/PURE guest reached
+`PURE LOADED` and `INIT V1`. Fixed KCORE DXR is
+byte-identical; optional PURE MRES loses one instruction
+(linked DXR 16072 -> 16064 host-file bytes).
+No resident data or fixed KCORE growth. K05 is **not
+closed** by this slice. See
+`design/kcore-k05-restore-reply-v1808.md`.
+
 ## 2026-11-22 v1804: isolated RAW PURE consolidation candidate
 
 **v1807 integrated validation (bounded PASS):** Combined native

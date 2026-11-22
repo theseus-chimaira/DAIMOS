@@ -1,11 +1,19 @@
-# Branch consolidation candidate v1804
+# RAW PURE branch integration candidate v1808
 
-The RAW PURE development history is being reconciled with the
-K01-K04 v1803 mainline in the isolated
-`kcore-raw-pure-integration-v1804` candidate. Default-OFF
-feature switches remain unchanged. This is not RAW PURE
-mainline acceptance. See
-`design/daimos-branch-consolidation-v1804.md`.
+All named RAW PURE and testkit branch heads have been
+integrated into isolated candidate histories relative to
+K01-K04-closed mainline v1803. Default-OFF feature
+selection remains unchanged. Original KCORE remains
+unchanged in v1808; the optional PURE MRES fixes the
+loss of READY_ONCE after a committed restore's missing
+success reply and shrinks by one linked machine instruction.
+Native v1808 and bounded physical 48K GENERAL/STRICT
+plus 64K TSFS boot gates PASS. K05-K09 and mainline
+promotion remain OPEN. Dated branch/state statements
+below describe earlier historical stages, not the
+latest isolated integration candidate. See
+`design/daimos-branch-integration-validation-v1807.md`
+and `design/kcore-k05-restore-reply-v1808.md`.
 
 # DAIMOS KCORE - architecture, accepted boundaries and RAM state (v1676)
 
