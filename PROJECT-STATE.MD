@@ -19,9 +19,12 @@ verifier checks PASSed; no integrated v1804 physical guest
 acceptance is implied.
 The full PDP-6 disk-root image build and combined testkit
 v1804 source gate also PASSed. Strict permanent-size reporting
-still fails the known 32K target (v1804 last address `050716`
-octal); net delta versus current main is pending a same-profile
-baseline measurement. No mainline or default-option promotion.
+still fails the known 32K target in both a fresh v1803
+mainline baseline and v1804 candidate. The same-profile delta
+is fixed KCORE **-5 words**, removable SWAP MRES **+53 words**,
+total permanent-address footprint **+48 words** (last address
+`050636` -> `050716` octal). Mainline fit was already failing.
+No physical v1804 guest or default-option promotion.
 
 ## 2026-11-22 v1803: K01-K04 CLOSED (K03 policy finalized)
 

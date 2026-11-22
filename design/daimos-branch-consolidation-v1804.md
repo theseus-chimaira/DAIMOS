@@ -110,9 +110,23 @@ entrypoint also PASSed when run against this exact worktree.
 Neither is an integrated physical guest boot or 48K/64K
 pressure acceptance.
 
-The isolated disk-root permanent-size report returned a
-known strict-target failure: `PERMANENT_LAST=050716` octal,
-strict limit `040000` octal. The strict 32K target was already
-open on main before this merge. An identical baseline image
-build is needed to measure the candidate's exact net growth;
-do not attribute the existing excess to RAW PURE without it.
+An identical, independently built DSK/disk-root mainline
+baseline `495060f6` also PASSed image generation. Both
+`permanent-size` commands returned the expected strict-target
+failure against `040000` octal, already outstanding on main.
+The exact default-OFF size comparison in decimal words is:
+
+| Component | v1803 main | v1804 candidate | Delta |
+| --- | ---: | ---: | ---: |
+| Fixed KCORE | 10790 | 10785 | -5 |
+| Removable SWAP MRES | 1796 | 1849 | +53 |
+| KCORE + selected MRES | 20847 | 20895 | +48 |
+| Permanent last address | 20894 | 20942 | +48 |
+
+The last-address values are `050636` and `050716` octal.
+The 48-word permanent-address footprint growth is **not**
+48 words of fixed kernel growth: fixed KCORE shrinks five
+words, while the removable SWAP MRES grows 53 words. Review
+that SWAP owner/terminal service growth and its default-OFF
+cost before mainline promotion. It is not a new 32K-fit
+failure, and the optional PURE feature is not enabled.
