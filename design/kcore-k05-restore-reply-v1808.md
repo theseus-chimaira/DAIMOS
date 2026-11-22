@@ -74,6 +74,11 @@ an override of an MM refusal.
 * The fresh post-fix real **64K PDP-6 TSFS/PURE**
   physical guest with absent AUXSTORE reached
   `PURE LOADED` and `INIT V1`.
+* The additional opt-in v1667 mode3 original-MM
+  source-linked native service/full-restore and
+  unsafe bitmap-owner retry mutation PASS. This is
+  a compatibility check on the shared readiness
+  predicate, NOT bitmap production acceptance.
 
 The same-profile KCORE DXR hashes both before and after
 the fix are
