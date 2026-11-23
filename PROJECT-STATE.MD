@@ -1,3 +1,67 @@
+## 2026-11-23 v1822: GCC native DAIMOS console and argc/argv guest verified
+
+The existing GCC console guest test now compiles with the installed
+freestanding header include path; its source-built PDP-6 DAIMOS image
+PASSes real GCC sprintf/printf/vprintf/putchar/puts, the actual
+WRITECHAR monitor veneer and process exit. The separate GCC console
+recording-sink test now compiles with that header for both direct
+linkage and P10RUN; PDP-6, KA10, KI10 and KS10 O0/O2 all PASS (8/8).
+A new daimos-testkit v1822 guest verifies GCC main argc=3 and two
+length-prefixed SIXBIT argv strings from a real DAIMOS command
+invocation, plus real console output and exit status. All work was
+test-side; there was no compiler, libc or kernel production change.
+DAIMOS argv is not a hosted char ** string vector, and GCC/KCC full
+object ABI interoperability and GCC BRK-backed malloc remain unproven.
+See ../pdp10-doc/TOOLCHAIN/GCC-DAIMOS-CONSOLE-ARGV-GUEST-20261123-V1822.MD.
+
+## 2026-11-23 v1824: D6CODEC host reference regression recovered
+
+The historical v1452 host codec check covered a distinct invariant:
+the production host block compressor must produce exactly the same
+packed 36-bit words as the independent v1421 Python reference.
+Its obsolete exact 29-DXR corpus expectation was replaced with a
+source-matched current build inventory. On 31 actual boot DXRs, the
+full DSH DXR and eight deterministic stress inputs (94,276 decoded
+source words), the source-built C compressor and independent Python
+reference matched word-for-word. The C strict decoder roundtripped
+each input and rejected seven malformed/trailing streams. Testkit
+commit `5f62723` was pushed. Nine old v1452-v1458 experimental
+testkit files were SHA256-verified and archived; the detached testkit
+worktree is clean. Native Stage-1 and VFS evidence remains separate.
+
+## 2026-11-23 v1823: obsolete native self-hosting dirty branch retired
+
+The old v1414 CAT/MAKE edits were compared with current sources:
+the stack-saving MAKE goal arena and CAT streaming behavior are
+already implemented correctly by v1814. Re-running its focused
+source-linked tests passed exact S6REC 0/7/258/259/1000-character
+cases and verified MAKE frame 587 -> 122 words (465 saved), object
+TEXT 7876 -> 7748 with BSS 839 unchanged. The original branch also
+contained unaccepted native DAS/MAKE source-staging rules and raised
+the DSH image threshold from 036000 to 037000. No staging change or
+limit increase was merged. All eight dirty tracked/untracked files,
+including the proposed native MAKEFILEs, were preserved in a verified
+SHA256 archive with their original Git patch, then retired from the
+detached worktree. Native self-hosting and the DSH image gate remain
+open in TODO.MD.
+
+## 2026-11-23 v1822: obsolete v1457 D6CODEC cutover dirt retired
+
+The dirty v1452-branch cutover still selected the earlier 56-word
+v1457 fixed decoder. Production instead uses the tested 53-word
+v1458 decoder, with one low-core image at 000060 and a 58-word VFS
+adapter. The branch's untracked v1458 include differed from the
+committed production include only in an obsolete size comment.
+Current v1458 source assembled to 53 TEXT, zero DATA/BSS/relocs;
+the full native component suite passed six valid fixed-core cases,
+five malformed core cases, eight valid refill/direct cases, nine
+malformed VFS cases, five full-DXR checks, a 52-word stack canary,
+and all five Stage-1 device assemblies (8-9 words smaller than
+v1452). None is a fresh DTC/MTC full boot. The 11 tracked edits
+and seven untracked historical source files were SHA256-verified,
+archived with a patch and original Git base, and retired; that
+detached DAIMOS worktree is clean. Current KCORE source was unchanged.
+
 ## 2026-11-23 v1821: recover D6CODEC fixed-low-core linked-map check
 
 The historical untracked v1459 diagnostics were compared with the
