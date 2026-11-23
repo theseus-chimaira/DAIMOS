@@ -1,3 +1,15 @@
+## 2026-11-23 v1868-das: native scratch I/O and decoder reductions (OPEN)
+
+The DAS native size pass now also eliminates a dotted instruction-name
+shift, a redundant effective-address trim, and duplicate short-transfer
+read/write loops (v1865-v1868). Current measured native images are
+034114 DAS1 and 031161 DAS2 octal words, against unchanged 034000 and
+031000 strict ceilings. Excess remains 000114/000161; BSS is unchanged
+at 002103/001573. Both image acceptance tests are still OPEN. A
+quotient/remainder sign-correction rewrite was measured and reverted
+because it increased native size by 000002 per phase. See
+../pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1864-das: native symbol and packing reductions (OPEN)
 
 Following the fully published v1861 DAS image-size checkpoint, common
