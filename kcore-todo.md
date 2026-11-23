@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1855 K05 exact pinned FULL commit; K01-K04 closed).
+Updated: 2026-11-23 (v1890 K05 physical FULL pin2 refusal; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -506,6 +506,20 @@ history is now reachable from main (v1809); mode3 remains disabled.
     words, no BSS change. Physical extra-pin fault injection and
     bystander progress during quarantine remain OPEN. See
     `design/kcore-k05-exact-pinned-full-v1855.md`.
+  - v1890 scoped original physical PASS: a freshly source-matched
+    actual 48K PDP-6 FULL restore has its slot3 target MM metadata
+    physically changed from pin1 to pin2 by test-only SIMH deposit
+    at the live loader checkpoint `036202`. The original bounded
+    restore returns MM_ERR_BUSY (-5) at PC `033067` without losing
+    the sole PACKED RAW source (pin1) or provisional PROCESS target
+    (pin2). All unrelated MM extents, root and current-slot state are
+    unchanged. A later real PCLK PI6 at `017205` sees the exact same
+    retained MM owner set. Four independent forged physical traces
+    are rejected by source-linked negative controls. No source code,
+    fixed KCORE, optional MRES, data RAM or defaults changed. This is
+    **not** a guest WAIT/HALT, observed TRANSITION-flag or unrelated
+    bystander-progress witness; those and other persistent fault
+    cases remain OPEN. See `design/kcore-k05-physical-overpin-v1890.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

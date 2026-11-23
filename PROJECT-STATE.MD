@@ -1,3 +1,42 @@
+## 2026-11-23 v1890-k05: real physical 48K FULL target pin2 refusal (scoped PASS)
+
+The unchanged source-built v1855 48K PDP-6 five-child PURE-on image
+now has a real full-system source-linked MM overpin fault witness,
+not just a native test-fixture simulation. A fresh physical installed
+KCORE reclaim-JRST probe establishes relocated PURE base `032417`
+octal, original FULL loader `036202`, and service return `033067`.
+At the original slot3 pinned FULL loader, the live MM PACKED RAW suffix
+`111200..120000` is pinned once and the separate complete PROCESS
+target `120000..130000` is pinned once. SIMH reads original MM target
+meta `024705=000011000003`, deposits precisely one EXTRA pin
+`000021000003` and independently re-reads the physical word. No
+source media is disconnected and no production binary is modified.
+
+The real original C FULL returns `777777777773` (`MM_ERR_BUSY=-5`)
+at physical service return PC `033067`: the sole RAW source pin1 and
+the temporary target pin2 both remain in MM, every other descriptor
+and ROOT unchanged. A later actual fixed-KCORE PCLK PI6 handler runs
+at PC `017205` with clock/cooldown/cursor `021676/0100/3`; a second
+complete MM snapshot is identical to the quarantined snapshot.
+The original physical simulator exits at this *intentional* clock
+checkpoint, not guest WAIT/HALT. The independent source-linked audit
+and four separately executed forged physical MM trace mutations PASS.
+
+Original normalized real PDP-6 physical trace SHA256:
+`fa522cdbd0c1dfa8c429ba551d12db84d4671784928204f729c73eb8a0bb8b1e`.
+KCORE and PURE MRES are unchanged from v1855, including their exact
+previously accepted SHA256 hashes and memory sizes. No kernel code,
+extra RAM, driver or default changed. See
+`design/kcore-k05-physical-overpin-v1890.md`, testkit
+`tests/validation/pure-k05-physical-overpin-v1890/`, and
+`pdp10-doc/KERNEL/PURE-K05-PHYSICAL-OVERPIN-V1890.MD`.
+
+This closes the specific *physical* v1855 target-overpin rejection and
+subsequent PCLK owner-retention witness. K05-K09 remain OPEN for
+physical TRANSITION/scheduler/bystander EXIT/WAIT, source unpin/free
+uncertainty, all allocator failure modes, terminal cleanup and full
+acceptance. RAW PURE/mode3 remain OFF by default.
+
 ## 2026-11-23 v1882-das: native phase1 compact three-letter opcode keys
 
 The 59 three-letter base instruction names now store two 18-bit keys
