@@ -107,3 +107,10 @@ into the historical branch artifacts.
 
 No pdp10-testkit operation was performed and no kernel, KCC, DAS,
 KCORE, DSH boot-gate or userland production source was modified.
+
+Final verified Git inventory: **32 permitted repositories/worktrees,
+zero dirty** (zero modified tracked files, zero untracked files).
+The read-only report is stored at
+`~/backups/daimos-branch-report-v1834-20261123/final-permitted-git-status-v1834.txt`,
+SHA256 `b28991b7bc6580f40d662ab1b50f5ed98b55914cb07b8c40603715bc32b5d521`.
+This scan did not enter or modify pdp10-testkit.

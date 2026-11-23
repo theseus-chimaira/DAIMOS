@@ -39,6 +39,13 @@ committed or pushed. No kernel or compiler production code was
 changed; no native guest success was invented for the old diagnostic
 experiments.
 
+Final read-only inventory v1834: **32 permitted Git worktrees
+scanned, zero dirty, zero modified tracked, zero untracked**.
+This includes the then-current mainline and detached historical
+worktrees, but explicitly excludes every pdp10-testkit checkout.
+SHA256-verified inventory:
+`~/backups/daimos-branch-report-v1834-20261123/`.
+
 ## 2026-11-23 v1829-gcc: unresolved GCC-to-KCC qsort callback guest trap
 
 The GCC client / KCC-built libc heap integration passed v1828, but
