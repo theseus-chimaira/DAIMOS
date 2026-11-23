@@ -1,3 +1,20 @@
+## 2026-11-23 v1828-gcc: GCC client directly uses KCC-built DAIMOS libc.a
+
+The testkit's new `daimos-gcc-kcc-libc-heap-v1828` program is compiled
+with GCC and links the freshly KCC-built production DAIMOS `libc.a`,
+not a GCC-recompiled allocator or standalone arena. The real PDP-6
+DAIMOS guest passed normal malloc/free/calloc/realloc operations,
+actual BRK growth and console output. Overflowing malloc/calloc,
+address-space-exceeding malloc and failed realloc were rejected
+without changing BRK or corrupting the original data. An archive
+omission negative control fails linking as expected. Both the first
+guest and the expanded virtual-boundary guest run passed. This proves
+the tested allocator ABI can be shared between GCC clients and KCC
+libc objects; it does not prove all KCC libc functions/varargs are
+cross-compiler compatible or select KCC libc by default. No DAIMOS
+production code changed. See pdp10-doc/TOOLCHAIN/
+GCC-KCC-DAIMOS-LIBC-HEAP-GUEST-20261123-V1828.MD.
+
 ## 2026-11-23 v1827-gcc: production DAIMOS BRK allocator runs under GCC
 
 The GCC C89 freestanding compiler successfully compiled unchanged
