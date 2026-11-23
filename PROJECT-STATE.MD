@@ -1,3 +1,21 @@
+## 2026-11-23 v1846: first measured DAS native image reduction (OPEN)
+
+DAS `das.c` now shares expression symbol resolution for numeric local
+labels and ordinary names, preserving their distinct handling of
+undefined object symbols, SET snapshots, and relocations. Measured
+native phase images (octal words): DAS1 035216 -> 035103, saving
+000113; DAS2 032730 -> 032620, saving 000110. BSS is unchanged
+(DAS1 002103, DAS2 001573). Strict ceilings remain DAS1 034000,
+DAS2 031000, with excess 001103 and 001620 respectively. Both
+limits still FAIL: this is a partial optimization, not completion.
+
+Host DAS phase IR/transport, reference assembly, macro, conditional,
+radix, C-comment, relocation and symbol regression checks passed.
+The strict native-size checker correctly still rejects DAS1.
+No native guest pass has been claimed for the revised assembler.
+See pdp10-doc/TOOLCHAIN/
+DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1845: native DAS image-size baseline profiled (OPEN)
 
 Rebuilt unmodified native DAS phases with installed KCC, PDP-6 target,
