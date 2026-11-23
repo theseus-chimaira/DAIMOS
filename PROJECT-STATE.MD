@@ -1,3 +1,42 @@
+## 2026-11-23 v1845-k05: source-matched PDP-6 physical DTC3 FULL rollback PASS
+
+Against the original integrated KCORE/PURE v1839 source, the historical
+v1643 six-child 48K FULL guest compiled/booted but failed its sixth
+native RUN before the pressure checkpoint (`aaaaa!r`). The new
+testkit-only v1845 fixture retains its exact original DTC3 backing,
+PIPE, source canaries, BRK, EXIT/WAIT and ROOT/VM policy, changing
+only the pressure child count to five. The independently rebuilt
+current-source 48K baseline physically completed all five children,
+the refused extra RUN, checkpoints B/A and final HALT 0.
+
+The original fixed KCORE and PURE MRES DXR streams are byte-identical
+between the old failed-admission and new completed workload. A second
+real source-built physical run reads KCORE's actual installed reclaim
+JRST at 024143: 254000032627, derives relocated PURE base 032417,
+and stops at current FULL loader 036153 (original instruction
+200000000004). Slot 3 has one pinned PACKED source 111200..120000
+and one independently pinned full PROCESS target 120000..130000.
+The host DETACHES actual secondary DTC3; original loader returns -4
+at source-linked service return 033067. Original rollback retains
+the exact unpinned source and frees the provisional target. The same
+private reel is reattached and all five native EXIT/WAITs finish at
+HALT 0, with selected TSFS root unchanged.
+
+Original physical MM free/largest checkpoint values: B/A 7391/4702,
+FULL 6886/4702, rollback 10982/4702, Z 25876/25876; stage counts
+18/18/18/17/8 live extents. The exact physical MM owner/pin source
+verifier PASSes and rejects two forged original transcripts (retained
+PACKED pin and fake successful loader response). The initial test-only
+oracle incorrectly required five contiguous `w` bytes through the
+simulator breakpoint; it was corrected to one root-child `w` before
+FULL and four secondary children after media return. No production
+code or new RAM was added; v1845 is a bounded physical source-loss
+acceptance, not the entire K05 PI6/MM failure matrix.
+
+K05-K09 remain OPEN, K01-K04 CLOSED, mode3 and PURE default OFF.
+See `design/kcore-k05-secondary-dtc3-physical-v1845.md` and
+daimos-testkit `pure-k05-secondary-physical-v1845`.
+
 ## 2026-11-23 v1846: first measured DAS native image reduction (OPEN)
 
 DAS `das.c` now shares expression symbol resolution for numeric local

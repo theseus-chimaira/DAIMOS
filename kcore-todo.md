@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1839 K05 source-free return; K01-K04 closed).
+Updated: 2026-11-23 (v1845 K05 physical secondary fault; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -448,6 +448,20 @@ history is now reachable from main (v1809); mode3 remains disabled.
     not fixed KCORE. Full physical PI6/fault, source/allocator and
     persistent owner acceptance remain OPEN. See
     `design/kcore-k05-source-free-reply-v1839.md`.
+  - v1845 scoped physical PASS: current-source 48K PDP-6 original
+    FULL restore survives actual secondary DTC3 disappearance during
+    a pinned two-extent transaction. The original loader reports -4;
+    unchanged RAW PACKED suffix remains unpinned and the provisional
+    PROCESS target is freed; exact same reel return permits four
+    secondary-backed children to finish and parent WAIT/HALT passes.
+    Five-child pressure fixture is explicitly distinguished from the
+    obsolete six-child fixture that fails admission on current source.
+    All five physical MM stages and two original-trace negative mutants
+    PASS, with identical fixed KCORE/PURE DXRs between those fixtures.
+    No production code or fixed RAM growth. Physical active PI6 MM
+    interruption, persistent allocator/pin uncertainty, other source
+    failures and full K05 acceptance remain OPEN. See
+    `design/kcore-k05-secondary-dtc3-physical-v1845.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
