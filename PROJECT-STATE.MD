@@ -1,3 +1,33 @@
+## 2026-11-23 v1821: recover D6CODEC fixed-low-core linked-map check
+
+The historical untracked v1459 diagnostics were compared with the
+already committed `d6codec-v1459-integration` suite. Existing tests
+perform byte-exact KCORE/Stage-1 decoder matching and genuine cold
+boots; the old linker-map probe adds a distinct source-matched
+constraint. New testkit `lowcore-map-v1821.py` verifies fixed decoder
+start 000060, exact 53-word extent, nonoverlapping VFS/direct-buffer
+adapters and absence of obsolete v1452 entry symbols. The current
+linked KCORE map passed; five forged symbol maps were rejected.
+Testkit commit `1cbce75` was pushed. Four old untracked scripts were
+SHA256-verified, archived and retired from their detached worktree.
+No decoder source, size or boot policy changed, and the historical
+DTC/MTC early-boot failures remain unaccepted.
+
+## 2026-11-23 v1820: native SIXMD manual inventory recovered
+
+The historical v1071 host MKSWAP script was obsolete: that host tool
+and its manual path are absent from current DAIMOS (current helpers
+include mkauxstore and d6swap, with different contracts). The v1073
+native manual audit used likewise stale KCC/host locations; a new
+source-authentic v1820 test checks the current build/public manual
+inventory and SIXMD validity. Results: 77 public native pages,
+2 private native helper pages and 26 installed optional assembly
+utility manuals PASS. Native MKSWAP remains only planned, not
+advertised as installed. Testkit commit `e4242ba` was pushed. The
+old five tracked/untracked candidate files were verified against a
+SHA256 archive and retired, leaving the detached worktree clean.
+Neither a new formatter nor compiler packaging acceptance is claimed.
+
 ## 2026-11-23 v1819: low BCACHE allocator test restored and archived
 
 The existing daimos-testkit BCACHE allocation oracle had a stale
