@@ -20,6 +20,10 @@
  * deletion. Verify the sole surviving PROCESS owner before deciding
  * whether to publish or roll back the destination; quarantine ambiguous
  * MM owner sets without releasing potentially unique process storage.
+ * v1855: both live MM extents must still have their ORIGINAL exact one
+ * pin at commit. A second pin on the temporary PROCESS APR otherwise
+ * survives a successful mm_unpin() return, and releasing the last RAW
+ * source would publish a still-pinned incomplete transaction.
  *
  * Linked only by the opt-in PURE MRES. The default KCORE is unchanged.
  */
@@ -83,18 +87,17 @@ pram_extent(unsigned int slot, unsigned int type, kword_t words,
         return MM_OK;
 }
 
-/* A failed mm_free reply does not prove that the PACKED owner survived.
- * Called under PI exclusion after both original transaction pins have
- * been released. Only these two exact, unpinned owner sets are known:
- *   1: source is gone; the complete destination is the sole VM owner.
- *   0: source and destination both survive; destination may roll back.
- *  -1: anything else is uncertain and must retain both reservations.
- * Do not infer a free from a missing source alone: the full destination
- * must also be verified, and duplicate/foreign process extents fail closed.
+/* Both v1839's failed-free reply and v1855's precommit pin check
+ * inspect the same authoritative MM descriptors under PI exclusion.
+ * Return a bitset: 1 for the exact PACKED source, 2 for the exact
+ * PROCESS destination; -1 for an unexpected owner, type, geometry,
+ * duplicate, or pin count. The expected pin count is 1 before the
+ * commit and 0 after both original transaction unpins have completed.
+ * Shared scan avoids two copies of the hot extent traversal in MRES.
  */
 static int
-pram_source_free_reply_v1839(unsigned int slot, kword_t source,
-    kword_t raw, kword_t target, kword_t words)
+pram_exact_owner_set_v1855(unsigned int slot, kword_t source,
+    kword_t raw, kword_t target, kword_t words, unsigned int pins)
 {
         unsigned int seen = 0U;
         int i;
@@ -117,7 +120,7 @@ pram_source_free_reply_v1839(unsigned int slot, kword_t source,
                     (type != MM_TYPE_PROCESS &&
                      type != MM_TYPE_PACKED_PROCESS))
                         continue;
-                if (MM_EXTENT_PINNED(e))
+                if (MM_EXTENT_PINS(e) != pins)
                         return -1;
                 if (type == MM_TYPE_PROCESS &&
                     MM_EXTENT_BASE(e) == target &&
@@ -133,9 +136,24 @@ pram_source_free_reply_v1839(unsigned int slot, kword_t source,
                         return -1;
                 seen |= bit;
         }
-        if (seen == 2U)
+        return (int)seen;
+}
+
+/* A failed mm_free reply does not prove that the PACKED owner survived.
+ * The exact unpinned destination alone means the free committed;
+ * both exact unpinned owners permit a checked target rollback.
+ * Everything else must remain quarantined, including foreign owners.
+ */
+static int
+pram_source_free_reply_v1839(unsigned int slot, kword_t source,
+    kword_t raw, kword_t target, kword_t words)
+{
+        int owners = pram_exact_owner_set_v1855(slot, source, raw,
+            target, words, 0U);
+
+        if (owners == 2)
                 return 1;
-        return seen == 3U ? 0 : -1;
+        return owners == 3 ? 0 : -1;
 }
 
 /*
@@ -239,6 +257,15 @@ proc_pure_ram_restore_v1391(unsigned int slot,
          * No allocation or filesystem operation occurs with PI disabled.
          */
         pi_state = mach_pi_disable();
+        if (pram_exact_owner_set_v1855(slot, source, raw,
+            target, words, 1U) != 3) {
+                /* Unexpected pins cannot be released by guessing.
+                 * Preserve the sole authoritative RAW suffix, full
+                 * temporary APR and TRANSITION for operator recovery.
+                 */
+                mach_pi_restore(pi_state);
+                return MM_ERR_BUSY;
+        }
         rc = mm_unpin(target);
         if (rc != MM_OK) {
                 mach_pi_restore(pi_state);
