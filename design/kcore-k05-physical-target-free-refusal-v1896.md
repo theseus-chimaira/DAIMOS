@@ -138,3 +138,15 @@ with independent resident parent progress, NOT successful target
 free with lost reply, foreign owner, ambiguous allocator/unpin
 errors, terminal cleanup, arbitrary PI6 orders, 64K/KA10 or full
 K05-K09 release. No production code/RAM or on-disk format change.
+
+**Physical follow-up v1897 (2026-11-23):** The original same
+`fail_target` target cleanup `mm_free(PROCESS)` was entered with
+target pin0 and physically SUCCEEDED, deleting the whole target
+while the authoritative PACKED source survived. The private
+controller changed ONLY postcommit AC1 0->-5; the original FULL
+conservatively returned BUSY but retained source/TRANSITION/VM0,
+and the unchanged five-child guest subsequently completed real
+typed EXIT/WAIT and HALT with no slot3 leaks. This covers the
+opposite successful-deletion/lost-reply outcome to v1896's
+genuine pinned target-free refusal. See
+`design/kcore-k05-physical-target-free-lost-reply-v1897.md`.

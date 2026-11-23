@@ -1,3 +1,66 @@
+## 2026-11-23 v1897-k05: original successful target cleanup free with falsely failed reply, five-child WAIT/HALT (scoped PASS)
+
+The unchanged original source-built v1855 48K PDP-6 fixed KCORE
+and opt-in PURE MRES, with unchanged original five-child INIT,
+secondary DTC3 compressed backing, RUN/BRK/PIPE pressure and
+writable sentinels, now physically exercise the **opposite** of
+v1896's genuinely refused temporary-target cleanup. The actual
+source-linked compiled FULL DOBJ `mm_free` relocations and linked
+original PURE MRES opcodes identify PACKED-source native free
+at physical `035310` and PROCESS-target `fail_target` free at
+`035371`, target return `035372` octal. The installed PURE base
+`032417` comes from actual KCORE reclaim-JRST physical probe.
+
+The original loader and both transaction unpins succeed, with
+exact original authoritative PACKED `111200..120000` and
+provisional complete PROCESS `120000..130000`, both pin0,
+18 MM extents. A private temporary physical source pin makes
+the ORIGINAL native source `mm_free(PACKED)` really refuse
+`MM_ERR_BUSY=-5`; external source pin is then released, so the
+original v1839 exact owner scan safely enters the original
+`fail_target` rollback. **The unchanged native target
+`mm_free(PROCESS)` executes successfully**, AC1=0 at original
+return `035372`: the temporary PROCESS extent is physically
+DELETED, MM count 18->17, the sole remaining slot3 extent is
+the authoritative unpinned PACKED source; all other MM records,
+pins, geometry and original selected TSFS root are unchanged.
+
+ONLY AFTER verifying native AC1=0 and the actual complete target
+deletion, private test-only SIMH deposits AC1 `777777777773`
+(=-5). The original fixed-KCORE/PURE C caller returns conservative
+`MM_ERR_BUSY` at original FULL service `033067`, with slot3
+TRANSITION still set, VMbase0, PACKED source still exact pin0
+and no invalid APR publication. The unchanged original user
+guest retries, completes ALL FIVE typed child EXIT/WAIT and
+writable sentinels, prints parent `Z`, actually HALTs at PC
+`000000`, and finally has 8 original MM extents, NO residual
+slot3 RAW/PROCESS owner. Full independent original physical audit
+and **TWELVE separately executed unsafe transcript controls**
+PASS. A first test-only negative oracle incorrectly required
+the MM count to appear only once per original snapshot (original
+SIMH reports the same count twice). Corrected only the negative
+control parser; original physical trace unchanged.
+
+Unchanged original fixed KCORE DXR SHA256:
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`.
+Unchanged original optional PURE MRES DXR SHA256:
+`a0fb25c51cf1c57f4bc70ca1dc83d8b9ea39b1ac3ddb3bba7b9ffcea17e5b3fd`.
+Accepted original normalized physical trace SHA256:
+`6aeb9da4b13d471ca300b2091b4b663be867f24c3e54850579287f140fa6d11e`.
+Original physical evidence:
+`$TMPDIR/daimos-k05-target-free-lost-reply-v1897-real/`.
+Design `design/kcore-k05-physical-target-free-lost-reply-v1897.md`.
+Testkit `tests/validation/pure-k05-target-free-lost-reply-v1897/`.
+Permanent kernel docs:
+`pdp10-doc/KERNEL/PURE-K05-TARGET-FREE-LOST-REPLY-V1897.MD`.
+
+This closes the **physically committed provisional-target cleanup
+free with an externally lost success reply and eventual safe
+original child restoration/WAIT/HALT**, not permanent pin/failed
+unpin/foreign owner variants, quarantined-terminal cleanup,
+arbitrary PI6 timings or K05-K09 acceptance. No production
+source or RAM growth; RAW PURE and mode3 remain OFF by default.
+
 ## 2026-11-23 v1896-k05: genuine original PROCESS target cleanup-free -5, fail-closed quarantine and parent progress (scoped PASS)
 
 Original source-built v1855 48K PDP-6 fixed KCORE and optional PURE

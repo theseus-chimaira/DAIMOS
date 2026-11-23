@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1896 K05 physical genuine target cleanup free refusal; K01-K04 closed).
+Updated: 2026-11-23 (v1897 K05 physical successful target cleanup with lost reply; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -649,6 +649,30 @@ history is now reachable from main (v1809); mode3 remains disabled.
     unpin/allocator ambiguity, other PACKED child restore, all
     child WAIT/HALT or K05-K09. See
     `design/kcore-k05-physical-target-free-refusal-v1896.md`.
+  - v1897 original 48K physical successfully completed temporary
+    PROCESS-target cleanup free with externally lost success reply
+    PASS. Original source-linked fixed-KCORE `mm_free` call for
+    PACKED source `035310` genuinely refuses a temporary external
+    source pin with its own -5; source pin is then released so the
+    exact v1839 zero-pin two-owner scan safely chooses rollback.
+    The original `fail_target` cleanup `mm_free(PROCESS)` at
+    `035371` runs NORMALLY with target pin0; native original AC1=0
+    at `035372` and actual physical MM table drops 18->17, with
+    target GONE and sole authoritative PACKED source pin0.
+    ONLY AFTER true deletion is native AC1 overwritten by one
+    test-only SIMH deposit to -5. Original FULL returns -5 at
+    `033067`, slot3 remains TRANSITION/VMbase0, RAW source and
+    all unrelated MM/ROOT preserved. The original five child
+    PIPE/sentinel/typed EXIT/WAIT tests subsequently RETRY and
+    complete, parent Z/real PDP-6 HALT, final 8 MM extents and
+    no residual slot3 owners. Original physical independent audit
+    and TWELVE separately executed unsafe native MM/process/HALT
+    transcript mutants PASS. Fixed KCORE/PURE binaries remain
+    byte-identical; ZERO added production words. This closes
+    the completed target-free + false failed reply branch,
+    NOT permanent unpin/foreign owners/uncertain terminal cleanup,
+    arbitrary PI6 or K05-K09. See
+    `design/kcore-k05-physical-target-free-lost-reply-v1897.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
