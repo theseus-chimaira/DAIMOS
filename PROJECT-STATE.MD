@@ -1,3 +1,23 @@
+## 2026-11-23 v1835-gcc: KCC indirect callback AC16 clobber fixed
+
+The failing v1829 GCC-to-KCC `qsort` guest was traced to KCC
+`ccgen2.c:gcall`: the indirect target had been loaded into AC16 before
+argument evaluation, while the PDP-6 byte-pointer adjuster also uses
+AC16 as scratch. At the first callback `PUSHJ 17,0(16)`, PC 002455,
+AC16 was zero; AC13 still held comparator address 001007. The old
+guest reported invalid UUO and shell status 126. The compiler now
+pushes the computed target directly to one temporary stack word,
+reloads AC16 immediately before the call, and balances stack cleanup.
+The new v1830 bare-metal argument-scratch regression passes all eight
+PDP-6/KA10/KI10/KS10 noopt/opt cells (two/five/zero arguments and
+nested evaluation); the old installed KCC fails PDP-6 noopt.
+The repaired KCC passes the original source-built PDP-6
+DAIMOS GCC/KCC qsort callback guest with STATUS:0, plus a fresh
+DAIMOS libc archive build. The repaired compiler is installed in
+`$PDP10_PREFIX/bin/kcc`, with the previous binary versioned-backup.
+No DAIMOS kernel or libc production code changed. See
+`pdp10-doc/TOOLCHAIN/KCC-INDIRECT-CALL-AC16-SCRATCH-20261123-V1830.MD`.
+
 ## 2026-11-23 v1834: remaining non-pdp10-testkit dirty worktrees consolidated
 
 Three detached daimos-testkit worktrees were compared with later
