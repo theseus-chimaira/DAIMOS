@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1898 K05 physical target unpin double -4, safe quarantine; K01-K04 closed).
+Updated: 2026-11-23 (v1899 K05 physical native source unpin -4 and five-child retry; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -698,6 +698,31 @@ history is now reachable from main (v1809); mode3 remains disabled.
     unpin failure, foreign owner, quarantined terminal cleanup,
     child WAIT/HALT or K05-K09 release. See
     `design/kcore-k05-physical-target-unpin-refusal-v1898.md`.
+  - v1899 original 48K PDP-6 genuine SOURCE `mm_unpin` -4 physical
+    PASS, distinct from v1898 target double unpin -4. Original
+    linked source-unpin call `035276`/return `035277` runs after
+    successful target unpin and v1855 exact owner pair guard.
+    Private test-only SIMH zeros only original RAW source MM
+    metadata at `024703` pin1->pin0. The ORIGINAL native MM
+    executes and refuses -4, leaving both source RAW
+    `111200..120000` pin0 and full PROCESS target
+    `120000..130000` pin0, MM18. The original `source_uncertain`
+    path avoids a speculative second source unpin and safely
+    releases ONLY the temporary PROCESS via REAL native
+    `mm_free` at `035371`/return `035372` AC1=0. Actual target
+    vanishes, MM18->17, sole authoritative PACKED source pin0.
+    Original FULL returns -4 with slot3 TRANSITION/VM0 and
+    unchanged ROOT/other MM owners. Unchanged original five
+    children retry/typed EXIT/WAIT, parent Z and hardware HALT,
+    terminal MM8 with no slot3 owner. Independent physical audit
+    plus THIRTEEN separate unsafe source/MM/return/APR/HALT
+    negative transcripts PASS; original fixed KCORE/PURE bytes
+    and RAM unchanged. As v1855 commit is PI-disabled, the
+    test-only pin0 state is NOT a natural interrupt race.
+    Remaining: lost successful source unpin reply, foreign owner,
+    permanently quarantined terminal cleanup, PI6 variations,
+    KA10/64K and K05-K09 release. See
+    `design/kcore-k05-physical-source-unpin-refusal-v1899.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

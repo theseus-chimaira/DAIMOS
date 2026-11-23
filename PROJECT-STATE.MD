@@ -1,3 +1,67 @@
+## 2026-11-23 v1899-k05: original native source mm_unpin -4, safe full target rollback, five child WAIT/HALT (scoped PASS)
+
+The original source-built v1855 fixed KCORE and opt-in PURE MRES
+are byte-identical to the accepted v1890-v1898 production images.
+The original source-built 48K PDP-6 with five unchanged children
+(ROOT/secondary compressed DTC3, RUN/BRK/PIPE and mutable-data
+sentinels) physically exercised the **original SOURCE native
+`mm_unpin` failure** after normal successful target unpin.
+
+The original installed PURE base `032417` octal is derived from
+the physical KCORE reclaim JRST. Original compiled FULL DOBJ
+symbol and four `mm_unpin`/two `mm_free` relocations are checked
+against the original linked PUSHJ instructions. The real source
+unpin is at **`035276`** (return **`035277`**) and checked
+target rollback free is at **`035371`** (return **`035372`**),
+original FULL service at `033067` octal.
+
+At source unpin the authoritative PACKED RAW `111200..120000`
+was physical pin1 and complete temporary PROCESS target
+`120000..130000` was already pin0, original MM count18. ONLY a
+private test-only stopped SIMH controller changed source MM word
+`024703=000014000003` pin1 to `000004000003` pin0. The actual
+original fixed-KCORE `mm_unpin(source)` genuinely refused with
+`MM_ERR_INVAL=-4` in AC1 `777777777774` at `035277`, leaving
+both original extents physically present and pin0. The original
+C marks source ownership uncertain (`source_uncertain=1`) and
+does NOT repeat unpin on that last authoritative RAW owner.
+The original `fail_target` code actually executes normal native
+`mm_free(PROCESS)` with AC1=0 at `035372`, physically deleting
+the complete target: MM 18->17, sole slot3 owner PACKED source
+pin0. Original FULL returns native **-4** at `033067`, preserving
+slot3 TRANSITION/VMbase0 (meta `046031600401`, VM word
+`010000000000`) without publishing an unsafe APR. All unrelated
+MM owner records/pins and TSFS root `070101000000` are unchanged.
+
+The unchanged original guest then safely retries and completes
+all FIVE typed EXIT/WAIT, PIPE, writable sentinels and parent Z,
+executes actual hardware `HALT instruction, PC: 000000`, final
+MM count8 and no slot3 PACKED/PROCESS owner. Independent original
+physical audit plus **THIRTEEN separately executed unsafe MM/
+source/native-return/process/HALT negative transcripts PASS**.
+
+Accepted normalized physical SHA256:
+`32b178432dce4404a405b15cb7a812718115205ad4a119f376256142abc68844`.
+Unchanged original fixed KCORE DXR SHA256:
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`.
+Unchanged original PURE MRES DXR SHA256:
+`a0fb25c51cf1c57f4bc70ca1dc83d8b9ea39b1ac3ddb3bba7b9ffcea17e5b3fd`.
+Actual physical evidence:
+`$TMPDIR/daimos-k05-source-unpin-refusal-v1899-real/`.
+Design: `design/kcore-k05-physical-source-unpin-refusal-v1899.md`.
+Testkit: `tests/validation/pure-k05-source-unpin-refusal-v1899/`.
+Stable docs: `pdp10-doc/KERNEL/PURE-K05-SOURCE-UNPIN-REFUSAL-V1899.MD`.
+
+**Fault model:** The existing v1855 owner guard and both commit
+unpins operate under PI exclusion. A normal asynchronous client
+cannot zero the source pin between guard and unpin. This test
+physically proves fail-closed handling of a deliberately injected
+unexpected MM state, NOT a natural PI6 race. It does not cover
+lost successful source-unpin reply, foreign owners, permanently
+quarantined terminal owner cleanup, alternate PI6 timings or
+full K05-K09 release. RAW PURE/mode3 remain OFF. No production
+source, persistent state, process field or KCORE/PURE RAM growth.
+
 ## 2026-11-23 v1898-k05: double genuine target mm_unpin -4, safe quarantined owner and resident parent progress (scoped PASS)
 
 The original source-built v1855 48K PDP-6 fixed KCORE and optional

@@ -124,3 +124,14 @@ normal full child EXIT/WAIT, alternate PI6 orders, 64K/KA10 or
 overall K05-K09 release. With the existing exact-one-pin PI
 atomic owner guard, the injected zero-pin transition is NOT a
 legitimate native asynchronous race. Zero production RAM growth.
+
+**Physical follow-up v1899 (2026-11-23):** Unlike the v1898
+target-side double unpin refusal, the original SOURCE `mm_unpin`
+at `035276` physically returned genuine -4 after one test-only
+source pin1->pin0 deposit. The `source_uncertain` guard correctly
+avoided retrying source unpin, while native target cleanup at
+`035371` succeeded. The sole RAW source survived pin0; unchanged
+five-child user retry/EXIT/WAIT/real HALT PASS. The injected
+source-pin transition is again within a PI-atomic commit window,
+not a natural scheduler race. See
+`design/kcore-k05-physical-source-unpin-refusal-v1899.md`.
