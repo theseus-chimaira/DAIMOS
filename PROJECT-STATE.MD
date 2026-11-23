@@ -1,3 +1,25 @@
+## 2026-11-23 v1861-das: native directive and expression reductions (OPEN)
+
+Continuation of the v1854 native DAS size work retains all resident
+limits and both phase build profiles. Parsed operand pointers now feed
+ASCII/ASCIZ/SIXBIT counting and emission and BYTE/LONG counting and
+emission (v1855-v1856). Literal SET canonicalization copies share a
+single checked path (v1857); conditional IF kinds are decoded once
+(v1858); native expression addition/subtraction shares a call site
+(v1860); and the literal operator classifier avoids a name memmove
+without changing dotted token length rules (v1861).
+
+Measured native phase images (octal words): DAS1 034470 -> 034173,
+DAS2 031704 -> 031344. These save 000275 and 000340 from v1854,
+respectively, and 001023/001364 since the v1845 baseline. BSS remains
+002103/001573. The unchanged strict ceilings 034000/031000 still FAIL
+by 000173 and 000344; no guest native acceptance is claimed.
+The rejected v1859 direct-scanning literal-length experiment increased
+both image sizes (034226/031400 -> 034302/031453), so it was reverted.
+The independent text/BYTE/LONG directive and phase transport oracle
+was added to daimos-testkit as v1856. Detail and measurement history:
+../pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1854-das: six successive native DAS size reductions (OPEN)
 
 DAS production source changes v1849-v1854 are committed and pushed.
