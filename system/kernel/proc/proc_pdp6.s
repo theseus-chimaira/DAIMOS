@@ -931,6 +931,19 @@ proc_finish_rearm_v885:
         movsi   5,0400000
         iorm    5,proc_finish_last_tick_v881 ; pending; no extra RAM word
         popj    17,
+
+; v1902 PURE slot-0 reconciliation shares the existing post-VM
+; backoff clock and the non-FINALIZE swap-retry bit in u-area 067.
+; AC1 = checked stable u-area address, NOT a process-table slot.
+; The MRES caller alone verifies TRANSITION, PACKED and exact MM
+; ownership before arming. No resident timer or process field.
+        .globl  proc_pure_recover_arm_v1902
+proc_pure_recover_arm_v1902:
+        move    3,1
+        movsi   4,PROC_SWAP_RETRY_LH
+        pushj   17,proc_finish_mark_pending_v892
+        setz    1,
+        popj    17,
 proc_finish_fail:
         seto    1,
 proc_finish_restore:
@@ -995,7 +1008,23 @@ proc_finish_service_post_vm_v894:
         jumpe   5,proc_finish_service_failed_v1102
         move    4,PROC_FINALIZE_OFFSET(5)
         tlnn    4,PROC_FINALIZE_PREVM_LH
+        jrst    proc_finish_pure_recover_v1902
+        jrst    proc_finish_service_check_v881
+proc_finish_pure_recover_v1902:
+        ; The bit32 tag is a PURE recovery marker ONLY when the
+        ; original FINALIZE bit is absent and TRANSITION is held.
+        ; Never reinterpret a genuine PREVM finalizer as recovery.
+        tlnn    4,PROC_SWAP_RETRY_LH
         jrst    proc_finish_service_next_v881
+        tlne    4,PROC_FINALIZE_MARK_LH
+        jrst    proc_finish_service_next_v881
+        ; The already-installed service trampoline is reused with
+        ; an explicit recovery command; the scheduler cursor is NOT
+        ; overwritten. Default DISK/disabled trampoline is harmless.
+        move    1,10
+        iori    1,0400000
+        pushj   17,proc_swap_service_one
+        jrst    proc_finish_service_result_v892
 proc_finish_service_check_v881:
         hlrz    3,3
         ; The u-area flag alone does not prove a valid base. A corrupt

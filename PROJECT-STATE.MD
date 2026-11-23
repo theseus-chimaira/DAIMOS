@@ -1,3 +1,81 @@
+## 2026-11-23 v1902-k05: native PDP-6 dual-owner FULL rollback and 48K autonomous idle recovery (scoped PASS)
+
+The previous original FULL source `mm_free(PACKED)` -5 could
+leave a TRANSITION-held process with both authoritative PACKED
+RAW and provisional PROCESS extents. Original `ppure_retryable`
+only admitted one owner; the scheduler could not revisit this
+child. The v1901 physical user TERM refusal proved that forcibly
+finalizing it would free a live private executive continuation.
+
+v1902 adds an exact two-owner, bounded PI-atomic rollback to
+the optional PURE MRES. It reuses the existing KCORE idle
+retry/backoff and u-area swap-retry bit, with a tagged request
+through the existing PURE service trampoline. Native MM
+ownership, geometry, pin counts, backing and storage mode
+must be exact; only the provisional PROCESS target is freed.
+The original MM table is rescanned after free (including lost
+success replies); only sole unpinned PACKED source unlocks
+TRANSITION. Saved u-area/private executive continuation,
+ROOT, backing and foreign MM owners are never released.
+No additional per-process field or BSS. Fixed KCORE DXR IMAGE
+grows `024147` -> `024165` octal (**14 words**), BSS
+unchanged `000415`; optional PURE IMAGE `004131` -> `004615`.
+
+Native PDP-6 KCC fixture PASS: source/target pin refusals,
+native target -5, lost successful target free return, duplicate/
+foreign/invalid owner, capacity, FINALIZE, wrong backing,
+missing retry marker, original saved PC/FDCTL and PI balance.
+Full original source-built 48K PDP-6 PASS with compressed
+TSFS and five original children: actual installed PURE base
+`032435`, original FULL loader `036704`, source native free
+`036012`/return `036013` really returns -5. Test-only
+external source pin at MM descriptor `024721` is held through
+one real parent HB and then released; no MM/process state or
+native return result is forged. Original relocated process
+table `045516`, slot3 u-area `046635` remains unchanged.
+Physical MM count 18 -> 17 -> 18, and original slot3
+TRANSITION metadata `046635600401` -> `046635400401` ->
+`046635600401`: actual slot-0 maintenance removes the
+provisional target and unlocks the process, then original
+FULL retries. The authoritative PACKED source remains.
+Independent resident parent HB remains live.
+
+Full process-table original physical trace SHA256:
+`3bb07f4c9a3429601dd63a3dce4832913e80fac0168fbf8a5d1fd786cb404ede`.
+All **12 independently corrupted actual physical transcript
+controls** correctly rejected. Source-built fixed KCORE SHA256
+`aa80ea2d98778298c13ae96de76c52815cfd40ad5486030e5056b436f85072f5`,
+optional PURE SHA256
+`2dd7b7f7340d5b1b9542a97d0e8aca8478ac32afc3c555f0ae1ab38d0cd39a6b`.
+Tests: `daimos-testkit/tests/validation/pure-k05-reconcile-v1902/`.
+Design: `design/kcore-k05-dual-owner-reconcile-v1902.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-RECONCILE-V1902.MD`.
+Accepted private physical evidence:
+`$TMPDIR/daimos-k05-reconcile-v1902-physical-v2/`.
+
+Stronger third physical source-linked original KCC MM target
+free call `033245`, native return `033246` actually returns
+`MM_OK=0`, original TRANSITION-clear instruction `033275`
+executes on slot0 with exact MM18 -> MM17. Original saved
+executive CTX_PC/FDCTL, PACKED source and private u-area
+remain unchanged; parent HB/PCLK advances. Accepted trace
+SHA256 `88e640e3eef12834a2fb6c97d3f0694280092844019c5372e35748a26fab25d5`.
+An independently rebuilt same-production-image physical run
+also PASS, trace SHA256
+`4fa67d715017fc4e566781c624c3041cf706129a1097fa35216856e1ce5f19fb`.
+SIX additional native-target physical negative controls all
+reject; **18 total independent v1902 physical negative controls**.
+Strong trace: `$TMPDIR/daimos-k05-reconcile-commit-v1902-physical/`.
+The original v1900 PDP-6 KCC FINALIZE+PREVM native regression
+also PASS with the v1902 reaper dispatch branch present:
+genuine original MM pin/unpin/free BOTH owners, backoff,
+VM_NONE and zombie publication remain independent and correct.
+
+**K05 remains OPEN**: this proves rollback and subsequent FULL
+retry, NOT the final FULL commit, original child EXIT, parent
+WAIT/HALT or permanent foreign MM owner recovery. RAW PURE
+and mode3 remain OFF by default. K06-K09 separately OPEN.
+
 ## 2026-11-23 v1901-k05: original 48K physical user TERM(3) correctly refuses quarantined executive continuation (scoped PASS)
 
 The real source-built five-child ROOT/secondary compressed DTC3,

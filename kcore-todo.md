@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1901 K05 physically verified foreign-TERM executive-continuation safety; K01-K04 closed).
+Updated: 2026-11-23 (v1902 K05 physically verified autonomous dual-owner rollback and FULL retry; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -776,6 +776,36 @@ history is now reachable from main (v1809); mode3 remains disabled.
     real owner continuation, fatal delivery, terminal MM release
     and parent WAIT/HALT. See
     `design/kcore-k05-transition-term-v1901.md`.
+  - v1902 scoped production recovery: optional PURE MRES verifies
+    exact two-owner PACKED RAW + complete PROCESS target after
+    genuine FULL `mm_free(PACKED)` refusal, and a 14-word
+    permanent KCORE idle-backoff extension reuses the existing
+    swap-retry marker and service trampoline. From slot0, native
+    MM frees only the unpinned provisional PROCESS extent;
+    original MM table postflight handles lost success replies,
+    preserves private u-area/FDCTL/backing and only then clears
+    TRANSITION. No new per-process fields or BSS. Source-built
+    original 48K PDP-6 compressed TSFS, five-child workload
+    and resident parent physical PASS: native -5, held source
+    pin, actual external pin release, MM count 18 -> 17 -> 18,
+    original slot3 TRANSITION held -> cleared -> reacquired
+    by a new FULL attempt, u-area `046635` retained. Native
+    KCC refusal/ambiguity/FINALIZE/backing tests PASS; all
+    TWELVE independent physical negative controls reject.
+    Stronger independent original 48K physical proof reaches
+    actual native `mm_free(PROCESS)` call `033245`, return
+    `033246` (MM_OK=0), and original transition-clear store
+    `033275` in slot0; saved executive PC/FDCTL remain exact,
+    independent parent PCLK advances. Two independent physical
+    builds pass and SIX additional native-target negative
+    controls reject (**18 total v1902 physical controls**).
+    Original v1900 native FINALIZE+PREVM/dual-owner terminal
+    regression PASS with the new idle dispatch branch.
+    This is not the final FULL commit or parent WAIT/HALT.
+    Next: demonstrate the new FULL commit, preserved executive
+    continuation, original child EXIT and typed parent WAIT/Z;
+    then permanent foreign MM ownership and terminal teardown.
+    See `design/kcore-k05-dual-owner-reconcile-v1902.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

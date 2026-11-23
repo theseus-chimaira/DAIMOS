@@ -11,6 +11,10 @@
  * advertise READY_ONCE or clear a possibly pinned TRANSITION owner.
  * Only an exact, singly owned, unpinned extent permits retry unlock.
  * v1612 removes the redundant second MM scan of PACKED failure owners.
+ * v1902: an uncommitted FULL restore can retain exact RAW+scratch MM
+ * owners with TRANSITION held and a live private executive stack.
+ * Slot-0 idle backoff retries rollback of only the scratch target,
+ * then releases TRANSITION with original RAW authoritative.
  */
 #include "proc.h"
 #include "proc_swap.h"
@@ -30,8 +34,12 @@
 
 #define PPURE_READY_ONCE_V1612 01000UL
 #define PPURE_COOLDOWN_V1612 0100UL
+#define PPURE_RECOVER_REQUEST_V1902 0400000UL
 
 extern kword_t proc_swap_pressure_ticks;
+extern int proc_pure_recover_arm_v1902(kword_t);
+extern kword_t mach_pi_disable(void);
+extern void mach_pi_restore(kword_t);
 extern int proc_storage_expect_v30(unsigned int, unsigned int);
 extern int exec_image_prefix_backing_v1386(kword_t, kword_t,
     kword_t, kword_t);
@@ -129,6 +137,176 @@ ppure_retryable_v1612(unsigned int slot, struct proc *p,
             0UL, words - prefix);
 }
 
+/* Validate ONLY a stalled RAW FULL owner set. No new extent pointer is
+ * recorded between attempts: the original MM table is authoritative.
+ * Return 1 for exact sole RAW, 3 for exact RAW+temporary PROCESS, or
+ * -1 for any ambiguity. Pins are allowed in the read-only admission
+ * pass and rejected again, atomically, before physical release.
+ */
+static int
+ppure_owners_v1902(unsigned int slot, kword_t raw, kword_t words,
+    int require_unpinned, kword_t *targetp)
+{
+        unsigned int seen = 0U;
+        kword_t source = 0UL, target = 0UL;
+        int i;
+
+        if (mm_extent_count <= 0 || mm_extent_count > MM_MAX_EXTENTS ||
+            (unsigned int)mm_extent_count > mm_extent_capacity)
+                return -1;
+        for (i = 0; i < mm_extent_count; ++i) {
+                const struct mm_extent *e = &mm_extents[i];
+                unsigned int type = MM_EXTENT_TYPE(e);
+                kword_t base = MM_EXTENT_BASE(e);
+                kword_t size = MM_EXTENT_WORDS(e);
+                unsigned int bit;
+
+                if (MM_EXTENT_OWNER(e) != slot)
+                        continue;
+                /* MODULE and KERNEL_DYNAMIC use a separate owner
+                 * namespace. Reserved/invalid MM types do not.
+                 */
+                if (type == MM_TYPE_MODULE ||
+                    type == MM_TYPE_KERNEL_DYNAMIC)
+                        continue;
+                if (type == MM_TYPE_PACKED_PROCESS)
+                        bit = 1U;
+                else if (type == MM_TYPE_PROCESS)
+                        bit = 2U;
+                else
+                        return -1;
+                if ((seen & bit) || !base ||
+                    (require_unpinned && MM_EXTENT_PINNED(e)) ||
+                    (bit == 1U && size != raw) ||
+                    (bit == 2U && (size != words ||
+                        (base & (VM_PDP6_ALIGN_WORDS - 1UL)))) ||
+                    size > MM_HALF_MASK - base)
+                        return -1;
+                seen |= bit;
+                if (bit == 1U)
+                        source = base;
+                else
+                        target = base;
+        }
+        if (!(seen & 1U) || (seen == 3U &&
+            !(source + raw <= target || target + words <= source)))
+                return -1;
+        *targetp = target;
+        return (int)seen;
+}
+
+/* Common fail-closed preflight for the original slot-0 FULL recovery.
+ * A saved executive continuation is intentional: this operation does
+ * NOT release a user stack, FILE, u-area or executable backing.
+ */
+static int
+ppure_recover_preflight_v1902(unsigned int slot, struct proc **pp,
+    kword_t **up, kword_t *rawp, kword_t *wordsp)
+{
+        struct proc *p;
+        kword_t *u, backing, words, skip;
+        unsigned int state;
+
+        if (proc_current_slot != 0UL || !proc_table ||
+            !proc_swap_records || !proc_storage_runtime_v29.words ||
+            !slot || slot >= proc_high_slot ||
+            slot >= proc_storage_runtime_v29.slots)
+                return 0;
+        p = &proc_table[slot];
+        state = PROC_STATE(p);
+        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
+            !PROC_UAREA_BASE(p) ||
+            (state != PROC_SRUN && state != PROC_SLEEP &&
+             state != PROC_STOP) || VM_PDP6_BASE(p) ||
+            proc_storage_expect_v30(slot, PROC_STORAGE_PACKED) != 0)
+                return 0;
+        u = (kword_t *)(unsigned long)PROC_UAREA_BASE(p);
+        if (u[PROC_FDCTL_OFFSET] &
+            (PROC_FATAL_CLOSE_BIT | PROC_USER_MAP_BIT) ||
+            (u[PROC_FINALIZE_OFFSET] & PROC_FINALIZE_MARK))
+                return 0;
+        backing = proc_swap_records[slot].state;
+        words = VM_SPACE_WORDS(p);
+        if (!backing || !words ||
+            u[PROC_SWAP_BACKING_OFFSET] != backing ||
+            (words & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            pdp6_pure_skip_v1604(backing, words, &skip) != MM_OK)
+                return 0;
+        *pp = p;
+        *up = u;
+        *rawp = words - skip;
+        *wordsp = words;
+        return 1;
+}
+
+/* Called from original MRES only when a previously failed FULL left
+ * TRANSITION held. Mark a retry owner without claiming FINALIZE:
+ * its private executive continuation MUST remain intact. This
+ * shares the already-resident post-VM idle backoff timer.
+ */
+static void
+ppure_recover_arm_v1902(unsigned int slot)
+{
+        struct proc *p;
+        kword_t *u, raw, words, target;
+
+        if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
+            &words))
+                return;
+        if (ppure_owners_v1902(slot, raw, words, 0, &target) == 3)
+                (void)proc_pure_recover_arm_v1902(
+                    PROC_UAREA_BASE(p));
+}
+
+/* The original KCORE idle-stack reaper invokes this through the
+ * existing (already patched) PURE service trampoline with a tagged
+ * AC1 request. No KINIT extension or second MRES entry is needed.
+ * The native MM free and final owner reconciliation are PI-atomic;
+ * failure leaves original backing, VM0 and TRANSITION unchanged.
+ */
+static int
+ppure_recover_one_v1902(unsigned int slot)
+{
+        struct proc *p;
+        kword_t *u, raw, words, target, saved;
+        int owners;
+
+        if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
+            &words) ||
+            !(u[PROC_FINALIZE_OFFSET] & PROC_SWAP_RETRY_TAG_V1507))
+                return -1;
+        saved = mach_pi_disable();
+        if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
+            &words)) {
+                mach_pi_restore(saved);
+                return -1;
+        }
+        owners = ppure_owners_v1902(slot, raw, words, 1, &target);
+        if (owners == 3) {
+                /* Never free the authoritative RAW suffix or publish
+                 * the already-loaded temporary APR. Uncertainty in
+                 * the free reply is resolved by the next MM scan.
+                 */
+                (void)mm_free(target, MM_TYPE_PROCESS, slot);
+                owners = ppure_owners_v1902(slot, raw, words,
+                    1, &target);
+        }
+        if (owners != 1 ||
+            !ppure_recover_preflight_v1902(slot, &p, &u, &raw,
+                &words)) {
+                mach_pi_restore(saved);
+                return -1;
+        }
+        /* All MM and process invariants now prove a sole unpinned
+         * PACKED source. The original saved private CPU context,
+         * FILE descriptors and backing stay untouched.
+         */
+        u[PROC_FINALIZE_OFFSET] = 0UL;
+        PROC_CLEAR_TRANSITION(p);
+        mach_pi_restore(saved);
+        return 0;
+}
+
 /* The permanent reclaim trampoline's original ABI is unchanged:
  * required words, alignment, excluded owner. */
 int
@@ -192,7 +370,7 @@ proc_pure_mres_reclaim_v1612(kword_t words, kword_t alignment,
  * scheduler owns request creation, READY_ONCE selection, and PI6 wakeup.
  */
 int
-proc_pure_mres_service_v1612(void)
+proc_pure_mres_service_v1612(kword_t command_v1902)
 {
         unsigned int slot;
         struct proc *p;
@@ -202,6 +380,13 @@ proc_pure_mres_service_v1612(void)
         int bitmap;
 #endif
 
+        if ((command_v1902 & PPURE_RECOVER_REQUEST_V1902) != 0UL) {
+                if (command_v1902 &
+                    ~(PPURE_RECOVER_REQUEST_V1902 | 0377UL))
+                        return -1;
+                return ppure_recover_one_v1902(
+                    (unsigned int)(command_v1902 & 0377UL));
+        }
         if (!(request & PROC_SCHED_SWAP_REQUEST))
                 return 0;
         slot = (unsigned int)(request & 0377UL);
@@ -264,6 +449,8 @@ proc_pure_mres_service_v1612(void)
         if (ppure_retryable_v1612(slot, p, PROC_STORAGE_PACKED))
 #endif
                 PROC_CLEAR_TRANSITION(p);
+        if (PROC_TRANSITION(p))
+                ppure_recover_arm_v1902(slot);
         proc_swap_pressure_ticks = PPURE_COOLDOWN_V1612;
         return 0;
 }
