@@ -92,3 +92,13 @@ source-matched larger/free-memory fixture that still provokes the
 same original FULL fault. Persistent source free/allocator ownership
 errors, terminal cleanup, all PI6 interleavings and K05-K09 release
 remain OPEN. See `design/kcore-k05-physical-overpin-v1890.md`.
+
+**Follow-up v1892 scoped physical PASS:** a separately built test-only
+parent INIT loop made the already-resident original parent execute
+TWO new ordinary user-output `HB` syscalls after the same real slot3
+FULL pin2/-5/PI6 quarantine. Actual `proc_current_slot=1`, original
+parent APR `130000..140000` pin0, and full slot3 RAW pin1/target pin2
+remained unchanged across user clock `021610` -> `021710` octal.
+This closes the resident-parent bystander *user progress* case,
+NOT another PACKED child's FULL, EXIT/WAIT or final guest HALT.
+See `design/kcore-k05-resident-parent-v1892.md`.

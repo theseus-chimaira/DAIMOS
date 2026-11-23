@@ -1,3 +1,61 @@
+## 2026-11-23 v1892-k05: real resident-parent user progress after physical FULL pin2 (scoped PASS)
+
+The unchanged v1855 KCORE and removable PURE MRES were freshly
+source-built for the original 48K PDP-6 and remain BYTE-IDENTICAL
+to v1890/v1891. Permanent KCORE SHA256 remains
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`;
+PURE MRES SHA256 remains
+`a0fb25c51cf1c57f4bc70ca1dc83d8b9ea39b1ac3ddb3bba7b9ffcea17e5b3fd`.
+Only a TESTKIT user INIT fixture differs: after the original five
+RUN/PIPE/BRK/secondary-DTC3 pressure checks and `L` it keeps
+already-resident parent slot1 autonomously sleeping `0100` ticks,
+checking both writable-data sentinels and outputting `HB` through
+ordinary user syscalls, rather than blocking on an uncertain child's
+WAIT. Original child paths/failed sixth RUN are unchanged.
+The test-only user DXR image is `001222` vs `001246` octal words,
+same BSS `004001`, with the parent's existing `010000`-word APR
+unchanged. This is NOT a production kernel RAM saving.
+
+A fresh physical installed-KCORE-JRST probe locates PURE at
+`032417` octal. The original bounded FULL loader `036202` has slot3
+PACKED source `111200..120000` pin1 and temporary PROCESS target
+`120000..130000` pin1. A private test-only SIMH deposit increments
+only the target's physical pin count at MM word `024705`, from
+`000011000003` to `000021000003`. Original FULL really returns
+`MM_ERR_BUSY=-5` at `033067`, with source pin1, target pin2,
+TRANSITION/VM=0 quarantine, selected TSFS root intact and later
+real fixed-KCORE PCLK PI6 `017205`.
+
+**AFTER** the failed FULL and actual process-table snapshots, SIMH
+clears its PCLK breakpoint, arms an original user-console `HB`
+expectation and captures TWO freshly emitted independent user-mode
+parent heartbeats. At BOTH live stops, original `proc_current_slot`
+is 1, parent `PROC_SRUN=2` and VM `130000`, independently resident
+PROCESS MM `130000..140000` pin0. Slot3 remains TRANSITION-held with
+VM base zero, PACKED source pin1 and target pin2. All other original
+MM owners, pins and root remain EXACTLY unchanged; original clock
+advances from `021610` to `021710` octal between the two user
+syscalls. A real separate resident user process therefore progresses
+despite the permanently uncertain FULL owner.
+
+The initial v1892 controller was correctly rejected because it
+left a PCLK breakpoint armed and misidentified two real clock traps
+as heartbeat stops. The TESTKIT controller only was corrected with
+`nobreak`; identical production binaries/user guest then PASSED.
+Read-only source-linked physical audit and SIX executed unsafe
+heartbeat/slot/owner/clock transcript mutants PASS. Original physical
+trace SHA256:
+`7fbc1e9fa203c2c146861d0f951e222f22721f221e3f095c300b23d96ca72f86`.
+See `design/kcore-k05-resident-parent-v1892.md`, testkit
+`tests/validation/pure-k05-resident-peer-v1892/` and
+`pdp10-doc/KERNEL/PURE-K05-RESIDENT-PARENT-V1892.MD`.
+
+This settles **already-resident autonomous parent user progress**,
+NOT another PACKED child's restoration, original five-child
+EXIT/WAIT/HALT, terminal cleanup or remaining allocator/unpin/free
+uncertainty. K05-K09 still OPEN, RAW PURE/mode3 OFF by default,
+ZERO production source/RAM growth.
+
 ## 2026-11-23 v1891-k05: real 48K process-table quarantine after FULL overpin (scoped PASS)
 
 The unchanged original 48K PDP-6 v1855 source image was run a second

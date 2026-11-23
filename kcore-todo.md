@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1891 K05 physical TRANSITION quarantine; K01-K04 closed).
+Updated: 2026-11-23 (v1892 K05 physical resident user progress; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -536,6 +536,26 @@ history is now reachable from main (v1809); mode3 remains disabled.
     user peer or appropriately scoped free-memory fixture is needed
     to test bystander user-level progress. K05/K06-K09 still OPEN.
     See `design/kcore-k05-process-quarantine-v1891.md`.
+  - v1892 original 48K physical resident-user progress PASS: a new
+    test-only parent INIT loop runs AFTER unchanged five-child
+    RUN/PIPE/BRK pressure/`L`, without permanently consuming another
+    full PROCESS APR. Its actual parent slot1 remains resident at
+    `130000..140000`, and emits TWO new user-mode `HB` markers
+    after a physically injected target pin2 forces genuine original
+    FULL `MM_ERR_BUSY=-5`. At both new physical output stops the
+    original scheduler current slot is 1, parent PROCESS is SRUN,
+    its resident APR is pin0, and the source-linked MM table keeps
+    slot3 PACKED RAW pin1, temporary target pin2, TRANSITION set,
+    VM base zero and all unrelated owners unchanged. The original
+    clock advances `021610` -> `021710` octal between new user
+    heartbeats. Full original physical owner/root/PI6 audit and SIX
+    executed forged heartbeat/owner/clock controls PASS. Fixed KCORE
+    and optional PURE MRES are byte-identical; ZERO production RAM
+    or code growth. This closes the resident-parent forward-progress
+    gate, NOT sibling PACKED restores, child EXIT/WAIT/HALT after
+    quarantine, terminal cleanup, permanent allocator/unpin/free
+    variants or full K05-K09 acceptance. See
+    `design/kcore-k05-resident-parent-v1892.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
