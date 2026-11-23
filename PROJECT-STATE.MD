@@ -1,3 +1,35 @@
+## 2026-11-23 v1839-gcc: GCC/KCC structure-return and varargs ABI verified
+
+New daimos-testkit v1836 tests execute separate GCC/KCC caller/callee
+objects in both directions for direct and indirect 1/2/3/4/5/8-word
+structure returns, including the hidden caller result buffer for
+larger aggregates. After a GCC backend correction, all 32 CPU/profile
+cells PASS (PDP-6, KA10, KI10, KS10; GCC O0/O1/O2/Os).
+
+The baseline GCC O2 caller failed a four-word direct-return check even
+against another GCC callee; the KCC caller succeeded in both same-
+and mixed-compiler controls. GCC had incorrectly converted an already
+word-addressed frame-relative BLT source FP+32 to FP+8 based only on
+the numerical multiple of the C-unit structure length. The repaired
+GCC skips that conversion for word-aligned frame-relative BLKmode
+addresses. GCC commit `395ec75`, installed cc1 SHA256
+`fd42b3acb75f07b9dc2aa8e3d34b05db60309d711bfaf7fa59e4e1467db24114`;
+previous cc1 backed up under `~/backups/gcc-cc1-blt-frame-v1836-20261123/`.
+The new GCC v1837 stack/global BLT regression passes 16/16 CPU/profile
+cells. Existing packed-record 32/32, aggregate-return ABI and byte BLT
+tests also PASS against installed compiler.
+
+Existing GCC/KCC external mixed varargs and wide-varargs testkit
+checks PASS. New v1838 native PDP-6 DAIMOS guest programs at GCC O0
+and O2 invoke actual KCC-built libc `printf` and `sprintf`, check exact
+formatted-buffer content, genuine console output and shell status 0;
+both PASS. The negative link without KCC libc.a fails. This confirms
+the tested external variadic ABI, not interchangeability of KCC's and
+GCC's private `va_list` representations. No production DAIMOS kernel
+or libc source changed. Details:
+`pdp10-doc/TOOLCHAIN/GCC-KCC-STRUCT-RETURN-BLT-20261123-V1836.MD`
+and `pdp10-doc/TOOLCHAIN/GCC-KCC-DAIMOS-VARARGS-LIBC-20261123-V1838.MD`.
+
 ## 2026-11-23 v1835-gcc: KCC indirect callback AC16 clobber fixed
 
 The failing v1829 GCC-to-KCC `qsort` guest was traced to KCC
