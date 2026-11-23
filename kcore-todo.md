@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1847 K05 physical postfault PI6; K01-K04 closed).
+Updated: 2026-11-23 (v1848 K05 physical pinned FULL PI6; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -475,6 +475,21 @@ history is now reachable from main (v1809); mode3 remains disabled.
     production source or RAM change. Real PI6 INSIDE pinned restore,
     permanent MM faults and K05 closure remain OPEN. See
     `design/kcore-k05-postfault-pi6-v1847.md`.
+  - v1848 scoped physical PASS: actual PDP-6 PCLK PI6 at permanent
+    KCORE `017205` interrupts original FULL with BOTH slot3 extents
+    still singly pinned (PACKED source `111200..120000`, PROCESS
+    target `120000..130000`). Original saved PI6 return PC `037637`
+    lies in source-linked PURE MRES, offset `005220` from the physical
+    reclaimed-JRST-derived load base. All original MM descriptors,
+    pins and TSFS root are identical before/at the clock interrupt.
+    Only AFTER the clock does actual DTC3 disappear; the original FULL
+    loader returns -4 and rolls back the target without losing the
+    RAW source. Same-reel return, five EXIT/WAIT/HALT and three
+    executed source-trace negative controls PASS. No kernel/driver/MM
+    code or fixed-RAM increase. This closes the specific physical
+    mid-FULL PI6 evidence gap, NOT arbitrary PI6 scheduling timing,
+    persistent unknown MM pin/free/allocator faults or K05 closure.
+    See `design/kcore-k05-midfull-pi6-v1848.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

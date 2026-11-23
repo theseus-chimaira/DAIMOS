@@ -1,3 +1,39 @@
+## 2026-11-23 v1848-k05: physical PDP-6 PCLK PI6 INSIDE pinned FULL (scoped PASS)
+
+Against the exact source-linked v1845/v1847 48K PDP-6 original
+TSFS-root/secondary-DTC3 five-child 48K physical image, real FULL
+restore reached loader PC 036153 with slot3 owning two distinct,
+singly pinned extents: PACKED RAW suffix 111200..120000 and temporary
+complete PROCESS APR 120000..130000 (octal). BEFORE source-detach or
+MM cleanup, a genuine PCLK PI6 entered original fixed-KCORE handler
+017205, opcode 350040024510 (`AOS 1,proc_timer_clock`). The actual
+hardware PI6 saved continuation word was 340000037637: executive PC
+037637 = offset 005220 in source-linked PURE MRES base 032417, bracketed
+by the original MRES map's vfs_create_op/vfs_symlink symbols.
+
+Physical clock/cooldown/cursor octal 057171/0/3. Slot0, the selected
+TSFS root, all 18 live original MM descriptor records and both
+source/target pin counts remained EXACTLY unchanged at the interrupt
+entry. Only afterward did the host disconnect DTC3, causing original
+FULL loader -4, checked target rollback and retention of the unpinned
+PACKED source. Same private reel returned; four secondary-backed
+children completed after the first root child; all native RUN/PIPE/
+data/EXIT/WAIT and HALT PC 0 passed. The previous complete source-
+linked v1845 physical owner/recovery oracle also PASSes on the
+unchanged v1848 transcript, as do three independently executed
+negative physical mutations: zero saved interrupt PC, forged return
+PC outside loaded MRES, and missing temporary PROCESS MM pin.
+
+v1848 physical transcript SHA256:
+6375e8dc51ef6a9e05edbb2b7c9c5252f8ad8e332e9696a05ffea0495cca195d.
+Original KCORE and PURE DXR hashes are unchanged from v1845/v1847;
+no new kernel code, MM state, process bit or RAM growth. This closes
+the real physical mid-FULL PI6 witness gap, but arbitrary PI6 timing,
+persistent allocator/unpin/free uncertainty, ongoing MM write-watch
+and K05-K09 release remain OPEN. PURE/mode3 still OFF by default,
+K01-K04 CLOSED. Details: `design/kcore-k05-midfull-pi6-v1848.md` and
+`pdp10-doc/KERNEL/PURE-K05-MIDFULL-PI6-V1848.MD`.
+
 ## 2026-11-23 v1848: native DAS expression operator decoder reduced (OPEN)
 
 Native DAS precedence-climbing expression operator decoding now uses
