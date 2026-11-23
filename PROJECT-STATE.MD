@@ -1,3 +1,16 @@
+## 2026-11-23 v1882-das: native phase1 compact three-letter opcode keys
+
+The 59 three-letter base instruction names now store two 18-bit keys
+per 36-bit constant word in resident DAS1. The existing binary search
+preserves exact matching for all 390 opcodes, verified against the
+independent frozen oracle in daimos-testkit. The KCC-linked DAS1 image
+shrinks 034331 -> 034316 octal words with unchanged BSS 001423.
+With the v1881 EXEC chain, the steady-state max is now 037741 octal =
+16,353 decimal words, 31 words below 16K. DAS2 stays at 031037 image,
+001114 BSS. Strict image ceilings remain OPEN (000316/000037 excess).
+Transient physical EXEC staging and the native guest still require
+acceptance. See the technical report in pdp10-doc/TOOLCHAIN.
+
 ## 2026-11-23 v1881-das: single-process EXEC assembler chain (OPEN)
 
 The resident DAS launcher no longer waits in memory for DAS1. It uses
