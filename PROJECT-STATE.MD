@@ -1,3 +1,30 @@
+## 2026-11-23 v1819: low BCACHE allocator test restored and archived
+
+The existing daimos-testkit BCACHE allocation oracle had a stale
+expectation for MM_ALLOC_HIGH, making its actual current-production
+baseline fail. The focused PDP-6 test now checks MM_ALLOC_LOW while
+retaining its exact 0201-octal-word size, owner 6 and cache fetch/
+reclaim assertions. Source-linked production passes; an executable
+mutation to the historical HIGH allocation is rejected at the native
+guest exit oracle. Testkit commit `b12bb77` was pushed. Nine exact
+historical files from the unmerged v1636 BCACHE/six-owner worktree
+were archived and SHA256-verified; the old worktree is now clean.
+This is not new physical six-owner PURE acceptance. Refer to
+`daimos-testkit/tests/diagnostics/bcache-low-v1819/README-v1819.md`.
+
+## 2026-11-23 v1818: DTFS write ABI historical test recovered
+
+The retired v206 test for preserving DTC UNIT/BLOCK/BUFFER registers
+was updated to source-link the live DTFS write veneer and the real
+BCACHE invalidation leaf; the historical direct write-time reclaim
+path no longer exists. A deliberately register-clobbering mount gate
+precedes exact argument restoration. The current code passes native
+PDP-6 simulation; restoring unsafe reclaim or clobbering AC2 in the
+cache invalidator fails the guest oracle. The test is not full DTFS
+media acceptance. Testkit commit `4cc73b1` was pushed; the old two
+v206 files were archived with SHA256, retired, and their detached
+worktree left clean. DAIMOS kernel source was not changed.
+
 ## 2026-11-22 v1817: recovered DAS relocation identity bug
 
 The archived v1453 assembler fixture reproduced a live host DAS bug:
