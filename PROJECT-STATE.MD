@@ -42,6 +42,25 @@ PURE/mode3 default OFF. See
 `design/kcore-k05-exact-pinned-full-v1855.md` and
 `pdp10-doc/KERNEL/PURE-K05-EXACT-PINNED-FULL-V1855.MD`.
 
+## 2026-11-23 v1871-das: compact native directive keys (OPEN)
+
+The next DAS size pass (v1870-v1871) replaces per-character index
+recomputation in the phase-2 text emitter with a text cursor and packs
+all 43 classified directive keys and token IDs into one 36-bit word
+each. The independently checked C89 parser oracle verifies the full
+keyword table and invalid spellings; host DAS fast/full, KCC corpus,
+directive/transport and OWGBP checks pass. Native DAS1/DAS2 images
+are now 034054/031076 octal words, still above unchanged 034000/031000
+image limits by 000054/000076. BSS is still 002103/001573.
+
+The 02000-word reserved stack also makes DAS1 exceed the unchanged
+040000-word full process ceiling: 034054 + 002103 + 002000 = 040157,
+excess 000157. DAS2 full process size is 034671 (within 040000).
+The image gate and full native guest acceptance remain OPEN. The
+versioned diagnostic profiler in daimos-testkit now includes both
+image and full-process excess reporting. Technical record:
+../pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1868-das: native scratch I/O and decoder reductions (OPEN)
 
 The DAS native size pass now also eliminates a dotted instruction-name
