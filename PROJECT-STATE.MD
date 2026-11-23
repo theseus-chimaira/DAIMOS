@@ -1,3 +1,16 @@
+## 2026-11-23 v1848: native DAS expression operator decoder reduced (OPEN)
+
+Native DAS precedence-climbing expression operator decoding now uses
+a compact switch while preserving all ten operator choices, precedence,
+and two-character shift recognition. Native image sizes in octal
+words: DAS1 034653 -> 034612 (saved 000041); DAS2 032367 ->
+032326 (saved 000041). From the original baseline, total savings
+are 000404 and 000402 respectively; BSS is unchanged.
+Ten host DAS regression suites pass. The unchanged native image
+ceilings still fail: DAS1 needs another 000612 octal words, DAS2
+another 001326. This is a partial reduction, not native acceptance.
+See pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1847-k05: original physical PI6 after failed FULL source restore (scoped PASS)
 
 Source-built 48K PDP-6 RAW PURE five-child TSFS-root/DTC3 physical
