@@ -1,3 +1,27 @@
+## 2026-11-23 v1881-das: single-process EXEC assembler chain (OPEN)
+
+The resident DAS launcher no longer waits in memory for DAS1. It uses
+DAIMOS EXEC V1 to replace itself with DAS1; a privately marked DAS1
+invocation EXECs DAS2 after completing the scratch-backed DASIR2 pass.
+Direct DAS1 still runs only phase 1. The 390-opcode table is unchanged;
+native symbol index/cache counts are now 64/7 instead of 128/13,
+without reducing spill-backed symbol capacity.
+
+Measured DXR image/BSS/stack totals, in octal words: launcher
+000571/000000/002000 = 002571; DAS1 034331/001423/002000 =
+**037754**; DAS2 031037/001114/002000 = 034153. The steady-state peak
+is therefore 037754 octal = 16,364 decimal words, 20 words below
+16K. The prior simultaneous driver+DAS1 peak (17,891 words) is gone.
+Two independent testkit mock-EXEC contracts, a DXR RAM-peak checker,
+the fast/full host assembler suites and 390-opcode oracle pass.
+
+Do NOT claim final native acceptance: the strict phase image ceilings
+034000/031000 still FAIL by 000331/000037. The kernel may temporarily
+stage both old and new VMs during a successful EXEC when memory is
+available, so transient physical-RAM peak and end-to-end native guest
+behavior require direct testing. Design and measurement history:
+../pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1877-das: compact phase-2 opcode table (OPEN)
 
 Native DAS2's common opcode table is now packed using 5-bit mnemonic
