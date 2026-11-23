@@ -1,3 +1,44 @@
+## 2026-11-23 v1834: remaining non-pdp10-testkit dirty worktrees consolidated
+
+Three detached daimos-testkit worktrees were compared with later
+accepted test paths, individually SHA256-archived, and cleaned:
+
+- `a89afa39`: five v1378-v1388 KCC/KIR diagnostic scripts and
+  probe files. The strict v1390 regression requires real zero
+  status and native/host assembly equality, unlike the earlier
+  status-label-only probes. Historical scripts were not promoted.
+- `ab8c2ac8`: eight v1404 DAS/DOBJ source, root-staging and
+  fixture-generator experiments. The current v1405 suite has
+  five C89 translation units, 29 strict guest probes and three
+  host/native linked-image comparisons. Its probe generator was
+  rerun and emitted exactly 29 checks. Original v1404 tests were
+  preserved, not incorrectly counted as new guest acceptance.
+- `afc33406`: five v1374 KIR dump/splitting diagnostics plus an
+  altered v1373 staging script. The old experimental root parameter
+  was not merged into current production test harness. The one
+  tracked script diff, original commit and six complete original
+  files were all archived before retirement.
+
+The four long-dirty pdp10-doc main files were also preserved in a
+verified snapshot and binary Git patch, reconciled with current
+production/testkit evidence and committed/pushed as `9639f0b`.
+Current testkit's v1508 verifier self-test rejects ten unsafe
+mutations, while the earlier physical design report describes a
+separately extended 13-case check. Both are now distinguished.
+Native original MM v1710 current-owner compaction and unsafe
+mutation test PASS. The historical v1710 OPEN text now points to
+the subsequently closed K01 v1718 and all K01-K04 v1803 closures;
+v1509 resident bystander progress is likewise distinguished from
+unproven swapped-child progress. RAW PURE v1809 integration is not
+incorrectly described as a still-unmerged branch.
+
+All four verified backup sets and reconciliation rationale are in
+`design/daimos-final-dirty-consolidation-v1834.md`. Neither the
+pdp10-testkit repository nor its worktrees were accessed, modified,
+committed or pushed. No kernel or compiler production code was
+changed; no native guest success was invented for the old diagnostic
+experiments.
+
 ## 2026-11-23 v1829-gcc: unresolved GCC-to-KCC qsort callback guest trap
 
 The GCC client / KCC-built libc heap integration passed v1828, but
