@@ -1,3 +1,56 @@
+## 2026-11-23 v1895-k05: persistent genuinely refused PACKED free, safe quarantine and real resident parent progress (scoped PASS)
+
+The original source-built v1855 48K PDP-6 KCORE and optional PURE
+MRES remain BYTE-IDENTICAL (KCORE SHA256
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`,
+PURE SHA256 `a0fb25c51cf1c57f4bc70ca1dc83d8b9ea39b1ac3ddb3bba7b9ffcea17e5b3fd`).
+Using the accepted v1892 parent-only testkit user heartbeat fixture,
+the same original five-child RUN/BRK/PIPE/secondary-DTC3 pressure
+and physical exact-source-linked DOBJ/installed MRES KCORE probes
+now reproduce v1894's **real original** `mm_free(PACKED)` refusal
+without ever releasing its newly injected external source MM pin.
+
+At the original fixed-KCORE PACKED free call physical `035310`,
+source `111200..120000` and target `120000..130000` were both
+original pin0, with original 18 extents. Private SIMH ONLY deposited
+source physical MM `024703=000014000003` (pin1), leaving target pin0.
+The ORIGINAL fixed-KCORE `mm_free` actually returned
+`MM_ERR_BUSY=-5` at physical PC `035311` (AC1 `777777777773`),
+retaining both owners. Unlike v1894 there is **no external pin
+release**. Original v1839 exact-zero-pin owner reconciliation
+therefore correctly refuses to free even the temporary full PROCESS
+target, returns -5 at original FULL service `033067`, preserves
+both authoritative MM reservations, keeps slot3 TRANSITION set
+and VM base zero. All 18 original MM extent records, pins and
+selected TSFS root remain EXACTLY unchanged through original FULL
+service return and two later original user-mode heartbeat stops.
+
+The parent is already resident PROCESS `130000..140000` pin0,
+current process slot1/PROC_SRUN at two new user `HB` outputs after
+the failed restore, while slot3 remains TRANSITION and VM0.
+Original real fixed-KCORE PCLK advances between these two actual
+parent user markers from `016640` to `016740` octal. The first
+HB occurred in the same clock interval as the failed FULL;
+corrected ONLY the testkit verifier's incorrect demand of a tick
+before this first HB. The original unmodified physical trace and
+full independent audit including TEN separately executed unsafe
+MM/process/user/clock negative controls PASS.
+
+Original physical normalized trace SHA256:
+`8f2bb94995d3522b076c845f5e784cb7f682b5cb565ae553b24b717342f62c92`.
+Real original PDP-6 simulator evidence:
+`$TMPDIR/daimos-k05-persistent-source-pin-v1895-real/`.
+Design: `design/kcore-k05-physical-persistent-source-pin-v1895.md`.
+Testkit: `tests/validation/pure-k05-persistent-source-pin-v1895/`.
+Stable docs: `pdp10-doc/KERNEL/PURE-K05-PERSISTENT-SOURCE-PIN-V1895.MD`.
+
+This closes the **persistent original source-pin native-free -5
+fail-closed quarantine plus independent resident-user progress**
+gate. It does NOT demonstrate an owner unpin, child WAIT/HALT,
+quarantined owner terminal cleanup, other PACKED child restore,
+failed rollback/allocator outcomes or K05-K09 release. RAW PURE and
+mode3 remain OFF; NO production code or RAM growth.
+
 ## 2026-11-23 v1894-k05: real PDP-6 source-free MM -5, exact rollback, child HALT (scoped PASS)
 
 The unchanged source-built original v1855 48K PDP-6 five-child

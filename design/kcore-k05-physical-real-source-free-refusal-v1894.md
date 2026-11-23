@@ -137,3 +137,13 @@ terminal cleanup in unresolved TRANSITION, additional PI6 orders,
 64K/KA10 and K05-K09 release acceptance. RAW PURE/mode3 remain
 disabled by default. Fixed KCORE and opt-in PURE MRES RAM growth
 for this milestone: **ZERO words**.
+
+**Physical follow-up v1895 (2026-11-23):** The genuine same
+source-free `mm_free=-5` was exercised again, but the external
+PACKED source pin was NOT released. The original v1839 reconciliation
+correctly retained both source pin1 and target pin0, kept slot3
+TRANSITION/VM0, and permitted TWO new genuine user-mode resident
+parent heartbeats with advancing original PCLK while the original
+MM table remained unchanged. This proves safe persistent source-pin
+quarantine, NOT terminal cleanup; see
+`design/kcore-k05-physical-persistent-source-pin-v1895.md`.

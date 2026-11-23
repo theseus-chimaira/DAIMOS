@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1894 K05 physical real source-free refusal; K01-K04 closed).
+Updated: 2026-11-23 (v1895 K05 physical persistent pinned-source quarantine; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -599,6 +599,30 @@ history is now reachable from main (v1809); mode3 remains disabled.
     failed target release, unknown allocator ownership, terminal
     quarantine cleanup, arbitrary PI6 or K05-K09 release.
     See `design/kcore-k05-physical-real-source-free-refusal-v1894.md`.
+  - v1895 persistent original 48K physical source-free -5 PASS:
+    original unchanged fixed-KCORE `mm_free(PACKED)` genuinely
+    refuses source physical pin1 at native call `035310`/return
+    `035311` with actual AC1=-5. Unlike v1894, the test-only
+    external source pin is NEVER released. Exact source RAW
+    `111200..120000` pin1 and complete temporary PROCESS
+    `120000..130000` pin0 both remain physically owned by slot3.
+    Original v1839 zero-pin MM owner test fail-closes: FULL returns
+    -5 at `033067`, keeps slot3 TRANSITION/VMbase0, does NOT
+    free source/target or publish a runnable APR. All 18 exact
+    original MM descriptors and TSFS root remain unchanged through
+    the original service return and two **new** parent user-mode
+    heartbeat outputs. Parent slot1 resident PROCESS at
+    `130000..140000` pin0 remains running; original PCLK clock
+    advances `016640` -> `016740` octal between heartbeats.
+    Original physical independent audit and TEN executed unsafe
+    physical MM/owner/process/HB/PCLK trace negatives PASS.
+    KCORE/PURE images byte-identical and ZERO production RAM
+    growth. This closes **persistent source pin -> safe quarantine
+    + independent resident parent progress**, NOT eventual owner
+    release, other child restore, normal WAIT/HALT, terminal
+    quarantined-owner cleanup, unknown allocator/rollback errors
+    or K05-K09. See
+    `design/kcore-k05-physical-persistent-source-pin-v1895.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
