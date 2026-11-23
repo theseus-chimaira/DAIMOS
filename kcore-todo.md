@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1893 K05 physical source-free lost reply; K01-K04 closed).
+Updated: 2026-11-23 (v1894 K05 physical real source-free refusal; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -579,6 +579,26 @@ history is now reachable from main (v1809); mode3 remains disabled.
     MM owners, foreign owner, rollback failure, allocator/pin errors
     or K05-K09. See
     `design/kcore-k05-physical-source-free-reply-v1893.md`.
+  - v1894 original 48K physical genuine MM source-free refusal PASS:
+    original compiled/linker source call `035310` executes REAL
+    original `mm_free(PACKED)` while an external test-only source
+    MM pin1 is held; its physical return at `035311` is ACTUAL
+    MM_ERR_BUSY=-5, not a forged return. Both original owners stay
+    intact. External pin is released, proving exact PACKED RAW
+    `111200..120000` and complete PROCESS `120000..130000`, both
+    pin0. Original v1839 zero-pin owner reconciliation safely
+    releases ONLY the temporary PROCESS target, keeps RAW source
+    pin0 and slot3 VMbase0, returns actual -5 at `033067`.
+    Original five children recover and complete PIPE/sentinel/
+    typed EXIT/WAIT, parent Z, real PDP-6 HALT. Final slot3 MM
+    owners gone, TSFS ROOT preserved. Full original physical audit
+    and SEVEN separately executed unsafe physical negative controls
+    PASS. Production fixed KCORE/PURE MRES byte-identical, no RAM
+    growth. This closes transient REAL source-free refusal and
+    checked two-owner rollback, NOT permanent extra pin/refusal,
+    failed target release, unknown allocator ownership, terminal
+    quarantine cleanup, arbitrary PI6 or K05-K09 release.
+    See `design/kcore-k05-physical-real-source-free-refusal-v1894.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

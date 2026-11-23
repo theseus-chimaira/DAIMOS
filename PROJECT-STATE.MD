@@ -1,3 +1,58 @@
+## 2026-11-23 v1894-k05: real PDP-6 source-free MM -5, exact rollback, child HALT (scoped PASS)
+
+The unchanged source-built original v1855 48K PDP-6 five-child
+ROOT/secondary-DTC3 PURE/BRK/PIPE guest now physically exercised
+the **genuine refused-source-free** branch of original v1839,
+distinct from v1893's lost-successful-free reply. Original
+installed PURE base `032417` and production DOBJ/linker relocations
+locate original PACKED `PUSHJ 17,mm_free` at `035310` and its
+return `035311` octal, plus original FULL service return `033067`.
+At actual original source-free call the source RAW suffix
+`111200..120000` and provisional full PROCESS `120000..130000`
+have both completed their original unpins (MM count18), with exact
+physical metadata source word `024703=000004000003` (pin0).
+
+Only a private test-only SIMH controller raises the physical source
+pin to 1 (`024703=000014000003`). It executes the ORIGINAL
+unchanged fixed-KCORE `mm_free`, which actually refuses the pinned
+PACKED descriptor and returns `MM_ERR_BUSY=-5` (AC1
+`777777777773`). Both MM owners remain present and independently
+unchanged, with source pin1 and target pin0. The controller
+releases only its external temporary pin (`024703=000004000003`),
+then physical MM proof shows two exact unpinned owners (MM count18).
+The original v1839 zero-pin reconciliation safely rolls back
+ONLY the temporary PROCESS target, retains the sole authoritative
+PACKED source pin0, returns actual -5 at service `033067`, keeps
+VM base zero and MM count17, without false RESIDENT publication.
+
+The unchanged original five-child user workload then retries,
+completes all typed EXIT/WAIT and writable-data checks, writes
+parent `Z`, and reaches actual machine `HALT instruction, PC: 000000`.
+The terminal MM table has eight entries, with no slot3
+PROCESS/PACKED owner. All unrelated MM records and selected TSFS
+root `070101000000` stay unchanged throughout each original
+failure/rollback snapshot. The full original source-built physical
+run, independent read-only audit and SEVEN separately executed
+unsafe pin/MM/rollback negative transcript controls PASS.
+
+Original normalized physical trace SHA256:
+`4cdba1d83d04a9d92a50a7f13965f389419175cec875f28f58e94f1ebdf97071`.
+Original production fixed KCORE SHA256 unchanged:
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`.
+Original optional PURE MRES SHA256 unchanged:
+`a0fb25c51cf1c57f4bc70ca1dc83d8b9ea39b1ac3ddb3bba7b9ffcea17e5b3fd`.
+All evidence at `$TMPDIR/daimos-k05-real-free-refusal-v1894-real/`.
+See `design/kcore-k05-physical-real-source-free-refusal-v1894.md`,
+testkit `tests/validation/pure-k05-real-free-refusal-v1894/` and
+`pdp10-doc/KERNEL/PURE-K05-REAL-SOURCE-FREE-REFUSAL-V1894.MD`.
+
+This accepts the **transient genuine original source-free -5 plus
+exact two-unpinned-owner rollback/normal retry** case. It does NOT
+accept a PERSISTENT extra source pin or permanent allocator/unpin/
+target-rollback errors, unknown/foreign ownership, terminal
+cleanup of quarantined owners, arbitrary PI6 timing or K05-K09
+release. RAW PURE/mode3 remain OFF. ZERO production code/RAM change.
+
 ## 2026-11-23 v1893-k05: physical successful PACKED source free with false -5 reply (scoped PASS)
 
 The original SOURCE-BUILT v1855 48K PDP-6 five-child PURE-on guest

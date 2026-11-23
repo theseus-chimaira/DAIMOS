@@ -107,3 +107,17 @@ case, NOT genuinely refused free, foreign ownership or other
 persistent MM ambiguity. Full trace and derived source-linked
 return at `035311` are documented at
 `design/kcore-k05-physical-source-free-reply-v1893.md`.
+
+**Physical follow-up v1894 ACCEPTED (2026-11-23):** Unlike v1893's
+deliberately falsified source-free reply after actual deletion,
+the unchanged original PDP-6 `mm_free` physically refused a
+PACKED source temporarily pinned by private test-only SIMH control.
+The actual original return was -5, with both original MM owners
+retained. Upon release of the external temporary source pin,
+original v1839 reconciliation saw exactly TWO unpinned owners,
+freed only the PROCESS target, preserved the authoritative PACKED
+source, and returned -5 without publishing an invalid resident APR.
+The original user fixture retried, all five EXIT/WAIT checks and
+actual HALT passed; seven unsafe trace controls PASS. This closes
+the transient genuinely refused-free case, NOT a permanently held
+pin/refusal. See `design/kcore-k05-physical-real-source-free-refusal-v1894.md`.
