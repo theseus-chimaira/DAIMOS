@@ -1,3 +1,28 @@
+## 2026-11-23 v1845: native DAS image-size baseline profiled (OPEN)
+
+Rebuilt unmodified native DAS phases with installed KCC, PDP-6 target,
+and original DAS assembler. Both phase image contracts currently fail:
+phase1 image 035216 versus ceiling 034000 (excess 001216 octal words);
+phase2 image 032730 versus ceiling 031000 (excess 001730 octal words).
+Phase1 BSS is 002103 and phase2 BSS is 001573. All numbers octal.
+
+KCC -O, -Os and -O2 produced identical image/BSS sizes for both phases,
+so changing these flags is not an effective size reduction. Largest
+shared assembly regions are expression parsing, literal canonicalization,
+and the opcode table; phase1 additionally includes macro/repetition
+handling, while phase2 includes statement/data/instruction encoding.
+These are assembly source-line regions, NOT measured per-function word
+sizes. The versioned diagnostic
+`daimos-testkit/tests/validation/daimos-das-native-size-profile-v1845.py`
+reads DXR headers and reports image/BSS/limit excess and top assembly
+regions without weakening the strict native DAS acceptance checker.
+
+The image-size problem remains OPEN: neither limit is met. No DAS or
+KCC production source was changed in this profiling pass. Next work
+should target proven instruction/constant-table savings, measuring both
+phases and retaining strict resident limits, rather than adding parser
+features or merely changing KCC optimization spellings.
+
 ## 2026-11-23 v1844-gcc: mixed floating/byte aggregates verified; KCC GAS literal repair
 
 The source-based GCC/KCC ABI v1840 test verifies double/float-containing
