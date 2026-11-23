@@ -131,6 +131,30 @@ physical TRANSITION/scheduler/bystander EXIT/WAIT, source unpin/free
 uncertainty, all allocator failure modes, terminal cleanup and full
 acceptance. RAW PURE/mode3 remain OFF by default.
 
+## 2026-11-23 v1884-das: phase basename, 16K steady-state gate PASS
+
+With native output `PROGRAM.DXR`, both private DAS phases now use
+`PROGRAM.D2R` for their DASIR2 intermediate file, rather than
+`PROGRAM.DXR.D2R`; the host file-based pipeline matches. Non-DXR
+output names keep the appended `.D2R` fallback to prevent collision
+with a real output called `PROGRAM.D2R`. Independent host and mocked
+native filename/cleanup tests PASS, as do the full DAS host regressions.
+
+The name change saves **no** resident pathname-buffer RAM. Native
+byte-pointer reuse limits the increase to 000005 octal image words
+per phase. Native image/BSS/002000-stack process totals are DAS1
+034323/001423/**037746**, DAS2 031027/001114/034143, and launcher
+000571/000000/002571 (octal). The maximum steady-state user process
+is **16,358 decimal words**, 26 words below the strict 16K
+(040000 octal) limit. Mandatory
+individual native image ceilings 034000/031000 are still exceeded by
+000323/000027. The normal kernel transactional EXEC can temporarily
+stage the next VM alongside the previous one; **an absolute 16K
+physical-RAM peak is NOT proved or accepted** without a guest trace
+or deterministic destructive replacement. Native end-to-end guest
+acceptance and both separate image gates remain OPEN. See the detailed
+`pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD`.
+
 ## 2026-11-23 v1883-das: native extended opcode packing
 
 The additional 24-entry extended-opcode table was compressed: 22
