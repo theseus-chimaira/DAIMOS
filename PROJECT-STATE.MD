@@ -37,6 +37,19 @@ physical TRANSITION/scheduler/bystander EXIT/WAIT, source unpin/free
 uncertainty, all allocator failure modes, terminal cleanup and full
 acceptance. RAW PURE/mode3 remain OFF by default.
 
+## 2026-11-23 v1883-das: native extended opcode packing
+
+The additional 24-entry extended-opcode table was compressed: 22
+three-to-five-letter keys plus their nine-bit opcodes occupy one
+36-bit word apiece, with exact comparisons retained for two six-letter
+keys. The frozen 24-entry pre-change oracle in daimos-testkit verifies
+public opcode mappings/non-base flags and invalid names. KCC native
+images (octal) are DAS1 034316 and DAS2 031022, BSS 001423/001114.
+The v1881 EXEC-chain steady-state peak is still DAS1 037741 words,
+below 16K by 31 decimal words. Strict image limits 034000/031000
+remain OPEN, exceeded by 000316/000022; no physical guest or transient
+EXEC RAM acceptance is claimed. Full record: pdp10-doc/TOOLCHAIN.
+
 ## 2026-11-23 v1882-das: native phase1 compact three-letter opcode keys
 
 The 59 three-letter base instruction names now store two 18-bit keys
