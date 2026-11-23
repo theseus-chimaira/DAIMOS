@@ -258,6 +258,10 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   fixed, run native MAKE ALL/INSTALL, measure KPARSE/phase RAM and
   time, rebuild kernel and one controlled userland component using
   native CPP/KCC/libc/CRT0/libsys, then test full native rebuilding.
+  The archived v1413 proposal for staging DAS/MAKE C-SIX sources and
+  native MAKEFILEs was never guest-accepted; re-evaluate that source
+  before reusing it. Do not lift DSH_IMAGE_LIMIT from 036000 to
+  037000 merely to enable the staging phase. See v1823 in state.
 - [ ] **Native MAKE large-graph correctness:** test graph limits above
   768 dependency/384 recipe links, sorted-index cost, actual KCC
   graph invalidation, suffix rule ordering, and the exact required
