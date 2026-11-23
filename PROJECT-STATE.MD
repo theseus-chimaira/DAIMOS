@@ -1,3 +1,71 @@
+## 2026-11-23 v1896-k05: genuine original PROCESS target cleanup-free -5, fail-closed quarantine and parent progress (scoped PASS)
+
+Original source-built v1855 48K PDP-6 fixed KCORE and optional PURE
+MRES were run BYTE-IDENTICAL to v1890-v1895. Original KCORE SHA256
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`;
+optional PURE SHA256
+`a0fb25c51cf1c57f4bc70ca1dc83d8b9ea39b1ac3ddb3bba7b9ffcea17e5b3fd`.
+The original 48K five-child ROOT/secondary-DTC3 PURE RUN/BRK/PIPE
+pressure plus v1892 TEST-ONLY resident-parent HB continuation
+was used, with unchanged kernel, MM code, media and child paths.
+
+Original physical installed PURE base `032417` and exact original
+compiled `proc_pure_full_v1611.dobj` source-linked symbol/relocs
+prove TWO distinct real fixed-KCORE `mm_free` calls within FULL:
+PACKED source at `035310` (return `035311`) and provisional full
+PROCESS-target `fail_target` cleanup at **`035371`** (return
+**`035372`**), original FULL service at `033067` octal. Each call
+was independently checked against the original linked `PUSHJ
+17,mm_free` opcode before test-only physical injection.
+
+At original FULL commit, exact owner pair is PACKED RAW
+`111200..120000` pin1, complete PROCESS target `120000..130000`
+pin1. Original loader successfully unpins both (18 MM extents).
+One test-only source pin makes the REAL original source
+`mm_free(PACKED)` refuse with its own `MM_ERR_BUSY=-5`, preserving
+both extents. That external SOURCE pin is released, leaving both
+original MM owners exact pin0. Original v1839 zero-pin owner scan
+selects safe rollback, and the actual original target cleanup
+`mm_free(PROCESS)` call at `035371` is reached, with BOTH owners
+still physical pin0. ONLY at this exact original cleanup call,
+private SIMH increases PROCESS target MM metadata at `024705`
+from `000001000003` pin0 to `000011000003` pin1, retaining that
+external target pin persistently. The original unchanged fixed
+KCORE native target `mm_free` ACTUALLY refuses with return -5,
+AC1 `777777777773` at `035372`, WITHOUT deleting target or source.
+
+Original FULL returns `MM_ERR_BUSY=-5` at `033067`, retains RAW
+source pin0 and complete target pin1, all **18** original MM
+extents and every unrelated MM owner, preserves selected TSFS
+ROOT `070101000000` octal, keeps slot3 TRANSITION and VMbase0
+(physical meta `046031600401`, VM `010000000000`). No unsafe
+APR is published and no speculative target rollback is claimed.
+The original unrelated parent slot1 remains independent PROCESS
+`130000..140000` pin0/SRUN, and emits TWO new real user-mode HB
+syscalls with `proc_current_slot=1`. Original real fixed-KCORE
+PCLK advances from `015401` to `015564` octal across the new HBs,
+with unchanged full original MM owner table/ROOT and quarantined
+slot3. Original full physical run, independent read-only audit
+and **THIRTEEN separately executed unsafe physical transcript
+mutants** PASS/rejected as expected.
+
+Accepted original physical normalized trace SHA256:
+`b408a84b27b39b351e56196356fb4abaac2b60c64175abe4bb74d38382ab7601`.
+Evidence `$TMPDIR/daimos-k05-target-free-refusal-v1896-real/`.
+Design `design/kcore-k05-physical-target-free-refusal-v1896.md`.
+Testkit `tests/validation/pure-k05-target-free-refusal-v1896/`.
+Stable docs `pdp10-doc/KERNEL/PURE-K05-TARGET-FREE-REFUSAL-V1896.MD`.
+
+This physically accepts a **genuine failed original temporary
+PROCESS target cleanup free under a persistently held target pin**,
+with fail-closed quarantine and real independent resident-parent
+progress. It does NOT demonstrate successful target free with
+lost reply, final quarantined-owner cleanup, target unpin,
+other PACKED child restoration, all-child WAIT/HALT, unknown/
+foreign owners, other PI6 interleavings, 64K/KA10 or K05-K09
+release. RAW PURE/mode3 remain OFF by default. ZERO production
+source/kernel/RAM growth.
+
 ## 2026-11-23 v1895-k05: persistent genuinely refused PACKED free, safe quarantine and real resident parent progress (scoped PASS)
 
 The original source-built v1855 48K PDP-6 KCORE and optional PURE

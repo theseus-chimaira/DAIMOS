@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1895 K05 physical persistent pinned-source quarantine; K01-K04 closed).
+Updated: 2026-11-23 (v1896 K05 physical genuine target cleanup free refusal; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -623,6 +623,32 @@ history is now reachable from main (v1809); mode3 remains disabled.
     quarantined-owner cleanup, unknown allocator/rollback errors
     or K05-K09. See
     `design/kcore-k05-physical-persistent-source-pin-v1895.md`.
+  - v1896 original 48K physical genuine temporary target cleanup
+    `mm_free(PROCESS)` refusal PASS. Original compiled FULL DOBJ
+    has two distinct original linked `mm_free` calls: source
+    `035310` and target cleanup `035371` octal. After the REAL
+    original source `mm_free(PACKED)` refuses external source pin1,
+    private source pin is released. Original v1839 exact-owner
+    check sees both pin0 and calls actual cleanup free for the
+    temporary full PROCESS target. Test-only target physical
+    MM meta `024705` is now pinned 0->1 at this exact original
+    native call; actual unchanged fixed-KCORE `mm_free(PROCESS)`
+    returns its own `MM_ERR_BUSY=-5` at `035372`, retaining BOTH
+    authoritative source `111200..120000` pin0 and full target
+    `120000..130000` pin1. Original FULL returns -5 without
+    releasing target/source or publishing a runnable APR; slot3
+    remains TRANSITION/VM0, all 18 original MM extents and root
+    unchanged. Two new original user `HB` parent syscalls execute
+    from independent resident slot1 (`130000..140000` pin0),
+    original clock advances `015401` -> `015564` octal. Original
+    read-only physical audit and THIRTEEN executed unsafe physical
+    negative mutations PASS. Production KCORE/PURE byte-identical,
+    ZERO additional RAM. This closes actual native refused target
+    rollback with persistent pin and parent progress, NOT target
+    free lost-successful-reply, final owner cleanup, permanent
+    unpin/allocator ambiguity, other PACKED child restore, all
+    child WAIT/HALT or K05-K09. See
+    `design/kcore-k05-physical-target-free-refusal-v1896.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

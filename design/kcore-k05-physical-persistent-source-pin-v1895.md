@@ -143,3 +143,15 @@ unknown allocator/free/target release outcome, foreign owners,
 other PI6 timings, 64K/KA10 or production K05-K09 acceptance.
 RAW PURE and mode3 stay OFF by default, with ZERO additional
 fixed KCORE or removable PURE MRES words.
+
+**Physical follow-up v1896 (2026-11-23):** The original fixed-KCORE
+source free again genuinely refused a temporary source pin; after
+releasing that source pin and verifying both exact owners pin0,
+the actual original `fail_target` cleanup `mm_free(PROCESS)`
+was reached at `035371` octal. A different, PERSISTENT external
+pin on the temporary target caused the original native MM to
+return its own -5 at `035372`, retaining source pin0/target pin1,
+slot3 TRANSITION/VM0 and all 18 MM extents. Two unrelated parent
+HBs and original advancing PCLK PASS. This is a separate genuine
+target-rollback-refusal case, not a released source pin case.
+See `design/kcore-k05-physical-target-free-refusal-v1896.md`.
