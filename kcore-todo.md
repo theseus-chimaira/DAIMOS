@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1848 K05 physical pinned FULL PI6; K01-K04 closed).
+Updated: 2026-11-23 (v1855 K05 exact pinned FULL commit; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -490,6 +490,22 @@ history is now reachable from main (v1809); mode3 remains disabled.
     mid-FULL PI6 evidence gap, NOT arbitrary PI6 scheduling timing,
     persistent unknown MM pin/free/allocator faults or K05 closure.
     See `design/kcore-k05-midfull-pi6-v1848.md`.
+  - v1855 production bugfix and scoped native/physical PASS: a second
+    target pin could survive successful `mm_unpin(target)` and allow
+    deletion of the sole RAW suffix before RESIDENT publication.
+    Original KCC PDP-6 native FAIL `002002` reproduced this. The
+    corrected PI-atomic exact two-owner check requires a singly pinned
+    PACKED source and singly pinned complete PROCESS target, with no
+    duplicates/foreign ownership, before any commit unpin/free.
+    It shares the existing v1839 zero-pin source-free reply scan;
+    unknown owners remain TRANSITION-quarantined. Full native matrix,
+    original v1654/v1839 mutants, new allocator/source/target overpin
+    fixtures and two unsafe v1855 mutants PASS. A fresh physical 48K
+    five-child normal PURE RUN/PIPE/EXIT/WAIT/HALT also PASSes; fixed
+    KCORE byte-identical, optional PURE MRES +000027 octal (23 decimal)
+    words, no BSS change. Physical extra-pin fault injection and
+    bystander progress during quarantine remain OPEN. See
+    `design/kcore-k05-exact-pinned-full-v1855.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

@@ -1,3 +1,47 @@
+## 2026-11-23 v1855-k05: exact one-pin FULL owner commit, native and 48K PASS
+
+An original source-linked native PDP-6 regression reproduced a real
+unsafe FULL commit: a second physical target pin causes the original
+`mm_unpin(target)` to return success while leaving one pin, permitting
+the sole PACKED RAW owner to be freed before publishing the pinned
+PROCESS target. Unmodified production source FAILED at original native
+`__test_exit=000000002002` (octal). Production correction `1893c84b`
+adds a PI-atomic exact owner-set check: precisely one PACKED source and
+one disjoint complete PROCESS target for the selected slot, each with
+exactly one pin. An unexpected pin/owner/size/duplicate returns busy
+and keeps both reservations and TRANSITION; no premature RESIDENT
+publication. The new one-pin check shares v1839's original zero-pin
+failed-source-free reconciliation, avoiding a second MM scan.
+
+Testkit `818338d` adds native persistent allocator refusals and
+subsequent successful retry, healthy pinned bystander positive commit,
+unknown source and target extra-pin quarantines, and two executed
+unsafe mutants rejected at octal `002002`. The v1654 historical
+late-unpin mutation anchor was updated without weakening its oracle
+(testkit `23ea31c`). Complete source-matched
+`make test-pure-integration-native-v1855` PASSes, including the
+v1677-v1839 original fault and mutation gates.
+
+The independently source-built 48K opt-in PURE TSFS-root PDP-6 guest
+also completes the five-child native RUN/PIPE/data/EXIT/WAIT workload
+and HALT PC 0 with physical simulator exit zero:
+`aaaaax[B013060/043565]<010000+010000>[A013060/043565]{013060-013060}LwwwwwZ`.
+Physical transcript SHA256:
+`c090f8c2aa9475d876286f37c7cd6ab036a4f77b64353730f98a785c95335c8e`.
+Fixed KCORE DXR remains byte-identical SHA256
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`.
+Optional PURE MRES linked image grows 004000 -> 004027 octal,
+**23 decimal words**, BSS zero. Guest budget 043536 -> 043565 octal
+agrees exactly. New PURE DXR SHA256
+`a0fb25c51cf1c57f4bc70ca1dc83d8b9ea39b1ac3ddb3bba7b9ffcea17e5b3fd`.
+
+Physical success covers normal full-system restore, NOT injected
+physical extra-pin corruption or bystander scheduling during an
+irrecoverable quarantine. K05-K09 remain OPEN; K01-K04 CLOSED,
+PURE/mode3 default OFF. See
+`design/kcore-k05-exact-pinned-full-v1855.md` and
+`pdp10-doc/KERNEL/PURE-K05-EXACT-PINNED-FULL-V1855.MD`.
+
 ## 2026-11-23 v1868-das: native scratch I/O and decoder reductions (OPEN)
 
 The DAS native size pass now also eliminates a dotted instruction-name
