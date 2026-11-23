@@ -18,6 +18,32 @@ DAIMOS libc archive build. The repaired compiler is installed in
 No DAIMOS kernel or libc production code changed. See
 `pdp10-doc/TOOLCHAIN/KCC-INDIRECT-CALL-AC16-SCRATCH-20261123-V1830.MD`.
 
+## 2026-11-23 v1835: two superseded detached worktrees removed
+
+The final v1834 scan found two detached HEAD commits not reachable
+by ancestry from the current main branch. Both are historical
+duplicates of code/test changes already present on main, with
+no modified, untracked or ignored files in their worktrees:
+
+- DAIMOS detached `~/git/DAIMOS-v1285-oom-on-r1`, commit
+  `78259106` (one-line BRK requester OOM switch change). The same
+  switch was enabled on main at `283b54dc` under the fully
+  accepted F12/F13 v1298 policy.
+- daimos-testkit detached `~/.devspace/worktrees/daimos-testkit-bbe3c918`,
+  commit `c43d599` (DTFS mount/lookup v204 test). The mainline
+  `10c32f4` commit is stable-patch-ID identical.
+
+Before removal, each detached commit was saved in a verified Git
+bundle, a complete format-patch, full commit/base identifiers and
+SHA256 manifest. The original Git working trees were removed using
+`git worktree remove`, without force, and their absence was verified.
+The bundles remain recoverable under
+`~/backups/daimos-detached-v1285-oom-retire-v1835-20261123/`
+and
+`~/backups/daimos-testkit-detached-dtfs-v204-retire-v1835-20261123/`.
+No source was cherry-picked or changed, and neither main branch
+was rewritten. The excluded pdp10-testkit repository was not touched.
+
 ## 2026-11-23 v1834: remaining non-pdp10-testkit dirty worktrees consolidated
 
 Three detached daimos-testkit worktrees were compared with later

@@ -108,6 +108,30 @@ into the historical branch artifacts.
 No pdp10-testkit operation was performed and no kernel, KCC, DAS,
 KCORE, DSH boot-gate or userland production source was modified.
 
+## Follow-up v1835: two clean detached heads retired
+
+The mainline branch review established that all *named* branch tips
+were reachable from their repository's primary branch (main or
+master), but two clean attached detached-HEAD commits were not.
+They have now been removed with `git worktree remove` after
+preserving both original Git commit objects and patches:
+
+- DAIMOS v1285 requester-only BRK OOM candidate commit `78259106`;
+  the same one-line switch was later enabled on main as `283b54dc`
+  in v1298. Its Git bundle is
+  `~/backups/daimos-detached-v1285-oom-retire-v1835-20261123/detached-oom-commit-v1835.bundle`,
+  SHA256 `23ba1df323a05144788a2f9b0073bd4ee2f3fdcfcafb1036a5f7c2e429ab6723`.
+- daimos-testkit v204 DTFS lookup commit `c43d599`; the mainline
+  `10c32f4` is stable-patch-ID identical. Its Git bundle is
+  `~/backups/daimos-testkit-detached-dtfs-v204-retire-v1835-20261123/detached-dtfs-commit-v1835.bundle`,
+  SHA256 `111696f44f7f122f4611dc8c1f146b3ff031b07378dc7d1f5c96dfcb43bc19b0`.
+
+Each backup additionally contains an original format-patch, matching
+mainline commit reference, bundle verification output, and individual
+file SHA256 manifest. This retires redundant historical checkouts,
+not necessary code or accepted tests. No force removal and no
+contact with pdp10-testkit.
+
 Final verified Git inventory: **32 permitted repositories/worktrees,
 zero dirty** (zero modified tracked files, zero untracked files).
 The read-only report is stored at
