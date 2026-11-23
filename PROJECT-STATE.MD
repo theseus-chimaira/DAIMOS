@@ -1,3 +1,16 @@
+## 2026-11-23 v1827-gcc: production DAIMOS BRK allocator runs under GCC
+
+The GCC C89 freestanding compiler successfully compiled unchanged
+`userland/libc/stdlib.c`. A new daimos-testkit PDP-6 native guest
+test linked the GCC-built production allocator with actual DAIMOS
+crt0, syscall, memcpy and memset veneers and GCC console formatting.
+Guest `dsys_brk` growth, malloc writes, realloc content preservation,
+free/reallocation, calloc zeroing, output and exit status all PASS.
+No separate heap implementation or DAIMOS production source changes
+were necessary. Direct interoperability with the KCC-built libc.a,
+failure paths and default GCC runtime installation remain unproven.
+See ../pdp10-doc/TOOLCHAIN/GCC-DAIMOS-BRK-HEAP-GUEST-20261123-V1827.MD.
+
 ## 2026-11-23 v1826: historical self-host diagnostic scripts archived
 
 The old detached daimos-testkit worktree had 23 untracked files:
