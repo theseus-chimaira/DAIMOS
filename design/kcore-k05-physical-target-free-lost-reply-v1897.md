@@ -142,3 +142,14 @@ permanently failed unpins, target-free lost reply with intervening
 foreign owner, eventual cleanup of permanently held process
 extents, arbitrary PI6 timing, 64K/KA10 or K05-K09 release.
 RAW PURE/mode3 remain OFF. Fixed KCORE/PURE RAM growth ZERO.
+
+**Physical follow-up v1898 (2026-11-23):** The original compiled
+FULL native target `mm_unpin` calls at `035271` and `035362` were
+physically executed against a test-only zero target pin. BOTH
+original calls genuinely returned -4, causing safe TRANSITION/
+VM0 quarantine, source pin1 and target pin0 preserved; two new
+unrelated resident-parent HBs and original PCLK progression PASS.
+The injected change was inside the normally PI-atomic commit
+window, so this proves defensive error handling, not a natural
+interrupt race. See
+`design/kcore-k05-physical-target-unpin-refusal-v1898.md`.

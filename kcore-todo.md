@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1897 K05 physical successful target cleanup with lost reply; K01-K04 closed).
+Updated: 2026-11-23 (v1898 K05 physical target unpin double -4, safe quarantine; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -673,6 +673,31 @@ history is now reachable from main (v1809); mode3 remains disabled.
     NOT permanent unpin/foreign owners/uncertain terminal cleanup,
     arbitrary PI6 or K05-K09. See
     `design/kcore-k05-physical-target-free-lost-reply-v1897.md`.
+  - v1898 original 48K PDP-6 physical double target `mm_unpin`
+    genuine -4 PASS. The compiled original FULL function's first
+    target commit `mm_unpin` at `035271` and cleanup retry at
+    `035362` octal are checked against original linked native
+    opcodes and both actually execute. After the v1855 precommit
+    owner pair is physically pin1/pin1, one test-only debugger
+    deposit makes target `120000..130000` pin0 before its original
+    native unpin call. The unmodified KCORE `mm_unpin` REALLY
+    returns `MM_ERR_INVAL=-4` twice, preserving the sole RAW
+    PACKED source `111200..120000` pin1 and complete temporary
+    PROCESS target pin0 (18 original MM records). Original
+    `fail_target` returns BUSY, preserves slot3 TRANSITION/VM0,
+    does not free either owner. Two new genuine resident parent
+    HBs from slot1/SRUN/valid APR and original PCLK advancement
+    `016325` -> `016425` octal PASS. Full physical read-only audit
+    and THIRTEEN separately executed unsafe original MM/process/
+    clock trace mutations PASS. Original fixed KCORE/PURE binaries
+    byte-identical; ZERO added production words.
+    IMPORTANT: The test-only injected pin0 after the original
+    PI-atomic exact-one-pin guard is not an ordinary scheduler
+    race. This closes *defensive actual double-unpin refusal with
+    unexpected MM state*, NOT genuine naturally occurring source
+    unpin failure, foreign owner, quarantined terminal cleanup,
+    child WAIT/HALT or K05-K09 release. See
+    `design/kcore-k05-physical-target-unpin-refusal-v1898.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

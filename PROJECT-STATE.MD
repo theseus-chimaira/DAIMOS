@@ -1,3 +1,66 @@
+## 2026-11-23 v1898-k05: double genuine target mm_unpin -4, safe quarantined owner and resident parent progress (scoped PASS)
+
+The original source-built v1855 48K PDP-6 fixed KCORE and optional
+PURE MRES remain byte-identical to v1890-v1897. Original physical
+reclaim JRST locates PURE base `032417` octal. Original compiled
+`proc_pure_full_v1611.dobj` FULL symbol/FOUR `mm_unpin` relocations
+and linked native opcodes establish two target-unpin calls:
+commit `035271` (return `035272`) and `fail_target` retry
+`035362` (return `035363`), original FULL service `033067`.
+
+The original five-child RUN/BRK/PIPE, secondary compressed DTC3
+executable and mutable checks were run under the accepted v1892
+test-only parent HB fixture. Before the first actual native target
+unpin, slot3 original PACKED RAW source `111200..120000` and
+complete PROCESS target `120000..130000` both have exactly one
+pin, MM count 18. The v1855 exact-one-pin owner guard has passed
+under PI exclusion. ONLY at the original call boundary a private
+test-only simulator changes target MM physical descriptor
+`024705=000011000003` pin1 to `000001000003` pin0. The ORIGINAL
+unmodified fixed-KCORE native `mm_unpin` genuinely refuses the
+zero-pin descriptor and returns AC1 `777777777774` =
+`MM_ERR_INVAL=-4` at `035272`. Original `fail_target` retries
+the same real native target `mm_unpin` at `035362`, still pin0;
+it genuinely returns **-4 again** at `035363`.
+
+The original PURE FULL service returns `MM_ERR_BUSY=-5`, keeping
+slot3 TRANSITION and VMbase zero, preserving BOTH original MM
+owners: PACKED RAW pin1 and full PROCESS target pin0; original
+MM count18. No speculative source unpin/free, target free or
+APR publication occurs. The full MM table including all unrelated
+owners/pins and selected TSFS root `070101000000` remains EXACTLY
+unchanged from first native -4 through second -4, original FULL
+return and two later genuine user-mode resident parent HBs.
+Parent slot1 is valid PROCESS APR `130000..140000` pin0/SRUN,
+`proc_current_slot=1` during both new HBs; original PCLK advances
+from `016325` to `016425` octal. Full independent physical audit
+and **THIRTEEN executed unsafe owner/return/pin/VM/clock/user
+negative transcript controls PASS**.
+
+Original normalized PDP-6 physical SHA256:
+`c7d5350098f69474e1fd2398c0822d3abf11bd21ad754c5a69d973a7ef3e215e`.
+Unchanged original fixed KCORE DXR SHA256:
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`.
+Unchanged original opt-in PURE MRES DXR SHA256:
+`a0fb25c51cf1c57f4bc70ca1dc83d8b9ea39b1ac3ddb3bba7b9ffcea17e5b3fd`.
+Physical evidence:
+`$TMPDIR/daimos-k05-target-unpin-refusal-v1898-real/`.
+Design `design/kcore-k05-physical-target-unpin-refusal-v1898.md`.
+Testkit `tests/validation/pure-k05-target-unpin-refusal-v1898/`.
+Permanent kernel docs:
+`pdp10-doc/KERNEL/PURE-K05-TARGET-UNPIN-REFUSAL-V1898.MD`.
+
+**Important fault-model limit:** The original v1855 one-pin
+owner guard and native commit unpins execute inside a PI-disabled
+region. Normal interrupt-side code cannot steal this pin between
+the guard and the first unpin. The test-only debugger deposit
+injected a deliberately inconsistent physical MM descriptor at
+the stopped native call, so this proves the existing **fail-closed
+unexpected-MM-state path**, NOT a realistic asynchronous unpin
+race. No terminal child WAIT/HALT, subsequent source cleanup,
+foreign owner or other PI6 orders are proven in v1898. K05-K09
+remain OPEN; RAW PURE/mode3 OFF. ZERO production code/RAM change.
+
 ## 2026-11-23 v1897-k05: original successful target cleanup free with falsely failed reply, five-child WAIT/HALT (scoped PASS)
 
 The unchanged original source-built v1855 48K PDP-6 fixed KCORE
