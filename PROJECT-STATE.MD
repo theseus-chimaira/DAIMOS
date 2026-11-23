@@ -11,6 +11,21 @@ were necessary. Direct interoperability with the KCC-built libc.a,
 failure paths and default GCC runtime installation remain unproven.
 See ../pdp10-doc/TOOLCHAIN/GCC-DAIMOS-BRK-HEAP-GUEST-20261123-V1827.MD.
 
+## 2026-11-23 v1827: DAS v1817 commits published via DAIMOS HTTPS helper
+
+The pending DAS commits `aa74f42` (MACRO-10 BYTE support) and
+`ed2d2e5` (independent DOBJ relocation-base rejection) are now
+successfully pushed to `https://github.com/theseus-chimaira/das.git`
+on `main`. DAS already used HTTPS, but unlike DAIMOS its local Git
+configuration lacked the Android credential helper and
+`credential.useHttpPath=true`. An explicit push using DAIMOS's same
+helper succeeded, and the two settings are now recorded locally in
+DAS for future authorized pushes. `origin/main` and `main` match
+(0 ahead, 0 behind), with no working-tree changes. No history was
+rewritten and no compiler/assembler code changed in this action.
+The previously validated 13/13 DAS fast tests remain the acceptance
+evidence; full native guest execution remains a separate open gate.
+
 ## 2026-11-23 v1826: historical self-host diagnostic scripts archived
 
 The old detached daimos-testkit worktree had 23 untracked files:
@@ -184,10 +199,9 @@ A previously incomplete native relocation-spill mock was repaired in
 PDP10-testkit after verifying its failure also occurs on old DAS.
 Native DAS1/DAS2 compile and link, with generated assembly identical
 to the old source; no native guest execution is claimed.
-The testkit commit `b8b6021` was pushed; DAS fix `ed2d2e5` is committed
-locally but cannot be pushed to its configured GitHub remote with
-currently available credentials (SSH push permission denied). Its
-earlier `aa74f42` is also local-only. Four exact recovered DAS fixtures
+The testkit commit `b8b6021` was pushed; DAS fixes `ed2d2e5` and
+`aa74f42` were subsequently published to DAS main in v1827 using
+the same HTTPS credential helper configured for DAIMOS. Four recovered fixtures
 were verified against the published testkit, archived with hashes and
 retired from the historical detached testkit; nine older D6CODEC
 experiments remain there. The system kernel and RAW PURE policy were
