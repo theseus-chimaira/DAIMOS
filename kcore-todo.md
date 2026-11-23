@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1845 K05 physical secondary fault; K01-K04 closed).
+Updated: 2026-11-23 (v1847 K05 physical postfault PI6; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -462,6 +462,19 @@ history is now reachable from main (v1809); mode3 remains disabled.
     interruption, persistent allocator/pin uncertainty, other source
     failures and full K05 acceptance remain OPEN. See
     `design/kcore-k05-secondary-dtc3-physical-v1845.md`.
+  - v1847 scoped physical PASS: after original v1845 FULL source read
+    fails on detached DTC3, the actual permanent KCORE PCLK PI6 handler
+    executes at 017205 octal before DTC3 reattachment. Its instruction
+    is the source-matched `AOS 1,proc_timer_clock`; clock/cooldown/cursor
+    are octal 021431/0100/3. Physical MM extent/pin/owner descriptors
+    and selected ROOT are identical to the failed restore rollback.
+    Same-reel recovery, all five EXIT/WAIT and HALT pass; two forged
+    physical clock/owner witnesses are rejected. An earlier apparent
+    second MRES FULL callback with invalid AC2/AC4 was rejected, and a
+    test-only KCORE DXR-offset opcode expectation was corrected. No
+    production source or RAM change. Real PI6 INSIDE pinned restore,
+    permanent MM faults and K05 closure remain OPEN. See
+    `design/kcore-k05-postfault-pi6-v1847.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

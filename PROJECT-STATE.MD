@@ -1,3 +1,37 @@
+## 2026-11-23 v1847-k05: original physical PI6 after failed FULL source restore (scoped PASS)
+
+Source-built 48K PDP-6 RAW PURE five-child TSFS-root/DTC3 physical
+fixture reused the exact accepted v1845 kernel/MRES bytes. After a
+real secondary DTC3 detach causes the original pinned two-extent FULL
+loader to return -4, rollback frees the provisional PROCESS APR and
+retains slot3's exact original unpinned PACKED suffix. Before DTC3
+returns, a source-linked fixed-KCORE PCLK PI6 breakpoint occurs at
+physical 017205 with original instruction 350040024510, the assembler
+`AOS 1,proc_timer_clock`. Clock/cooldown/cursor are octal
+021431/0100/3. Physical slot0, active MM descriptor table, pin counts
+and TSFS namespace ROOT are identical to post-FULL rollback. Same
+private DTC3 return completes all five child PIPE/data/EXIT/WAIT
+and HALT 0. Both executed forged original clock-opcode and PACKED-pin
+transcripts are independently rejected by the v1847 physical verifier.
+Trace SHA256 `67e462afa59f3e760440b01d6e9b2057a0a4e89147fb59918c73d740b62843b1`.
+
+A test-only second-FULL experiment was rejected: its later alleged
+MRES callback had zero AC2 destination/capacity and no pinned PROCESS
+target, so was not a valid second FULL transaction. Its incomplete
+trace was preserved outside Git. The first PI6 test oracle incorrectly
+treated raw KCORE DXR IMAGE offsets as installed physical addresses;
+this was repaired in testkit by deriving the real AOS instruction from
+original `proc_pdp6.s` and the linked KCORE clock symbol. The unchanged
+physical transcript was reaudited to PASS. No production kernel/MM
+code, permanent words or PURE MRES size changed.
+
+This is a real PI6 entry AFTER FULL rollback, not an interrupt inside
+the pinned restore. Persistently corrupt MM owners, actual PI6
+mid-restore, continuous peak and K05-K09 release gates remain OPEN.
+K01-K04 CLOSED, PURE/mode3 OFF by default. Details:
+`design/kcore-k05-postfault-pi6-v1847.md` and
+`pdp10-doc/KERNEL/PURE-K05-DTC3-PI6-V1847.MD`.
+
 ## 2026-11-23 v1847: second native DAS code reduction (OPEN)
 
 DAS literal image sizing now reuses the leading operator classifier
