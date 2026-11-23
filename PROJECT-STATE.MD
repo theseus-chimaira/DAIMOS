@@ -1,3 +1,15 @@
+## 2026-11-23 v1847: second native DAS code reduction (OPEN)
+
+DAS literal image sizing now reuses the leading operator classifier
+used by SET-aware literal canonicalization, retaining the exact-token
+versus prefix distinction. Combined with v1846 expression symbol
+resolution sharing, measured native image sizes (octal words) are:
+DAS1 035216 -> 034653 (saved 000343), DAS2 032730 -> 032367
+(saved 000341). BSS is unchanged. Remaining excess over unchanged
+ceilings: DAS1 000653 and DAS2 001367. Ten host DAS regression
+scripts pass; native image-size acceptance remains OPEN.
+See pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1845-k05: source-matched PDP-6 physical DTC3 FULL rollback PASS
 
 Against the original integrated KCORE/PURE v1839 source, the historical
