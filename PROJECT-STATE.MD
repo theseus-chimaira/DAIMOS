@@ -1,4 +1,4 @@
-## 2026-11-23 v1822: GCC native DAIMOS console and argc/argv guest verified
+## 2026-11-23 v1825-gcc: GCC native DAIMOS console and argc/argv guest verified
 
 The existing GCC console guest test now compiles with the installed
 freestanding header include path; its source-built PDP-6 DAIMOS image
