@@ -1,3 +1,43 @@
+## 2026-11-23 v1826: historical self-host diagnostic scripts archived
+
+The old detached daimos-testkit worktree had 23 untracked files:
+v1413-v1414 native KCC/DAS/MAKE source-access and install-dry-run
+probes, v1415 checkpoint/suffix-watch experiments, experimental SIMH
+harnesses, and three early v1412 DAS DOBJ relocation fixtures.
+These test cases rely on unaccepted native source staging and do not
+prove full self-hosting; the debug harnesses are not validated
+replacements for the current v4/v5/v6 harnesses. All 23 exact files
+were SHA256-verified in an archive and retired, leaving the detached
+worktree clean without touching any tracked source. The originals
+remain at
+`~/backups/daimos-selfhost-testkit-v1413-v1415-diagnostic-v1826-20261123/`.
+
+## 2026-11-23 v1825: obsolete manual/MKSWAP/clock doc dirt archived
+
+The historical pdp10-doc edits describe the retired host mkswap
+formatter and manual paths, older SIXMD counts, and a 50-Hz SDL
+failure predating later verified 50/60-Hz native clock tests.
+Those details were not reintroduced as current status. Four
+modified tracked files and one untracked document were preserved
+with SHA256 and a Git patch, then retired from the detached
+documentation worktree. The four unrelated dirty documents on
+pdp10-doc main remain untouched. Backup:
+`~/backups/daimos-pdp10-doc-v1072-v1073-retire-v1825-20261123/`.
+
+### Read-only post-consolidation Git inventory v1826
+
+Excluding pdp10-testkit, the final inventory scan counted four dirty
+worktrees, five modified tracked files, and 18 untracked files.
+The three remaining detached daimos-testkit worktrees contain KCC/KIR
+and DAS/DOBJ diagnostics that belong to the excluded compiler-test
+scope; they were deliberately preserved. The fourth is pdp10-doc
+main with four previously existing edits. DAIMOS and daimos-testkit
+main were clean at scan time. The complete record and its SHA256
+are under `~/backups/daimos-branch-report-v1826-20261123/`.
+No worktree or Git branch was deleted, no DSH limit was lifted,
+and no kernel, native self-hosting, or excluded testkit acceptance
+was asserted.
+
 ## 2026-11-23 v1825-gcc: GCC native DAIMOS console and argc/argv guest verified
 
 The existing GCC console guest test now compiles with the installed
