@@ -1,3 +1,15 @@
+## 2026-11-23 v1864-das: native symbol and packing reductions (OPEN)
+
+Following the fully published v1861 DAS image-size checkpoint, common
+symbol expression returns (v1862), repeated double-comma lookup (v1863),
+and phase-2 fixed text-packing widths (v1864) shrink the installed KCC
+PDP-6 images from 034173/031344 to 034135/031253 octal words, with
+unchanged BSS 002103/001573. Strict image ceilings 034000/031000 still
+FAIL by 000135/000253. Fast and full host tests, native C-comment
+instruction checks, directive/transport oracle and OWGBP checks pass.
+No full guest-run PASS is claimed. Documentation:
+../pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1861-das: native directive and expression reductions (OPEN)
 
 Continuation of the v1854 native DAS size work retains all resident
