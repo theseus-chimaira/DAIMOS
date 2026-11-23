@@ -1,3 +1,33 @@
+## 2026-11-23 v1844-gcc: mixed floating/byte aggregates verified; KCC GAS literal repair
+
+The source-based GCC/KCC ABI v1840 test verifies double/float-containing
+2/3/4/5/8-word structures in both calling directions across PDP-6, KA10,
+KI10 and KS10 and GCC O0/O1/O2/Os: 32/32 target-executed PASS. It covers
+direct/indirect calls, arguments and hidden result buffers. The separate
+v1842 natural C89 character/word aggregate test (five 9-bit chars,
+one 36-bit word, three 9-bit chars) passes 32/32 across the same cells,
+including by-value return/arguments and pointer mutation.
+
+The KI10/KS10 mixed-float run found KCC GAS-output two-word instruction
+literals split across two physical lines; original DAS cannot assemble
+that legacy form. KCC ccout.c now emits a one-line comma-separated GAS
+code literal, preserving two-word static data and non-GAS output.
+The new v1843 KI10/KS10 real CPU regression passes 4/4, and both mixed
+ABI suites pass against installed KCC plus ORIGINAL DAS. KCC SHA256 is
+`d40828f32210ab6128614b10e35780e6588675d7524f612d4af28b43e1aaa6ba`;
+the previous compiler was backed up under
+`~/backups/kcc-gas-double-literal-v1843-20261123/`.
+
+The experimental alternative DAS multiline reader was discarded and
+both DAS source and installed binary restored, so there is NO DAS
+resident RAM growth. A separate native DAS size gate remains OPEN:
+even the unmodified DAS baseline builds phase1 at octal 035216 with a
+strict octal 034000-word limit (035205 with the old pre-v1830 KCC).
+The fix must address that actual baseline size regression separately,
+not relax the cap. No production DAIMOS kernel/libc code changed.
+See pdp10-doc/TOOLCHAIN/
+KCC-GAS-DOUBLE-LITERALS-FLOAT-AGGREGATE-20261123-V1843.MD.
+
 ## 2026-11-23 v1839-gcc: GCC/KCC structure-return and varargs ABI verified
 
 New daimos-testkit v1836 tests execute separate GCC/KCC caller/callee
