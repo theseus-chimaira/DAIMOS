@@ -92,3 +92,18 @@ K05 remains OPEN for genuine full-system PDP-6 PI6 interruption,
 simultaneous physical owners, source/allocator/provider disappearance,
 retry and irrecoverable pin/owner error cases, and continuous MM
 high-water. K06-K09 and optional mode3 remain separately OPEN.
+
+**Physical follow-up v1893 ACCEPTED (2026-11-23):** an actual
+source-built 48K original PDP-6 run physically executed the real
+`mm_free(PACKED)` successfully, deleted its sole RAW suffix, then
+had only its AC1 return changed from `MM_OK` to `MM_ERR_BUSY=-5`
+by private SIMH control. The original v1839 zero-pin owner
+reconciliation retained its sole verified complete PROCESS successor,
+published RESIDENT and cleared TRANSITION. All five native child
+EXIT/WAIT and final HALT completed. Six negative physical trace
+controls PASS; no production RAM/source growth. This closes only
+the **committed physical source free with erroneous failure reply**
+case, NOT genuinely refused free, foreign ownership or other
+persistent MM ambiguity. Full trace and derived source-linked
+return at `035311` are documented at
+`design/kcore-k05-physical-source-free-reply-v1893.md`.

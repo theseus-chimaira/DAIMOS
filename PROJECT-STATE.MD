@@ -1,3 +1,59 @@
+## 2026-11-23 v1893-k05: physical successful PACKED source free with false -5 reply (scoped PASS)
+
+The original SOURCE-BUILT v1855 48K PDP-6 five-child PURE-on guest
+was run without ANY kernel, user INIT, MRES or source-media changes.
+The fixed KCORE and optional PURE MRES remain byte-identical to
+v1855-v1892, with unchanged SHA256 respectively
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`
+and `a0fb25c51cf1c57f4bc70ca1dc83d8b9ea39b1ac3ddb3bba7b9ffcea17e5b3fd`.
+The privately mounted secondary DTC3 compressed PURE image remained
+attached and CLEAN. The actual KCORE reclaim-JRST-derived PURE base
+was `032417` octal; actual compiled DOBJ `mm_free` relocation and
+linked MRES PUSHJ resolve the unique original PACKED-source free
+call `035310`, and its real return at PC `035311`, distinct from
+the later cleanup-free call. The original FULL service return is
+`033067` octal. No stale PC or guessed MM fixture is accepted.
+
+Actual pinned FULL has original slot3 PACKED source `111200..120000`
+pin1 and separate PROCESS target `120000..130000` pin1 (18 original
+MM extents). The kernel executes both original successful unpins
+and original `mm_free(PACKED)`. At its real physical return, AC1 is
+**000000000000**, PACKED is truly gone, PROCESS target alone survives
+pin0, and original MM descriptors drop to 17. ONLY THEN the test-only
+SIMH controller deposits AC1 `777777777773` (= `MM_ERR_BUSY=-5`),
+checks the physical register and resumes the untouched original
+v1839/v1855 reconciliation. The exact surviving PROCESS owner
+proves source deletion committed despite the reported refusal:
+the original FULL returns `MM_OK=0`, publishes slot3 VM `120000`,
+clears TRANSITION and retains the sole complete unpinned successor.
+Selected TSFS ROOT and all other MM owners remain unchanged.
+
+The actual original user program prints its first child `w` before
+the stopped FULL and four more after recovery, then parent `Z` and
+real `HALT instruction, PC: 000000`; its five child EXIT/WAIT status
+and mutable-data sentinel checks pass. The final original MM table
+has 8 entries, no remaining slot3 PACKED or PROCESS owner. A
+test-only initial verifier requiring literal uninterrupted `wwwwwZ`
+was corrected to count five real guest characters across physical
+monitor snapshots, retaining every MM and final HALT invariant.
+The corrected original read-only physical oracle and SIX separately
+executed unsafe source-free/owner/reply/process mutations PASS.
+
+Original normalized physical v1893 trace SHA256:
+`8d852bc8f40944035bb27a6bc773b8b4b11913b1683ae32ec2e39d41e968f0cf`.
+Real simulator evidence under
+`$TMPDIR/daimos-k05-source-free-reply-v1893-real/`.
+See `design/kcore-k05-physical-source-free-reply-v1893.md`,
+testkit `tests/validation/pure-k05-source-free-reply-physical-v1893/`
+and `pdp10-doc/KERNEL/PURE-K05-SOURCE-FREE-REPLY-V1893.MD`.
+
+This closes only the **physical completed-source-free with failed
+reply** v1839 reconciliation branch. Genuine persistent source-free
+refusal with BOTH extents retained, foreign owner, failed unpin or
+allocator ambiguity, other PI6 interleavings, terminal cleanup
+while quarantined and K05-K09 release remain OPEN. No production
+source/RAM growth and RAW PURE/mode3 remain OFF by default.
+
 ## 2026-11-23 v1892-k05: real resident-parent user progress after physical FULL pin2 (scoped PASS)
 
 The unchanged v1855 KCORE and removable PURE MRES were freshly

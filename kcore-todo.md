@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1892 K05 physical resident user progress; K01-K04 closed).
+Updated: 2026-11-23 (v1893 K05 physical source-free lost reply; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -556,6 +556,29 @@ history is now reachable from main (v1809); mode3 remains disabled.
     quarantine, terminal cleanup, permanent allocator/unpin/free
     variants or full K05-K09 acceptance. See
     `design/kcore-k05-resident-parent-v1892.md`.
+  - v1893 original 48K physical PACKED source-free lost-reply PASS:
+    compiled original source DOBJ relocs and linked PURE instruction
+    uniquely identify source `mm_free` at `035310` and physical
+    return `035311` octal. The original kernel REALLY completes
+    successful `mm_free(PACKED)` after both original unpins:
+    AC1=0, source `111200..120000` truly deleted, sole complete
+    unpinned PROCESS `120000..130000` retained; original MM extent
+    count 18 -> 17, unrelated owners and TSFS root unchanged.
+    A single TEST-ONLY SIMH AC1 deposit replaces only that success
+    reply with `777777777773` (-5). Unmodified original v1839
+    exact zero-pin owner reconciliation sees sole PROCESS and
+    correctly publishes slot3 VM `120000`, clears TRANSITION,
+    returns MM_OK=0 at original service return `033067`.
+    Original five-child user EXIT/WAIT/status/sentinel checks,
+    parent Z and HALT complete, slot3 MM extents finally freed.
+    Independent full physical audit and SIX executed owner/reply/
+    false-publication negative controls PASS. Permanent KCORE/PURE
+    byte-identical, ZERO production RAM/source changes. This closes
+    the **physically committed free + falsely failed reply** case,
+    not a genuinely refused/persistent free with BOTH original
+    MM owners, foreign owner, rollback failure, allocator/pin errors
+    or K05-K09. See
+    `design/kcore-k05-physical-source-free-reply-v1893.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
