@@ -1,3 +1,17 @@
+## 2026-11-23 v1829-gcc: unresolved GCC-to-KCC qsort callback guest trap
+
+The GCC client / KCC-built libc heap integration passed v1828, but
+callback compatibility is not yet established. The new testkit
+`daimos-gcc-kcc-qsort-v1829` guest links successfully against the
+production KCC-built libc.a and exercises KCC qsort invoking a GCC
+comparator over two-word records. The source-built PDP-6 guest FAILS:
+SIMH reports `UUO 777740000007 350000000071`, shell `STATUS:126`.
+The trap is not yet localized; do not classify it as a GCC, KCC,
+runtime or ABI defect without tracing. The failing reproducer is
+committed intentionally as an open regression, not a passing test.
+Next: isolate byte-pointer arithmetic, indirect callback entry and
+record layout with instruction-level tracing. No production changes.
+
 ## 2026-11-23 v1828-gcc: GCC client directly uses KCC-built DAIMOS libc.a
 
 The testkit's new `daimos-gcc-kcc-libc-heap-v1828` program is compiled
