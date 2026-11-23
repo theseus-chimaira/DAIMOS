@@ -1,3 +1,16 @@
+## 2026-11-23 v1877-das: compact phase-2 opcode table (OPEN)
+
+Native DAS2's common opcode table is now packed using 5-bit mnemonic
+characters plus the exact 10-bit opcode/nonbase metadata for 364 names
+up to five letters. The 26 six-letter names retain separate exact keys.
+The immutable 390-entry pre-change oracle in daimos-testkit proves all
+opcode encodings and nonbase flags; lowercase and invalid-name checks
+also pass. Native images now measure DAS1 034101 and DAS2 031037 octal
+words; BSS remains 001655/001346. Total processes stay within 040000,
+but image ceilings 034000/031000 still FAIL by 000101/000037.
+No full native guest acceptance is claimed. See
+../pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1876-das: native scratch path BSS reduction (OPEN)
 
 With native source-built KCC, DAS1/DAS2 images now measure 034101 and
