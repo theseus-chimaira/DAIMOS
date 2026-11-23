@@ -1,3 +1,93 @@
+## 2026-11-23 v1900-k05: genuine dual-owner terminal teardown defect fixed in opt-in PURE MRES; original native finalizer and 48K physical compatibility PASS
+
+Original K05 v1895/v1896 physically produced the exact MM state
+that old `pdp6_pure_detach_v1609` could never terminally release:
+one authoritative PACKED RAW suffix plus one complete temporary
+PROCESS target for the same slot after failed FULL. The ORIGINAL
+PDP-6 terminal/VM/KCORE detach native test reproduced this real
+terminal gap with assertion `000000001001` octal before correction.
+The original leaf demanded exactly one slot-owned MM descriptor;
+the correct safe two-owner state remained quarantined forever.
+
+**Production fix** is strictly in opt-in removable PURE MRES file
+`system/kernel/proc/proc_pure_packed_detach_v1609.s`. With original
+PACKED/TRANSITION/u-area/backing/VM0 geometry preflight intact,
+it now PI-excludes one bounded exact-MM scan and two possible
+native releases. It accepts exactly one unpinned RAW PACKED source,
+optionally one unpinned COMPLETE PROCESS target, checks pins,
+owner/type/base/size/alignment, runtime `mm_extent_capacity` and
+MM_MAX_EXTENTS. Unknown, extra, pinned, duplicate or invalid
+process owners fail closed before freeing either. With an exact
+pair it releases temporary PROCESS first, then authoritative
+PACKED source; actual free refusals preserve the sole RAW suffix
+for original FINALIZE+PREVM retry. If native free committed but
+reported a false error, actual owner-table evidence governs retry
+or PI-excluded post-free success publication, never speculative
+second deletion. Existing original idle finalizer/backoff remains.
+
+Original source-linked PDP-6 native terminal, real VM destroy,
+KCORE `proc_swap_detach` and storage machine code PASS multiple
+exact owner, pin, malformed, foreign, refused free, lost-success
+reply, retry and idempotency cases. **Four independently executed
+unsafe terminal ASM mutants rejected** at original native octal
+exits `001103`, `001203`, `001305`, `001714`. A separate STRONGER
+native integration uses the ACTUAL original PDP-6 `mm_pin`,
+`mm_unpin`, `mm_free`, `mm_delete`, `mm_find_base`, `proc_finish_slot`,
+idle `proc_finish_service_v881`, FINALIZE+PREVM retry/backoff,
+VM destroy and terminal release: pinned two-owner refusal, real
+unpin, BOTH real native frees and final `VM_NONE`/zombie PASS.
+Historical terminal v1609/v1680/v1681 and original v1855 FULL
+native regressions PASS, with their executed unsafe mutants.
+
+The corrected source-built 48K PDP-6 PURE module is genuinely
+installed at unchanged original physical base `032417` octal.
+The unchanged original FULL `mm_free(PACKED)` at `035310` truly
+returns `-5` after a private persistent extra source pin is
+injected. Slot3 exact RAW `111200..120000` pin1 and complete
+PROCESS `120000..130000` pin0 remain, MM count18, original
+TRANSITION/VMbase0. The REAL runtime process table moved as the
+PURE MRES grew from `044712` to `045014` octal; actual slot3
+meta `045025=046133600401`, VM `045026=010000000000`.
+Resident parent slot1 independently emits two user HBs while
+original PCLK advances `021574` -> `021674` octal. ROOT unchanged.
+The original compiled/linked source-free/return addresses remain
+`035310`/`035311`, FULL service `033067`. The final read-only
+physical acceptance and **TEN separately executed unsafe owner,
+pin, VM, current-slot, PCLK and heartbeat transcript mutants
+PASS**; the prior v1893-v1899 seven-case physical audit matrix
+also re-PASSes with all 74 historical unsafe controls.
+
+Original normalized v1900 48K physical transcript SHA256:
+`91d9cacd28c8f6de77640340f30a431e6e74f23959eabc411fcdcc033aa45a55`.
+Unchanged fixed KCORE DXR SHA256:
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`.
+Corrected optional PURE MRES DXR SHA256:
+`09bcb71e4cbb172222f6389153c27293353fdaf6d3210eeef4630ed06de934f2`.
+PURE terminal text grows 90->156 36-bit words; total installed
+removable PURE MRES grows 2071->2137 words, **+66 optional**,
+**ZERO fixed KCORE/RAM/data/process-field growth**. Original
+compacted test root's `/SYSTEM/COMP` was regenerated on a late
+relink and correctly caused a test-only `!3` refusal; source-
+matched compressed root tapes were restored AFTER final link.
+The process-table witness was updated to the REAL relocated table
+instead of treating old physical addresses as authoritative.
+
+Physical evidence:
+`$TMPDIR/daimos-k05-terminal-physical-v1900-real-v3/`.
+Testkit `tests/validation/pure-k05-terminal-dual-owner-v1900/`.
+DAIMOS design `design/kcore-k05-terminal-dual-owner-v1900.md`.
+Permanent kernel docs:
+`pdp10-doc/KERNEL/PURE-K05-TERMINAL-DUAL-OWNER-V1900.MD`.
+
+**Scope:** Original FULL recovery and resident user progress pass
+with the rebuilt MRES; original native terminal/finalizer MM
+release is proved. A real full-system 48K *foreign terminal
+event* forcing the still-quarantined child into idle PREVM,
+holding the pin over multiple physical retries, releasing that
+pin, then observing real MM retirement plus parent WAIT/HALT
+is STILL UNPROVEN. Foreign-owner ambiguity/other PI6 orders
+also remain. K05-K09 OPEN; RAW PURE/mode3 OFF by default.
+
 ## 2026-11-23 v1899-k05: original native source mm_unpin -4, safe full target rollback, five child WAIT/HALT (scoped PASS)
 
 The original source-built v1855 fixed KCORE and opt-in PURE MRES

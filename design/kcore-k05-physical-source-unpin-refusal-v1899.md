@@ -126,3 +126,15 @@ lost failure reply, persistently pinned/foreign source, foreign
 owner, terminal cleanup of unresolved quarantined extents,
 additional PI6 interleavings, KA10/64K or K05-K09 release.
 RAW PURE/mode3 remain OFF. ZERO additional KCORE/PURE words.
+
+**Physical/native terminal follow-up v1900 (2026-11-23):** An
+original native terminal/VM guest showed that a retained exact
+PACKED RAW plus complete PROCESS target cannot be disposed by
+the old single-owner terminal: octal assertion `001001` before
+the correction. The corrected optional PURE MRES terminal now
+checks both exact owners under PI exclusion and releases the
+scratch target before RAW, using existing FINALIZE+PREVM retry
+on uncertainty. Real PDP-6 MM/idle-finalizer native and updated
+48K original source-free refusal/parent heartbeat compatibility
+PASS, but physical foreign EXIT of the quarantined owner remains
+OPEN. See `design/kcore-k05-terminal-dual-owner-v1900.md`.

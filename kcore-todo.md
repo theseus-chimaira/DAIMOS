@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1899 K05 physical native source unpin -4 and five-child retry; K01-K04 closed).
+Updated: 2026-11-23 (v1900 K05 exact terminal dual MM-owner production fix and physical compatibility; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -723,6 +723,35 @@ history is now reachable from main (v1809); mode3 remains disabled.
     permanently quarantined terminal cleanup, PI6 variations,
     KA10/64K and K05-K09 release. See
     `design/kcore-k05-physical-source-unpin-refusal-v1899.md`.
+  - v1900 scoped correction: original terminal RAW PURE MRES
+    incorrectly rejected the real post-FULL **two-owner** state
+    (PACKED source and complete temporary PROCESS target) even
+    after external pins cleared. An original native PDP-6
+    reproduction failed octal `001001` before the fix. The opt-in
+    PURE terminal ASM now validates exactly one unpinned RAW
+    source and optional exactly one unpinned complete aligned
+    PROCESS target, with PI-excluded bounded MM scan and actual
+    `mm_extent_capacity` check. Release target first, source last;
+    uncertain/free-refused outcomes retain the authoritative RAW
+    for original FINALIZE+PREVM retry; lost source-free success
+    can publish only after exact PI-excluded owner reconciliation.
+    Native original terminal/VM/KCORE detach and FOUR executed
+    unsafe ASM mutants PASS. A stronger actual original PDP-6
+    allocator `mm_pin`/`mm_unpin`/`mm_free` + idle FINALIZE+PREVM
+    retry and full zombie completion PASS. Old native v1609,
+    v1680, v1681 and v1855 suites PASS. Rebuilt full-system 48K
+    PDP-6 physical original FULL genuine source-free -5,
+    unchanged MM18 slot3 TRANSITION/VM0 and two separate resident
+    parent HBs with advancing PCLK PASS; runtime proc_table
+    correctly relocates `044712`->`045014` after PURE MRES growth.
+    TEN executed unsafe physical transcript mutants PASS; all
+    v1893-v1899 physical audits and 74 controls re-PASS. Optional
+    PURE terminal text +66 words, fixed KCORE **ZERO** growth,
+    no new resident process state or BSS. **Still OPEN**: full
+    48K physical foreign EXIT/kill/idle retry on a quarantined
+    two-owner child, persistent pin release, final actual cleanup
+    and WAIT/HALT; other foreign owner/PI6 cases. See
+    `design/kcore-k05-terminal-dual-owner-v1900.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
