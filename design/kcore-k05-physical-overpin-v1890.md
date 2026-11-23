@@ -91,9 +91,15 @@ Run variables and exact original source/probe prerequisites are in
 the testkit README. Preserved physical evidence is
 `$TMPDIR/daimos-k05-physical-overpin-v1890-real/`.
 
-**Still OPEN:** a real confirmed TRANSITION bit in a later full-system
-process-table snapshot, unrelated child completion while the owner
-remains quarantined, other persistent MM allocator/free refusals,
+**Follow-up v1891 scoped physical PASS:** a separate complete
+source-linked run now reads and verifies the original slot3
+TRANSITION bit, zero published VM base and unaffected nontransition
+peer process descriptors after the held error and PCLK. See
+`design/kcore-k05-process-quarantine-v1891.md` for that additional
+independent physical oracle and its negative controls.
+
+**Still OPEN:** unrelated child EXIT/WAIT while the owner remains
+quarantined, other persistent MM allocator/free refusals,
 physical owner uncertainty on terminal cleanup, and the complete
 K05-K09 release matrix. No kernel source, KCORE/MRES image, static
 data, process bit or production default changed in this experiment.

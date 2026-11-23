@@ -1,3 +1,39 @@
+## 2026-11-23 v1891-k05: real 48K process-table quarantine after FULL overpin (scoped PASS)
+
+The unchanged original 48K PDP-6 v1855 source image was run a second
+time with the accepted v1890 physical target-pin2 deposit, original
+FULL `MM_ERR_BUSY=-5` and later actual PCLK PI6. The complete v1890
+physical MM owner/source/root/clock oracle PASSes as a prerequisite.
+The real permanent-KCORE `proc_table` pointer at `024615` is physically
+read as `044712` octal, and the actual three-word process descriptors
+are examined after the later clock. Original slot3 `044723` has its
+TRANSITION bit **set**, VM base zero and scheduler state SRUN;
+slots4..6 remain independent SRUN/nontransition/VM-base-zero peers;
+parent slot1 is sleeping on WAIT. This confirms the quarantined
+process *flag* as well as the two pinned MM reservations, without
+fabricating READY_ONCE or a runnable APR.
+
+An independently executed physical oracle rejects four forged traces:
+missing slot3 TRANSITION, false slot3 runnable VM base, invented
+TRANSITION on healthy slot4, and a false process-table pointer.
+The second physical simulator finishes cleanly at its designated
+process-table breakpoint, NOT an all-child EXIT/WAIT/HALT. Original
+normalized source-linked v1891 physical trace SHA256:
+`dfdefc29dd3f4665223192754a97693e4425a001b63e7f46459878cbc607e76b`.
+The fixed KCORE, optional PURE MRES, 48K build and source media are
+unchanged from v1855/v1890; no production source or memory increase.
+See `design/kcore-k05-process-quarantine-v1891.md`, testkit
+`tests/validation/pure-k05-physical-overpin-v1890/*-v1891*`, and
+`pdp10-doc/KERNEL/PURE-K05-PROCESS-QUARANTINE-V1891.MD`.
+
+Distinct user-level bystander progress is NOT proven. The actual
+source-matched 48K pinned-owner MM layout has no aligned free
+`010000`-word APR for other PACKED child restorations; a disposable
+new-`w` diagnostic was stopped without acceptance. K05-K09 remain
+OPEN for physically observable independent user progress, other
+persistent allocator/unpin/free uncertainty and terminal cleanup.
+RAW PURE/mode3 stay OFF by default.
+
 ## 2026-11-23 v1890-k05: real physical 48K FULL target pin2 refusal (scoped PASS)
 
 The unchanged source-built v1855 48K PDP-6 five-child PURE-on image
