@@ -1,3 +1,24 @@
+## 2026-11-23 v1876-das: native scratch path BSS reduction (OPEN)
+
+With native source-built KCC, DAS1/DAS2 images now measure 034101 and
+031117 octal words, and BSS 001655/001346. Native wordfile descriptors
+retain only an immutable scratch suffix, while the context uses the
+existing output-path argument as the common basename. File paths are
+constructed in the already resident temporary buffer during scratch
+open and cleanup. The same temporary buffer now also holds the include
+directory once the source statement has been parsed, with no change to
+the eight-level native include bound. Both native `.DIRECTIVE` error
+branches were corrected to use numeric diagnostic codes.
+
+The full process sizes (including 02000-word reserved stacks) are now
+037756 DAS1 and 034465 DAS2, passing the unchanged 040000 budget.
+The separate mandatory image ceilings 034000/031000 still FAIL by
+000101/000117, and full physical guest acceptance remains OPEN.
+Host fast/full and independent directive/OWGBP tests pass; a new native
+UUO-mock test exercises scratch suffixes, cleanup and path boundaries
+in both native phase configurations. See
+../pdp10-doc/TOOLCHAIN/DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD.
+
 ## 2026-11-23 v1855-k05: exact one-pin FULL owner commit, native and 48K PASS
 
 An original source-linked native PDP-6 regression reproduced a real
