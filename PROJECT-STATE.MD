@@ -30,6 +30,35 @@ or libc source changed. Details:
 `pdp10-doc/TOOLCHAIN/GCC-KCC-STRUCT-RETURN-BLT-20261123-V1836.MD`
 and `pdp10-doc/TOOLCHAIN/GCC-KCC-DAIMOS-VARARGS-LIBC-20261123-V1838.MD`.
 
+## 2026-11-23 v1839: K05 FULL source-free lost-reply ownership (scoped PASS)
+
+The original source-linked PDP-6 v1391 FULL restore would destroy its
+only complete destination when PACKED `mm_free` physically succeeded
+but its return was changed to `MM_ERR_BUSY`. The new native testkit
+v1839 reproduces this at octal 03003 on the old source. The correction
+inspects exact unpinned PROCESS/PACKED descriptors while PI is still
+excluded: sole complete destination commits RESIDENT; a genuine
+unchanged source allows destination rollback; ambiguous or foreign
+ownership retains the destination and quarantines TRANSITION.
+No new owner registry, process field or fixed KCORE code is introduced.
+
+Native source-linked PDP-6 positive tests for lost free, genuine free
+refusal, foreign owner, suffix/backing, pins and PI balance PASS. The
+unsafe old rollback and missing foreign-owner guard mutants fail at
+octal 03003 and 05002. Full current-source v1807/v1808/v1839 native
+PURE/K04 integration suite PASS. The standalone optional FULL KCC
+assembler listing gained 109 instruction-shaped lines; linked MRES
+size and physical RAM peak are not claimed here. K05 remains OPEN for
+physical fault/PI6 and source/allocator loss; K06-K09 are OPEN,
+K01-K04 CLOSED, mode3 default OFF. See
+`design/kcore-k05-source-free-reply-v1839.md`.
+
+Fresh isolated KCC kernel `kcore` assembly builds PASS with PURE OFF
+and with PURE RAW enabled (`DAIMOS_SWAPLESS_ONLY_V1668=1`, bitmap OFF).
+Neither build is a whole-machine physical acceptance claim.
+The separate v1667 mode3 source-linked compatibility baseline and
+unsafe retry-owner mutant also PASS; this does not enable mode3.
+
 ## 2026-11-23 v1835-gcc: KCC indirect callback AC16 clobber fixed
 
 The failing v1829 GCC-to-KCC `qsort` guest was traced to KCC

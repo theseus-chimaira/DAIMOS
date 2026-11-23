@@ -16,6 +16,10 @@
  * PACKED source and publishing the runnable APR. A failed final unpin
  * cannot leave a RESIDENT/TRANSITION process with its source already
  * destroyed. Keep the short fallible commit window PI-atomic.
+ * v1839: a failed source-free return can follow successful physical
+ * deletion. Verify the sole surviving PROCESS owner before deciding
+ * whether to publish or roll back the destination; quarantine ambiguous
+ * MM owner sets without releasing potentially unique process storage.
  *
  * Linked only by the opt-in PURE MRES. The default KCORE is unchanged.
  */
@@ -77,6 +81,61 @@ pram_extent(unsigned int slot, unsigned int type, kword_t words,
                 return MM_ERR_INVAL;
         *basep = base;
         return MM_OK;
+}
+
+/* A failed mm_free reply does not prove that the PACKED owner survived.
+ * Called under PI exclusion after both original transaction pins have
+ * been released. Only these two exact, unpinned owner sets are known:
+ *   1: source is gone; the complete destination is the sole VM owner.
+ *   0: source and destination both survive; destination may roll back.
+ *  -1: anything else is uncertain and must retain both reservations.
+ * Do not infer a free from a missing source alone: the full destination
+ * must also be verified, and duplicate/foreign process extents fail closed.
+ */
+static int
+pram_source_free_reply_v1839(unsigned int slot, kword_t source,
+    kword_t raw, kword_t target, kword_t words)
+{
+        unsigned int seen = 0U;
+        int i;
+
+        for (i = 0; i < mm_extent_count; ++i) {
+                const struct mm_extent *e = &mm_extents[i];
+                unsigned int type = MM_EXTENT_TYPE(e);
+                unsigned int bit;
+
+                /* A source or target base with an unexpected owner/type
+                 * is not evidence that the original source was freed.
+                 */
+                if ((MM_EXTENT_BASE(e) == source ||
+                     MM_EXTENT_BASE(e) == target) &&
+                    (MM_EXTENT_OWNER(e) != slot ||
+                     (type != MM_TYPE_PROCESS &&
+                      type != MM_TYPE_PACKED_PROCESS)))
+                        return -1;
+                if (MM_EXTENT_OWNER(e) != slot ||
+                    (type != MM_TYPE_PROCESS &&
+                     type != MM_TYPE_PACKED_PROCESS))
+                        continue;
+                if (MM_EXTENT_PINNED(e))
+                        return -1;
+                if (type == MM_TYPE_PROCESS &&
+                    MM_EXTENT_BASE(e) == target &&
+                    MM_EXTENT_WORDS(e) == words)
+                        bit = 2U;
+                else if (type == MM_TYPE_PACKED_PROCESS &&
+                    MM_EXTENT_BASE(e) == source &&
+                    MM_EXTENT_WORDS(e) == raw)
+                        bit = 1U;
+                else
+                        return -1;
+                if (seen & bit)
+                        return -1;
+                seen |= bit;
+        }
+        if (seen == 2U)
+                return 1;
+        return seen == 3U ? 0 : -1;
 }
 
 /*
@@ -195,8 +254,25 @@ proc_pure_ram_restore_v1391(unsigned int slot,
         source_pinned = 0;
         rc = mm_free(source, MM_TYPE_PACKED_PROCESS, slot);
         if (rc != MM_OK) {
-                mach_pi_restore(pi_state);
-                goto fail_target;
+                int reply = pram_source_free_reply_v1839(slot, source,
+                    raw, target, words);
+
+                if (reply == 1) {
+                        /* The source was freed despite its failed reply.
+                         * Its exact sole successor contains the original
+                         * writable suffix and the loaded immutable text.
+                         */
+                        rc = MM_OK;
+                } else if (reply == 0) {
+                        mach_pi_restore(pi_state);
+                        goto fail_target;
+                } else {
+                        /* An uncertain physical owner must not be freed
+                         * by rollback, even if it looks like scratch.
+                         */
+                        mach_pi_restore(pi_state);
+                        return MM_ERR_BUSY;
+                }
         }
 
         VM_PDP6_SET_BASE(p, target);

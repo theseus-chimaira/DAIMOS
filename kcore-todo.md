@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-22 (v1809 history consolidation; K01-K04 closed).
+Updated: 2026-11-23 (v1839 K05 source-free return; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -437,6 +437,17 @@ history is now reachable from main (v1809); mode3 remains disabled.
     genuine physical interrupted/faulted restore with exact
     owner, pin and persistent failure witnesses. See
     `design/kcore-k05-restore-reply-v1808.md`.
+  - v1839 PASS: original source-linked PDP-6 FULL restore now
+    distinguishes a successfully freed PACKED suffix with a lost
+    `mm_free` reply from a genuine refusal and a foreign-owner
+    ambiguity. An exact sole unpinned PROCESS APR completes restore;
+    exact retained source rolls back only the temporary destination;
+    uncertain owners stay TRANSITION-held. Native v1839 and its two
+    executed unsafe mutants pass, alongside the v1807/v1808 combined
+    native integration matrix. This adds code to optional PURE MRES,
+    not fixed KCORE. Full physical PI6/fault, source/allocator and
+    persistent owner acceptance remain OPEN. See
+    `design/kcore-k05-source-free-reply-v1839.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
