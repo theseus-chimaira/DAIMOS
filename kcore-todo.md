@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1900 K05 exact terminal dual MM-owner production fix and physical compatibility; K01-K04 closed).
+Updated: 2026-11-23 (v1901 K05 physically verified foreign-TERM executive-continuation safety; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -752,6 +752,30 @@ history is now reachable from main (v1809); mode3 remains disabled.
     two-owner child, persistent pin release, final actual cleanup
     and WAIT/HALT; other foreign owner/PI6 cases. See
     `design/kcore-k05-terminal-dual-owner-v1900.md`.
+  - v1901 original source-built 48K PDP-6 physical user
+    `SYS_PROCCTL_EVENT_PID` / `SYS_EVENT_TERM` on EXACT slot3
+    two-owner FULL failure: **safe refusal PASS**. Parent INIT
+    uses a test-only user-APR gate `135265` installed only AFTER
+    real original MM source-free -5/first postfault HB, preventing
+    premature TERM. Genuine user syscall returns refusal `TR`;
+    child still has source PACKED RAW pin1, target PROCESS pin0,
+    MM18, TRANSITION+VMbase0. Original saved context PC
+    `340000016664` has USER-return bit CLEAR, so freeing its
+    private executive stack would be unsafe. Original FDCTL,
+    FINALIZE=0 and all MM owner/pin identities remain unchanged,
+    independent parent HB/real PCLK `022015` -> `022115` PASS.
+    NINE new + TEN historical independently corrupted physical
+    controls correctly rejected. Zero production KCORE/PURE/
+    data/RAM/default change. Actual missing lifecycle stage:
+    safely reconcile exact two-owner failed FULL AFTER release
+    of the held pin, preserving saved executive continuation;
+    current `ppure_retryable_v1612` insists on sole MM owner and
+    leaves dual-owner TRANSITION frozen. Do NOT bypass the
+    original foreign-event guard or forge FINALIZE. Add a bounded
+    slot-0 exact-owner target rollback/recovery path, then test
+    real owner continuation, fatal delivery, terminal MM release
+    and parent WAIT/HALT. See
+    `design/kcore-k05-transition-term-v1901.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

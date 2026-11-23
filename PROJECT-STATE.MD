@@ -1,3 +1,62 @@
+## 2026-11-23 v1901-k05: original 48K physical user TERM(3) correctly refuses quarantined executive continuation (scoped PASS)
+
+The real source-built five-child ROOT/secondary compressed DTC3,
+RUN/BRK/PIPE parent-HB guest reuses EXACT v1900 production
+KCORE/PURE binaries (SHA256 KCORE
+`33bf700218a73fefcb36ebb1f1d835c1817f3a291a642898ccb3cbd5d9039d8b`,
+PURE `09bcb71e4cbb172222f6389153c27293353fdaf6d3210eeef4630ed06de934f2`).
+TESTKIT-ONLY user INIT adds one original
+`SYS_PROCCTL_EVENT_PID / SYS_EVENT_TERM` directed at slot3.
+Initial prototype incorrectly sent TERM before the original FULL
+fault (`HBTA`); it is expressly REJECTED. Final test-only
+`volatile kword_t v1901_term_gate` located by actual user DXR
+map at `005265`, in the original parent physical APR `130000`,
+is deposited **only at user address `135265`** after the first
+postfault live parent HB. It is observed zero before deposit.
+No original KCORE/PROC/MM word, syscall return, native PC or
+source pin is forged to deliver the event.
+
+Actual original PACKED source `mm_free` at `035310`/return
+`035311` genuinely refuses -5. Slot3 retains both typed extents:
+source RAW `111200..120000` pin1 and full provisional PROCESS
+`120000..130000` pin0, exact original MM count18. Actual
+user parent calls SYS_PROCCTL and emits **`TR`** (TERM refused)
+between two authentic postfault `HB` outputs. Slot3
+TRANSITION meta at relocated process table `045025=046133600401`,
+VMbase0 at `045026=010000000000`. Crucially, original saved
+private u-area `046133` has saved context PC
+`046153=340000016664`, with **USER-return bit CLEAR**;
+this process retains an executable private-kernel continuation.
+Original FDCTL `046157=000000004010`, FINALIZE `046222=0`,
+all MM reservations and ROOT remain unchanged across TERM.
+The actual resident parent still runs in slot1 with original
+PCLK `022015` -> `022115`. Physical original TERM refusal
+protects the private stack; bypassing the event TRANSITION
+guard or forcing a finalizer is unsafe.
+
+Read-only full original v1895/v1900/v1901 owner/ROOT/slot/clock
+audit PASS. NINE new executed unsafe physical TERM/gate/context/
+MM transcript mutations and TEN historical unsafe physical
+refusal/pin/APR/heartbeat controls are ALL correctly rejected.
+Accepted normalized physical v1901 trace SHA256:
+`ce5460ee0b43593eeb158b60f11df7dd7336918e9ad0977d9afc7677ae8bc251`.
+New fixture and audit:
+`daimos-testkit/tests/validation/pure-k05-transition-term-v1901/`.
+Accepted physical trace:
+`$TMPDIR/daimos-k05-transition-term-v1901-physical-gated/`.
+Design: `design/kcore-k05-transition-term-v1901.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-TRANSITION-TERM-V1901.MD`.
+
+**K05 remains OPEN.** The actual unresolved next step is
+eventual bounded dual-MM-owner reconciliation AFTER source pin
+release while preserving the saved executive continuation.
+Original `ppure_retryable_v1612` requires a sole owner and
+cannot unlock an exact two-owner failure. Safely roll back the
+provisional target from slot0, prove sole PACKED source,
+recover the original child continuation and deliver deferred
+TERM/EXIT without freeing a live private stack. No production
+code/RAM/default change in v1901; K06-K09 separately OPEN.
+
 ## 2026-11-23 v1900-k05: genuine dual-owner terminal teardown defect fixed in opt-in PURE MRES; original native finalizer and 48K physical compatibility PASS
 
 Original K05 v1895/v1896 physically produced the exact MM state
