@@ -1,3 +1,36 @@
+## 2026-11-23 v1854-das: six successive native DAS size reductions (OPEN)
+
+DAS production source changes v1849-v1854 are committed and pushed.
+The phase2 ordinary instruction path now shares the instruction/data
+encoder (v1849) and SIXBIT/ASCII/ASCIZ use one word packer (v1850).
+The v1851 OWGBP selector table became arithmetic for all five byte
+widths, with 21 valid-selector and 8 invalid-selector oracle checks
+passing against both revised and original DAS.
+SET snapshot names format directly into bounded caller buffers (v1852);
+the parenthesized BYTE-width parser is shared (v1853); the physical
+source-line reader combines EOF/newline cleanup and preserves the
+capacity/overlong recovery rules (v1854).
+
+Current measured native images (octal words): DAS1 034470 vs
+unchanged 034000 ceiling (remaining excess 000470); DAS2 031704
+vs unchanged 031000 ceiling (remaining excess 000704).
+Compared with the original 035216/032730 baseline, the cumulative
+savings are 000526 and 001024 respectively, with BSS unchanged
+(002103 and 001573). The input reader shrank 135 -> 105 instructions,
+passing its 136-instruction limit but not yet its 104-instruction
+optimization target. Fast, full DXR/native selftest, DOBJ/DARC/DLINK,
+and OWGBP selector tests PASS. The strict native phase-image gate
+still FAILS: both phases require further true code-size reductions.
+No native guest runtime PASS is claimed, and no limits were relaxed.
+
+Two negative size experiments were discarded after measurement:
+re-tokenizing via another instruction helper grew phase2 by 000016;
+an iterative decimal formatter grew both phases by 000103.
+All accepted changes reduce text without extra BSS or new features.
+See pdp10-doc/TOOLCHAIN/
+DAS-NATIVE-IMAGE-REDUCTION-20261123-V1846.MD and
+daimos-testkit/tests/validation/daimos-das-owgbp-compact-v1851.sh.
+
 ## 2026-11-23 v1848-k05: physical PDP-6 PCLK PI6 INSIDE pinned FULL (scoped PASS)
 
 Against the exact source-linked v1845/v1847 48K PDP-6 original
