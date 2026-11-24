@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1914 genuine PDP-6 PCLK 17-bit retry-clock wrap physical PASS; K01-K04 closed).
+Updated: 2026-11-24 (v1915 genuine requester-only BRK capacity OOM under foreign FULL physical PASS; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1035,6 +1035,34 @@ history is now reachable from main (v1809); mode3 remains disabled.
     controlled near-wrap leap from natural 36-minute uptime;
     K05 still OPEN for other timing/MM/PI6 cases and wider
     release. See `design/kcore-k05-clock-wrap-v1914.md`.
+  - v1915 scoped original 48K PDP-6 capacity OOM physical
+    PASS: newly source-built test-only USER APR reuses
+    existing gate and invokes real `BRK(0130000)` AFTER
+    foreign target owner2 and rejected TERM(3). Original
+    `mm_arena_fits_v1260=002154` receives exact AC1/AC2,
+    rejects physically impossible aligned run (single MM
+    arena `044633..0140000`, maximum aligned `072000`),
+    and real requester-only fatal OOM `013713` enters AC1=1.
+    Original parent slot1 EXIT releases ONLY its two own
+    extents MM18 -> MM16; distinct children 4,5,6 native
+    EXIT release exact six ordinary extents MM16 -> MM10.
+    Last-live foreign child3 remains TRANSITION/VMbase0,
+    original RAW, foreign PROCESS target, CTX/FDCTL,
+    u[067] escrow/ROOT unchanged during three genuine
+    capped slot0 retries and a real idle PI6, no HALT.
+    Four independent unsafe native BRK/owner/context/EXIT
+    physical mutants reject. v1915/v2-v3 snapshot bugs
+    discarded: read complete physical `proc_table` at
+    `045700`, not its KCORE pointer `024635`; v1915/v4
+    explicitly verifies all formerly live nonorphan user
+    slots FREE, retaining the last orphan. Source-built USER and TSFS
+    differ; fixed production KCORE/PURE, RAM, image and
+    defaults unchanged. This is EARLY IMPOSSIBLE BRK
+    capacity refusal only, NOT a proof of fragmentation,
+    descriptor exhaustion or all allocator failures.
+    K05 remains OPEN for remaining allocator/MM/PI6 and
+    broad platform tests. See
+    `design/kcore-k05-orphan-oom-v1915.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

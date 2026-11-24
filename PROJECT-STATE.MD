@@ -1,3 +1,58 @@
+## 2026-11-24 v1915-k05: genuine user BRK capacity OOM under foreign FULL, last orphan held (physical PASS)
+
+Source-built original 48K PDP-6 KCORE and optional PURE
+remain byte-identical to the accepted v1906-v1914 binaries.
+The testkit-only v1907-derived USER executable reuses its
+existing test gate: after original PACKED-source mm_free=-5,
+foreign PROCESS owner2 and genuine refused TERM(3), the
+resident parent makes real user `BRK(0130000)` and emits `P`.
+Original `mm_arena_fits_v1260=002154` receives AC1=0130000,
+AC2=002000 (octal), genuinely impossible in the sole original
+physical arena `044633..0140000`, aligned maximum `072000`.
+Original `proc_fatal_close_current_v879=013713` with AC1=1
+and slot1 executes requester-only fatal OOM, then original
+`proc_exit_current=013655` and native slot0 finalizer.
+
+MM18 stays unchanged during capacity refusal and the OOM
+handler entry. Only the parent's KERNEL_DYNAMIC uarea
+`045761..046371` owner01001 and PROCESS `130000..140000`
+owner1 are freed at actual parent teardown: MM18 -> MM16.
+Original healthy slots 4,5,6 EXIT through DISTINCT original
+native syscalls/idle completions, freeing EXACTLY their six
+original MM extents: MM16 -> MM10. Only child3 stays LIVE,
+parent0, TRANSITION/VMbase0, with RAW `111200..120000`
+owner3, still-foreign target `120000..130000` owner2,
+uarea[067] `040000120000`, original private CTX_PC/FDCTL,
+and ROOT all unchanged. Three real native slot0 retries
+at PCLK `024075`, `025075`, `026075` octal preserve the
+`01000`-tick cap and pending bit; real PCLK PI6 interrupted
+idle (saved word `340000017565`). No native guest HALT.
+
+FOUR unsafe physical native request/owner/escrow/orphan
+mutants all reject. Earlier experimental v1915/v2 and v3
+snapshots correctly rejected because slot6 word `045722`
+was missing (v2 observed only through slot5; v3 read from
+linked `proc_table` POINTER `024635`, not its physical
+table base). Accepted v1915/v4 verifies original dynamic
+pointer==`045700` and all 17 complete read-only stage
+tables `045700..045726`. These were controller errors,
+not production defects. Test-only user binary/TSFS differ;
+no production source, KCORE/PURE binary, IMAGE/BSS, RAM
+or default policy changed.
+
+Normalized physical SHA256:
+`fc8ac14b4c1a31507d974982fb624a52abad72f2d15250c6683a609d9ea53d58`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-orphan-oom-v1915/`.
+Design: `design/kcore-k05-orphan-oom-v1915.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-ORPHAN-OOM-V1915.MD`.
+Evidence: `$TMPDIR/daimos-k05-orphan-oom-v1915-physical-v4/`.
+
+K05 OPEN: this proves only an **impossible BRK arena-size**
+refusal before destructive general allocator reclamation;
+fragmentation, descriptor failures, additional MM/PI6 cases
+and platform release are not proven. K06-K09 OPEN; RAW
+PURE and mode3 remain default OFF.
+
 ## 2026-11-24 v1914-k05: real 17-bit PI6 clock wrap under last foreign orphan (physical PASS)
 
 Source-linked original 48K PDP-6 KCORE/PURE and original v1910
