@@ -1,3 +1,52 @@
+## 2026-11-24 v1903-k05: original 48K second FULL commit and typed child EXIT/WAIT/HALT (scoped PASS)
+
+The v1902 source-built genuine PACKED free -5 left a live private
+executive continuation with both RAW source and temporary PROCESS
+target and TRANSITION held. The missing final recovery gate now
+PASSES on the original 48K PDP-6 without any production source
+changes. Original idle slot0 reaper executes native target free
+at `033263`/return `033264` =0, dropping actual MM extent count
+18->17; it clears TRANSITION at `033313`, preserving saved
+CTX_PC/FDCTL, original PACKED owner, FILE state and ROOT.
+The scheduler then retries actual FULL, allocating its new target
+(MM17->18). Native second source `mm_free(PACKED)` at original
+return PC `036031` is MM_OK=0, leaving one complete unpinned
+PROCESS extent `120000..130000` (MM18->17). Original FULL service
+return `033574` has slot3 RESIDENT, VMbase 120000, TRANSITION clear.
+
+Only AFTER real FULL publication does the physical controller
+change one USER-memory heartbeat gate at `135335`. The parent's
+original five typed WAIT checks pass; five child EXIT markers `w`,
+parent `Z`, real HALT at PDP-6 PC0 PASS. Original MM count drops
+to 8 at Z, 6 at HALT; no slot3 MM owner remains, ROOT unchanged.
+Ten independent unsafe physical transcript mutants all reject.
+
+The installed GCC changed between v1902 and v1903, so unchanged
+DAIMOS sources now build a +2-word KCORE IMAGE `024167` octal
+(BSS `000415` unchanged), PURE IMAGE `004615`. Installed PURE
+base is now `032453`, runtime process table `045534`, slot3
+u-area `046653`. All addresses are physically checked; no
+assembler/compiler correctness bug is established by this delta.
+The first candidate trace was rejected when SIMH bare `nobreak`
+proved NOT to clear old breakpoints. v1903 uses explicit
+`nobreak all` for every stage; a later incorrect-address trace
+was stopped, not promoted. The accepted final physical trace is
+SHA256 `03a3763c12f1da7a8dc6297e8857639d46f64ed63fe5517ec7f2dc16552e3796`.
+Current KCORE SHA256
+`a201a7fdcf481b436b06694e5dd55c9367036ebd9f64c630486f854b1a4f89be`,
+PURE SHA256
+`55be5113d4d15fe5c4a44409dca22afd463c75f05f661b3f8f71451a057c577f`.
+Tests: `daimos-testkit/tests/validation/pure-k05-full-commit-v1903/`.
+Design: `design/kcore-k05-full-commit-v1903.md`.
+Permanent doc: `pdp10-doc/KERNEL/PURE-K05-FULL-COMMIT-V1903.MD`.
+Accepted private evidence:
+`$TMPDIR/daimos-k05-full-commit-v1903-physical-v3/`.
+
+**K05 remains OPEN** for permanent source pins, foreign/uncertain
+MM ownership, terminal failed-FULL cleanup and physical PI6
+interleavings. K06-K09 remain separately open; RAW PURE/mode3
+remain default OFF.
+
 ## 2026-11-23 v1902-k05: native PDP-6 dual-owner FULL rollback and 48K autonomous idle recovery (scoped PASS)
 
 The previous original FULL source `mm_free(PACKED)` -5 could

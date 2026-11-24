@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-23 (v1902 K05 physically verified autonomous dual-owner rollback and FULL retry; K01-K04 closed).
+Updated: 2026-11-24 (v1903 K05 48K original native second FULL commit and typed EXIT/WAIT/HALT; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -806,6 +806,30 @@ history is now reachable from main (v1809); mode3 remains disabled.
     continuation, original child EXIT and typed parent WAIT/Z;
     then permanent foreign MM ownership and terminal teardown.
     See `design/kcore-k05-dual-owner-reconcile-v1902.md`.
+  - v1903 original source-built 48K PDP-6 physical PASS closes the
+    v1902 missing end-to-end retry gate. The first PACKED source
+    native free genuinely returns -5 while pinned, original slot-0
+    native PROCESS target free returns 0 after test-pin release,
+    and the same private executive context survives TRANSITION
+    clearance. A new FULL allocates a second target and the actual
+    second PACKED source free returns **0** at original native
+    return PC `036031`. Physical MM counts 18 -> 17 -> 18 -> 17;
+    slot3 publishes RESIDENT/VMbase `120000` with TRANSITION clear.
+    Only then a test-only USER-APR gate lets the unchanged five-child
+    parent enter its original typed WAIT. All five child EXIT/WAIT
+    values, parent Z and real PC-0 HALT PASS; final MM8 at Z,
+    MM6 at HALT, zero residual slot3 owner, original ROOT preserved.
+    Ten independent unsafe physical transcript mutations reject.
+    Testkit initially exposed and corrected a SIMH `nobreak`-without-
+    `all` stale-breakpoint error; final original trace is separately
+    source-linked. Current installed GCC shifts linked KCORE IMAGE
+    `024165` -> `024167` octal without DAIMOS source edits; optional
+    PURE IMAGE stays `004615`; fixed BSS unchanged. This is NOT an
+    accepted production RAM optimization nor a compiler bug claim.
+    The source remains default OFF. Remaining K05: permanent pins,
+    foreign/ambiguous owners, uncertain cleanup and real PI6 timing;
+    K06-K09 separately OPEN. See
+    `design/kcore-k05-full-commit-v1903.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
