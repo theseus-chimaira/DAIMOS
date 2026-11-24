@@ -1,3 +1,50 @@
+## 2026-11-24 v1904-k05: original PDP-6 temporarily pinned PROCESS target and idle retry to typed WAIT (scoped PASS)
+
+The exact v1903 original source-built 48K KCORE/PURE binaries are
+unchanged. After the original native PACKED source `mm_free` -5,
+the v1904 private physical controller releases the external source
+pin and adds one new temporary pin to the actual complete slot3
+PROCESS target MM metadata `024725`. This is not the independent
+parent metadata at `024727` (two exploratory incorrect-target runs
+rejected). No kernel state, u-area, return, FINALIZE, or other
+foreign MM descriptor is test-deposited.
+
+Three actual resident parent HBs observe identical MM18 RAW source
+`111200..120000` pin0 and full PROCESS target `120000..130000`
+pin1, retained TRANSITION/VMbase0, exact saved CTX_PC/FDCTL and
+unchanged ROOT. Real PCLK advances `025256`, `025356`, `025456`;
+the original shared post-VM retry word `024532` remains pending
+with bounded interval `0100` -> `0200` -> `0200` octal. No native
+PROCESS target-free runs while pinned. After ONLY that extra
+target pin is released, the actual original slot0 native target
+`mm_free` returns MM_OK=0 after `000060` octal ticks, removes
+the provisional extent and clears TRANSITION after exact RAW
+verification. Original next FULL commits RESIDENT VMbase `120000`;
+all original five typed EXIT/WAIT, parent Z, real HALT PC0 PASS.
+MM count 8 at Z, 6 at HALT, no slot3 MM leak.
+
+The strict v1903 full-lifecycle physical audit re-PASSes, and all
+12 separately executed unsafe v1904 physical transcript mutants
+reject, including the old wrong-parent MM descriptor error.
+Final physical SHA256:
+`f912b6cae1c470a876a404cd2e49af708b727f9bb423fbc2eaefe1d0777f16de`.
+Same v1903 KCORE SHA256:
+`a201a7fdcf481b436b06694e5dd55c9367036ebd9f64c630486f854b1a4f89be`;
+PURE:
+`55be5113d4d15fe5c4a44409dca22afd463c75f05f661b3f8f71451a057c577f`.
+No production source, image/BSS/owner-table layout or default change.
+Testkit: `daimos-testkit/tests/validation/pure-k05-target-pin-idle-v1904/`.
+Design: `design/kcore-k05-target-pin-idle-v1904.md`.
+Permanent doc: `pdp10-doc/KERNEL/PURE-K05-TARGET-PIN-IDLE-V1904.MD`.
+Accepted private physical evidence:
+`$TMPDIR/daimos-k05-target-pin-v1904-physical-v4/`.
+
+**K05 remains OPEN**: a prolonged but eventually released target
+pin is not a permanently inaccessible MM owner, foreign or
+ambiguous ownership, uncertain terminal cleanup or a complete
+set of PI6 interleavings. K06-K09 separately OPEN; RAW PURE
+and mode3 stay default OFF.
+
 ## 2026-11-24 v1903-k05: original 48K second FULL commit and typed child EXIT/WAIT/HALT (scoped PASS)
 
 The v1902 source-built genuine PACKED free -5 left a live private

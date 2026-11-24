@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1903 K05 48K original native second FULL commit and typed EXIT/WAIT/HALT; K01-K04 closed).
+Updated: 2026-11-24 (v1904 K05 48K original target-pin retry safety and subsequent FULL/WAIT/HALT; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -830,6 +830,30 @@ history is now reachable from main (v1809); mode3 remains disabled.
     foreign/ambiguous owners, uncertain cleanup and real PI6 timing;
     K06-K09 separately OPEN. See
     `design/kcore-k05-full-commit-v1903.md`.
+  - v1904 source-matched original 48K PDP-6 physically demonstrates
+    exact target-pin refusal under the installed v1902 idle recovery.
+    Initial native PACKED source free -5, then one test-only pin on
+    the complete slot3 PROCESS target (actual MM meta `024725`,
+    NOT the unrelated parent at `024727`). Three genuine resident
+    parent HBs preserve MM18, authoritative RAW pin0 and PROCESS
+    target pin1, TRANSITION, VMbase0, saved executive CTX_PC/FDCTL
+    and original ROOT. PCLK advances, the existing KCORE retry word
+    stays armed, and its delay grows `0100` -> `0200` -> `0200`
+    octal without any native target-free during the pinned stages.
+    After the external pin release, original native target free
+    returns MM_OK=0 after `000060` PCLK ticks; old RAW survives,
+    TRANSITION safely clears, next FULL commits RESIDENT, and all
+    original five typed child EXIT/WAIT, parent Z/HALT PASS.
+    12 independently executed unsafe physical transcript controls
+    reject. v1903 source-built fixed and optional binaries remain
+    byte-identical, no added resident RAM. Preliminary controllers
+    accidentally pinned parent or assumed an unexecuted folded
+    return PC; neither was accepted, and the actual owner/clock
+    diagnostic was used to correct the test rather than discard it.
+    This does **not** prove permanently held or foreign MM owner
+    recovery; ambiguous cleanup, terminal refusal and other PI6
+    combinations stay OPEN. See
+    `design/kcore-k05-target-pin-idle-v1904.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
