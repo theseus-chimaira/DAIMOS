@@ -153,8 +153,13 @@
  * Successful restoration and expiration retire the swap retry tag. */
 /* v1906: ONLY during TRANSITION-held RAW PURE FULL rollback, the RH
  * contains the original provisional PROCESS target base instead of
- * a swap retry clock epoch. The source-built PURE service saves this
- * already-allocated target base after arming the tag; the slot-0
+ * a swap retry clock epoch. v1917 FULL saves both original physical
+ * identities before target pin/load: the 0200-aligned RAW base divided
+ * by 0200 occupies eleven unused LH bits (below lifecycle flags).
+ * A zero target denotes no allocated scratch (or proven retirement).
+ * An invalid nonzero target remains quarantined.
+ * The PURE service preserves this word when arming deferred recovery.
+ * The slot-0
  * reaper requires exact target absence before clearing TRANSITION.
  * The scheduler never dispatches a TRANSITION-held owner. No new
  * per-process or permanent resident storage is introduced. */
@@ -162,6 +167,10 @@
 #define PROC_FINALIZE_PREVM           ((kword_t)1UL << 33U)
 #define PROC_FINISH_RETRY_ARMED_V1763  ((kword_t)1UL << 32U)
 #define PROC_SWAP_RETRY_TAG_V1507     ((kword_t)1UL << 32U)
+#define PROC_PURE_FULL_ESCROW_V1917(source, target) \
+        (PROC_SWAP_RETRY_TAG_V1507 | (((source) >> 7U) << 18U) | (target))
+#define PROC_PURE_FULL_SOURCE_V1917(word) \
+        ((((word) >> 18U) & 03777UL) << 7U)
 #define PROC_SWAP_RETRY_TICKS_V1507   0100U
 #define PROC_TIMER_TAG_RH            0400000UL
 #define PROC_TIMER_CLOCK_MASK         0377777UL

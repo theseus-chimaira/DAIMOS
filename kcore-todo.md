@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1916 K05 implementation closure; K01-K05 closed).
+Updated: 2026-11-24 (v1917 K06 FULL ownership; K01-K05 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1083,6 +1083,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
   Never publish an ambiguous APR or release the sole retained suffix.
+  **v1917:** FULL escrows the exact original RAW source before pinning
+  and the original temporary APR before loading. The existing u-area
+  word 067 holds both identities; no new per-owner RAM. Rollback,
+  ordinary retry unlock and deferred recovery share one bounded exact
+  owner/overlap/pin proof. Base-only unpins cannot touch a foreign
+  claim; a lost target-unpin reply cannot consume a second pin. Source-
+  only recovery cannot release an unknown scratch extent. The native
+  cancellation, recovery, permanent refusal and unsafe mutation gates
+  pass with the repaired KCC. K06 remains open for PREFIX/DROP and
+  terminal cleanup, plus final MM geometry review.
 - [ ] **K07 - Executable backing lifetime.** Guarantee immutable PURE
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe

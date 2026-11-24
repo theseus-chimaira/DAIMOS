@@ -67,49 +67,16 @@ ppure_mode3_v1667(unsigned int slot)
 }
 #endif
 
-/* Check the one authoritative process MM owner after a refused operation.
- * A free/duplicate/pinned descriptor cannot be unlocked for execution or
- * a later collector pass. This is the PDP-6 geometry backend boundary.
- */
-static int
-ppure_exact_owner_v1612(unsigned int slot, unsigned int type,
-    kword_t base, kword_t words)
-{
-        unsigned int seen = 0U;
-        int i;
-
-        for (i = 0; i < mm_extent_count; ++i) {
-                const struct mm_extent *e = &mm_extents[i];
-                unsigned int kind = MM_EXTENT_TYPE(e);
-
-                if (MM_EXTENT_OWNER(e) != slot ||
-                    (kind != MM_TYPE_PROCESS &&
-                     kind != MM_TYPE_PACKED_PROCESS))
-                        continue;
-                /* An expected nonzero base verifies resident APR.
-                 * For PACKED, base==0 means the single positive base
-                 * is derived from MM itself, not from a VM mapping.
-                 * Both modes require exactly one owner, exact size
-                 * and an unpinned extent. A second owner fails closed.
-                 */
-                if (++seen != 1U || kind != type ||
-                    !MM_EXTENT_BASE(e) ||
-                    (base && MM_EXTENT_BASE(e) != base) ||
-                    MM_EXTENT_WORDS(e) != words ||
-                    MM_EXTENT_PINNED(e))
-                        return 0;
-        }
-        return seen == 1U;
-}
-
-/* This is intentionally a strict RAM owner proof, not a source lookup.
- * VFS source identity is checked again inside each restore transaction. */
+/* PI-excluded RAM owner proof, not a VFS backing lookup. Reuse the
+ * FULL scanner so that capacity, foreign overlaps, unexpected types
+ * and pins cannot be interpreted differently during retry unlock. */
 static int
 ppure_retryable_v1612(unsigned int slot, struct proc *p,
     unsigned int mode)
 {
         kword_t backing, words, prefix, base;
         kword_t *u;
+        int i;
 
         if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
             !PROC_UAREA_BASE(p))
@@ -119,115 +86,49 @@ ppure_retryable_v1612(unsigned int slot, struct proc *p,
         if (!backing || !words)
                 return 0;
         u = (kword_t *)(unsigned long)PROC_UAREA_BASE(p);
+        if (u[PROC_FINALIZE_OFFSET] &
+            (PROC_FINALIZE_MARK | PROC_SWAP_RETRY_TAG_V1507))
+                return 0;
         if (mode == PROC_STORAGE_RESIDENT) {
                 base = VM_PDP6_BASE(p);
                 return base && !u[PROC_SWAP_BACKING_OFFSET] &&
                     proc_storage_expect_v30(slot, mode) == 0 &&
-                    ppure_exact_owner_v1612(slot, MM_TYPE_PROCESS,
-                        base, words);
+                    proc_pure_full_owners_v1917(slot, 0UL, 0UL, base,
+                        words, 0U, 0U) == 2;
         }
         if (mode != PROC_STORAGE_PACKED ||
             VM_PDP6_BASE(p) ||
             u[PROC_SWAP_BACKING_OFFSET] != backing ||
             pdp6_pure_skip_v1604(backing, words, &prefix) != MM_OK ||
-            proc_storage_expect_v30(slot, mode) != 0)
-                return 0;
-        /* The exact-one-owner scan accepts an MM-derived base when
-         * PACKED has no runnable APR mapping. Do not scan twice and
-         * do not invent any extra state recording that physical base.
-         */
-        return ppure_exact_owner_v1612(slot, MM_TYPE_PACKED_PROCESS,
-            0UL, words - prefix);
-}
-
-/* Validate ONLY a stalled RAW FULL owner set. No new extent pointer is
- * recorded between attempts: the original MM table is authoritative.
- * Return 1 for exact sole RAW, 3 for exact RAW+temporary PROCESS, or
- * -1 for any ambiguity. Pins are allowed in the read-only admission
- * pass and rejected again, atomically, before physical release.
- */
-static int
-ppure_owners_v1902(unsigned int slot, kword_t raw, kword_t words,
-    int require_unpinned, kword_t *targetp)
-{
-        unsigned int seen = 0U;
-        kword_t source = 0UL, target = 0UL;
-        int i;
-
-        if (mm_extent_count <= 0 || mm_extent_count > MM_MAX_EXTENTS ||
-            (unsigned int)mm_extent_count > mm_extent_capacity)
-                return -1;
-        for (i = 0; i < mm_extent_count; ++i) {
-                const struct mm_extent *e = &mm_extents[i];
-                unsigned int type = MM_EXTENT_TYPE(e);
-                kword_t base = MM_EXTENT_BASE(e);
-                kword_t size = MM_EXTENT_WORDS(e);
-                unsigned int bit;
-
-                if (MM_EXTENT_OWNER(e) != slot)
-                        continue;
-                /* MODULE and KERNEL_DYNAMIC use a separate owner
-                 * namespace. Reserved/invalid MM types do not.
-                 */
-                if (type == MM_TYPE_MODULE ||
-                    type == MM_TYPE_KERNEL_DYNAMIC)
-                        continue;
-                if (type == MM_TYPE_PACKED_PROCESS)
-                        bit = 1U;
-                else if (type == MM_TYPE_PROCESS)
-                        bit = 2U;
-                else
-                        return -1;
-                if ((seen & bit) || !base ||
-                    (require_unpinned && MM_EXTENT_PINNED(e)) ||
-                    (bit == 1U && size != raw) ||
-                    (bit == 2U && (size != words ||
-                        (base & (VM_PDP6_ALIGN_WORDS - 1UL)))) ||
-                    size > MM_HALF_MASK - base)
-                        return -1;
-                seen |= bit;
-                if (bit == 1U)
-                        source = base;
-                else
-                        target = base;
-        }
-        if (!(seen & 1U) || (seen == 3U &&
-            !(source + raw <= target || target + words <= source)))
-                return -1;
-        *targetp = target;
-        return (int)seen;
-}
-
-/* v1906: after an MM free, absence of this *specific* provisional
- * target must be proved over the WHOLE physical extent table, not by
- * counting only descriptors still attributed to our process slot.
- * A foreign owner, duplicate, partial overlap or invalid MM geometry
- * at the original target means that free/ownership is uncertain.
- * Never delete the foreign descriptor to make the proof succeed.
- * Called from the existing PI-atomic slot-0 recovery window.
- */
-static int
-ppure_target_absent_v1906(kword_t target, kword_t words)
-{
-        int i;
-
-        if (!target || !words ||
-            (target & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
-            target > MM_HALF_MASK || words > MM_HALF_MASK - target ||
+            proc_storage_expect_v30(slot, mode) != 0 ||
             mm_extent_count <= 0 || mm_extent_count > MM_MAX_EXTENTS ||
             (unsigned int)mm_extent_count > mm_extent_capacity)
                 return 0;
         for (i = 0; i < mm_extent_count; ++i) {
                 const struct mm_extent *e = &mm_extents[i];
-                kword_t base = MM_EXTENT_BASE(e);
-                kword_t size = MM_EXTENT_WORDS(e);
-
-                if (!base || !size || base > MM_HALF_MASK ||
-                    size > MM_HALF_MASK - base ||
-                    (base < target + words && target < base + size))
-                        return 0;
+                if (MM_EXTENT_OWNER(e) != slot ||
+                    MM_EXTENT_TYPE(e) != MM_TYPE_PACKED_PROCESS)
+                        continue;
+                base = MM_EXTENT_BASE(e);
+                return base > prefix &&
+                    !((base - prefix) & (VM_PDP6_ALIGN_WORDS - 1UL)) &&
+                    proc_pure_full_owners_v1917(slot, base,
+                        words - prefix, 0UL, 0UL, 0U, 0U) == 1;
         }
-        return 1;
+        return 0;
+}
+
+/* Keep the owner proof and TRANSITION release in the same PI window. */
+static int
+ppure_unlock_v1917(unsigned int slot, struct proc *p, unsigned int mode)
+{
+        kword_t saved = mach_pi_disable();
+        int ok = ppure_retryable_v1612(slot, p, mode);
+
+        if (ok)
+                PROC_CLEAR_TRANSITION(p);
+        mach_pi_restore(saved);
+        return ok;
 }
 
 /* Common fail-closed preflight for the original slot-0 FULL recovery.
@@ -283,24 +184,27 @@ static void
 ppure_recover_arm_v1902(unsigned int slot)
 {
         struct proc *p;
-        kword_t *u, raw, words, target;
+        kword_t *u, raw, words, escrow, saved;
 
+        saved = mach_pi_disable();
         if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
-            &words))
+            &words)) {
+                mach_pi_restore(saved);
                 return;
-        if (ppure_owners_v1902(slot, raw, words, 0, &target) == 3 &&
-            target &&
-            proc_pure_recover_arm_v1902(PROC_UAREA_BASE(p)) == 0) {
-                /* The u-area already exists and is saved across FULL.
-                 * Its word 067 RH is an ordinary nonresident swap
-                 * retry epoch, but TRANSITION prevents such scheduling
-                 * while this PURE recovery tag is armed. Reuse those
-                 * 18 bits to escrow the exact original scratch base.
-                 * This does not allocate permanent or per-slot RAM.
-                 */
-                u[PROC_FINALIZE_OFFSET] =
-                    (u[PROC_FINALIZE_OFFSET] & ~MM_HALF_MASK) | target;
         }
+        /* FULL escrows the original target before the first target
+         * pin or loader call. A later owner scan cannot reconstruct
+         * that identity after a foreign claim or partial rollback.
+         */
+        escrow = u[PROC_FINALIZE_OFFSET];
+        if ((escrow & PROC_SWAP_RETRY_TAG_V1507) &&
+            PROC_PURE_FULL_SOURCE_V1917(escrow) &&
+            proc_pure_recover_arm_v1902(PROC_UAREA_BASE(p)) == 0) {
+                /* The permanent armer overwrites word 067. Restore
+                 * both original transaction identities, not an MM guess. */
+                u[PROC_FINALIZE_OFFSET] = escrow;
+        }
+        mach_pi_restore(saved);
 }
 
 /* The original KCORE idle-stack reaper invokes this through the
@@ -313,7 +217,7 @@ static int
 ppure_recover_one_v1902(unsigned int slot)
 {
         struct proc *p;
-        kword_t *u, raw, words, target, saved, original_target;
+        kword_t *u, raw, words, source, target, saved;
         int owners;
 
         if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
@@ -322,33 +226,30 @@ ppure_recover_one_v1902(unsigned int slot)
                 return -1;
         saved = mach_pi_disable();
         if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
-            &words)) {
+            &words) ||
+            !(u[PROC_FINALIZE_OFFSET] & PROC_SWAP_RETRY_TAG_V1507)) {
                 mach_pi_restore(saved);
                 return -1;
         }
-        original_target = u[PROC_FINALIZE_OFFSET] & MM_HALF_MASK;
-        if (!original_target ||
-            (original_target & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
-            words > MM_HALF_MASK - original_target) {
+        source = PROC_PURE_FULL_SOURCE_V1917(u[PROC_FINALIZE_OFFSET]);
+        target = u[PROC_FINALIZE_OFFSET] & MM_HALF_MASK;
+        if (source <= words - raw ||
+            ((source - (words - raw)) & (VM_PDP6_ALIGN_WORDS - 1UL))) {
                 mach_pi_restore(saved);
                 return -1;
         }
-        owners = ppure_owners_v1902(slot, raw, words, 1, &target);
-        if (owners == 3) {
-                if (target != original_target) {
-                        mach_pi_restore(saved);
-                        return -1;
-                }
+        owners = proc_pure_full_owners_v1917(slot, source, raw,
+            target, words, 0U, 0U);
+        if (owners == 3 && target) {
                 /* Never free the authoritative RAW suffix or publish
                  * the already-loaded temporary APR. Uncertainty in
                  * the free reply is resolved by the next MM scan.
                  */
                 (void)mm_free(target, MM_TYPE_PROCESS, slot);
-                owners = ppure_owners_v1902(slot, raw, words,
-                    1, &target);
+                owners = proc_pure_full_owners_v1917(slot, source, raw,
+                    target, words, 0U, 0U);
         }
         if (owners != 1 ||
-            !ppure_target_absent_v1906(original_target, words) ||
             !ppure_recover_preflight_v1902(slot, &p, &u, &raw,
                 &words)) {
                 mach_pi_restore(saved);
@@ -409,14 +310,11 @@ proc_pure_mres_reclaim_v1612(kword_t words, kword_t alignment,
                         /* Rebase can commit even when its last unpin
                          * refuses. Unlock only an exact unpinned owner.
                          */
-                        if (ppure_retryable_v1612(slot, p,
+                        if (ppure_unlock_v1917(slot, p,
                             PROC_STORAGE_RESIDENT)) {
-                                PROC_CLEAR_TRANSITION(p);
                                 continue;
-                        } else if (ppure_retryable_v1612(slot, p,
+                        } else if (!ppure_unlock_v1917(slot, p,
                             PROC_STORAGE_PACKED)) {
-                                PROC_CLEAR_TRANSITION(p);
-                        } else {
                                 /* Neither original nor committed owner
                                  * can be proved safe. Quarantine this
                                  * victim and stop allocator pressure. */
@@ -509,13 +407,12 @@ proc_pure_mres_service_v1612(kword_t command_v1902)
          * TRANSITION and must be handled by the existing terminal reaper;
          * never unlock an unknown MM owner or attempt a disk exchange. */
 #if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
-        if (bitmap ?
-            proc_pure_bitmap_retry_v1667(slot) == MM_OK :
-            ppure_retryable_v1612(slot, p, PROC_STORAGE_PACKED))
-#else
-        if (ppure_retryable_v1612(slot, p, PROC_STORAGE_PACKED))
+        if (bitmap) {
+                if (proc_pure_bitmap_retry_v1667(slot) == MM_OK)
+                        PROC_CLEAR_TRANSITION(p);
+        } else
 #endif
-                PROC_CLEAR_TRANSITION(p);
+                (void)ppure_unlock_v1917(slot, p, PROC_STORAGE_PACKED);
         if (PROC_TRANSITION(p))
                 ppure_recover_arm_v1902(slot);
         proc_swap_pressure_ticks = PPURE_COOLDOWN_V1612;

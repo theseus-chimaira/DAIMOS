@@ -1,3 +1,34 @@
+## 2026-11-24 v1917-k06: original FULL source/target escrow and rollback
+
+K06 FULL rollback now records the original aligned RAW source in the
+unused low eleven LH bits of u-area 067, and the allocated PROCESS
+target in its RH. The retry bit is unchanged; zero target denotes
+no allocated scratch or proven scratch retirement. Invalid allocator
+identity remains quarantined. The source identity is saved before
+pin acquisition and the target before any loader call. No new
+per-process, permanent DATA or fixed KCORE words.
+
+The FULL commit/rollback, service retry-unlock and slot-0 recovery
+share a bounded exact MM owner proof. Foreign overlapping ranges,
+extra owners, wrong size or pins and out-of-capacity counts refuse.
+Rollback cannot unpin a retagged extent; a lost target-unpin reply
+is reconciled before another unpin. Only the original sole unpinned
+RAW source and proven scratch absence permit recovery unlock.
+Allocator gap search retains ordinary disk PI behavior.
+
+KCC cdcadb0 fixes a real initializer-call argument-liveness bug
+exposed by the new PI wrapper. Source-built native v1612/v1906,
+v1855, v1839 and v1654 rollback/ownership regressions and their
+negative controls pass (scoped runs; not a physical matrix).
+Combined isolated FULL/service TEXT 1608 -> 1757 words, DATA/BSS
+zero. This is not a folded or integrated MRES size measurement.
+Historical physical snapshots retain their original v1906 format;
+current-source physical acceptance is still K09.
+
+K06 FULL identity/cancellation implementation stage complete;
+PREFIX/DROP and terminal uncertainty review remain open. Default
+RAW PURE and mode3 enablement unchanged.
+
 ## 2026-11-24 v1916-k05: typed PURE reclaim refusal; implementation closure
 
 The optional PURE reclaim service had discarded hard mm_compact
