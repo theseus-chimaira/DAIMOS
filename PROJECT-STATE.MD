@@ -1,3 +1,42 @@
+## 2026-11-24 v1908-k05: original long-held foreign FULL target and capped idle retry (scoped physical PASS)
+
+One bounded, source-linked original PDP-6 48K test extends the
+v1907 genuine TERM/foreign-target workload without rebuilding
+or changing production binaries. The first native PACKED source
+`mm_free` again returns -5; test-only foreign owner2 claims the
+unfreed full slot3 PROCESS target, and a real parent user TERM(3)
+is refused (`TR`). **The target remains foreign-owned** for TEN
+subsequent resident parent heartbeats; no operator repair,
+target free, forced FINALIZE or WAIT-gate release occurs.
+
+Across all ten original MM18 snapshots the authoritative RAW,
+foreign PROCESS target, independent owners, slot3 TRANSITION,
+VMbase0, saved executive CTX_PC/FDCTL, u[067] physical escrow
+`040000120000`, original ROOT and parent WAIT gate remain intact.
+Parent remains active in slot1; PCLK advances `015624` ->
+`016724` octal. Original one-word post-VM retry intervals (octal)
+`0100,0200,0200,0400,0400,0400,0400,1000,1000,1000` prove
+the original `01000`-tick (512 decimal) cap is reached and held
+for three HBs without parent starvation. After HB10 the
+**operator explicitly stops the simulator**: not native guest
+exit/HALT, not evidence of infinite-time safety. The positive
+physical audit passes plus exactly THREE targeted unsafe mutant
+rejections (false unlock, above-cap retry, stalled PCLK).
+
+Production KCORE and PURE remain byte-identical to v1906/v1907,
+with no changed fixed KCORE RAM/BSS or process storage.
+Physical trace SHA256:
+`6d5a43084392f9a32442dc7cb706d8d0e4e451aac0cc029784d35ba810954736`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-permanent-owner-v1908/`.
+Design: `design/kcore-k05-long-held-owner-v1908.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-HELD-FOREIGN-V1908.MD`.
+Evidence: `$TMPDIR/daimos-k05-permanent-owner-v1908-physical-v1/`.
+
+K05 still OPEN for irrecoverable owner resolution, terminal
+cleanup with live executive continuation, other allocator
+ambiguities and real PI6 interleavings. K06-K09 OPEN. RAW
+PURE/mode3 remain OFF by default.
+
 ## 2026-11-24 v1907-k05: original user TERM refused during escrowed foreign FULL (scoped PDP-6 physical PASS)
 
 A single focused integrated original 48K PDP-6 regression

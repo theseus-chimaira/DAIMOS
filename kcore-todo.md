@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1907 focused foreign-owner terminal refusal physically PASS; K01-K04 closed).
+Updated: 2026-11-24 (v1908 sustained foreign-owner retry cap physical PASS; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -899,6 +899,23 @@ history is now reachable from main (v1809); mode3 remains disabled.
     into forced TERMINATE/FINALIZE: permanently unresolvable
     foreign/pinned owners and other PI6 interleavings remain
     K05 OPEN. See `design/kcore-k05-foreign-term-v1907.md`.
+  - v1908 scoped original PDP-6 48K long-held foreign target PASS:
+    one real failed PACKED source-free -5, foreign-claimed full
+    target owner2, refused genuine parent TERM, then TEN real
+    parent `HB` with **no target repair or release**. All MM18
+    owners, RAW/PROCESS target, TRANSITION/VMbase0, executive
+    CTX_PC/FDCTL, u[067] escrow `040000120000`, ROOT and parent
+    WAIT gate remain unchanged. Original parent PCLK advances
+    `015624` -> `016724` octal. Shared already-resident retry
+    backoff advances `0100,0200,0200,0400,0400,0400,0400,
+    1000,1000,1000` octal, reaching/staying at the `01000`
+    (512-decimal) tick cap without starving the parent. Three
+    targeted negative controls reject; simulator stops by
+    **operator request**, no guest HALT/terminal claim. Fixed
+    KCORE/PURE images and RAM unchanged. This tests a bounded
+    interval, not indefinite safety. K05 remains OPEN for
+    unresolvable terminal cleanup and PI6/MM ambiguity. See
+    `design/kcore-k05-long-held-owner-v1908.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
