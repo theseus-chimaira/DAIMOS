@@ -1,3 +1,45 @@
+## 2026-11-24 v1910-k05: original parent EXIT while foreign FULL child remains quarantined (physical PASS)
+
+One narrowly scoped original PDP-6 48K regression tests
+normal parent EXIT while a child holds an unresolved foreign-
+claimed failed FULL target. The source-built five-child guest
+reaches real native PACKED source free -5, test-only target
+owner3->owner2 corruption and one genuinely refused parent
+TERM(3) (`TR`). A new test-only parent USER APR gate invokes
+original `dsys_exit(0)` (`E`); original native KCORE enters
+`proc_exit_current=013655`, slot0 owner finalizer `012610`
+and real idle loop `017552`. Parent descriptor `045703`
+changes `045761400001` -> `045761600001` -> zero.
+
+Physical MM18 -> MM16 deletes **ONLY** the parent-owned
+uarea `045761..046371` and PROCESS `130000..140000`.
+Original orphan adoption changes child's parent1 -> parent0
+(`047017600401` -> `047017600001`), without clearing its
+TRANSITION, VMbase0, native RAW source, foreign PROCESS target,
+executive CTX_PC/FDCTL, or uarea067 escrow `040000120000`.
+Original PCLK PI6 `017225` interrupting slot0 idle PC
+`017562` preserves MM16 and all child rights; operator stops
+the simulator, not a guest HALT or false terminal reclaim.
+
+One positive physical oracle and THREE narrowly targeted
+negative mutants PASS (invalid slot0 finalizer context,
+premature child unlock, lost child escrow). Two earlier test
+attempts were correctly rejected due to a simulator port over
+65535 and unfinished compressed `/SYSTEM/COMP` test media
+after a workspace interruption; neither was kernel evidence.
+
+No production code/images/BSS changed; same KCORE/PURE SHA.
+Accepted physical trace SHA256:
+`262998e8a03dcad8b96247dd6761661cd5a8668226e0dd6db6332ea94bc10a70`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-parent-exit-v1910/`.
+Design: `design/kcore-k05-parent-exit-v1910.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-PARENT-EXIT-V1910.MD`.
+Evidence: `$TMPDIR/daimos-k05-parent-exit-v1910-physical-v3/`.
+
+K05 remains OPEN for terminal cleanup of the still-live
+unresolvable child and other allocator/PI6 uncertainties;
+K06-K09 OPEN, RAW PURE/mode3 default OFF.
+
 ## 2026-11-24 v1909-k05: real fixed-KCORE PI6 during held foreign FULL retry (scoped physical PASS)
 
 One focused original 48K PDP-6 physical test adds an ACTUAL

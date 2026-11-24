@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1909 real PI6 under held foreign owner physical PASS; K01-K04 closed).
+Updated: 2026-11-24 (v1910 original parent EXIT under quarantined foreign child physical PASS; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -932,6 +932,21 @@ history is now reachable from main (v1809); mode3 remains disabled.
     This does NOT prove all possible PI6 points; unresolvable
     owner terminal policy remains K05 OPEN. See
     `design/kcore-k05-held-pi6-v1909.md`.
+  - v1910 scoped original 48K PDP-6 parent EXIT PASS: after
+    real failed FULL PACKED source free -5, target foreign-
+    owned by slot2 and refused user TERM, parent actually
+    invokes SYS_EXIT. Original `proc_exit_current` and slot0
+    finalizer run; MM18 -> MM16 deletes only parent's uarea
+    and full PROCESS extent. Child becomes orphan (parent1->0)
+    while its exact RAW/foreign PROCESS descriptors, transition,
+    VMbase0, executive CTX_PC/FDCTL and u[067] original target
+    escrow remain untouched. Real post-EXIT PI6 preserves
+    MM16. Three targeted unsafe physical mutants all reject.
+    Simulator **operator** stops; this does not prove native
+    terminal child cleanup. KCORE/PURE binaries unchanged.
+    K05 still OPEN for unrecoverable child, other allocator
+    ownership and PI6 cases. See
+    `design/kcore-k05-parent-exit-v1910.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
