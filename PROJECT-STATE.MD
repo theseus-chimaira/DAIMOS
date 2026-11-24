@@ -1,3 +1,38 @@
+## 2026-11-24 v1907-k05: original user TERM refused during escrowed foreign FULL (scoped PDP-6 physical PASS)
+
+A single focused integrated original 48K PDP-6 regression
+closes the overlap of v1901 genuine TERM refusal and v1906
+foreign-claimed FULL target escrow, without replicating the
+earlier 16-case MM fault matrix. After real native PACKED source
+`mm_free` -5, a test-only owner3->owner2 claim on the full
+temporary target, and the first checked foreign-owner parent HB,
+the parent issues one original real user `PROCCTL EVENT_PID`
+TERM(3) through its new USER APR gate `135361`. Actual parent
+output `TR` confirms refusal. The physical TERM snapshot
+preserves MM18, exact RAW/foreign PROCESS extents, TRANSITION,
+VMbase0, original saved private CTX_PC/FDCTL, u[067] escrow
+`040000120000`, ROOT and the closed typed WAIT gate `135357`.
+After two more safe HBs and explicit test-only correction of
+the corrupted target owner, original native rollback/FULL,
+five typed child EXIT/WAIT, parent Z and actual PDP-6 HALT PC0
+PASS with final MM6. The strict v1906 positive oracle re-PASSes;
+FOUR targeted real physical transcript mutations all reject.
+
+No production source change; KCORE and optional PURE are
+byte-identical to v1906, with KCORE IMAGE `024167` BSS `000415`
+and PURE IMAGE `004761` octal. Accepted physical SHA256:
+`da5ae4d1920279f78965080297985b5e698f1ae6ea3390b573a5edb34b26c7dc`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-foreign-term-v1907/`.
+Design: `design/kcore-k05-foreign-term-v1907.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-FOREIGN-TERM-V1907.MD`.
+Private evidence: `$TMPDIR/daimos-k05-foreign-term-v1907-physical-v1/`.
+
+K05 stays OPEN for truly unrecoverable/foreign/pinned owner
+terminal cleanup and other PI6/allocator uncertainties; an
+original saved executive continuation must NOT be discarded
+or forced through FINALIZE. K06-K09 separately OPEN; RAW PURE
+and mode3 remain default OFF.
+
 ## 2026-11-24 v1905/v1906-k05: original foreign FULL-target defect reproduced and fixed (scoped PDP-6 physical PASS)
 
 Original source-built PDP-6 48K v1905 physical REPRODUCED a

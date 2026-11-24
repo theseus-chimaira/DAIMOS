@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1906 K05 original foreign-target ownership defect fixed and physically verified; K01-K04 closed).
+Updated: 2026-11-24 (v1907 focused foreign-owner terminal refusal physically PASS; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -884,6 +884,21 @@ history is now reachable from main (v1809); mode3 remains disabled.
     foreign owner refusal, unknown allocator state, terminal and
     PI6 cases remain OPEN. See
     `design/kcore-k05-foreign-target-escrow-v1906.md`.
+  - v1907 scoped original 48K PDP-6 PASS: one real parent user
+    PROCCTL TERM(3) issued while actual failed FULL PROCESS target
+    is foreign-claimed, slot3 TRANSITION-held, escrowed u[067]
+    `040000120000`. Original event dispatcher returns refusal
+    (`TR`) without touching MM18, RAW/PROCESS owners, saved private
+    executive CTX_PC/FDCTL, TRANSITION, ROOT or closed WAIT gate.
+    Three foreign-owner parent HBs in total remain safe. After
+    explicit correction of test-only owner corruption, original
+    native rollback, next FULL, five typed WAITs and HALT PASS.
+    Full v1906 positive oracle re-PASSes; only four targeted
+    additional unsafe transcript mutations run, ALL rejecting.
+    No production source/RAM/image change. Do NOT broaden this
+    into forced TERMINATE/FINALIZE: permanently unresolvable
+    foreign/pinned owners and other PI6 interleavings remain
+    K05 OPEN. See `design/kcore-k05-foreign-term-v1907.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
