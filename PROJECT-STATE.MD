@@ -1,3 +1,47 @@
+## 2026-11-24 v1909-k05: real fixed-KCORE PI6 during held foreign FULL retry (scoped physical PASS)
+
+One focused original 48K PDP-6 physical test adds an ACTUAL
+PCLK PI6 interrupt to the byte-identical v1908 long-held
+foreign-owner run. After real original PACKED source MM-free
+-5, owner2 retains the complete original provisional PROCESS
+target, original parent user TERM(3) refuses (`TR`), and ten
+real original HBs maintain MM18, authoritative RAW, target
+foreign ownership, slot3 TRANSITION/VMbase0, preserved private
+executive CTX_PC/FDCTL, escrow `u[067]=040000120000`, ROOT
+and original parent progress. No test owner repair or fake HALT.
+
+After HB4, original 60Hz PCLK actually enters fixed-KCORE
+`proc_sched_pi_tick=017225`, first opcode `350040024530`
+(`AOS 1,proc_timer_clock`), with hardware-saved PI6 word
+`pdp10_pi_level6=340000017560`: interrupted PC `017560`
+is inside original slot0 idle loop `017552..017620`. The
+complete original MM18 table, live slot3 state, target escrow,
+saved CTX/FDCTL and ROOT are equal across HB4/PI6/HB5; parent
+continues to HB10, and shared retry reaches/holds `01000`
+octal ticks. Original v1908 positive oracle re-PASSes, plus
+THREE targeted physically mutated PI6 opcode/PC/escrow controls
+all reject. Simulator is explicitly operator-stopped at HB10,
+NOT a guest native recovery or HALT.
+
+Original KCORE `proc_sched_pi_tick` only permits scheduler
+switch from slot0 when saved PI6 PC is in the actual idle loop;
+ordinary executive execution remains non-preemptible, which
+prevents reentering slot0 recovery between original PURE
+arm-tag and target-escrow store. This source-level ordering
+argument is separate from the observed PI6-at-idle witness.
+
+Fixed KCORE and optional PURE unchanged, no added RAM/image.
+Accepted normalized physical SHA256:
+`fbe72332fc0540331c9d4b131d0efded53e42d3da5b746b089ecc99f0f4cbb52`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-held-pi6-v1909/`.
+Design: `design/kcore-k05-held-pi6-v1909.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-HELD-PI6-V1909.MD`.
+Physical evidence: `$TMPDIR/daimos-k05-held-pi6-v1909-physical-v1/`.
+
+K05 still OPEN for arbitrary other PI6 MM orders and terminal
+resolution of unrecoverable/foreign owners. K06-K09 separately
+OPEN; RAW PURE and mode3 OFF by default.
+
 ## 2026-11-24 v1908-k05: original long-held foreign FULL target and capped idle retry (scoped physical PASS)
 
 One bounded, source-linked original PDP-6 48K test extends the

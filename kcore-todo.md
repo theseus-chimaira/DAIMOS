@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1908 sustained foreign-owner retry cap physical PASS; K01-K04 closed).
+Updated: 2026-11-24 (v1909 real PI6 under held foreign owner physical PASS; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -916,6 +916,22 @@ history is now reachable from main (v1809); mode3 remains disabled.
     interval, not indefinite safety. K05 remains OPEN for
     unresolvable terminal cleanup and PI6/MM ambiguity. See
     `design/kcore-k05-long-held-owner-v1908.md`.
+  - v1909 scoped original 48K PDP-6 real PCLK PI6 PASS during
+    unrepaired foreign-claimed FULL owner: exact KCORE handler
+    `017225` with source-linked `AOS` opcode `350040024530`
+    and saved interrupt word `340000017560` (original slot0
+    idle PC `017560`). Verified actual MM18 whole-table,
+    ROOT, child TRANSITION/VMbase0, unchanged executive CTX/
+    FDCTL/escrow `040000120000` before/during/after PI6. Parent
+    advances to HB10 with bounded shared retry `01000` octal,
+    no forced owner repair/FINALIZE or native guest HALT.
+    v1908 positive oracle and three new targeted PI6 negatives
+    PASS on unchanged source-built KCORE/PURE. Source code
+    confirms scheduler cannot PI6-preempt ordinary executive
+    PURE FULL into a second slot0 reaper before escrow writes.
+    This does NOT prove all possible PI6 points; unresolvable
+    owner terminal policy remains K05 OPEN. See
+    `design/kcore-k05-held-pi6-v1909.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
