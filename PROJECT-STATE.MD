@@ -1,3 +1,70 @@
+## 2026-11-24 v1905/v1906-k05: original foreign FULL-target defect reproduced and fixed (scoped PDP-6 physical PASS)
+
+Original source-built PDP-6 48K v1905 physical REPRODUCED a
+missing MM target-identity invariant: after genuine PACKED
+source `mm_free` -5, changing only original provisional PROCESS
+target owner at `024725` from slot3 to slot2 made the v1902
+reaper see sole authoritative slot3 RAW and clear TRANSITION.
+The full PROCESS target still occupied `120000..130000` with
+the foreign owner and MM18; its saved executive continuation
+was alive and no native target free occurred. The old v1902
+native suite had expressly allowed unlocking a foreign-claimed
+scratch-like address and could not distinguish genuine reuse
+from corrupt owner metadata. v1905 bug trace SHA256:
+`660ca0198938bc52cb1a4496f00116d78e390e58905e94062b157c074db70ba1`.
+
+v1906 corrects the exact-owner protocol solely in optional PURE
+MRES. During initial failed FULL reaper arming, its original
+provisional target base is escrowed into the existing private
+u-area word 067 RH, with original swap-retry bit32 preserved.
+The original TRANSITION guard prevents normal scheduler epoch
+interpretation of this RH. Recovery requires the retained same-
+slot temporary target at exactly this physical base before free;
+it then scans the entire actual MM extent table for any remaining
+owner/type overlapping that range before unlocking. Foreign
+owners are NEVER freed or reassigned by this recovery.
+
+KCC PDP-6 native full restore, true target free, lost successful
+reply, pinned source/target and wrong/missing escrow/foreign
+overlap tests PASS. The unchanged original 48K KCORE boots its
+original compressed TSFS/five-child pressure source against the
+new PURE MRES. Actual first source free -5; three independent
+resident parent HBs under test-only target owner2 preserve
+MM18, RAW source pin0, target PROCESS owner2 pin0,
+TRANSITION/VMbase0 and saved executive CTX_PC/FDCTL. Physical
+u[067] `040000120000` contains exact original target `120000`;
+PCLK advances `024625`,`024725`,`025025`, shared backoff
+interval `0100`->`0200`->`0200` octal. After the controller
+repairs ONLY its own injected owner2->owner3 corruption,
+original native target `mm_free` at `033420` returns MM_OK=0;
+transition-clear instruction at `033456` runs with no target.
+Original next FULL source free `036175` returns 0, publishes
+RESIDENT at `120000`, five typed EXIT/WAIT, parent Z and real
+PDP-6 HALT PC0 PASS; MM8 at Z, MM6 at HALT, ROOT unchanged.
+All **16 independent unsafe physical transcript controls** reject.
+
+Fixed KCORE IMAGE `024167`, BSS `000415`, SHA256
+`a201a7fdcf481b436b06694e5dd55c9367036ebd9f64c630486f854b1a4f89be`:
+**unchanged**. Optional PURE IMAGE `004615`->`004761` octal
+(+100 decimal words), SHA256
+`09f65d0ca272986b462c63580eae3c4006490004cd060529ce40f10a55949351`.
+Accepted fixed physical trace SHA256
+`c22a45e4b89602b2edfbe2daa75c4294d7c4ffd828cf5094584e3f5d5832055a`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-foreign-target-v1905/`
+and `daimos-testkit/tests/validation/pure-k05-foreign-target-v1906/`.
+Design: `design/kcore-k05-foreign-target-escrow-v1906.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-FOREIGN-TARGET-V1906.MD`.
+Private native evidence:
+`$TMPDIR/daimos-k05-foreign-target-v1906-native-v1/`.
+Private full physical evidence:
+`$TMPDIR/daimos-k05-foreign-target-v1906-physical-v1/`.
+
+**K05 still OPEN**: this establishes safe quarantining when a
+foreign owner claims the original scratch target, not arbitrary
+automatic correction of a foreign or permanently pinned allocation.
+Terminal failed-FULL cleanup, other allocator uncertainty, full
+PI6 timing, K06-K09 also OPEN. PURE and mode3 default OFF.
+
 ## 2026-11-24 v1904-k05: original PDP-6 temporarily pinned PROCESS target and idle retry to typed WAIT (scoped PASS)
 
 The exact v1903 original source-built 48K KCORE/PURE binaries are

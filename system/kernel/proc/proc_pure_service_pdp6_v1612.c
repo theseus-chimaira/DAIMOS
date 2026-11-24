@@ -15,6 +15,9 @@
  * owners with TRANSITION held and a live private executive stack.
  * Slot-0 idle backoff retries rollback of only the scratch target,
  * then releases TRANSITION with original RAW authoritative.
+ * v1906: a saved full-target base is mandatory for that rollback.
+ * Ownership loss cannot turn a live foreign-claimed target into an
+ * apparently sole RAW owner and prematurely clear TRANSITION.
  */
 #include "proc.h"
 #include "proc_swap.h"
@@ -195,6 +198,38 @@ ppure_owners_v1902(unsigned int slot, kword_t raw, kword_t words,
         return (int)seen;
 }
 
+/* v1906: after an MM free, absence of this *specific* provisional
+ * target must be proved over the WHOLE physical extent table, not by
+ * counting only descriptors still attributed to our process slot.
+ * A foreign owner, duplicate, partial overlap or invalid MM geometry
+ * at the original target means that free/ownership is uncertain.
+ * Never delete the foreign descriptor to make the proof succeed.
+ * Called from the existing PI-atomic slot-0 recovery window.
+ */
+static int
+ppure_target_absent_v1906(kword_t target, kword_t words)
+{
+        int i;
+
+        if (!target || !words ||
+            (target & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            target > MM_HALF_MASK || words > MM_HALF_MASK - target ||
+            mm_extent_count <= 0 || mm_extent_count > MM_MAX_EXTENTS ||
+            (unsigned int)mm_extent_count > mm_extent_capacity)
+                return 0;
+        for (i = 0; i < mm_extent_count; ++i) {
+                const struct mm_extent *e = &mm_extents[i];
+                kword_t base = MM_EXTENT_BASE(e);
+                kword_t size = MM_EXTENT_WORDS(e);
+
+                if (!base || !size || base > MM_HALF_MASK ||
+                    size > MM_HALF_MASK - base ||
+                    (base < target + words && target < base + size))
+                        return 0;
+        }
+        return 1;
+}
+
 /* Common fail-closed preflight for the original slot-0 FULL recovery.
  * A saved executive continuation is intentional: this operation does
  * NOT release a user stack, FILE, u-area or executable backing.
@@ -253,9 +288,19 @@ ppure_recover_arm_v1902(unsigned int slot)
         if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
             &words))
                 return;
-        if (ppure_owners_v1902(slot, raw, words, 0, &target) == 3)
-                (void)proc_pure_recover_arm_v1902(
-                    PROC_UAREA_BASE(p));
+        if (ppure_owners_v1902(slot, raw, words, 0, &target) == 3 &&
+            target &&
+            proc_pure_recover_arm_v1902(PROC_UAREA_BASE(p)) == 0) {
+                /* The u-area already exists and is saved across FULL.
+                 * Its word 067 RH is an ordinary nonresident swap
+                 * retry epoch, but TRANSITION prevents such scheduling
+                 * while this PURE recovery tag is armed. Reuse those
+                 * 18 bits to escrow the exact original scratch base.
+                 * This does not allocate permanent or per-slot RAM.
+                 */
+                u[PROC_FINALIZE_OFFSET] =
+                    (u[PROC_FINALIZE_OFFSET] & ~MM_HALF_MASK) | target;
+        }
 }
 
 /* The original KCORE idle-stack reaper invokes this through the
@@ -268,7 +313,7 @@ static int
 ppure_recover_one_v1902(unsigned int slot)
 {
         struct proc *p;
-        kword_t *u, raw, words, target, saved;
+        kword_t *u, raw, words, target, saved, original_target;
         int owners;
 
         if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
@@ -281,8 +326,19 @@ ppure_recover_one_v1902(unsigned int slot)
                 mach_pi_restore(saved);
                 return -1;
         }
+        original_target = u[PROC_FINALIZE_OFFSET] & MM_HALF_MASK;
+        if (!original_target ||
+            (original_target & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            words > MM_HALF_MASK - original_target) {
+                mach_pi_restore(saved);
+                return -1;
+        }
         owners = ppure_owners_v1902(slot, raw, words, 1, &target);
         if (owners == 3) {
+                if (target != original_target) {
+                        mach_pi_restore(saved);
+                        return -1;
+                }
                 /* Never free the authoritative RAW suffix or publish
                  * the already-loaded temporary APR. Uncertainty in
                  * the free reply is resolved by the next MM scan.
@@ -292,6 +348,7 @@ ppure_recover_one_v1902(unsigned int slot)
                     1, &target);
         }
         if (owners != 1 ||
+            !ppure_target_absent_v1906(original_target, words) ||
             !ppure_recover_preflight_v1902(slot, &p, &u, &raw,
                 &words)) {
                 mach_pi_restore(saved);

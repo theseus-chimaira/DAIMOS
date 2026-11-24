@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1904 K05 48K original target-pin retry safety and subsequent FULL/WAIT/HALT; K01-K04 closed).
+Updated: 2026-11-24 (v1906 K05 original foreign-target ownership defect fixed and physically verified; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -854,6 +854,36 @@ history is now reachable from main (v1809); mode3 remains disabled.
     recovery; ambiguous cleanup, terminal refusal and other PI6
     combinations stay OPEN. See
     `design/kcore-k05-target-pin-idle-v1904.md`.
+  - v1905/v1906 **production bugfix**: source-built original 48K
+    PDP-6 v1905 physically reproduces premature TRANSITION unlock
+    after the temporary full PROCESS target's MM owner is test-
+    corrupted from slot3 to slot2. The target remains physically
+    at `120000..130000` while original MM count stays 18;
+    no native target free occurred. The v1902 recovery owner scan
+    saw sole RAW, retired the retry bit and unblocked a process
+    with an orphaned full target and live saved executive stack.
+    Its original native test had deliberately allowed this
+    ambiguous case. v1906 fixes the missing target *identity*,
+    never by freeing a foreign owner: optional PURE records the
+    original target physical base in the right half of existing
+    u-area word 067 under TRANSITION, validates exact same-slot
+    ownership before native free and rejects all MM extents
+    overlapping that target after free, regardless of type/owner.
+    No new fixed KCORE/process-table/u-area word or BSS; byte-
+    identical KCORE IMAGE `024167`, BSS `000415`. Optional PURE
+    IMAGE `004615` -> `004761` octal (+100 decimal words).
+    KCC native original refusal/lost-reply and escrow/foreign-
+    overlap tests PASS. Full original 48K PDP-6 three real parent
+    HBs retain foreign owner2 target with slot3 TRANSITION and
+    escrow `040000120000`, PCLK/backoff advance and exact MM18.
+    After explicit test-only foreign-owner correction, original
+    native target free returns 0, original FULL commits RESIDENT,
+    all five typed EXIT/WAIT, Z and true HALT PASS. All 16 unsafe
+    real physical transcript mutants reject. This proves safe
+    quarantine, not automatic foreign-owner repair. Permanent
+    foreign owner refusal, unknown allocator state, terminal and
+    PI6 cases remain OPEN. See
+    `design/kcore-k05-foreign-target-escrow-v1906.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

@@ -151,6 +151,13 @@
  * owner has already registered its first refusal (v1763). These owners
  * are exclusive: a process cannot restore from swap while finalizing.
  * Successful restoration and expiration retire the swap retry tag. */
+/* v1906: ONLY during TRANSITION-held RAW PURE FULL rollback, the RH
+ * contains the original provisional PROCESS target base instead of
+ * a swap retry clock epoch. The source-built PURE service saves this
+ * already-allocated target base after arming the tag; the slot-0
+ * reaper requires exact target absence before clearing TRANSITION.
+ * The scheduler never dispatches a TRANSITION-held owner. No new
+ * per-process or permanent resident storage is introduced. */
 #define PROC_FINALIZE_MARK            ((kword_t)1UL << 35U)
 #define PROC_FINALIZE_PREVM           ((kword_t)1UL << 33U)
 #define PROC_FINISH_RETRY_ARMED_V1763  ((kword_t)1UL << 32U)
