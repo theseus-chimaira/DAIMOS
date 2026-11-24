@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1911 real last orphan under unrepaired foreign FULL owner physical PASS; K01-K04 closed).
+Updated: 2026-11-24 (v1912 genuine late last-orphan recovery and native HALT physical PASS; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -969,6 +969,31 @@ history is now reachable from main (v1809); mode3 remains disabled.
     allocator/PI6 cases, indefinite safety and broad K05
     acceptance remain OPEN. See
     `design/kcore-k05-last-orphan-v1911.md`.
+  - v1912 scoped original 48K PDP-6 terminal recovery PASS:
+    the complete v1911 original last-child orphan/three
+    capped retries/PI6 is replayed and source-linked oracle
+    re-PASSes. The *test-created* foreign owner2 claim is
+    corrected only afterward on the active, compacted exact
+    target metadata `024707`, NOT old injection index
+    `024725` (stale after original sibling EXIT). Native
+    target mm_free at `033420/033421` genuinely returns 0,
+    MM10 -> MM9, then original transition-clear `033456`
+    releases u[067] escrow and private executive resumes.
+    Second FULL genuinely frees PACKED source and commits
+    RESIDENT at VMbase `130000`; slot3 user emits `w`,
+    executes actual EXIT, and original PDP-6 executes a
+    **normal native HALT PC=000000**. Final MM6, no slot3
+    PROCESS/PACKED owner or leaked uarea; ROOT unchanged.
+    FOUR independent unsafe physical mutants reject. First
+    v1912 attempt wrongly reused pre-compaction MM index:
+    invalid trace discarded, corrected after exact physical
+    owner-table analysis; no kernel bug or code edit.
+    Production KCORE/PURE, RAM/IMAGE/BSS unchanged.
+    LAST-USER HALT AFTER **SAFE RECONCILIATION** is now
+    physically tested. Permanently irrecoverable foreign
+    owner policy, further allocator/PI6 timing and wider
+    platform acceptance remain K05 OPEN. See
+    `design/kcore-k05-terminal-reconcile-v1912.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

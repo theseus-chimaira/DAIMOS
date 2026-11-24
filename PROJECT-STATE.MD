@@ -1,3 +1,57 @@
+## 2026-11-24 v1912-k05: late owner reconciliation, last child EXIT and true PDP-6 HALT (physical PASS)
+
+Scoped original source-built 48K PDP-6 with byte-identical
+v1910/v1911 fixed KCORE, optional PURE and test-only parent
+guest. Original failed PACKED source-free -5, foreign target
+owner2, genuine refused parent TERM, native parent EXIT,
+original ordinary siblings 4/5/6 EXIT, sole quarantined slot3
+and three capped `01000`-tick slot0 retries and true PI6 all
+execute. The actual prefix separately PASSes v1911 source-linked
+positive physical verifier. No test return AC1 or forced
+kernel FINALIZE is deposited.
+
+After those retries, the controller restores ONLY the
+intentionally corrupted owner on the *compacted* target MM
+descriptor. Original source MM metadata was `024725` at
+initial injection; **post-exit MM10** target metadata is
+`024707` (unique PROCESS `120000..130000` owner2, pin0),
+derived from independently accepted physical v1911 MM10
+table and verified in the actual v1912 guest before repair.
+One test-only owner2 -> owner3 deposit permits original
+native target `mm_free` at `033420/033421` to return AC1=0,
+with MM10 -> MM9, original RAW source conserved.
+
+Original `033456` safely clears TRANSITION+u[067] escrow
+only after native target deletion. Genuine second FULL
+releases original PACKED RAW at `036175` AC1=0, commits
+slot3 RESIDENT (`047017400001`) with VMbase `130000` at
+`033737` AC1=0. Original child user emits `w` then invokes
+real `proc_exit_current=013655` as slot3. Last native finalizer
+retires it and the PDP-6 executes **real HALT PC=000000**;
+final MM6, `proc_high_slot=1`, slot3 FREE and ROOT preserved.
+FOUR targeted unsafe owner/AC1/transition/MM transcript
+mutants reject. Unchanged KCORE/PURE hashes and zero new RAM.
+
+The first v1912/v2 physical test was REJECTED because the
+controller used initial metadata index `024725` AFTER MM
+compaction (then stale owner4). The invalid simulator was
+terminated; v1912/v3 repairs only active target word `024707`
+with exact prior MM10 evidence. This was a test-controller
+addressing error, not a production kernel bug.
+
+Accepted normalized physical SHA256:
+`d4e4c884b00eb61f455587e60cd8d19033dfbcb220160bf21f4584a51045de96`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-terminal-reconcile-v1912/`.
+Design: `design/kcore-k05-terminal-reconcile-v1912.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-TERMINAL-RECONCILE-V1912.MD`.
+Evidence: `$TMPDIR/daimos-k05-terminal-reconcile-v1912-physical-v3/`.
+
+K05 OPEN: the test-only foreign owner was **reconciled**, not
+permanently unknown. This does not authorize speculative MM
+repair, force EXIT of a live private stack, or prove other
+MM/PI6/allocator faults or broader platform release. K06-K09
+OPEN; RAW PURE and mode3 remain default OFF.
+
 ## 2026-11-24 v1911-k05: quarantined orphan as last live user, native idle/backoff/PI6 (physical PASS)
 
 One focused original 48K PDP-6 test extends byte-identical
