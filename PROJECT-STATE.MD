@@ -1,3 +1,50 @@
+## 2026-11-24 v1913-k05: last unrepaired foreign orphan, 15 capped idle retries, PI6 (physical PASS)
+
+The original source-built 48K PDP-6 v1910 guest with original
+KCORE/PURE images again reaches a REAL PACKED-source free -5,
+the original provisional full target test-corrupted owner3->
+foreign2, genuine rejected parent TERM and original parent
+plus ordinary child4/5/6 EXIT. The complete pre-extension
+v1911 physical oracle re-PASSes: only slot3 remains live with
+MM10 and the original foreign-owner MM target/RAW source,
+saved private executive continuation, TRANSITION and escrow.
+
+With NO foreign-owner repair, new MM deposit, guest code hook
+or forced FINALIZE, the simulator executes TWELVE MORE actual
+slot0 `proc_finish_service_v881=013065` recovery calls. Every
+call completes through a distinct real `proc_idle_loop=017552`
+checkpoint. PCLK values `027342`..`042342` (octal) increase
+by exact `01000` (512 decimal) ticks each attempt; pending
+and shared `01000`-tick cap persist. Two additional genuine
+PCLK PI6 at `017225` save interrupted original idle PCs
+`017553` and `017564`; no guest HALT occurs. All 10 MM
+owners/root, slot3 orphan TRANSITION/VMbase0 descriptor,
+CTX_PC/FDCTL and u[067] `040000120000` remain exact and
+unchanged. The original script ends by OPERATOR EXIT only.
+
+With v1911, FIFTEEN native capped last-orphan retries and
+FOUR true PI6s in the full guest trace are observed (the
+parent EXIT PI6, original last-orphan PI6, plus two v1913
+additional idle PI6s).
+FOUR targeted unsafe owner/transition/escrow/PCLK physical
+mutants all reject. Source review confirms that only an
+actual completed last-user release may reach `proc_exit_halt`;
+an unresolved TRANSITION child remains a live user, even if
+no runnable APR is present. This is a fail-closed policy,
+not permission to force cleanup or a proof of infinite uptime.
+
+Accepted physical trace SHA256:
+`88867609a4329cd0a352f9681a3c59e34afe24b557ed20c3354d84918a0b7529`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-permanent-orphan-v1913/`.
+Design: `design/kcore-k05-permanent-orphan-v1913.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-PERMANENT-ORPHAN-V1913.MD`.
+Evidence: `$TMPDIR/daimos-k05-permanent-orphan-v1913-physical-v1/`.
+
+K05 OPEN for further MM ownership and allocator failures,
+other PI6 timings, arbitrary timer wraps, and cross-platform
+release. No production source, RAM, IMAGE/BSS or defaults
+changed. K06-K09 OPEN, RAW PURE and mode3 default OFF.
+
 ## 2026-11-24 v1912-k05: late owner reconciliation, last child EXIT and true PDP-6 HALT (physical PASS)
 
 Scoped original source-built 48K PDP-6 with byte-identical

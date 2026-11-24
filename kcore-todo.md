@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1912 genuine late last-orphan recovery and native HALT physical PASS; K01-K04 closed).
+Updated: 2026-11-24 (v1913 extended permanent foreign-orphan slot0 quarantine physical PASS; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -994,6 +994,27 @@ history is now reachable from main (v1809); mode3 remains disabled.
     owner policy, further allocator/PI6 timing and wider
     platform acceptance remain K05 OPEN. See
     `design/kcore-k05-terminal-reconcile-v1912.md`.
+  - v1913 scoped permanent foreign last-orphan physical PASS:
+    unchanged original v1910 guest and v1911 prefix PASS;
+    one unrepaired MM10 foreign PROCESS target with slot3
+    sole live, orphan/TRANSITION/VMbase0. TWELVE additional
+    real slot0 retry entries and completed original idle-loop
+    returns, `01000` (512 decimal) PCLK ticks apart, with
+    original shared pending bit and backoff cap retained.
+    Two more actual PCLK PI6 interrupt original idle PC
+    `017553` and `017564`. Exact MM10 extents and owners,
+    original RAW source, foreign target, ROOT, CTX_PC/FDCTL,
+    uarea067 escrow remain invariant. No new MM deposits,
+    owner repair, forced cleanup or native guest HALT. Four
+    independent owner/transition/escrow/clock negative mutants
+    reject; 15 capped native orphan retries across v1911/v1913
+    are physically observed, not indefinite safety.
+    Last-runnable is NOT last-live: original terminal policy
+    remains fail-closed until authoritative MM reconciliation.
+    K05 still OPEN for genuinely indefinite/error/wrap cases,
+    additional MM/PI6/allocator failures and platform proof.
+    No production RAM or fixed binary growth. See
+    `design/kcore-k05-permanent-orphan-v1913.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
