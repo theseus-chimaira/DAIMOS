@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1910 original parent EXIT under quarantined foreign child physical PASS; K01-K04 closed).
+Updated: 2026-11-24 (v1911 real last orphan under unrepaired foreign FULL owner physical PASS; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -947,6 +947,28 @@ history is now reachable from main (v1809); mode3 remains disabled.
     K05 still OPEN for unrecoverable child, other allocator
     ownership and PI6 cases. See
     `design/kcore-k05-parent-exit-v1910.md`.
+  - v1911 scoped original PDP-6 48K last-user PASS:
+    after original parent EXIT and permanent foreign FULL,
+    ordinary children slots4,5,6 enter real native SYS_EXIT,
+    with individual completed idle-loop returns between exits.
+    Exactly six child-owned MM extents release: MM16 -> MM10,
+    with only child3 left live, parent0, TRANSITION/VMbase0,
+    original RAW source, foreign PROCESS target, saved executive
+    CTX_PC/FDCTL, u[067] target escrow and ROOT unchanged.
+    proc_high_slot trims to 4, current slot0. Three real
+    slot0 native recovery calls occur `01000` octal clock
+    ticks apart at the original `01000`-tick cap and preserve
+    all MM10 extents and context. One actual idle-loop PI6
+    has saved PC `017617`; three targeted unsafe mutants
+    all reject. No native guest HALT, only operator exit.
+    First experimental repeat-breakpoint false 3-EXIT trace
+    rejected, fixed with source-linked idle break between
+    real child exit events. No production RAM/image changes.
+    LAST-USER IDLE gate is closed for this observed physical
+    ordering; permanent foreign ownership resolution, other
+    allocator/PI6 cases, indefinite safety and broad K05
+    acceptance remain OPEN. See
+    `design/kcore-k05-last-orphan-v1911.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.

@@ -1,3 +1,55 @@
+## 2026-11-24 v1911-k05: quarantined orphan as last live user, native idle/backoff/PI6 (physical PASS)
+
+One focused original 48K PDP-6 test extends byte-identical
+v1910 five-child compressed-TSFS guest/KCORE/optional PURE.
+After actual original failed PACKED source free -5, test-only
+foreign full PROCESS owner2, genuinely refused TERM(3), and
+real original parent EXIT/adoption, the remaining ordinary
+children really invoke `proc_exit_current=013655` from
+distinct slots **4,5,6**. Separate source-linked original
+slot0 `proc_idle_loop=017552` breakpoints prove each native
+child teardown completes before another child EXIT is counted.
+
+After the third child EXIT the ORIGINAL physical table has
+only slot3 live: `proc_high_slot=4`, current slot0 and slots
+1,2,4,5,6 FREE. MM16 -> MM10 deletes **exactly six** native
+sibling-owned KERNEL_DYNAMIC/PACKED extents, no other MM change.
+Still-live child3 has `047017600001` orphan/TRANSITION/VMbase0,
+unchanged RAW source `111200..120000` owner3, foreign target
+`120000..130000` owner2, CTX_PC/FDCTL and original target
+escrow u[067] `040000120000`. ROOT unchanged.
+
+Original slot0 retry entry `proc_finish_service_v881=013065`
+executes THREE times, each with separate idle return. Its real
+PCLK values `020046,021046,022046` octal increase by exactly
+`01000` (512 decimal) ticks, with original shared retry delay
+already capped at `01000`, without reclaiming child MM/ctx.
+One genuine original PCLK PI6 `017225` saves word
+`340000017617` (interrupted slot0 idle PC `017617`) while
+MM10/slot3 and ROOT stay unchanged. Simulator is operator-stopped,
+not a guest HALT or terminal child cleanup. THREE targeted
+unsafe last-user/clock/escrow physical mutants all reject.
+
+The first v1911/v1 controller was REJECTED: rearming one
+SIMH breakpoint at the same unexecuted child-EXIT PC falsely
+counted three stops of slot4 as three different child exits.
+v1911/v2 fixes this with a distinct original idle-loop
+checkpoint after each EXIT and retry; actual 4/5/6 and clock
+advancement are physically observed. No production C/ASM,
+RAM, KCORE/PURE IMAGE/BSS or default policy change.
+
+Accepted original physical SHA256:
+`2863df28f5712639a8c42ecce7c6b6566cd9328f06cbbee7809f2642dd60ff9c`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-last-orphan-v1911/`.
+Design: `design/kcore-k05-last-orphan-v1911.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-LAST-ORPHAN-V1911.MD`.
+Evidence: `$TMPDIR/daimos-k05-last-orphan-v1911-physical-v2/`.
+
+K05 still OPEN for permanently unknown-owner terminal policy,
+other MM/PI6 fault orders and broader acceptance; three finite
+retries do NOT prove indefinite safety. K06-K09 OPEN; RAW PURE
+and mode3 remain default OFF.
+
 ## 2026-11-24 v1910-k05: original parent EXIT while foreign FULL child remains quarantined (physical PASS)
 
 One narrowly scoped original PDP-6 48K regression tests
