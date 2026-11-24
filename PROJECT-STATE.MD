@@ -1,3 +1,58 @@
+## 2026-11-24 v1914-k05: real 17-bit PI6 clock wrap under last foreign orphan (physical PASS)
+
+Source-linked original 48K PDP-6 KCORE/PURE and original v1910
+five-child compressed guest execute complete v1913 permanent
+foreign-owner last-orphan prefix; independent accepted v1913
+AND v1911 original physical oracles re-PASS. With exact MM10,
+sole slot3 orphan under TRANSITION, intact RAW source,
+foreign provisional PROCESS target and saved private executive
+context, original shared retry cap remains `01000` octal.
+
+At original fixed-KCORE PCLK PI6 the TEST controller changes
+only two already-allocated timer words by a synchronized
+near-wrap leap: physical `proc_timer_clock` at `024530`
+from `043736` to `0377770` octal and original shared pending
+retry `proc_finish_last_tick_v881` at `024532` from
+`401000043736` to `401000377770`. Original `proc_timer_next`
+remains 0. This is explicitly a controlled clock experiment,
+not natural long-uptime evidence; no MM metadata, user word,
+instruction, return AC1 or process status is modified.
+
+Original hardware PI6 increments clock to `0377771`; SEVEN
+additional true PCLK PI6 entries at `017225` with distinct
+native idle-loop returns at `017552` physically cross
+`0377777` -> `0400000` (17-bit masked clock becomes 0),
+without clearing the original pending bit. Three actual
+native slot0 reaper entries at `013065` follow at full
+physical clock `0400770`, `0401770`, `0402770`, exactly
+`01000` (512 decimal) ticks apart. Shared retry epochs
+become masked `000770`, `001770`, `002770`; capped delay
+and pending state remain intact.
+
+Complete MM10 extents and owners, foreign target owner2,
+authoritative RAW source owner3, ROOT, slot3 orphan
+descriptor `047017600001`, VMbase0, CTX_PC/FDCTL, target
+escrow `040000120000`, and all other free slots stay exact
+through clock rebase, every original PI6, and three retries.
+No unintended guest HALT or forced FINALIZE; operator stops
+simulator. FOUR targeted unsafe clock/epoch/owner transcript
+mutants all reject. The first verifier had a fixed old PCLK
+assumption `042342` instead of the actual run clock `043736`;
+fixed by checking same-run original pre-rebase physical
+snapshot. No change to original physical evidence/code.
+
+Accepted physical trace SHA256:
+`7b7d9afefbe9e2d59e8fc46876d22ce57e3538cb0cacc39ad6fd3d09c72fa705`.
+Testkit: `daimos-testkit/tests/validation/pure-k05-clock-wrap-v1914/`.
+Design: `design/kcore-k05-clock-wrap-v1914.md`.
+Permanent docs: `pdp10-doc/KERNEL/PURE-K05-CLOCK-WRAP-V1914.MD`.
+Evidence: `$TMPDIR/daimos-k05-clock-wrap-v1914-physical-v1/`.
+
+K05 OPEN for broader MM allocator/PI6 fault combinations,
+other counter/wrap states, indefinite terminal policy and
+cross-platform release. No production source, RAM, IMAGE/BSS,
+or default policy change. K06-K09 OPEN; RAW PURE/mode3 OFF.
+
 ## 2026-11-24 v1913-k05: last unrepaired foreign orphan, 15 capped idle retries, PI6 (physical PASS)
 
 The original source-built 48K PDP-6 v1910 guest with original

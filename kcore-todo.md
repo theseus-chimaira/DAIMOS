@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1913 extended permanent foreign-orphan slot0 quarantine physical PASS; K01-K04 closed).
+Updated: 2026-11-24 (v1914 genuine PDP-6 PCLK 17-bit retry-clock wrap physical PASS; K01-K04 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1015,6 +1015,26 @@ history is now reachable from main (v1809); mode3 remains disabled.
     additional MM/PI6/allocator failures and platform proof.
     No production RAM or fixed binary growth. See
     `design/kcore-k05-permanent-orphan-v1913.md`.
+  - v1914 scoped original 48K PDP-6 PCLK clock-wrap PASS:
+    byte-identical original KCORE/PURE and source-built guest
+    replay whole v1913 physical last-orphan prefix and PASS
+    v1913/v1911 independent positive oracles. TEST-ONLY
+    synchronized leap of existing clock (`024530`) and
+    pending retry epoch (`024532`) to `0377770` low-17-bit
+    time preserves cap `01000`; timer_next remains 0.
+    SEVEN genuine additional PCLK PI6 interrupted idle
+    executions physically cross raw full clock `0377777`
+    -> `0400000`, masked 17-bit becomes 0. Native slot0
+    reaper follows at `0400770`,`0401770`,`0402770` octal,
+    512 ticks each, with masked retry epoch `000770` etc.
+    Complete MM10/ROOT, authoritative RAW, foreign target,
+    orphan TRANSITION/VMbase0, private CTX/escrow unchanged.
+    Four independent clock/epoch/owner physical mutants
+    reject. No synthetic free/FINALIZE/HALT or production
+    source, resident RAM or image growth. Distinguish
+    controlled near-wrap leap from natural 36-minute uptime;
+    K05 still OPEN for other timing/MM/PI6 cases and wider
+    release. See `design/kcore-k05-clock-wrap-v1914.md`.
 - [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
