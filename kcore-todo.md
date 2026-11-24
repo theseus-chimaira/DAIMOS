@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1915 genuine requester-only BRK capacity OOM under foreign FULL physical PASS; K01-K04 closed).
+Updated: 2026-11-24 (v1916 K05 implementation closure; K01-K05 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -426,10 +426,26 @@ history is now reachable from main (v1809); mode3 remains disabled.
 
 ## Mandatory KCORE: PDP-6 RAW PURE
 
-- [ ] **K05 - Reclaim/restore failure handling.** Complete safe RAW
+- [x] **K05 - Reclaim/restore failure handling (implementation CLOSED v1916).** Complete safe RAW
   prefix reclaim and FULL restore on pin, MM, allocator, backing and
   interruption failures. Preserve original process state and ownership
   when publication cannot be completed.
+  **v1916 closure:** PURE reclaim now propagates hard compactor
+  refusals (-4/-5) before and after DROP. An unprovable DROP owner
+  remains TRANSITION-held and stops further allocator pressure.
+  Native PDP-6 v1915 reproduction fails at 0601; corrected v1916
+  passes five focused cases plus the existing service regression
+  and unsafe READY_ONCE negative control. Ordinary resource
+  pressure and safely rejected source admission remain retryable.
+  Fixed KCORE and persistent RAM unchanged. Prior v1808-v1915
+  native and physical results support scoped implementation closure,
+  not production enablement. The dated OPEN notes below are
+  historical: persistent/ambiguous owner reconciliation belongs
+  to K06, backing identity to K07, scheduling to K08, and broader
+  physical allocator fragmentation/descriptor/PI6/root/platform
+  acceptance to K09 and consolidated TODO.MD. No new physical
+  acceptance is claimed for v1916. See
+  `design/kcore-k05-closure-v1916.md`.
   - v1808 PASS: native PDP-6 both original prefix and FULL
     restores remain runnable after a lost successful return.
     Fixed KCORE unchanged; opt-in PURE MRES shrinks by one

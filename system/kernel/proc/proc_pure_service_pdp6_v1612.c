@@ -371,20 +371,23 @@ proc_pure_mres_reclaim_v1612(kword_t words, kword_t alignment,
     unsigned int excluded)
 {
         unsigned int slot;
+        int rc;
 
         if (backstore_enabled || backstore_blocks ||
             backstore_blocks_used || backstore_bitmap ||
             proc_swap_blocks_used || !proc_table || !proc_swap_records)
                 return -1;
         /* Existing MM compact is the authoritative contiguous-space test.
-         * Do not repeatedly target the same refused process. */
-        if (mm_compact(words, alignment) == MM_OK)
-                return 0;
+         * Preserve hard MM refusals just as the permanent allocator does:
+         * an invalid or busy move must not justify further victim DROP.
+         * Ordinary resource pressure may still reclaim a PURE prefix. */
+        rc = mm_compact(words, alignment);
+        if (rc == MM_OK || rc < MM_ERR_DESCRIPTORS)
+                return rc;
         for (slot = 1U; slot < proc_high_slot; ++slot) {
                 struct proc *p;
                 kword_t base;
                 unsigned int state;
-                int rc;
 
                 if (slot == excluded || slot == proc_current_slot)
                         continue;
@@ -409,16 +412,23 @@ proc_pure_mres_reclaim_v1612(kword_t words, kword_t alignment,
                         if (ppure_retryable_v1612(slot, p,
                             PROC_STORAGE_RESIDENT)) {
                                 PROC_CLEAR_TRANSITION(p);
+                                continue;
                         } else if (ppure_retryable_v1612(slot, p,
                             PROC_STORAGE_PACKED)) {
                                 PROC_CLEAR_TRANSITION(p);
-                                if (mm_compact(words, alignment) == MM_OK)
-                                        return 0;
+                        } else {
+                                /* Neither original nor committed owner
+                                 * can be proved safe. Quarantine this
+                                 * victim and stop allocator pressure. */
+                                return rc < MM_ERR_DESCRIPTORS ?
+                                    rc : MM_ERR_BUSY;
                         }
-                        continue;
                 }
-                if (mm_compact(words, alignment) == MM_OK)
-                        return 0;
+                /* A completed DROP stays committed, even if a later
+                 * compaction refuses. Do not reclaim another victim. */
+                rc = mm_compact(words, alignment);
+                if (rc == MM_OK || rc < MM_ERR_DESCRIPTORS)
+                        return rc;
         }
         return -1;
 }

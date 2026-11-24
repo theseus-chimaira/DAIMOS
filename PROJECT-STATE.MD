@@ -1,3 +1,29 @@
+## 2026-11-24 v1916-k05: typed PURE reclaim refusal; implementation closure
+
+The optional PURE reclaim service had discarded hard mm_compact
+results before and after RAW DROP, in violation of the permanent
+BRK/MM caller contract. Original v1915 source fails the new
+KCC PDP-6 native oracle at 0601 octal. The v1916 service now
+returns -4/-5 unchanged, stops pressure on an unprovable DROP
+owner without clearing TRANSITION, and retains an already
+committed exact PACKED owner after post-DROP compaction failure.
+The ordinary resource-pressure and safe source-admission paths
+retain their existing behavior.
+
+One final native run passes five new targeted cases (initial and
+post-DROP INVAL/BUSY; invalid DROP geometry) and the existing
+v1612 RAW DROP, prefix/FULL, refusal and unsafe READY_ONCE
+negative control. Native linked service region grows by eight
+words; no fixed KCORE or persistent data changes. No v1916
+whole-system fault injection or fresh physical size claim.
+
+K05 implementation CLOSED, based on the source review and
+scoped v1808-v1916 evidence. This does not close K06-K09:
+persistent MM uncertainty, backing lifetime, scheduler integration
+and broad current-source allocator/PI6/platform acceptance remain
+separate gates. RAW PURE and mode3 remain default OFF.
+See design/kcore-k05-closure-v1916.md.
+
 ## 2026-11-24 v1915-k05: genuine user BRK capacity OOM under foreign FULL, last orphan held (physical PASS)
 
 Source-built original 48K PDP-6 KCORE and optional PURE

@@ -8,7 +8,10 @@ restore's lost success reply and removes one instruction.
 The combined native v1808 matrix and fresh default-OFF build
 PASS. Earlier bounded physical 48K GENERAL/STRICT and 64K
 TSFS results remain valid within their recorded scope.
-K05-K09 production acceptance is still OPEN. Dated statements
+K05 implementation closed in v1916: the optional PURE reclaim
+entry propagates hard MM refusals and stops pressure on ambiguous
+DROP ownership. K06-K08 implementation and K09 production
+acceptance remain OPEN. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See
 `design/daimos-branch-consolidation-v1809.md` and

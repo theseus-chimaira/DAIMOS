@@ -7,7 +7,8 @@ independent 48K GENERAL/STRICT pressure A/B/C acceptance
 PASS; the v1808 K05 lost-success restore correction and
 combined native matrix also PASS. The v1808 change removes
 one removable MRES instruction; no fixed KCORE growth.
-K05-K09 production acceptance remains separate work.
+K05 implementation closed in v1916; K06-K08 implementation
+and K09 production acceptance remain separate work.
 Clean unattached superseded refs were safely retired in v1809;
 only worktree-attached topic refs remain.
 Preserve existing dirty worktrees and default-OFF feature
@@ -134,8 +135,10 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   of 32K full boot success.
 - [ ] **PDP-6 production PURE acceptance:**
   v1809 integrated the source history into main and passed the native
-  matrix plus default-OFF build; K05-K08 production safety/physical
-  gates remain open, so PURE must remain OFF by default. Every named
+  matrix plus default-OFF build; K05 implementation closed v1916.
+  K06-K08 implementation and K09 production safety/physical gates
+  remain open, including organic allocator fragmentation/descriptor
+  exhaustion and wider PI6 cases. PURE must remain OFF by default. Every named
   DAIMOS and testkit topic tip is now reachable from local main.
   v1809 retired 95 clean unattached local and 94 remote merged
   topic refs. The remaining checked-out integration and dirty
