@@ -171,6 +171,15 @@
         (PROC_SWAP_RETRY_TAG_V1507 | (((source) >> 7U) << 18U) | (target))
 #define PROC_PURE_FULL_SOURCE_V1917(word) \
         ((((word) >> 18U) & 03777UL) << 7U)
+/* v1919: distinguish in-place transactions from a FULL rollback with
+ * no scratch. Bits 29/30 are outside the aligned source and lifecycle
+ * fields. They never denote a timer deadline or terminal owner. */
+#define PROC_PURE_DROP_TAG_V1919      ((kword_t)1UL << 29U)
+#define PROC_PURE_PREFIX_TAG_V1919    ((kword_t)1UL << 30U)
+#define PROC_PURE_KIND_MASK_V1919     \
+        (PROC_PURE_DROP_TAG_V1919 | PROC_PURE_PREFIX_TAG_V1919)
+#define PROC_PURE_INPLACE_ESCROW_V1919(source, kind) \
+        (PROC_PURE_FULL_ESCROW_V1917(source, 0UL) | (kind))
 #define PROC_SWAP_RETRY_TICKS_V1507   0100U
 #define PROC_TIMER_TAG_RH            0400000UL
 #define PROC_TIMER_CLOCK_MASK         0377777UL

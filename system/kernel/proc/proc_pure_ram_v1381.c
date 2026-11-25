@@ -163,7 +163,8 @@ proc_pure_ram_drop_v1381(unsigned int slot)
         /* Save the original suffix identity before any mutation. A
          * failed pin/rebase must not authorize an unrelated RAW owner
          * discovered later by the service. */
-        u[PROC_FINALIZE_OFFSET] = PROC_PURE_FULL_ESCROW_V1917(suffix, 0UL);
+        u[PROC_FINALIZE_OFFSET] = PROC_PURE_INPLACE_ESCROW_V1919(suffix,
+            PROC_PURE_DROP_TAG_V1919);
         rc = mm_pin(source);
         if (rc != MM_OK)
                 goto resident_done;

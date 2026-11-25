@@ -85,7 +85,8 @@ proc_pure_restore_v1384(unsigned int slot,
                 goto out;
         }
         base = suffix - prefix;
-        u[PROC_FINALIZE_OFFSET] = PROC_PURE_FULL_ESCROW_V1917(suffix, 0UL);
+        u[PROC_FINALIZE_OFFSET] = PROC_PURE_INPLACE_ESCROW_V1919(suffix,
+            PROC_PURE_PREFIX_TAG_V1919);
         rc = mm_pin(suffix);
         if (rc != MM_OK)
                 goto raw_done;

@@ -25,6 +25,8 @@
 #include "proc_pure_ram_v1381.h"
 #include "proc_pure_restore_v1384.h"
 #include "proc_pure_ram_restore_v1391.h"
+#include "mm_pure_rebase_v1381.h"
+#include "mm_pure_expand_v1384.h"
 #include "vm_pdp6_pure_range_v1604.h"
 #include "vm_pdp6.h"
 #include "mm.h"
@@ -44,6 +46,8 @@ extern int proc_pure_recover_arm_v1902(kword_t);
 extern kword_t mach_pi_disable(void);
 extern void mach_pi_restore(kword_t);
 extern int proc_storage_expect_v30(unsigned int, unsigned int);
+extern int proc_storage_publish_v30(unsigned int, unsigned int, unsigned int);
+extern void proc_swap_storage_invariant_v30(void);
 extern int exec_image_prefix_backing_v1386(kword_t, kword_t,
     kword_t, kword_t);
 extern int exec_image_full_bounded_v1391(kword_t, kword_t,
@@ -122,19 +126,18 @@ ppure_unlock_v1917(unsigned int slot, struct proc *p, unsigned int mode)
         return ok;
 }
 
-/* Common fail-closed preflight for the original slot-0 FULL recovery.
- * A saved executive continuation is intentional: this operation does
- * NOT release a user stack, FILE, u-area or executable backing.
- */
+/* Common PI-excluded preflight. Arming may run on a reclaiming
+ * process's stack, but reconciliation runs only on slot zero. Retain the
+ * private executive continuation, FILE, backing and u-area throughout. */
 static int
 ppure_recover_preflight_v1902(unsigned int slot, struct proc **pp,
     kword_t **up, kword_t *rawp, kword_t *wordsp)
 {
         struct proc *p;
-        kword_t *u, backing, words, skip;
+        kword_t *u, backing, words, skip, escrow, source, target, kind;
         unsigned int state;
 
-        if (proc_current_slot != 0UL || !proc_table ||
+        if (proc_current_slot == slot || !proc_table ||
             !proc_swap_records || !proc_storage_runtime_v29.words ||
             !slot || slot >= proc_high_slot ||
             slot >= proc_storage_runtime_v29.slots)
@@ -143,21 +146,37 @@ ppure_recover_preflight_v1902(unsigned int slot, struct proc **pp,
         state = PROC_STATE(p);
         if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
             !PROC_UAREA_BASE(p) ||
-            (state != PROC_SRUN && state != PROC_SLEEP &&
-             state != PROC_STOP) || VM_PDP6_BASE(p) ||
-            proc_storage_expect_v30(slot, PROC_STORAGE_PACKED) != 0)
+            (state != PROC_SRUN && state != PROC_SLEEP && state != PROC_STOP))
                 return 0;
         u = (kword_t *)(unsigned long)PROC_UAREA_BASE(p);
-        if (u[PROC_FDCTL_OFFSET] &
-            (PROC_FATAL_CLOSE_BIT | PROC_USER_MAP_BIT) ||
-            (u[PROC_FINALIZE_OFFSET] & PROC_FINALIZE_MARK))
+        if (u[PROC_FDCTL_OFFSET] & (PROC_FATAL_CLOSE_BIT | PROC_USER_MAP_BIT))
+                return 0;
+        escrow = u[PROC_FINALIZE_OFFSET];
+        source = PROC_PURE_FULL_SOURCE_V1917(escrow);
+        target = escrow & MM_HALF_MASK;
+        kind = escrow & PROC_PURE_KIND_MASK_V1919;
+        /* Reject timer epochs, terminal markers, mixed kinds and stray
+         * bits. In-place operations never allocate a separate target. */
+        if (!source || kind == PROC_PURE_KIND_MASK_V1919 ||
+            (kind && target) || escrow !=
+                (PROC_PURE_FULL_ESCROW_V1917(source, target) | kind))
                 return 0;
         backing = proc_swap_records[slot].state;
         words = VM_SPACE_WORDS(p);
         if (!backing || !words ||
-            u[PROC_SWAP_BACKING_OFFSET] != backing ||
             (words & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
-            pdp6_pure_skip_v1604(backing, words, &skip) != MM_OK)
+            pdp6_pure_skip_v1604(backing, words, &skip) != MM_OK ||
+            source <= skip || ((source - skip) & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            words - skip > MM_HALF_MASK + 1UL - source)
+                return 0;
+        if (VM_PDP6_BASE(p)) {
+                if (kind != PROC_PURE_DROP_TAG_V1919 ||
+                    VM_PDP6_BASE(p) != source - skip ||
+                    u[PROC_SWAP_BACKING_OFFSET] ||
+                    proc_storage_expect_v30(slot, PROC_STORAGE_RESIDENT))
+                        return 0;
+        } else if (u[PROC_SWAP_BACKING_OFFSET] != backing ||
+            proc_storage_expect_v30(slot, PROC_STORAGE_PACKED))
                 return 0;
         *pp = p;
         *up = u;
@@ -166,11 +185,8 @@ ppure_recover_preflight_v1902(unsigned int slot, struct proc **pp,
         return 1;
 }
 
-/* Called from original MRES only when a previously failed FULL left
- * TRANSITION held. Mark a retry owner without claiming FINALIZE:
- * its private executive continuation MUST remain intact. This
- * shares the already-resident post-VM idle backoff timer.
- */
+/* The permanent armer overwrites word 067. Keep the original identity
+ * and transaction kind while sharing the existing idle retry clock. */
 static void
 ppure_recover_arm_v1902(unsigned int slot)
 {
@@ -178,82 +194,109 @@ ppure_recover_arm_v1902(unsigned int slot)
         kword_t *u, raw, words, escrow, saved;
 
         saved = mach_pi_disable();
-        if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
-            &words)) {
-                mach_pi_restore(saved);
-                return;
-        }
-        /* FULL escrows the original target before the first target
-         * pin or loader call. A later owner scan cannot reconstruct
-         * that identity after a foreign claim or partial rollback.
-         */
-        escrow = u[PROC_FINALIZE_OFFSET];
-        if ((escrow & PROC_SWAP_RETRY_TAG_V1507) &&
-            PROC_PURE_FULL_SOURCE_V1917(escrow) &&
-            proc_pure_recover_arm_v1902(PROC_UAREA_BASE(p)) == 0) {
-                /* The permanent armer overwrites word 067. Restore
-                 * both original transaction identities, not an MM guess. */
-                u[PROC_FINALIZE_OFFSET] = escrow;
+        if (ppure_recover_preflight_v1902(slot, &p, &u, &raw, &words)) {
+                escrow = u[PROC_FINALIZE_OFFSET];
+                if (proc_pure_recover_arm_v1902(PROC_UAREA_BASE(p)) == 0)
+                        u[PROC_FINALIZE_OFFSET] = escrow;
         }
         mach_pi_restore(saved);
 }
 
-/* The original KCORE idle-stack reaper invokes this through the
- * existing (already patched) PURE service trampoline with a tagged
- * AC1 request. No KINIT extension or second MRES entry is needed.
- * The native MM free and final owner reconciliation are PI-atomic;
- * failure leaves original backing, VM0 and TRANSITION unchanged.
- */
+/* Roll back a PREFIX full-span claim without trusting a prior pin.
+ * Under PI exclusion, acquire a NEW pin on the exact unpinned owner.
+ * A committed but unpublished PROCESS can be rebased to RAW as well;
+ * do not publish a runnable APR from an uncertain loader transaction.
+ * After release/rebase, recheck the shape before retiring our pin.
+ * On refusal leave the full-span owner or RAW suffix quarantined. */
+static int
+ppure_prefix_recover_v1919(unsigned int slot, kword_t source,
+    kword_t raw, kword_t words)
+{
+        kword_t prefix = words - raw;
+        kword_t base = source - prefix;
+        unsigned int type = MM_TYPE_PACKED_PROCESS;
+
+        if (!proc_pure_owner_v1918(slot, type, base, words, 0U)) {
+                type = MM_TYPE_PROCESS;
+                if (!proc_pure_owner_v1918(slot, type, base, words, 0U))
+                        return 0;
+        }
+        /* We proved zero pins under the same PI exclusion. A lost
+         * successful pin reply may still establish our new sole pin. */
+        (void)mm_pin(base);
+        if (!proc_pure_owner_v1918(slot, type, base, words, 1U))
+                return 0;
+        if (type == MM_TYPE_PACKED_PROCESS)
+                (void)mm_pure_release_prefix_v1384(base, slot, prefix, words);
+        else
+                (void)mm_pure_rebase_pinned_v1381(base, slot, prefix, words);
+        if (proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS,
+            source, raw, 1U))
+                (void)mm_unpin(source);
+        else if (proc_pure_owner_v1918(slot, type, base, words, 1U))
+                (void)mm_unpin(base);
+        return proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS,
+            source, raw, 0U) != 0UL;
+}
+
+/* Slot-zero retry via the existing tagged MRES trampoline. No loader,
+ * allocation or file service here. Never consume a pre-existing pin:
+ * its provenance cannot be established from a count after deferral. */
 static int
 ppure_recover_one_v1902(unsigned int slot)
 {
         struct proc *p;
-        kword_t *u, raw, words, source, target, saved;
+        kword_t *u, raw, words, source, target, kind, saved;
         int owners;
+        int rc = -1;
 
-        if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
-            &words) ||
-            !(u[PROC_FINALIZE_OFFSET] & PROC_SWAP_RETRY_TAG_V1507))
+        if (proc_current_slot != 0UL)
                 return -1;
         saved = mach_pi_disable();
-        if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw,
-            &words) ||
-            !(u[PROC_FINALIZE_OFFSET] & PROC_SWAP_RETRY_TAG_V1507)) {
-                mach_pi_restore(saved);
-                return -1;
-        }
+        if (!ppure_recover_preflight_v1902(slot, &p, &u, &raw, &words))
+                goto out;
         source = PROC_PURE_FULL_SOURCE_V1917(u[PROC_FINALIZE_OFFSET]);
         target = u[PROC_FINALIZE_OFFSET] & MM_HALF_MASK;
-        if (source <= words - raw ||
-            ((source - (words - raw)) & (VM_PDP6_ALIGN_WORDS - 1UL))) {
-                mach_pi_restore(saved);
-                return -1;
-        }
-        owners = proc_pure_full_owners_v1917(slot, source, raw,
-            target, words, 0U, 0U);
-        if (owners == 3 && target) {
-                /* Never free the authoritative RAW suffix or publish
-                 * the already-loaded temporary APR. Uncertainty in
-                 * the free reply is resolved by the next MM scan.
-                 */
-                (void)mm_free(target, MM_TYPE_PROCESS, slot);
+        kind = u[PROC_FINALIZE_OFFSET] & PROC_PURE_KIND_MASK_V1919;
+        if (kind) {
+                /* An original resident DROP may have rolled back, or
+                 * committed the MM rebase without publishing its mode. */
+                if (kind == PROC_PURE_DROP_TAG_V1919 && VM_PDP6_BASE(p) &&
+                    proc_pure_owner_v1918(slot, MM_TYPE_PROCESS,
+                        VM_PDP6_BASE(p), words, 0U))
+                        goto done;
+                if (!proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS,
+                    source, raw, 0U) &&
+                    (kind != PROC_PURE_PREFIX_TAG_V1919 ||
+                     !ppure_prefix_recover_v1919(slot, source, raw, words)))
+                        goto out;
+                if (VM_PDP6_BASE(p)) {
+                        u[PROC_SWAP_BACKING_OFFSET] = proc_swap_records[slot].state;
+                        VM_PDP6_SET_BASE(p, 0UL);
+                        if (proc_storage_publish_v30(slot, PROC_STORAGE_RESIDENT,
+                            PROC_STORAGE_PACKED) != 0)
+                                proc_swap_storage_invariant_v30();
+                }
+        } else {
                 owners = proc_pure_full_owners_v1917(slot, source, raw,
                     target, words, 0U, 0U);
+                if (owners == 3 && target) {
+                        /* Only the original provisional target may be
+                         * freed; never release the authoritative RAW. */
+                        (void)mm_free(target, MM_TYPE_PROCESS, slot);
+                        owners = proc_pure_full_owners_v1917(slot, source, raw,
+                            target, words, 0U, 0U);
+                }
+                if (owners != 1)
+                        goto out;
         }
-        if (owners != 1 ||
-            !ppure_recover_preflight_v1902(slot, &p, &u, &raw,
-                &words)) {
-                mach_pi_restore(saved);
-                return -1;
-        }
-        /* All MM and process invariants now prove a sole unpinned
-         * PACKED source. The original saved private CPU context,
-         * FILE descriptors and backing stay untouched.
-         */
+done:
         u[PROC_FINALIZE_OFFSET] = 0UL;
         PROC_CLEAR_TRANSITION(p);
+        rc = 0;
+out:
         mach_pi_restore(saved);
-        return 0;
+        return rc;
 }
 
 /* The permanent reclaim trampoline's original ABI is unchanged:
@@ -309,6 +352,7 @@ proc_pure_mres_reclaim_v1612(kword_t words, kword_t alignment,
                                 /* Neither original nor committed owner
                                  * can be proved safe. Quarantine this
                                  * victim and stop allocator pressure. */
+                                ppure_recover_arm_v1902(slot);
                                 return rc < MM_ERR_DESCRIPTORS ?
                                     rc : MM_ERR_BUSY;
                         }
