@@ -30,6 +30,7 @@
         .globl  fs_copy_words
         .globl  fs_zero_words
         .globl  wall_time36
+        .globl  proc_swap_backing_busy
 
         .equ    D6FS_TYPE_DIR,2
         .equ    D6FS_TYPE_SYMLINK,3
@@ -286,6 +287,14 @@ d6fs_provider_unlink:
         jumpn   1,d6fs_unlink_fail
         move    012,(17)               ; slot
         move    013,-047(17)           ; dirent.child_fcb
+        ; Recheck the actual child resolved under the provider lease,
+        ; not the possibly stale vnode from file_remove's lookup.
+        hllz    1,010
+        tlz     1,077
+        tlo     1,1
+        hrr     1,013
+        pushj   17,proc_swap_backing_busy
+        jumpn   1,d6fs_unlink_fail
         move    1,d6fs_active_reader
         move    2,013
         movei   3,-046(17)             ; fcb

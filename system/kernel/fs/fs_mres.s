@@ -226,6 +226,14 @@ fs_provider_lock_probe_v1090:
         ; Waiters sleep on a separate zero-valued event, not on the
         ; owner-encoded lock word (which is nonzero even while held).
         setzm   fs_provider_wait_event_v917
+        ; VFS checked before the lease wait. A foreign RUN/EXEC or
+        ; REMOUNT can have published new state while this request slept.
+        ; Keep the original request frame until the final check.
+        move    6,-1(17)
+        caie    6,013                  ; TRUNCATE
+        cain    6,016                  ; WRITE_WORDS
+        jrst    fs_provider_write_v1932
+fs_provider_dispatch_v1932:
         movei   0,1
         hrli    0,-6(17)
         blt     0,7
@@ -233,6 +241,20 @@ fs_provider_lock_probe_v1090:
         ; The missing-service trampoline already returns -1 normally.
         ; Invoke it under the same lease and use the common unlock path.
         pushj   17,@fs_memfs_service_jump(7)
+        jrst    fs_provider_unlock
+
+        .globl  vfs_readonly
+        .globl  proc_swap_backing_busy
+fs_provider_write_v1932:
+        move    1,-6(17)
+        pushj   17,vfs_readonly
+        jumpn   1,fs_provider_write_refuse_v1932
+        move    1,-6(17)
+        pushj   17,proc_swap_backing_busy
+        jumpe   1,fs_provider_dispatch_v1932
+fs_provider_write_refuse_v1932:
+        sub     17,kconst_7_7
+        seto    1,
         jrst    fs_provider_unlock
 
 ; The executive is not process-preemptible between the ready test and clear.

@@ -10,6 +10,7 @@
         .globl  dtfs_parent
         .globl  dtfs_create
         .globl  dtfs_unlink
+        .globl  proc_swap_backing_busy
         .globl  dtfs_rename
         .globl  dtfs_truncate
         .globl  dtfs_chmod
@@ -1283,6 +1284,9 @@ dtfs_unlink:
         move    014,010
         tlc     014,000003              ; ROOT(1) XOR 3 = FILE(2)
         hrr     014,012
+        move    1,014
+        pushj   17,proc_swap_backing_busy
+        jumpn   1,dtfs_unlink_fail
 
         .if DTFS_ENABLE_TENEX
         cain    013,010
