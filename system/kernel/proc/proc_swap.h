@@ -34,7 +34,7 @@
 #define PROC_SWAP_PROVIDER_MASK_V1924 ((kword_t)7UL << 28U)
 #define PROC_SWAP_ID_MASK_V1924 (PROC_SWAP_MOUNT_EXT_BIT | PROC_SWAP_PROVIDER_MASK_V1924)
 #define PROC_SWAP_STAGE_ID_MASK_V1924 035UL
-#define PROC_SWAP_STAGE_PROV_SHIFT_V1924 2U
+#define PROC_SWAP_STAGE_PSHIFT_V1924 2U
 
 /* Only while SIDL lacks its u-area, the otherwise unused scheduler RH bit 0
  * temporarily carries the fifth mount-slot bit until RUN publishes u-area.

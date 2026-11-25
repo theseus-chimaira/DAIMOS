@@ -71,7 +71,7 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
         if (PROC_STATE(&proc_table[slot]) == PROC_SIDL)
                 proc_table[slot].sched = (proc_table[slot].sched &
                     ~PROC_SWAP_STAGE_ID_MASK_V1924) |
-                    ((kword_t)provider << PROC_SWAP_STAGE_PROV_SHIFT_V1924) |
+                    ((kword_t)provider << PROC_SWAP_STAGE_PSHIFT_V1924) |
                     (((mount - 1U) & 020U) ? PROC_SWAP_STAGE_MOUNT_EXT_BIT : 0UL);
         proc_swap_records[slot].state = packed;
         return 0;

@@ -21,6 +21,9 @@
 #include "mm_internal.h"
 #include "mm_pure_rebase_v1381.h"
 #include "fs_mres.h"
+#include "dtfs_media.h"
+#include "dtfs.h"
+#include "d6fs_provider.h"
 #include "proc_pure_lifecycle_v1604.h"
 #include "proc_pure_admit_v1608.h"
 #include "vm_pdp6_pure_range_v1604.h"
@@ -115,6 +118,78 @@ pram_publish(unsigned int slot, unsigned int before, unsigned int after)
                 proc_swap_storage_invariant_v30();
 }
 
+/* Existing mount-owned state only. These pointers are published by KINIT
+ * and retired by VFS; no provider dispatch or physical I/O here. */
+extern kword_t *dtfs_media_base, *tsfs_file_shape_base;
+extern kword_t *tsfs_extent_media_base, *d6fs_reader_slots_base;
+extern int fs_mres_no_service(void);
+
+/* Called with PI excluded, after ordinary backing admission. A known
+ * unavailable source must not cost the only resident copy of its text.
+ * A healthy publication is not proof of physical media continuity. */
+static int
+pram_drop_available_v1926(kword_t backing, const kword_t *u)
+{
+        unsigned int mount, provider;
+        kword_t service, media;
+        vnode_t root;
+
+        mount = (unsigned int)((backing >> PROC_SWAP_MOUNT_SHIFT) &
+            PROC_SWAP_MOUNT_MASK);
+        if (u[PROC_CRED_OFFSET] & PROC_SWAP_MOUNT_EXT_BIT)
+                mount |= 020U;
+        provider = (unsigned int)((u[PROC_CRED_OFFSET] &
+            PROC_SWAP_PROVIDER_MASK_V1924) >> PROC_SWAP_PROVIDER_SHIFT_V1924);
+        /* Recheck the binding inside the same PI window as rebase. */
+        if (!vfs_mount_root_base || mount >= vfs_mount_limit)
+                return 0;
+        root = vfs_mount_root_base[mount];
+        if (VFS_PROVIDER(root) != provider || VFS_MOUNT_ID(root) != mount + 1U)
+                return 0;
+        switch (provider) {
+        case MEMFS_PROVIDER:
+                service = fs_memfs_service_jump;
+                break;
+        case DTFS_PROVIDER:
+                if (!dtfs_media_base || !tsfs_file_shape_base ||
+                    !tsfs_extent_media_base)
+                        return 0;
+                media = dtfs_media_base[mount];
+                if (media & (DTFS_MEDIA_RD_SUSPECT_V1522 |
+                    DTFS_MEDIA_WR_UNCERT_V1522 | DTFS_MEDIA_QUIESCING_V1562))
+                        return 0;
+                if ((media & DTFS_MEDIA_INTENT_ARMED_V1553) &&
+                    (!(media & DTFS_MEDIA_FORMAT_V2_V1553) || vfs_readonly(root)))
+                        return 0;
+                /* Stamped identity is a pair, mandatory for DTVOL2. */
+                if ((!tsfs_file_shape_base[mount] != !tsfs_extent_media_base[mount]) ||
+                    ((media & DTFS_MEDIA_FORMAT_V2_V1553) &&
+                        !tsfs_file_shape_base[mount]))
+                        return 0;
+                service = fs_dtfs_service_jump;
+                break;
+        case D6FS_PROVIDER:
+                if (!d6fs_reader_slots_base || !d6fs_reader_slots_base[mount])
+                        return 0;
+                service = fs_d6fs_service_jump;
+                break;
+        case TSFS_PROVIDER:
+                if (!dtfs_media_base || !tsfs_file_shape_base ||
+                    !tsfs_extent_media_base || !dtfs_media_base[mount] ||
+                    !tsfs_file_shape_base[mount] || !tsfs_extent_media_base[mount])
+                        return 0;
+                service = fs_tsfs_service_jump;
+                break;
+        default:
+                return 0;
+        }
+        /* MINIT and module relocation publish a plain JRST, while an
+         * absent service points at the resident refusing fallback. */
+        return (service >> 18U) == 0254000UL &&
+            (service & MM_HALF_MASK) &&
+            (service & MM_HALF_MASK) != (kword_t)(unsigned long)fs_mres_no_service;
+}
+
 int
 proc_pure_ram_drop_v1381(unsigned int slot)
 {
@@ -139,6 +214,10 @@ proc_pure_ram_drop_v1381(unsigned int slot)
             (words & (VM_PDP6_ALIGN_WORDS - 1UL)))
                 return MM_ERR_INVAL;
         pi_state = mach_pi_disable();
+        if (!pram_drop_available_v1926(backing, u)) {
+                rc = MM_ERR_INVAL;
+                goto out;
+        }
         if (!proc_pure_owner_v1918(slot, MM_TYPE_PROCESS, source,
             words, 0U)) {
                 rc = MM_ERR_INVAL;
