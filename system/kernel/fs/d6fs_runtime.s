@@ -623,10 +623,14 @@ d6fs_mres_reg_dispatch:
         sojl    7,kret_neg1             ; zero-based MM reader slot
         caml    7,vfs_mount_limit
         jrst    kret_neg1
+        skipn   d6fs_reader_slots_base
+        jrst    kret_neg1
         add     7,d6fs_reader_slots_base
         move    7,(7)
         jumpe   7,kret_neg1
         movem   7,d6fs_active_reader
+        cain    6,030                    ; private PURE_MEDIA_V1927
+        jrst    d6fs_pure_media_v1927
         cain    6,024                    ; FS_MRES_OP_D6FS_REMOUNT (20)
         jrst    d6fs_provider_toggle_state
         cain    6,026                    ; recovery raw block read (22)
@@ -635,6 +639,131 @@ d6fs_mres_reg_dispatch:
         jrst    d6fs_provider_space
         move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch
+
+; AC1=reader; physically read the selected A/B superblock, never BCACHE.
+; Return 0 and UUID in AC2/AC3 only if the selected header matches the
+; reader's admitted geometry, sequence and writable state. A RO recovery
+; root may be DIRTY; an unpublished secondary must be CLEAN. This is an
+; identity proof, not a second full structural filesystem scan.
+        .globl  d6fs_media_header_v1927
+        .globl  bcache_invalidate_all
+        .globl  dtfs_media_base
+        .globl  tsfs_file_shape_base
+        .globl  tsfs_extent_media_base
+d6fs_media_header_v1927:
+        push    17,010
+        move    010,1
+        pushj   17,bcache_invalidate_all
+        ; Poison the complete header before I/O. A falsely successful
+        ; zero/short transfer must not reuse a cached valid superblock.
+        setzm   fs_block_workspace
+        move    4,[fs_block_workspace,,fs_block_workspace+1]
+        blt     4,fs_block_workspace+017
+        move    2,011(010)
+        move    4,1(010)
+        trne    4,0200                  ; selected copy B
+        move    2,012(010)
+        movei   1,013(010)
+        movei   3,fs_block_workspace
+        pushj   17,fs_backing_read
+        jumpn   1,d6fs_media_bad_v1927
+        move    2,fs_block_workspace
+        came    2,[044066263602]        ; D6FSV2 magic/version
+        jrst    d6fs_media_bad_v1927
+        move    2,fs_block_workspace+1
+        came    2,2(010)                ; exact selected generation
+        jrst    d6fs_media_bad_v1927
+        move    2,fs_block_workspace+2
+        move    3,1(010)
+        trne    3,0100                  ; mounted writable -> DIRTY
+        jrst    d6fs_media_dirty_v1927
+        jumpe   2,d6fs_media_geom_v1927
+        andi    3,077
+        caie    3,1                     ; only RO recovery root can be DIRTY
+        jrst    d6fs_media_bad_v1927
+d6fs_media_dirty_v1927:
+        caie    2,1
+        jrst    d6fs_media_bad_v1927
+d6fs_media_geom_v1927:
+        ; Reader words 3..010 correspond exactly to SB words 7..014.
+        movei   4,3(010)
+        movei   5,fs_block_workspace+7
+        movei   6,6
+d6fs_media_geom_loop_v1927:
+        move    2,(4)
+        came    2,(5)
+        jrst    d6fs_media_bad_v1927
+        aoj     4,
+        aoj     5,
+        sojg    6,d6fs_media_geom_loop_v1927
+        move    2,1(010)
+        lsh     2,-014
+        came    2,fs_block_workspace+015
+        jrst    d6fs_media_bad_v1927
+        move    2,fs_block_workspace+016
+        caie    2,1
+        jrst    d6fs_media_bad_v1927
+        move    2,fs_block_workspace+3
+        move    3,fs_block_workspace+4
+        setz    1,
+        jrst    d6fs_media_done_v1927
+d6fs_media_bad_v1927:
+        seto    1,
+d6fs_media_done_v1927:
+        pop     17,010
+        popj    17,
+
+; Serialized private PURE operation. Keep the mounted UUID immutable;
+; a refused physical proof marks this mount unavailable for later DROP.
+; A successful retry clears only this mount's identity-proof failure.
+        .globl  d6fs_pure_media_v1927
+d6fs_pure_media_v1927:
+        ldb     2,[POINT 6,1,11]
+        move    1,d6fs_active_reader
+        jumpe   1,kret_neg1
+        ldb     3,[POINT 6,1(1),35]
+        came    2,3
+        jrst    kret_neg1
+        sojl    2,kret_neg1
+        caml    2,vfs_mount_limit
+        jrst    kret_neg1
+        skipn   dtfs_media_base
+        jrst    kret_neg1
+        skipn   tsfs_file_shape_base
+        jrst    kret_neg1
+        skipn   tsfs_extent_media_base
+        jrst    kret_neg1
+        push    17,011
+        move    011,2
+        move    4,dtfs_media_base
+        add     4,011
+        setom   (4)                     ; proof unavailable until success
+        move    4,tsfs_file_shape_base
+        add     4,011
+        move    5,tsfs_extent_media_base
+        add     5,011
+        move    6,(4)
+        ior     6,(5)
+        jumpe   6,d6fs_pure_media_bad_v1927 ; all-zero UUID is not identity
+        pushj   17,d6fs_media_header_v1927
+        jumpn   1,d6fs_pure_media_done_v1927
+        move    4,tsfs_file_shape_base
+        add     4,011
+        came    2,(4)
+        jrst    d6fs_pure_media_bad_v1927
+        move    4,tsfs_extent_media_base
+        add     4,011
+        came    3,(4)
+        jrst    d6fs_pure_media_bad_v1927
+        move    4,dtfs_media_base
+        add     4,011
+        setzm   (4)
+        jrst    d6fs_pure_media_done_v1927
+d6fs_pure_media_bad_v1927:
+        seto    1,
+d6fs_pure_media_done_v1927:
+        pop     17,011
+        popj    17,
 
 ; Recovery inspection, serialized by fs_provider_reg_call.
 ; AC2=logical D6FS block, AC3=physical mapped user buffer.
@@ -754,6 +883,22 @@ d6fs_mount_validated:
         hrl     4,-2(17)
         blt     4,015(5)
 
+        ; Capture physical identity before publishing the public mount.
+        ; The legacy validated handoff has no UUID words. Keep the same
+        ; ABI and require its selected superblock to match its geometry.
+        move    4,[fs_backing_direct_read,,fs_backing_direct_write]
+        movem   4,013(5)
+        skipn   dtfs_media_base
+        jrst    d6fs_mount_free
+        skipn   tsfs_file_shape_base
+        jrst    d6fs_mount_free
+        skipn   tsfs_extent_media_base
+        jrst    d6fs_mount_free
+        move    1,5
+        pushj   17,d6fs_media_header_v1927
+        jumpn   1,d6fs_mount_free
+        ; vfs_mount_prevalidated does not sleep or touch the workspace.
+        move    5,(17)
         movei   6,013(5)                 ; temporary root-vnode scratch
         push    17,6                     ; sixth arg: rootp
         push    17,[1]                   ; fifth arg: VFS_MOUNT_RDONLY
@@ -770,6 +915,17 @@ d6fs_mount_validated:
         add     6,7
         movem   5,(6)
         movem   5,d6fs_active_reader
+        move    4,dtfs_media_base
+        add     4,7
+        setzm   (4)
+        move    4,tsfs_file_shape_base
+        add     4,7
+        move    6,fs_block_workspace+3
+        movem   6,(4)
+        move    4,tsfs_extent_media_base
+        add     4,7
+        move    6,fs_block_workspace+4
+        movem   6,(4)
         move    6,1(5)                   ; prepacked summary/copy state
         move    4,7                      ; mount helper leaves zero-based slot AC7
         addi    4,1                      ; public mount id
@@ -1298,8 +1454,18 @@ d6fs_provider_unmount_done:
         pushj   17,mm_free
         jumpn   1,d6fs_provider_unmount_free_fail
         pop     17,4
-        add     4,d6fs_reader_slots_base
-        setzm   (4)
+        move    5,d6fs_reader_slots_base
+        add     5,4
+        setzm   (5)
+        move    5,dtfs_media_base
+        add     5,4
+        setzm   (5)
+        move    5,tsfs_file_shape_base
+        add     5,4
+        setzm   (5)
+        move    5,tsfs_extent_media_base
+        add     5,4
+        setzm   (5)
         setzm   d6fs_active_reader
         jrst    kret_zero
 d6fs_provider_unmount_free_fail:

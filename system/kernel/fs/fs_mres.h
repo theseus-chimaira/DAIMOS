@@ -50,6 +50,8 @@
 #define FS_DTFS_DISCARD_DRAIN_V1575 22U
 /* Fresh physical identity proof for stamped DTFS PURE reconstruction. */
 #define FS_DTFS_PURE_MEDIA_V1925 24U
+/* Same private operation on D6FS, using the mounted volume UUID. */
+#define FS_D6FS_PURE_MEDIA_V1927 24U
 
 struct fs_mres_request {
         kword_t op;

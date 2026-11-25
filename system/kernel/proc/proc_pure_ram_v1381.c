@@ -169,7 +169,10 @@ pram_drop_available_v1926(kword_t backing, const kword_t *u)
                 service = fs_dtfs_service_jump;
                 break;
         case D6FS_PROVIDER:
-                if (!d6fs_reader_slots_base || !d6fs_reader_slots_base[mount])
+                if (!d6fs_reader_slots_base || !d6fs_reader_slots_base[mount] ||
+                    !dtfs_media_base || !tsfs_file_shape_base ||
+                    !tsfs_extent_media_base || dtfs_media_base[mount] ||
+                    !(tsfs_file_shape_base[mount] | tsfs_extent_media_base[mount]))
                         return 0;
                 service = fs_d6fs_service_jump;
                 break;

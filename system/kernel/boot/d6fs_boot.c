@@ -22,6 +22,9 @@
  * It is reclaimed with KINIT and does not consume resident FS storage. */
 static kword_t d6fs_boot_scratch[D6FS_BLOCK_WORDS];
 static kword_t root_info[ROOT_D6FS_UNITS];
+/* D6FS and tape providers occupy disjoint public mount slots. */
+extern kword_t *dtfs_media_base, *tsfs_file_shape_base, *tsfs_extent_media_base;
+
 
 /* Recovery RO mounts must be able to read all three essential programs.
  * Stream complete images through the existing transient scratch block,
@@ -298,6 +301,11 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                 reader->opaque |= (kword_t)D6FS_PROVIDER_MOUNT_WRITABLE;
         }
 
+        /* Retain the selected volume identity in the existing tape-only
+         * slab words. The root is not yet visible to a user process. */
+        dtfs_media_base[id - 1U] = 0UL;
+        tsfs_file_shape_base[id - 1U] = super->fs_uuid[0];
+        tsfs_extent_media_base[id - 1U] = super->fs_uuid[1];
         return 0;
 
 fail:

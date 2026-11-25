@@ -819,20 +819,33 @@ static int map_block_has_free(const uint64_t *freemap, unsigned mbi,
         return 0;
 }
 
-static uint64_t deterministic_id(uint64_t seed, unsigned total)
+/* A newly formatted volume needs a fresh 72-bit identity, not a hash
+ * of names and capacity shared by unrelated filesystems. Acquire it
+ * before the first on-media write; fail closed on entropy failure. */
+static void new_volume_id(uint64_t *high, uint64_t *low)
 {
-        uint64_t h;
+        unsigned char bytes[9];
+        FILE *fp;
         unsigned i;
+        size_t got;
+        int rc;
 
-        h = seed & WORD_MASK;
-        for (i = 0U; i < node_count; ++i) {
-                const unsigned char *p = (const unsigned char *)nodes[i].name;
-                while (*p != 0U) {
-                        h = ((h << 5) ^ (h >> 31) ^ *p++) & WORD_MASK;
-                }
-        }
-        h ^= total;
-        return h & WORD_MASK;
+        fp = fopen("/dev/urandom", "rb");
+        if (fp == NULL)
+                die("cannot open volume identity entropy source");
+        got = fread(bytes, 1U, sizeof(bytes), fp);
+        rc = fclose(fp);
+        if (got != sizeof(bytes) || rc != 0)
+                die("cannot read volume identity entropy");
+        *high = 0;
+        for (i = 0U; i < 4U; ++i)
+                *high = (*high << 8) | bytes[i];
+        *high = (*high << 4) | (bytes[4] >> 4);
+        *low = bytes[4] & 15U;
+        for (i = 5U; i < 9U; ++i)
+                *low = (*low << 8) | bytes[i];
+        if ((*high | *low) == 0)
+                die("invalid all-zero volume identity");
 }
 
 static void initialize_badmap(void)
@@ -892,6 +905,7 @@ static void format_fs(unsigned super_a, unsigned super_b)
         if (data_cursor >= total)
                 die("diskset too small for D6FS metadata");
 
+        new_volume_id(&fsid0, &fsid1);
         initialize_badmap();
         build_directories();
         for (i = 0U; i < node_count; ++i) {
@@ -959,8 +973,6 @@ static void format_fs(unsigned super_a, unsigned super_b)
                     summary + (size_t)b * BLOCK_WORDS) != 0)
                         die("cannot write free summary");
 
-        fsid0 = deterministic_id(012345670123ULL, total);
-        fsid1 = deterministic_id(076543210765ULL, total);
         {
                 unsigned swap_blocks = disk_layout.swap_tail_blocks * member_count;
                 uint64_t high;

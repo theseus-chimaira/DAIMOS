@@ -149,9 +149,9 @@ struct d6fs_reader {
         struct fs_backing backing;
 };
 
-/* Superblock state and UUID are validation/media identity, not runtime
- * traversal state.  They remain on media and are deliberately not copied into
- * each managed-core reader.  Runtime block identity is owned by BCACHE. */
+/* The reader retains traversal state only. The mounted UUID is stored in
+ * the existing provider-disjoint shape/extent slab words; the media word
+ * holds a D6FS identity-proof failure flag. No reader expansion. */
 
 /*
  * Encode/decode one inline extent.  The run word stores START24|LENLOW12;
