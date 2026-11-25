@@ -76,7 +76,7 @@ struct table_info {
 
 /* Reclaimable KINIT scratch/state. */
 static kword_t tsfs_block[0200];
-static kword_t tsfs_handoff[3];
+static kword_t tsfs_handoff[TSFS_BOOT_HANDOFF_V1928];
 static int tsfs_selected;
 static unsigned int tsfs_selected_units_v22;
 
@@ -365,6 +365,14 @@ build_handoff(const struct scan_info *scan)
                 hi = ((kword_t)scan->unit[extent.member] << 15) | extent.records;
                 tsfs_handoff[2] = (hi << 18) | extent.block;
         }
+        /* Preserve the exact validated set and table-directory identity.
+         * Runtime needs these words after the KINIT scan is reclaimed. */
+        tsfs_handoff[3] = scan->seed.id_hi;
+        tsfs_handoff[4] = scan->seed.id_lo;
+        tsfs_handoff[5] = scan->seed.generation;
+        tsfs_handoff[6] = ((kword_t)scan->seed.tdir_member << 18) |
+            scan->seed.tdir_block;
+        tsfs_handoff[7] = scan->seed.tdir_checksum;
         return 0;
 }
 

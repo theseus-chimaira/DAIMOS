@@ -9,8 +9,13 @@
 #define TSFS_KIND_NODE             2U
 #define TSFS_BLOCKS_PER_MEMBER     01102U
 
-/* The transient mount helper validates metadata and leaves only compact table
- * locators.  This keeps the handoff/state at the existing 20 words. */
+/* Boot-only mount: three locator/map words followed by set ID (two),
+ * generation, table-directory locator and checksum. The last five are
+ * kept once in the optional tape MRES, not per mount or process. */
+#define TSFS_BOOT_HANDOFF_V1928     8U
+/* Member map bits 0..23 and mask bits 24..31 are unchanged. A failed
+ * physical proof blocks further PURE DROP until an exact retry. */
+#define TSFS_MEDIA_SUSPECT_V1928    (1UL << 32U)
 
 #define TSFS_FILE_WORDS            8U
 #define TSFS_FILE_PARENT_FLAGS     0U

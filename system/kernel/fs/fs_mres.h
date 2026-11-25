@@ -52,6 +52,7 @@
 #define FS_DTFS_PURE_MEDIA_V1925 24U
 /* Same private operation on D6FS, using the mounted volume UUID. */
 #define FS_D6FS_PURE_MEDIA_V1927 24U
+#define FS_TSFS_PURE_MEDIA_V1928 24U
 
 struct fs_mres_request {
         kword_t op;

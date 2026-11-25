@@ -179,7 +179,8 @@ pram_drop_available_v1926(kword_t backing, const kword_t *u)
         case TSFS_PROVIDER:
                 if (!dtfs_media_base || !tsfs_file_shape_base ||
                     !tsfs_extent_media_base || !dtfs_media_base[mount] ||
-                    !tsfs_file_shape_base[mount] || !tsfs_extent_media_base[mount])
+                    !tsfs_file_shape_base[mount] || !tsfs_extent_media_base[mount] ||
+                    (tsfs_file_shape_base[mount] & TSFS_MEDIA_SUSPECT_V1928))
                         return 0;
                 service = fs_tsfs_service_jump;
                 break;

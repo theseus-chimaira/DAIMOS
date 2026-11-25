@@ -348,13 +348,12 @@ ei_bridge_apply_v1391:
 ei_bridge_media_v1925:
         move    1,014
         ldb     7,[POINT 6,1,5]
-        caie    7,5                     ; DTFS or D6FS
-        cain    7,6
+        caie    7,4                     ; MEMFS needs no physical proof
         jrst    ei_bridge_dtfs_v1925
         setz    1,
         popj    17,
 ei_bridge_dtfs_v1925:
-        movei   6,030                   ; private PURE_MEDIA (DTFS/D6FS)
+        movei   6,030                   ; private PURE_MEDIA (DTFS/D6FS/TSFS)
         jrst    fs_provider_reg_call
 
 ; Called inside the existing bridge frame (one extra return word).

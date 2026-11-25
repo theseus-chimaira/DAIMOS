@@ -16,6 +16,8 @@
 tsfs_mres_dispatch:
         cain    6,022                    ; FS_MRES_OP_MOUNT_UNIT
         jrst    tsfs_mount_set
+        cain    6,030                    ; private PURE_MEDIA_V1928
+        jrst    tsfs_pure_media_v1928
         cain    6,025                    ; FS_MRES_OP_SPACE
         jrst    tsfs_space
         move    7,[tsfs_mres_vector]
@@ -57,12 +59,174 @@ tsfs_mres_vector:
 ; Providers are serialized around fs_block_workspace.  Therefore metadata
 ; records can be consumed directly from that workspace until the next DTC
 ; read; copying each eight-word record onto a kernel stack only wastes RAM and
-; time.  Media checksum/structural validation remains in transient userspace.
+; time. Full table structural validation remains in KINIT; the runtime
+; PURE proof validates fresh descriptor seals and admitted identity.
         .globl  dtfs_media_base
         .globl  tsfs_file_shape_base
         .globl  tsfs_extent_media_base
         .globl  fs_block_workspace
         .globl  dtfs_dtc_read
+
+; Boot-only TSFS has exactly one admitted set. Keep its complete identity
+; once in this optional MRES rather than expanding every VFS mount slot.
+        .bss
+tsfs_identity_v1928: .block 5
+        .text
+        .globl tsfs_pure_media_v1928
+        .globl dtfs_dtc_read_jump
+        .globl bcache_invalidate_all
+        .globl dtfs_cache_mount
+
+; AC1 = requesting vnode. Check every configured physical member against
+; the original boot identity. A valid but contradictory descriptor is a
+; hard refusal even if the other copy agrees. One unreadable or unsealed
+; copy is tolerated; sealed malformed headers are refused conservatively.
+; Serialized provider lease protects the shared workspace and root state.
+tsfs_pure_media_v1928:
+        move    2,vfs_namespace_root
+        jumpe   2,kret_neg1
+        ldb     3,[POINT 6,2,5]
+        caie    3,7
+        jrst    kret_neg1
+        xor     2,1
+        lsh     2,-030                 ; same provider and public mount
+        jumpn   2,kret_neg1
+        ldb     2,[POINT 6,1,11]
+        sojl    2,kret_neg1
+        caml    2,vfs_mount_limit
+        jrst    kret_neg1
+        skipn   3,tsfs_file_shape_base
+        jrst    kret_neg1
+        add     3,2
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        move    013,3                  ; root member-map word
+        move    010,(013)
+        movsi   4,040000                ; bit 32 = proof suspect
+        iorm    4,(013)
+        setzm   dtfs_cache_mount
+        pushj   17,bcache_invalidate_all
+        move    011,010
+        lsh     011,-030
+        andi    011,0377               ; exact physical member mask
+        jumpe   011,tsfs_media_refuse_v1928
+        and     010,[077777777]         ; low 24-bit logical map
+        move    3,011
+        setz    012,
+tsfs_media_count_v1928:
+        move    4,3
+        subi    4,1
+        and     3,4
+        aoj     012,
+        jumpn   3,tsfs_media_count_v1928
+        lsh     012,022                ; expected count,,ordinal
+tsfs_media_next_v1928:
+        move    014,010
+        andi    014,7
+        movei   4,1
+        lsh     4,0(014)
+        tdnn    4,011                  ; duplicate or omitted map member
+        jrst    tsfs_media_refuse_v1928
+        andcam  4,011
+        move    1,014
+        movei   2,1
+        pushj   17,tsfs_media_copy_v1928
+        jumpg   1,tsfs_media_refuse_v1928
+        move    015,1                  ; 0 exact, -1 unreadable/bad seal
+        move    1,014
+        movei   2,2
+        pushj   17,tsfs_media_copy_v1928
+        jumpg   1,tsfs_media_refuse_v1928
+        and     1,015
+        jumpn   1,tsfs_media_refuse_v1928 ; neither copy agrees
+        lsh     010,-3
+        aoj     012,
+        jumpn   011,tsfs_media_next_v1928
+        jumpn   010,tsfs_media_refuse_v1928 ; nonzero trailing selectors
+        movsi   4,040000
+        andcam  4,(013)
+        setz    1,
+        jrst    tsfs_media_return_v1928
+tsfs_media_refuse_v1928:
+        seto    1,
+tsfs_media_return_v1928:
+        pop     17,015
+        pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; AC1 physical unit, AC2 descriptor block; AC12 expected member word.
+; Clear shared transfer scratch before bypassing BCACHE, so false success
+; cannot reuse a valid old descriptor. Verify full 128-word checksum.
+tsfs_media_copy_v1928:
+        setzm   fs_block_workspace
+        move    4,[fs_block_workspace,,fs_block_workspace+1]
+        blt     4,fs_block_workspace+0177
+        movei   3,fs_block_workspace
+        pushj   17,dtfs_dtc_read_jump
+        jumpn   1,kret_neg1
+        setz    4,
+        setz    5,
+tsfs_media_sum_v1928:
+        rot     4,1
+        caie    5,013                  ; descriptor checksum word excluded
+        xor     4,fs_block_workspace(5)
+        addi    4,1
+        aoj     5,
+        caige   5,0200
+        jrst    tsfs_media_sum_v1928
+        came    4,fs_block_workspace+013
+        jrst    kret_neg1
+        ; A sealed contradictory header is not an unreadable copy.
+        move    4,fs_block_workspace
+        came    4,[0646346630000]
+        jrst    tsfs_media_conflict_v1928
+        move    4,fs_block_workspace+1
+        came    4,[1,,1]
+        jrst    tsfs_media_conflict_v1928
+        skipe   fs_block_workspace+2
+        jrst    tsfs_media_conflict_v1928
+        move    4,fs_block_workspace+3
+        came    4,tsfs_identity_v1928
+        jrst    tsfs_media_conflict_v1928
+        move    4,fs_block_workspace+4
+        came    4,tsfs_identity_v1928+1
+        jrst    tsfs_media_conflict_v1928
+        move    4,fs_block_workspace+5
+        came    4,tsfs_identity_v1928+2
+        jrst    tsfs_media_conflict_v1928
+        came    012,fs_block_workspace+6
+        jrst    tsfs_media_conflict_v1928
+        move    4,fs_block_workspace+7
+        caie    4,01102
+        jrst    tsfs_media_conflict_v1928
+        move    4,fs_block_workspace+010
+        came    4,tsfs_identity_v1928+3
+        jrst    tsfs_media_conflict_v1928
+        move    4,fs_block_workspace+011
+        caie    4,1
+        jrst    tsfs_media_conflict_v1928
+        move    4,fs_block_workspace+012
+        came    4,tsfs_identity_v1928+4
+        jrst    tsfs_media_conflict_v1928
+        movei   5,014
+tsfs_media_tail_v1928:
+        skipe   fs_block_workspace(5)
+        jrst    tsfs_media_conflict_v1928
+        aoj     5,
+        caige   5,0200
+        jrst    tsfs_media_tail_v1928
+        jrst    kret_zero
+tsfs_media_conflict_v1928:
+        movei   1,1
+        popj    17,
 
 ; int tsfs_root_owns_dtc_unit_v1516(unsigned int physical_unit)
 ; AC1=0..7. Return +1 only if that physical DECtape belongs to the
@@ -646,13 +810,18 @@ tsfs_read_words_restore:
         popj    17,
 
 tsfs_mount_set:
+        ; Only the boot root can own the singleton set identity record.
+        jumpe   1,kret_neg1
+        jumpn   2,kret_neg1
+        skipe   vfs_namespace_root
+        jrst    kret_neg1
         caie    3,1                    ; VFS_MOUNT_RDONLY
         jrst    kret_neg1
         jumpe   4,kret_neg1       ; provider ABI requires rootp
         push    17,010
         push    17,011
         push    17,012
-        move    010,1                  ; three-word metadata handoff
+        move    010,1                  ; eight-word boot metadata handoff
         move    011,2                  ; mount target
         move    012,4                  ; returned root pointer
 
@@ -712,6 +881,10 @@ tsfs_mount_do:
         move    3,tsfs_extent_media_base
         add     3,4
         movem   5,(3)
+        movei   4,3(010)
+        hrl     4,4
+        hrri    4,tsfs_identity_v1928
+        blt     4,tsfs_identity_v1928+4
         pushj   17,bcache_reclaim       ; accepted removable-media handoff
         move    5,(17)
         movem   5,(012)
