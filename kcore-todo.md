@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1939 poisoned D6FS retirement; K01-K06 closed).
+Updated: 2026-11-25 (v1940 native K07 acceptance, physical incomplete; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1335,6 +1335,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   and earlier D6FS selector/remount/slab gates pass. Fixed KCORE +46,
   D6FS MRES +21, BSS/PURE/tape unchanged. Controlled boundaries;
   K07 remains OPEN for integrated physical/lifetime acceptance.
+  **v1940:** all 13 distinct current native regression groups pass.
+  Testkit consolidates native and physical runners. Missing installed
+  native KCC bootstrap restored with existing install-native target;
+  current GCC 48K TSFS full image builds and boots. Three checked
+  children (one plain, two compressed) start before 180s host timeout
+  in DTC search. Physical lifecycle, FULL geometry, live PI6 and
+  source loss acceptance remain OPEN. Longer physical runner added
+  but not yet executed; historical replay offsets require updating.
+  No kernel code or permanent RAM growth.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

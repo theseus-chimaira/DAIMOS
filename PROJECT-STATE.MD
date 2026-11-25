@@ -1,3 +1,37 @@
+## 2026-11-25 v1940-k07: integrated acceptance checkpoint
+
+All 13 distinct K07 native regression groups passed on production
+7a87d843, including the combined D6FS media/discard and DTFS admin
+gates. Testkit 1c833db consolidates the targets, records evidence and
+adds a source-built physical mixed plain/compressed TSFS lifecycle
+runner. Both new wrappers syntax-checked; the native matrix was
+actually run through individual targets in parallel, not the new
+serial wrapper. No kernel source changes.
+
+Full guest image construction initially failed because the installed
+native KCC bootstrap was missing. KCC edff620's existing install-native
+target restored the five phase/driver DXRs and runtime objects under
+PDP10_PREFIX without source modifications. The GCC lowmem 48K image
+then built successfully, with real verified three-member TSFS media
+(54 files, 315 extents) and exact plain/compressed DXR2 images.
+The original guest installed PURE/DTFS and emitted aaa (one plain
+and two compressed checked sleeping children) before a 180-second
+host timeout (124). Separate bounded monitor steps and final timeout
+PC show DTC search polling. No proven deadlock; no complete lifecycle,
+FULL geometry or PI6 acceptance. Physical wrapper uses a longer
+1150-second default, not yet run. Evidence and image hashes are in
+the testkit v1940 README; original build and console:
+$TMPDIR/pure-brk-pressure-v1614.Fx9gcX; matrix and probe:
+$TMPDIR/k07-accept-v1940.ENLgJ9. Both simulator runs ended.
+
+K07 remains OPEN. Next: complete current source-built physical
+pressure/restore and dynamically resolve FULL replay locations,
+then exercise live reservation/retirement, source loss and PI6
+ordering. Historical physical replay addresses are stale. No new
+memory growth; the separate GCC physical image is not the previous
+folded KCC size baseline. K08/K09/K17 remain open; RAW PURE/mode3
+default OFF.
+
 ## 2026-11-25 v1939-k07: poisoned D6FS administrative retirement
 
 The existing root-only DTFS recovery syscall now accepts poisoned
