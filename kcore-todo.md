@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-25 (v1922 K06 implementation closed; K01-K06 closed).
+Updated: 2026-11-25 (v1923 K07 backing reconstruction; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1144,6 +1144,18 @@ history is now reachable from main (v1809); mode3 remains disabled.
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe
   owner retention when the source cannot be trusted.
+  **v1923:** shared unpacker rejects absent backing/u-area/slab and
+  wrong public mount root ID. PREFIX/FULL require PURE flag and
+  compare the exact original root, canonical vnode and text before
+  payload and after successful I/O. Ten restore faults, five decoder
+  checks and five unsafe native mutants pass; earlier loader,
+  staged owner, pinned mount guard and FULL rollback gates pass.
+  Preserve proven typed source-free refusal (v1921 correction).
+  Folded PURE +24 words; fixed KCORE +8; BSS/per-owner data unchanged.
+  K07 remains OPEN for durable backing identity, mutation/owner
+  admission races, provider/RO handling and unmount verification.
+  Root snapshots cannot identify reuse before admission or an
+  identical handle ABA replacement; no physical acceptance claimed.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

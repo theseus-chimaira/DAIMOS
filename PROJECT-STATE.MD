@@ -1,3 +1,34 @@
+## 2026-11-25 v1923-k07: backing identity during PURE reconstruction
+
+The shared resident backing decoder now rejects null backing/u-area,
+missing root slab and a published root with the wrong public mount
+ID. It also returns the exact root word in AC5. The common PURE
+PREFIX/FULL adapter saves this root in its existing stack scratch,
+requires the DXR PURE flag as well as matching TX2 text length, and
+rechecks the complete root, canonical executable vnode and text
+before payload loading and after successful provider I/O. A changed
+binding fails reconstruction before MM publication; the retained RAW
+suffix stays authoritative. FULL keeps the original typed MM error
+on a proven source-free refusal, converting only false success to
+BUSY (corrects a v1921 return-code regression).
+
+Implementation feb87fdf; testkit 042601d: ten PREFIX/FULL source-change
+cases and five decoder checks pass; five unsafe ASM variants fail
+native assertions at 03002, 01103, 01202, 01102 and 0101 octal.
+Native v1387/v1390, v1563, v1649, v1839 and v1921 regressions pass.
+Historical v1387 runner uses its test-only codec alias and original
+device-state leaf. VFS reads/stat and MM allocation/pin/free/PI are
+controlled in the new gate; no real concurrent media replacement
+or physical PI6 acceptance is claimed.
+
+Folded lowmem tape KCC PURE MRES 3649 -> 3673 words (+24); fixed
+KCORE low end 025136 -> 025146 octal (+8 words), BSS 000415 unchanged.
+No additional permanent data or per-owner storage. K07 OPEN: the
+transaction root snapshot is not a durable provider/media generation.
+Pre-existing same-slot/root reuse, source lifetime/mutation races,
+RO/provider failure and actual unmount coverage remain to audit.
+K01-K06 implementation closed; RAW PURE/mode3 default OFF.
+
 ## 2026-11-25 v1922-k06: managed-arena proof; K06 implementation closed
 
 The shared optional PURE assembly proof checks installed core size,
