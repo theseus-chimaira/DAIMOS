@@ -1,3 +1,37 @@
+## 2026-11-25 v1929-k07: ordinary D6FS backing failure publication
+
+Ordinary D6FS failed read/write transfers now publish READ_SUSPECT
+(bit 0) or WRITE_UNCERTAIN (bit 1) in the existing provider-disjoint
+mount media word. The actual published reader must match its slot;
+boot probes/stale readers do not poison a replacement. Invalidate
+shared workspace and only the failed source's private clean cache tag;
+independent clean private entries survive. The existing v1538 root
+fail-stop classifier is unchanged, including selected-root HALT and
+secondary normal error returns. DTFS already publishes suspect/poison
+on ordinary failures; TSFS is boot-only, with existing ordinary root
+fail-stop and v1928 private-proof suspect handling.
+
+D6FS physical proof sets/clears only READ_SUSPECT. A matching UUID is
+not sufficient to retire WRITE_UNCERTAIN; private proof refuses it
+before physical I/O. Both flags prevent new PURE DROP; failed restore
+retains authoritative RAW. No new storage or per-process state. This
+is PURE backing safety, not general D6FS transactional write recovery.
+Ordinary successful reads alone do not clear the flag. If all owners
+are resident, a private proof or validated mount retirement is still
+needed before reclaim can resume; automatic secondary read recovery
+and general write-recovery/retirement semantics remain to audit.
+
+Implementation d63e1f98; testkit 9e762e5. Extended native v1927 gate
+passes six new fault-publication assertions, twelve original physical
+proof faults/retries and ten unsafe controls. DROP gate 118 cases and
+six unsafe controls pass. Earlier v1513, v1538, v1544, v1546 and v1602
+native source-linked matrices pass with real new fault leaf. No full
+guest physical replacement or PI6 acceptance. Folded lowmem tape KCC
+D6FS MRES 2320 -> 2354 (+34); PURE 3879 unchanged; fixed KCORE byte-
+identical at 025174 octal, BSS unchanged. K07 OPEN: secondary read
+recovery/lifetime, write recovery policy, executable mutation/admission
+and integrated unmount. RAW PURE and mode3 default OFF. K17 mandatory.
+
 ## 2026-11-25 v1928-k07: TSFS mounted set identity; mandatory KA10 backlog
 
 TSFS boot preserves its validated set ID (two words), generation,

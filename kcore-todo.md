@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1928 TSFS identity and mandatory nonpaged KA10; K01-K06 closed).
+Updated: 2026-11-25 (v1929 ordinary D6FS backing faults; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1213,6 +1213,18 @@ history is now reachable from main (v1809); mode3 remains disabled.
   per-process words. Not a full content hash or physical reel lock;
   no whole-guest exchange acceptance. Ordinary provider-loss policy,
   mutation/admission and integrated unmount remain OPEN.
+  **v1929:** ordinary D6FS failures mark the exact published reader's
+  mount READ_SUSPECT or WRITE_UNCERTAIN using the existing media word.
+  Invalidate workspace and failed-source private cache tag only.
+  Preserve v1538 root fail-stop and secondary error semantics.
+  Matching UUID clears only read suspicion; write uncertainty refuses
+  PURE proof, and both flags block DROP. Native six added fault cases,
+  ten total proof mutants, 118 DROP cases and six DROP mutants pass;
+  v1513/v1538/v1544/v1546/v1602 regressions pass. D6FS MRES +34 words,
+  PURE and fixed KCORE unchanged, no new data. General write recovery
+  is not implemented here; ordinary success is not a physical identity
+  proof. Secondary all-resident read retry, mutation/admission and
+  unmount lifetime remain open. No physical guest acceptance claimed.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
