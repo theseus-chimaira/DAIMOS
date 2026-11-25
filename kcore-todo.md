@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1935 destructive EXEC live identity; K01-K06 closed).
+Updated: 2026-11-25 (v1936 executable namespace revision; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1295,6 +1295,18 @@ history is now reachable from main (v1809); mode3 remains disabled.
   Lookup-to-reservation, fatal/private-stack lifetime, MEMFS mutation,
   poisoned retirement and integrated physical validation remain OPEN.
   Compressed/XIP execution not covered by the new fixture.
+  **v1936:** executable lookup saves a namespace revision before walking
+  and checks it after reservation admission, before STAT/image reads.
+  Potentially mutating gateway calls advance the revision before and
+  after dispatch, even on failure; actual mount publication/retirement
+  advance it too. Saturate rather than wrap. 50 provider/opcode cases,
+  lookup and lease-wait changes, mount changes and saturation pass;
+  five unsafe variants rejected. Fixed KCORE +28 words incl. BSS +1;
+  PURE and loader frame unchanged. Conservative unrelated mutation
+  refusal; no automatic retry. Controlled native lookup boundaries,
+  not full recursive namespace or physical PI6 acceptance. Fatal stack
+  lifetime, direct MEMFS mutation, poisoned retirement and integrated
+  validation remain OPEN.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

@@ -1,3 +1,35 @@
+## 2026-11-25 v1936-k07: executable namespace revision validation
+
+Executable lookup now saves the current namespace revision in unused STAT
+scratch before the pathname walk and compares it after acquiring the
+v1933 backing reservation. A changed revision refuses the load before
+STAT or image reads and retires the reservation. The gateway brackets
+potentially mutating provider calls with saturating revision updates,
+including failed or partially completed calls, before releasing the
+physical lease. MEMFS uses the same dispatch classification. Actual
+VFS mount publication and retirement also advance the revision. A
+saturated revision refuses new executable walks; it never wraps to
+an earlier accepted value. No process table or loader frame growth.
+
+Implementation 456ff3bf; testkit 9bee952. Native gateway classification
+50 cases, mount publication/retirement, saturation and changed lookup
+and lease-wait completion pass; five executed unsafe variants rejected.
+The earlier eight loader cases remain covered. v1932/v1933/v1935,
+v327/v917, v1514/v1531/v1523/v1562/v1566 and D6FS v1927-v1931
+regressions pass. The v1560 auxiliary fixture linkage was adapted but
+not rerun. Lookup and physical callbacks controlled, not full recursive
+pathname or PI6 integration. Folded lowmem KCC tape KCORE low end
+025444 -> 025500 octal (+28 words), DXR image 025001, BSS 000417 (+1),
+PURE MRES 3879 unchanged. No new permanent process data.
+
+The revision conservatively refuses even unrelated concurrent mutations;
+there is no unbounded automatic retry. This protects executable admission
+against gateway-visible namespace changes, not generic pathname lookup
+linearizability or silent physical exchange. K07 remains OPEN for fatal/
+private-stack lifetime, direct MEMFS mutation admission, poisoned-volume
+administrative retirement and integrated lifetime/physical validation.
+RAW PURE/mode3 default OFF. K17 mandatory nonpaged KA10 unchanged.
+
 ## 2026-11-25 v1935-k07: destructive low-memory EXEC live identity
 
 The loader now distinguishes the live current descriptor from a staged
