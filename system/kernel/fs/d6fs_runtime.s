@@ -632,10 +632,6 @@ d6fs_mres_reg_dispatch:
         move    7,(7)
         jumpe   7,kret_neg1
         movem   7,d6fs_active_reader
-        cain    6,030                    ; private PURE_MEDIA_V1927
-        jrst    d6fs_pure_media_v1927
-        cain    6,026                    ; privileged raw recovery inspection
-        jrst    d6fs_provider_recovery_read
         ; Ordinary requests must not use a replacement volume after a
         ; known transfer failure. Reuse the serialized physical proof.
         ; AC1..6 are the provider ABI; only AC7 is scratch on entry.
@@ -645,10 +641,27 @@ d6fs_mres_reg_dispatch:
         ldb     2,[POINT 6,1,11]
         addi    7,-1(2)
         pop     17,2
-        skipn   7,(7)
-        jrst    d6fs_dispatch_ready_v1930
+        move    7,(7)
+        trne    7,0020000               ; exclusive VFS retirement
+        jrst    d6fs_dispatch_unmount_v1931
+        cain    6,020                   ; PREPARE needs held barrier
+        jrst    kret_neg1
+        cain    6,030
+        jrst    d6fs_pure_media_v1927
+        cain    6,026
+        jrst    d6fs_provider_recovery_read
+        cain    6,024                   ; REMOUNT needs selected header
+        jrst    d6fs_dispatch_proof_v1931
+        jumpe   7,d6fs_dispatch_ready_v1930
         caie    7,1                     ; only READ_SUSPECT is recoverable
         jrst    kret_neg1
+        jrst    d6fs_dispatch_proof_v1931
+d6fs_dispatch_unmount_v1931:
+        caie    6,020
+        jrst    kret_neg1
+        ; Even a healthy mount needs a fresh identity proof before
+        ; CLEAN or retirement. The proof preserves the held barrier.
+d6fs_dispatch_proof_v1931:
         ; Preserve the complete request across the sleeping raw proof.
         add     17,[6,,6]
         movei   7,-5(17)
@@ -724,7 +737,7 @@ d6fs_media_header_v1927:
         ; zero/short transfer must not reuse a cached valid superblock.
         setzm   fs_block_workspace
         move    4,[fs_block_workspace,,fs_block_workspace+1]
-        blt     4,fs_block_workspace+017
+        blt     4,fs_block_workspace+0177
         move    2,011(010)
         move    4,1(010)
         trne    4,0200                  ; selected copy B
@@ -806,6 +819,7 @@ d6fs_pure_media_v1927:
         move    6,(4)
         ; Identity alone cannot prove that a failed write was atomic.
         ; Keep write uncertainty sticky for this mount lifetime.
+        trz     6,0020000               ; internal PREPARE proof only
         caile   6,1
         jrst    d6fs_pure_media_bad_v1927
         jumpl   6,d6fs_pure_media_bad_v1927
@@ -1474,31 +1488,27 @@ d6fs_provider_read_words_done:
 d6fs_provider_sync:
         jrst    kret_zero
 
-; Publish the opposite A/B superblock and toggle CLEAN/DIRTY state.
-; All D6FS writes are synchronous and the dynamic cache is clean-only, so this
-; publication is the complete persistent barrier for RO/RW transitions.
+; Publish the opposite A/B superblock using the verified selected
+; header still in the shared workspace. Both REMOUNT and PREPARE have
+; proved it under the provider lease. Never copy the stale alternate.
+; This private state transition may write even from RO; ordinary file
+; writes still require the reader's writable bit.
 d6fs_provider_toggle_state:
         move    5,d6fs_active_reader
         move    4,1(5)
         move    2,012(5)                 ; current A -> publish B
         trne    4,0200                    ; current B -> publish A
         move    2,011(5)
-        push    17,2
-        move    1,5
-        pushj   17,d6fs_reader_get_block
-        pop     17,2
-        jumpe   1,kret_neg1
-        move    5,d6fs_active_reader
         move    4,2(5)
         addi    4,1
         movem   4,fs_block_workspace+1   ; sequence
         ldb     4,[POINT 1,1(5),29]      ; current writable bit
         xori    4,1                      ; media state: RW->CLEAN, RO->DIRTY
         movem   4,fs_block_workspace+2
-        move    1,5
+        movei   1,013(5)
         movei   3,fs_block_workspace
-        pushj   17,d6fs_reader_write_block
-        jumpn   1,kret_neg1
+        pushj   17,fs_backing_write
+        jumpn   1,d6fs_toggle_fail_v1931
         move    5,d6fs_active_reader
         aos     2(5)
         movei   4,0300                   ; WRITABLE | COPY
@@ -1506,12 +1516,23 @@ d6fs_provider_toggle_state:
         ldb     4,[POINT 6,1(5),35]      ; mount id
         movei   6,1
         lsh     6,-1(4)
-        xorm    6,vfs_mount_policy       ; toggle RO bit after CLEAN publication
+        xorm    6,vfs_mount_policy       ; toggle RO bit after publication
         jrst    kret_zero
+d6fs_toggle_fail_v1931:
+        move    1,d6fs_active_reader
+        movei   2,2                     ; incomplete superblock write
+        pushj   17,d6fs_note_failure_v1929
+        movei   1,6
+        move    2,d6fs_active_reader
+        ldb     2,[POINT 6,1(2),35]
+        pushj   17,kcore_root_fs_io_failure_v1538
+        jrst    kret_neg1
 
 ; int d6fs_provider_prepare_unmount(vnode_t root)
         .globl  d6fs_provider_prepare_unmount
+        .globl vfs_unmount_owner_check_v1523
 d6fs_provider_prepare_unmount:
+        ; Entered only via the serialized, quiescing dispatcher.
         move    5,d6fs_active_reader
         move    4,1(5)
         trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
@@ -1521,6 +1542,12 @@ d6fs_provider_prepare_unmount:
 d6fs_provider_unmount_done:
         setz    1,
         pushj   17,bcache_reclaim        ; source id may be reused after unmount
+        move    5,d6fs_active_reader
+        ldb     1,[POINT 6,1(5),35]
+        ; CLEAN and the lease wait may have slept. Check all owners
+        ; after the last possible yield and before deleting the reader.
+        pushj   17,vfs_unmount_owner_check_v1523
+        jumpn   1,kret_neg1
         move    5,d6fs_active_reader
         ldb     4,[POINT 6,1(5),35]      ; mount id
         subi    4,1                      ; public mount ID -> MM slot
@@ -1534,9 +1561,7 @@ d6fs_provider_unmount_done:
         move    5,d6fs_reader_slots_base
         add     5,4
         setzm   (5)
-        move    5,dtfs_media_base
-        add     5,4
-        setzm   (5)
+        ; VFS clears the barrier only after the root is unpublished.
         move    5,tsfs_file_shape_base
         add     5,4
         setzm   (5)

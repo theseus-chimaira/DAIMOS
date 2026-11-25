@@ -8,6 +8,7 @@
 #include "vfs.h"
 #include "memfs.h"
 #include "dtfs.h"
+#include "d6fs_provider.h"
 #include "tsfs.h"
 
 /* Published VFS mount-root slab; each public mount ID selects slot ID-1.
@@ -45,13 +46,13 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
                 text_words = 0UL;
         if (text_words > PROC_SWAP_TEXT_MASK)
                 return -1;
-        /* v1563: an executable can finish loading after the DTFS
+        /* v1563: an executable can finish loading after the DTFS/D6FS
          * unmount preflight. Publish no new PURE dependency (or staged
          * RUN executable) once its mount begins quiescing. No sleep
          * occurs between this admission check and the swap-record
          * publication below. Existing owners are found by the matching
          * SIDL/resident/swapped scan in proc_swap_mount_busy. */
-        if (provider == DTFS_PROVIDER &&
+        if ((provider == DTFS_PROVIDER || provider == D6FS_PROVIDER) &&
             vfs_dtfs_owner_admit_v1562(backing) != 0)
                 return -1;
         packed = VFS_INDEX(backing);

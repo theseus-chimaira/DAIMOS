@@ -1063,7 +1063,15 @@ vfs_unmount_slot:
         move    1,(17)                  ; zero-based mount slot
         pushj   17,vfs_dtfs_quiesce_begin_v1562
         jumpl   1,vfs_unmount_fail
-        movem   1,-2(17)               ; 1 for V2, zero otherwise
+        movem   1,-2(17)               ; 1 DTFS V2, 2 D6FS
+        caie    1,2
+        jrst    vfs_unmount_sync_v1931
+        ; D6FS has synchronous writes. PREPARE drains the provider lease,
+        ; proves media and performs the final owner check before free.
+        move    1,-1(17)
+        movei   3,6
+        jrst    vfs_unmount_prepare
+vfs_unmount_sync_v1931:
         move    1,-1(17)
         pushj   17,vfs_sync
         jumpn   1,vfs_unmount_fail
@@ -1079,6 +1087,13 @@ vfs_unmount_prepare:
         move    7,3
         pushj   17,fs_provider_reg_call
         jumpn   1,vfs_unmount_fail
+        move    2,-2(17)
+        caie    2,2
+        jrst    vfs_unmount_other_v1931
+        ; D6FS has already checked owners and released its reader
+        ; while admission is closed. No further fallible step.
+        jrst    vfs_unmount_quiesce_done_v1562
+vfs_unmount_other_v1931:
         move    2,(17)
         move    1,-1(17)
 vfs_unmount_after_prepare:
@@ -1161,6 +1176,14 @@ vfs_unmount_unlock:
         pushj   17,file_unlock_mount
         move    2,(17)
         pushj   17,vfs_mount_retire_slot
+        move    3,-2(17)
+        caie    3,2
+        jrst    vfs_unmount_return_v1931
+        ; The D6FS barrier outlives reader deletion and root publication.
+        move    3,dtfs_media_base
+        add     3,(17)
+        setzm   (3)
+vfs_unmount_return_v1931:
         sub     17,kconst_3_3
         jrst    kret_zero
 
@@ -1192,8 +1215,12 @@ vfs_unmount_fail:
         move    1,dtfs_media_base
         add     1,(17)
         move    3,(1)
-        trne    3,0400000              ; partial/ambiguous physical CLEAN
+        move    4,-2(17)
+        cain    4,2
+        jrst    vfs_unmount_abort_v1931
+        trne    3,0400000              ; DTFS partial/ambiguous CLEAN
         jrst    vfs_unmount_fail_done_v1562
+vfs_unmount_abort_v1931:
         move    1,(17)
         move    2,-1(17)
         pushj   17,vfs_dtfs_quiesce_end_v1562
@@ -1205,6 +1232,7 @@ vfs_unmount_fail_done_v1562:
 ; clobber AC2 (the old code accidentally derived slot+2 after PIPE).
 ; Preserve the actual public ID once, use it for all three owner classes,
 ; and return nonzero without disturbing their resources on refusal.
+        .globl  vfs_unmount_owner_check_v1523
 vfs_unmount_owner_check_v1523:
         push    17,010
         move    010,1
@@ -1253,9 +1281,12 @@ vfs_dtfs_owner_admit_v1562:
         push    17,5
         move    2,1
         tlz     2,700070
-        ldb     3,[POINT 6,2,5]
-        caie    3,5                     ; other providers unchanged
+        ldb     1,[POINT 6,2,5]
+        caie    1,5
+        cain    1,6
+        jrst    vfs_owner_disk_tape_v1931
         jrst    vfs_dtfs_owner_allow_v1562
+vfs_owner_disk_tape_v1931:
         ldb     3,[POINT 6,2,11]       ; public DTFS mount ID
         jumple  3,vfs_dtfs_owner_refuse_v1562
         move    4,3
@@ -1268,7 +1299,7 @@ vfs_dtfs_owner_admit_v1562:
         skipn   2,(5)                   ; unpublished or retired slot
         jrst    vfs_dtfs_owner_refuse_v1562
         ldb     5,[POINT 6,2,5]
-        caie    5,5
+        came    5,1
         jrst    vfs_dtfs_owner_refuse_v1562
         ldb     5,[POINT 6,2,11]
         came    5,3
@@ -1313,8 +1344,12 @@ vfs_dtfs_quiesce_begin_v1562:
         skipn   3,(2)
         jrst    vfs_dtfs_quiesce_bad_v1562
         ldb     4,[POINT 6,3,5]
-        caie    4,5                     ; only DTFS has a V2 intent seal
+        caie    4,5
+        cain    4,6
+        jrst    vfs_quiesce_disk_tape_v1931
         jrst    vfs_dtfs_quiesce_legacy_v1562
+vfs_quiesce_disk_tape_v1931:
+        move    6,4                     ; retain provider
         ldb     4,[POINT 6,3,11]
         movei   5,1(1)
         came    4,5
@@ -1323,6 +1358,18 @@ vfs_dtfs_quiesce_begin_v1562:
         jrst    vfs_dtfs_quiesce_bad_v1562
         add     2,1
         move    3,(2)
+        caie    6,6
+        jrst    vfs_quiesce_dtfs_v1931
+        ; Only healthy or read-suspect D6FS can attempt ordinary
+        ; retirement. Poisoned media needs administrative recovery.
+        caile   3,1
+        jrst    vfs_dtfs_quiesce_bad_v1562
+        jumpl   3,vfs_dtfs_quiesce_bad_v1562
+        tro     3,0020000
+        movem   3,(2)
+        movei   1,2
+        jrst    vfs_dtfs_quiesce_done_v1562
+vfs_quiesce_dtfs_v1931:
         trnn    3,0100000              ; DTVOL1/legacy need no seal
         jrst    vfs_dtfs_quiesce_legacy_v1562
         trne    3,0620000              ; suspect, uncertain or sealing
@@ -1379,13 +1426,19 @@ vfs_dtfs_quiesce_end_v1562:
         jrst    vfs_dtfs_quiesce_end_bad_v1562
         ldb     5,[POINT 6,4,5]
         caie    5,5
+        cain    5,6
+        jrst    vfs_quiesce_end_disk_tape_v1931
         jrst    vfs_dtfs_quiesce_end_bad_v1562
+vfs_quiesce_end_disk_tape_v1931:
         skipn   3,dtfs_media_base
         jrst    vfs_dtfs_quiesce_end_bad_v1562
         add     3,1
         move    4,(3)
+        cain    5,6
+        jrst    vfs_quiesce_end_barrier_v1931
         trnn    4,0100000
         jrst    vfs_dtfs_quiesce_end_bad_v1562
+vfs_quiesce_end_barrier_v1931:
         trnn    4,0020000
         jrst    vfs_dtfs_quiesce_end_bad_v1562
         trz     4,0020000
