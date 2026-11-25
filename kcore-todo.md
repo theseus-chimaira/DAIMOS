@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1933 transient backing reservation; K01-K06 closed).
+Updated: 2026-11-25 (v1934 staged EXEC backing handover; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1275,6 +1275,17 @@ history is now reachable from main (v1809); mode3 remains disabled.
   Whole EXEC old/new backing handover, lookup and fatal/private-stack
   lifetime, direct MEMFS mutation audit, compressed/raw-XIP integration,
   poisoned retirement and physical acceptance remain OPEN.
+  **v1934:** normal staged EXEC retains old and new PURE backing
+  dependencies in the existing transient reservation list until commit
+  or rollback. Decode existing published identities without a lease
+  wait; zero PURE text needs no hold. NOMEM drops the outer hold before
+  destructive retry with the old permanent owner intact. Nine native
+  transaction cases pass, three unsafe controls rejected; earlier
+  v20/v200/v1719/v1720/v1933 gates pass. Fixed KCORE +29 words, four
+  transient stack words, no BSS/process-table growth; PURE unchanged.
+  Destructive low-memory EXEC direct publication of stable u-area and
+  credentials requires separate audit, as do namespace and fatal
+  lifetime, MEMFS mutation, poisoned retirement and integrated PI6.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

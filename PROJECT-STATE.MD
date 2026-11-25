@@ -1,3 +1,36 @@
+## 2026-11-25 v1934-k07: transactional EXEC backing handover
+
+Normal staged EXEC holds the old PURE backing before the loader can
+replace its packed record/credential identity, and holds the new PURE
+backing immediately after successful load, before startup. Both holds
+reuse the v1933 stack-owned list and remain visible to mutation and
+mount-owner scans through commit/rollback and backing detach. Existing
+published dependencies are decoded with the real backing decoder and
+reserved without an additional provider wait. Zero PURE text needs no
+hold. Invalid old identity refuses the transaction; invalid successful
+new attachment is an invariant failure. The common return releases
+both records after restoring/committing the surviving owner. NOMEM
+releases the outer hold before destructive retry while the original
+permanent owner is intact. Four extra temporary stack words, no new
+permanent data or process-table enlargement.
+
+Implementation 81a04511; testkit 51b56bf. Native staged transaction
+with real backing decoder, holds and owner scans passes nine controlled
+loader/startup/teardown/RT/NOMEM cases. Missing old hold, new hold and
+release mutants rejected. v20/v200/v1719/v1720/v1933 regressions pass.
+Folded lowmem KCC tape fixed KCORE low end 025411 -> 025446 octal
+(+29 words); DXR image 024750, BSS 000416, PURE MRES 3879 unchanged.
+No complete-guest physical or PI6 acceptance. Other MRES sources
+unchanged; only PURE was measured in this build.
+
+K07 remains OPEN. Audit destructive low-memory EXEC's direct loader
+publication of stable u-area, SIDL and credential identity next;
+v1720's mocked VM/loader tests do not prove this lifetime. Remaining
+lookup-to-reservation namespace race, fatal/private-stack lifetime,
+compressed/raw-XIP loading, direct MEMFS mutation, poisoned-volume
+administrative retirement and integrated physical validation remain
+open. RAW PURE/mode3 default OFF. K17 mandatory nonpaged KA10.
+
 ## 2026-11-25 v1933-k07: transient executable backing reservation
 
 RUN/EXEC reserve the looked-up executable vnode before STAT, permission,
