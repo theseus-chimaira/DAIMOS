@@ -1,3 +1,37 @@
+## 2026-11-25 v1942-k07: physical pressure and bounded FULL PASS
+
+The adapted five-child 48K TSFS guest completes on original PDP-6
+SIMH with real physical tape and PCLK, unchanged production kernel
+images. Five checked RUNs (one plain/four compressed), required
+sixth refusal, parent survival and no-growth BRK. B/A identical
+MM18 tables, parent RESIDENT 130000..140000, five exact 07000
+PACKED children, aggregate 05000 (2560 decimal) fewer child VM
+words than complete APRs. Four 01000 intervening alignment gaps.
+Empty reservation head. No additional v1942 savings or RAM growth.
+
+Installed PURE base 033136 and actual FULL PC040756 opcode
+200000000004. At original callback slot0, slot3 PACKED
+111000..120000 and separate PROCESS 120000..130000, each pin1,
+exact source retained from A, stable u-area 051274, capacity010000.
+Plain child and four compressed children emit all five w markers;
+parent checks exact PID/EXITED/status WAIT and emits Z. At Z MM8,
+no child VM/u-area, empty reservation head, slot1. PCLK delta10389
+(decimal); one normal HALT PC000000, simulator exits 0. Original
+physical verifier PASS, seven synthetic negatives and nine actual
+trace mutations rejected. Mutated traces are verifier tests, not
+executed guest faults. Private media verified and recompressed
+guest pair byte-identical. Earlier exploratory replay interrupted
+during boot to use explicit nobreak all; both forms passed isolated
+monitor smoke. No kernel source changes. All simulators ended.
+
+Testkit 863489f (monitor), 389de60 (acceptance and negative controls).
+Evidence $TMPDIR/pure-k07-full-v1941.zvs3Om/physical.clean,
+SHA256 e31bf43619c8bb91b42694739a2ca89930a964c042ee0a21dea11870240d2e0d.
+Five-child build $TMPDIR/pure-k07-five-v1941.3uWwvd/build.
+K07 physical pressure/FULL/WAIT baseline PASS. Still OPEN:
+real PI6 concurrent reservation/retirement and integrated source
+loss/recovery. K08/K09/K17 remain open. RAW PURE/mode3 default OFF.
+
 ## 2026-11-25 v1941-k07: physical pressure refusal and current FULL replay
 
 The original v1940 48K GCC TSFS guest was replayed with unchanged

@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1941 physical pressure refusal; K01-K06 closed).
+Updated: 2026-11-25 (v1942 physical pressure/FULL/WAIT PASS; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1354,6 +1354,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   Five-child fixture rebuilt with identical kernel images, retains
   sixth refusal and exact WAIT checks, TSFS verified; full replay
   pending. No kernel growth. K07 remains OPEN.
+  **v1942:** actual adapted five-child 48K TSFS guest passes
+  sixth RUN refusal, parent survival, no-growth BRK and all typed
+  WAITs. B/A MM18, five 07000 PACKED extents and empty reservations.
+  Original FULL PC040756: slot3 source111000..120000 and separate
+  target120000..130000 each pin1, slot0, stable u-area051274.
+  Z MM8, no child VM/u-area or reservation leak; normal HALT.
+  Nine accepted-transcript mutations rejected; seven synthetic
+  geometry negatives pass. Production kernel unchanged. K07 still
+  OPEN for live PI6 retirement/reservation race and source loss.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
