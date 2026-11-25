@@ -1,3 +1,36 @@
+## 2026-11-25 v1921-k06: sorted MM geometry and FULL reply proof
+
+The sole-owner scanner now uses the native allocator's sorted,
+nonoverlapping table invariant in a single pass. FULL discovery
+reuses that scanner instead of its separate weaker discovery and
+second scan. FULL two-owner proof rejects malformed ordering and
+unrelated overlap as well as invalid spans and foreign intersections
+with the original escrow. Full APR size alignment is mandatory.
+
+FULL verifies the source pin before allocation, both exact pins
+before writing the destination, and the original source identity
+between target and source unpin. Exact unpinned owners are proven
+before deleting the source; ALL source-free replies, including
+success, require independent proof of the sole original successor.
+Rollback verifies the exact target after unpin before freeing it.
+Uncertainty retains TRANSITION and escrow; no foreign pin is retired.
+
+Implementation 5f536139; testkit c521176: six FULL fault cases and
+five geometry cases pass, with seven executed unsafe mutations
+rejected. Native v1395/v1397, v1612, v1839, v1855, v1902, v1906,
+v1918 and v1919 regressions pass. Updated v1839/v1855 mutation
+anchors preserve their original assertion oracles. The MM rebase/
+claim/release/commit ASM is linked; allocation, pin/free, loader and
+PI remain test-controlled. No physical acceptance is claimed.
+
+Folded lowmem tape KCC PURE MRES 3585 -> 3565 resident words (-20),
+BSS zero; fixed KCORE byte-identical to v1920, low end 025136 octal.
+No new permanent or per-process RAM. RAW PURE/mode3 default OFF.
+K06 remains OPEN for the managed-arena boundary audit: PREFIX's
+native arena scan lacks a maximum-count check, and descriptor-range
+containment in managed physical core needs explicit review. Do not
+claim final K06 closure before that check and its native tests.
+
 ## 2026-11-25 v1920-k06: terminal RAW ownership identity
 
 Terminal teardown now requires a reconciled sole RAW owner. The

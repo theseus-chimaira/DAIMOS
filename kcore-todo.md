@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-25 (v1920 K06 terminal ownership; K01-K05 closed).
+Updated: 2026-11-25 (v1921 K06 geometry and FULL reply proof; K01-K05 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1118,8 +1118,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   and actual MM/FINALIZE/PREVM integrated escrow-loss gate pass; prior
   v1609/v1666/v1680/v1681/v1919 pass. Historical v1900 direct dual-owner
   acceptance is superseded. Folded PURE +29 words; fixed KCORE +3,
-  BSS and per-owner storage unchanged. K06 remains OPEN for final
-  integrated MM geometry review; no physical PI6 acceptance claimed.
+  BSS and per-owner storage unchanged.
+  **v1921:** sole-owner discovery and FULL proof reject malformed
+  sorted-table geometry, including unrelated overlap. FULL reuses
+  single-pass discovery and verifies source/target pins before use,
+  each intervening unpin, rollback deletion and all commit replies.
+  Six FULL faults, five geometry cases and seven unsafe mutations
+  pass; prior native rollback/commit/recovery gates remain green.
+  Folded PURE 3585 -> 3565 words (-20), fixed KCORE byte-identical.
+  K06 remains OPEN for managed-arena bounds/containment audit and
+  native validation. No physical PI6 acceptance claimed.
 - [ ] **K07 - Executable backing lifetime.** Guarantee immutable PURE
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe
