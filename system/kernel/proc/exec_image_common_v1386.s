@@ -279,6 +279,7 @@ ei_bridge_enter_v1391:
         move    015,2                  ; expected PURE text words
         jumpe   014,ei_bridge_bad_v1386
         jumpe   015,ei_bridge_bad_v1386
+        movem   5,-012(17)             ; capacity now lives in AC16
 
         move    1,014
         movei   2,-010(17)             ; 7-word vfs_stat scratch
@@ -295,6 +296,11 @@ ei_bridge_enter_v1391:
         hlrz    5,-1(17)              ; DXR2 text_words
         came    5,015
         jrst    ei_bridge_bad_v1386
+        hlrz    5,-002(17)             ; flags, not just matching TX2
+        trnn    5,EI_PURE_V1386
+        jrst    ei_bridge_bad_v1386
+        pushj   17,ei_bridge_identity_v1923
+        jumpn   1,ei_bridge_bad_v1386
         jumpn   013,ei_bridge_apply_v1391
         ; FULL: trust only the allocation length passed by MM. An
         ; initialized image shorter than this is valid (saved suffix
@@ -324,7 +330,30 @@ ei_bridge_apply_v1391:
         movei   3,-003(17)
         move    4,013
         pushj   17,exec_image_apply_v1386
+        jumpn   1,ei_bridge_return_v1386
+        ; A successful provider read is not sufficient if its mount
+        ; binding changed while the provider was blocked. Caller still
+        ; owns the pinned destination; failure rolls back safely.
+        pushj   17,ei_bridge_identity_v1923
         jrst    ei_bridge_return_v1386
+
+; Called inside the existing bridge frame (one extra return word).
+; Keep the original vnode, text and complete mount-root word stable.
+ei_bridge_identity_v1923:
+        move    1,010
+        move    2,012
+        pushj   17,proc_swap_unpack_backing
+        came    1,014
+        jrst    ei_bridge_identity_bad_v1923
+        came    2,015
+        jrst    ei_bridge_identity_bad_v1923
+        came    5,-013(17)
+        jrst    ei_bridge_identity_bad_v1923
+        setz    1,
+        popj    17,
+ei_bridge_identity_bad_v1923:
+        seto    1,
+        popj    17,
 ei_bridge_bad_v1386:
         seto    1,
 ei_bridge_return_v1386:

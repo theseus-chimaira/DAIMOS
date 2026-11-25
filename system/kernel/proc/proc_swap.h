@@ -70,9 +70,9 @@ int proc_swap_detach(int slot);
 int proc_swap_out(int slot);
 /** Restore one swapped process image into a new aligned resident extent. */
 int proc_swap_in(int slot);
-/** Return nonzero while a swapped PURE process depends on this vnode. */
+/** Return nonzero while a staged, resident or swapped PURE process depends on this vnode. */
 int proc_swap_backing_busy(vnode_t node);
-/** Return nonzero while a swapped PURE process depends on this mount. */
+/** Return nonzero while a staged, resident or swapped PURE process depends on this mount. */
 int proc_swap_mount_busy(unsigned int mount);
 int proc_swap_service_one(void);
 /** Reclaim process VM until MM can satisfy a requested extent or no victim remains.

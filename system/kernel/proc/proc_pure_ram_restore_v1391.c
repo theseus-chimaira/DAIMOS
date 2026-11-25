@@ -340,7 +340,10 @@ proc_pure_ram_restore_v1391(unsigned int slot,
         case 1:
                 break;
         case 0:
-                rc = MM_ERR_BUSY;
+                /* Proven refusal: keep the typed MM error. Only a
+                 * false success needs conversion to a hard refusal. */
+                if (rc == MM_OK)
+                        rc = MM_ERR_BUSY;
                 goto fail_target_locked;
         default:
                 goto uncertain;

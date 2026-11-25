@@ -26,10 +26,12 @@
  * slot has one provider, and swapped PURE users prevent its unmount.
  *
  * Input:  AC1 = packed resident backing state; AC2 = owning u-area base.
- * Output: AC1 = vnode, AC2 = PURE text words.
- * Clobbers AC3..AC5.
+ * Output: AC1 = vnode, AC2 = PURE text words, AC5 = exact mount root.
+ * Clobbers AC0, AC3..AC5.
  */
 proc_swap_unpack_backing:
+        jumpe   1,proc_swap_unpack_backing_bad
+        jumpe   2,proc_swap_unpack_backing_bad
         move    5,1
         move    4,1
         lsh     4,-PROC_SWAP_TEXT_SHIFT
@@ -43,16 +45,20 @@ proc_swap_unpack_backing:
         addi    1,020
         caml    1,vfs_mount_limit       ; validate before indexing the MM slab
         jrst    proc_swap_unpack_backing_bad
-        move    2,vfs_mount_root_base
+        skipn   2,vfs_mount_root_base
+        jrst    proc_swap_unpack_backing_bad
         add     2,1
-        move    2,(2)                   ; provider of the mounted volume
-        jumpe   2,proc_swap_unpack_backing_bad
+        move    2,(2)                   ; exact published mount root
+        move    0,2
+        addi    1,1                     ; public mount id
+        ldb     5,[POINT 6,2,11]
+        came    5,1
+        jrst    proc_swap_unpack_backing_bad
         lsh     2,-036                  ; vnode provider:6
         caige   2,4                     ; reject anything outside MEMFS..TSFS
         jrst    proc_swap_unpack_backing_bad
         caile   2,7
         jrst    proc_swap_unpack_backing_bad
-        addi    1,1                     ; public mount id
         move    5,2
         andi    5,1
         addi    5,1                     ; provider-local executable kind
@@ -64,11 +70,13 @@ proc_swap_unpack_backing:
         ior     3,2
         move    1,3
         move    2,4
+        move    5,0                     ; exact root snapshot for PURE I/O
         popj    17,
 
 proc_swap_unpack_backing_bad:
         setz    1,                      ; invalid/unmounted backing
         setz    2,                      ; PURE reload must fail closed
+        setz    5,
         popj    17,
 
 /*
@@ -143,9 +151,9 @@ proc_swap_reload_return:
 
 /* Provider-independent backing immutability guards. */
 /*
- * Return nonzero while a nonresident PURE process depends on NODE as its
- * executable backing.  Resident processes keep their text in core and do not
- * constrain later vnode mutation.
+ * Return nonzero while ANY staged, resident or nonresident PURE process
+ * depends on NODE. Resident text may be reclaimed later, so its backing
+ * must remain immutable too.
  */
         .globl  proc_swap_backing_busy
 proc_swap_backing_busy:
