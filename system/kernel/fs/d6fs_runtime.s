@@ -634,14 +634,42 @@ d6fs_mres_reg_dispatch:
         movem   7,d6fs_active_reader
         cain    6,030                    ; private PURE_MEDIA_V1927
         jrst    d6fs_pure_media_v1927
+        cain    6,026                    ; privileged raw recovery inspection
+        jrst    d6fs_provider_recovery_read
+        ; Ordinary requests must not use a replacement volume after a
+        ; known transfer failure. Reuse the serialized physical proof.
+        ; AC1..6 are the provider ABI; only AC7 is scratch on entry.
+        skipn   7,dtfs_media_base
+        jrst    kret_neg1
+        push    17,2
+        ldb     2,[POINT 6,1,11]
+        addi    7,-1(2)
+        pop     17,2
+        skipn   7,(7)
+        jrst    d6fs_dispatch_ready_v1930
+        caie    7,1                     ; only READ_SUSPECT is recoverable
+        jrst    kret_neg1
+        ; Preserve the complete request across the sleeping raw proof.
+        add     17,[6,,6]
+        movei   7,-5(17)
+        hrli    7,1
+        blt     7,(17)
+        pushj   17,d6fs_pure_media_v1927
+        jumpn   1,d6fs_dispatch_fail_v1930
+        movei   7,1
+        hrli    7,-5(17)
+        blt     7,6
+        sub     17,[6,,6]
+d6fs_dispatch_ready_v1930:
         cain    6,024                    ; FS_MRES_OP_D6FS_REMOUNT (20)
         jrst    d6fs_provider_toggle_state
-        cain    6,026                    ; recovery raw block read (22)
-        jrst    d6fs_provider_recovery_read
         cain    6,025                    ; FS_MRES_OP_SPACE (21)
         jrst    d6fs_provider_space
         move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch
+d6fs_dispatch_fail_v1930:
+        sub     17,[6,,6]
+        jrst    kret_neg1
 
 ; AC1=actual failed reader, AC2=READ_SUSPECT (1) or WRITE_UNCERTAIN (2).
 ; Serialized provider call: record the fault only for the exact published
@@ -778,8 +806,9 @@ d6fs_pure_media_v1927:
         move    6,(4)
         ; Identity alone cannot prove that a failed write was atomic.
         ; Keep write uncertainty sticky for this mount lifetime.
-        trne    6,2
+        caile   6,1
         jrst    d6fs_pure_media_bad_v1927
+        jumpl   6,d6fs_pure_media_bad_v1927
         movei   6,1
         iorm    6,(4)                   ; read proof unavailable until success
         move    4,tsfs_file_shape_base
