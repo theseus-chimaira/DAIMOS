@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1936 executable namespace revision; K01-K06 closed).
+Updated: 2026-11-25 (v1937 reservation private-stack lifetime; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1307,6 +1307,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   not full recursive namespace or physical PI6 acceptance. Fatal stack
   lifetime, direct MEMFS mutation, poisoned retirement and integrated
   validation remain OPEN.
+  **v1937:** scan published reservation addresses before normal/marked
+  EXIT finalization, RUN discard and final u-area release. Return typed
+  BUSY at MM boundary, defer foreign fatal events to owner and fail
+  stop before an impossible self-EXIT stack abandonment. No new data
+  or pin. Eight native cases and six unsafe controls, actual MM v956,
+  v1097, v869, v1086 and v1933-v1936 pass. Fixed KCORE +44 words;
+  BSS/PURE unchanged. Old v925 fixture stale, other historical runners
+  not all rerun. Direct MEMFS mutation, poisoned administrative
+  retirement and integrated fatal/physical PI6 lifetime remain OPEN.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

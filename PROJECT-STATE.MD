@@ -1,3 +1,35 @@
+## 2026-11-25 v1937-k07: executable reservation private-stack lifetime
+
+The v1933 reservation list now supplies an address-based u-area busy
+check. It scans all records, including two-word boundary overlap,
+without allocation, I/O or scheduling. Ordinary and marked EXIT
+finalization and unpublished RUN discard check before destructive
+teardown. The final u-area release leaf checks again before MM free,
+returning typed BUSY while retaining the exact extent and descriptor.
+Foreign fatal delivery defers to the owner if any reservation remains,
+even when the saved PC otherwise appears to allow remote closure.
+Nonreturning owner EXIT must have unwound its loader frames; an
+outstanding reservation is a fail-stop invariant before the stack
+switch, not authority to abandon a continuation or delete its hold.
+No additional persistent data or per-process pin.
+
+Implementation 4288a3e1; testkit 9909995. Eight source-linked native
+cases and six unsafe controls cover stack address scan, normal/marked
+finish, discard, release, deferred HUP and invalid self-EXIT.
+Extended v956 actual MM release and v1097 typed refusal gates pass;
+v869 finalizer and v1086 ordinary PREVM stack handoff pass. Earlier
+v1933-v1936 gates pass. Historical v869 source linkage was repaired;
+v925 has stale linkage/lifecycle expectations and was not counted as
+passing. Other historical extraction runners are not all adapted or
+rerun. Folded lowmem KCC tape KCORE low end 025500 -> 025554 octal
+(+44 words), DXR image 025055, BSS 000417, PURE MRES 3879 unchanged.
+
+K07 remains OPEN for direct MEMFS mutation admission, poisoned-volume
+administrative retirement and integrated lifetime/physical PI6 validation.
+This is controlled native teardown validation, not complete guest
+fatal-process scheduling acceptance. RAW PURE/mode3 default OFF;
+K17 mandatory nonpaged KA10 remains open.
+
 ## 2026-11-25 v1936-k07: executable namespace revision validation
 
 Executable lookup now saves the current namespace revision in unused STAT
