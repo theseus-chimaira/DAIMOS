@@ -53,6 +53,8 @@
 /* Same private operation on D6FS, using the mounted volume UUID. */
 #define FS_D6FS_PURE_MEDIA_V1927 24U
 #define FS_TSFS_PURE_MEDIA_V1928 24U
+/* Gateway-only transient executable reservation; never a provider op. */
+#define FS_EXEC_RESERVE_V1933 26U
 
 struct fs_mres_request {
         kword_t op;

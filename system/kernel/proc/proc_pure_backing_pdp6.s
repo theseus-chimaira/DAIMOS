@@ -152,6 +152,76 @@ proc_swap_reload_return:
         popj    17,
 
 
+; Transient executable backing reservation. AC1 canonical vnode,
+; AC2 address of two words on the live private kernel stack: next, vnode.
+; The physical provider lease is held by the gateway; MEMFS is non-sleeping.
+; No process switch occurs between validation and list publication.
+        .globl proc_exec_reserve_v1933
+        .globl proc_exec_release_v1933
+        .globl vfs_dtfs_owner_admit_v1562
+        .globl proc_swap_storage_invariant_v30
+proc_exec_reserve_v1933:
+        jumpe   2,proc_exec_reserve_bad_v1933
+        skipn   1(2)
+        jrst    proc_exec_reserve_new_v1933
+        jrst    proc_exec_reserve_bad_v1933
+proc_exec_reserve_new_v1933:
+        ldb     3,[POINT 6,1,5]
+        cail    3,4
+        caile   3,7
+        jrst    proc_exec_reserve_bad_v1933
+        ldb     4,[POINT 6,1,11]
+        sojl    4,proc_exec_reserve_bad_v1933
+        caml    4,vfs_mount_limit
+        jrst    proc_exec_reserve_bad_v1933
+        skipn   5,vfs_mount_root_base
+        jrst    proc_exec_reserve_bad_v1933
+        add     5,4
+        move    3,(5)
+        xor     3,1
+        tdne    3,[0777700000000]
+        jrst    proc_exec_reserve_bad_v1933
+        push    17,1
+        pushj   17,vfs_dtfs_owner_admit_v1562
+        move    3,1
+        pop     17,1
+        jumpn   3,proc_exec_reserve_bad_v1933
+        move    3,proc_exec_resv_head_v1933
+        movem   3,(2)
+        movem   1,1(2)
+        movem   2,proc_exec_resv_head_v1933
+        setz    1,
+        popj    17,
+proc_exec_reserve_bad_v1933:
+        seto    1,
+        popj    17,
+
+; Release exactly this stack record, not necessarily the list head.
+; A zero vnode means the reservation was never admitted (or released).
+; An absent published record is an invariant failure, never a dangling
+; pointer to stack storage that has been returned to its caller.
+proc_exec_release_v1933:
+        skipn   1(1)
+        popj    17,
+        movei   2,proc_exec_resv_head_v1933
+proc_exec_release_scan_v1933:
+        skipn   3,(2)
+        jrst    proc_swap_storage_invariant_v30
+        camn    3,1
+        jrst    proc_exec_release_found_v1933
+        move    2,3
+        jrst    proc_exec_release_scan_v1933
+proc_exec_release_found_v1933:
+        move    3,(1)
+        movem   3,(2)
+        setzm   1(1)
+        popj    17,
+
+        .bss
+        .globl proc_exec_resv_head_v1933
+proc_exec_resv_head_v1933: .block 1
+        .text
+
 /* Provider-independent backing immutability guards. */
 /*
  * Return nonzero while ANY staged, resident or nonresident PURE process
@@ -160,6 +230,21 @@ proc_swap_reload_return:
  */
         .globl  proc_swap_backing_busy
 proc_swap_backing_busy:
+        ; Stack-owned in-flight loads are authoritative before the
+        ; permanent record exists. Compare provider, mount and index.
+        move    2,proc_exec_resv_head_v1933
+proc_exec_node_scan_v1933:
+        jumpe   2,proc_swap_backing_scan_v1933
+        move    3,1(2)
+        xor     3,1
+        tdnn    3,[0777700777777]
+        jrst    proc_exec_resv_busy_v1933
+        move    2,(2)
+        jrst    proc_exec_node_scan_v1933
+proc_exec_resv_busy_v1933:
+        movei   1,1
+        popj    17,
+proc_swap_backing_scan_v1933:
         push    17,10
         push    17,11
         push    17,12
@@ -252,6 +337,18 @@ proc_swap_backing_busy_return:
  */
         .globl  proc_swap_mount_busy
 proc_swap_mount_busy:
+        move    2,proc_exec_resv_head_v1933
+proc_exec_mount_scan_v1933:
+        jumpe   2,proc_swap_mount_scan_v1933
+        ldb     3,[POINT 6,1(2),11]
+        camn    3,1
+        jrst    proc_exec_mount_busy_v1933
+        move    2,(2)
+        jrst    proc_exec_mount_scan_v1933
+proc_exec_mount_busy_v1933:
+        movei   1,1
+        popj    17,
+proc_swap_mount_scan_v1933:
         push    17,10
         push    17,11
         push    17,12

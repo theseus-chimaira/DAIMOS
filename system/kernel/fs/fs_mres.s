@@ -183,6 +183,8 @@ fs_provider_reg_call:
         caile   7,3
         jrst    fs_mres_no_service
         jumpn   7,fs_provider_serialized ; index zero: MEMFS never sleeps
+        cain    6,032                   ; private executable reservation
+        jrst    proc_exec_reserve_v1933
         ; MINIT patches a JRST target into each provider slot.  Follow its
         ; address field directly rather than extracting it into AC7 first.
         jrst    @fs_memfs_service_jump(7)
@@ -230,6 +232,8 @@ fs_provider_lock_probe_v1090:
         ; REMOUNT can have published new state while this request slept.
         ; Keep the original request frame until the final check.
         move    6,-1(17)
+        cain    6,032
+        jrst    fs_provider_reserve_v1933
         caie    6,013                  ; TRUNCATE
         cain    6,016                  ; WRITE_WORDS
         jrst    fs_provider_write_v1932
@@ -241,6 +245,14 @@ fs_provider_dispatch_v1932:
         ; The missing-service trampoline already returns -1 normally.
         ; Invoke it under the same lease and use the common unlock path.
         pushj   17,@fs_memfs_service_jump(7)
+        jrst    fs_provider_unlock
+
+        .globl  proc_exec_reserve_v1933
+fs_provider_reserve_v1933:
+        move    1,-6(17)
+        move    2,-5(17)
+        pushj   17,proc_exec_reserve_v1933
+        sub     17,kconst_7_7
         jrst    fs_provider_unlock
 
         .globl  vfs_readonly

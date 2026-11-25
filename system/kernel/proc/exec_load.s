@@ -17,8 +17,9 @@
  *
  * Entry ABI for exec_load_process(): AC1=struct proc *, AC2=owner slot,
  * AC3=counted SIXBIT path.  AC10..AC16 are callee-saved as one contiguous BLT
- * block.  The combined 022-word frame contains those seven saved ACs plus the
- * following 013-word local area:
+ * block.  The combined 024-word frame contains those seven saved ACs plus the
+ * following 015-word local area:
+ *   -014..-013 transient backing reservation (next, vnode)
  *   -012       vnode
  *   -011..-003 struct vfs_stat (seven words; -006 is size_words)
  *   -002..0    DXR header words 0..2
@@ -27,7 +28,7 @@
  *   -007 header words (2 or 3)
  *   -005 text words
  *   -004 compressed payload words
- *   -003 nonzero if this load acquired a new RT reservation
+ *   -012 nonzero if this load acquired a new RT reservation
  *
  * v1605 KA10/KI10 boundary: validation, executable identity, and process
  * publication policy may stay common. The compressed DXR path below adds
@@ -53,6 +54,7 @@
         .globl  d6codec_decode_vfs_v1458
         .globl  proc_rt_owner
         .globl  fs_provider_reg_call
+        .globl  proc_exec_release_v1933
 
         .equ    EXEC_DXR_MAGIC,0447062      ; SIXBIT /DXR/
         .equ    EXEC_XIP_MAGIC_LH_V1469,054506
@@ -103,10 +105,11 @@ sixbit_record_bad:
 exec_load_process:
         ; Reserve locals plus the seven saved ACs in one step.  AC10..AC16
         ; are contiguous, so BLT is both smaller and faster than seven PUSHes.
-        add     17,[022,,022]
-        movei   0,-021(17)
+        add     17,[024,,024]
+        movei   0,-023(17)
         hrli    0,010
-        blt     0,-013(17)
+        blt     0,-015(17)
+        setzm   -013(17)               ; not yet reserved
         move    10,1                    ; proc
         move    11,2                    ; owner
         move    12,3                    ; path
@@ -122,6 +125,15 @@ exec_load_process:
         jumpn   1,exec_load_fail_result ; no reservation exists yet
         move    12,-012(17)             ; vnode stays in AC12
         setzm   -012(17)                ; no new RT reservation yet
+        ; Drain any earlier physical mutation before reserving this
+        ; vnode. Subsequent mutations and unmount see the live record
+        ; throughout STAT, header, payload and final attachment.
+        move    1,12
+        movei   2,-014(17)
+        ldb     7,[POINT 6,1,5]
+        movei   6,032
+        pushj   17,fs_provider_reg_call
+        jumpn   1,exec_load_fail
 
         move    1,12
         movei   2,-011(17)              ; struct vfs_stat
@@ -348,9 +360,14 @@ exec_load_fail_result:
         ; Early argument/lookup failures have not initialized RT state.
         seto    1,
 exec_load_return:
+        ; All success/failure paths retire only their own reservation.
+        push    17,1
+        movei   1,-015(17)
+        pushj   17,proc_exec_release_v1933
+        pop     17,1
         ; Restore the contiguous callee-saved range with one BLT.
         movei   0,010
-        hrli    0,-021(17)
+        hrli    0,-023(17)
         blt     0,016
-        sub     17,[022,,022]
+        sub     17,[024,,024]
         popj    17,
