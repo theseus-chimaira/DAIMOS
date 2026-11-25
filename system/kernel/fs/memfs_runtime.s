@@ -9,6 +9,48 @@
         .globl  kret_zero
         .globl  kret_neg1
         .globl  kret_neg2
+        .globl  proc_swap_backing_busy
+        .globl  proc_swap_mount_busy
+        .globl  vfs_mount_root_base
+        .globl  vfs_mount_limit
+
+; The runtime MEMFS is a singleton. Provider-local vnodes may omit
+; the public mount field, so obtain the canonical mounted root before
+; comparing backing owners. Zero means no published MEMFS mount.
+; AC1..3 scratch; no I/O or scheduling.
+memfs_owner_root_v1938:
+        skipn   2,vfs_mount_root_base
+        jrst    kret_zero
+        move    3,vfs_mount_limit
+        jumpe   3,kret_zero
+memfs_owner_root_scan_v1938:
+        move    1,(2)
+        ldb     0,[POINT 6,1,5]
+        caie    0,4
+        jrst    memfs_owner_root_next_v1938
+        popj    17,
+memfs_owner_root_next_v1938:
+        aoj     2,
+        sojg    3,memfs_owner_root_scan_v1938
+        jrst    kret_zero
+
+; AC2 is the exact candidate vnode. Preserve the C request registers
+; and return busy in AC0. Only the singleton can have VFS PURE owners.
+memfs_owner_guard_v1938:
+        push    17,1
+        push    17,2
+        push    17,3
+        pushj   17,memfs_owner_root_v1938
+        jumpe   1,memfs_owner_guard_done_v1938
+        hrr     1,-1(17)
+        pushj   17,proc_swap_backing_busy
+memfs_owner_guard_done_v1938:
+        move    0,1
+        pop     17,3
+        pop     17,2
+        pop     17,1
+        popj    17,
+
 
 ; int memfs_read_words(const struct memfs *fs, vnode_t node,
 ;     unsigned int off, kword_t *buf, unsigned int nwords)
@@ -77,6 +119,8 @@ memfs_read_return:
         .globl  memfs_xip_owns_base
         .globl  memfs_xip_unpin_base
 memfs_write_words:
+        pushj   17,memfs_owner_guard_v1938
+        jumpn   0,kret_neg1
         add     17,[6,,6]
         movei   0,-5(17)
         hrli    0,010
@@ -407,6 +451,9 @@ memfs_unlink:
         jumpl   1,memfs_restore4_fail
         move    011,2                   ; parent slot
         move    013,1                   ; victim slot
+        move    2,013                   ; guard the resolved child index
+        pushj   17,memfs_owner_guard_v1938
+        jumpn   0,memfs_restore4_fail
         move    3,(010)
         addi    3,7                     ; slot 1
         movei   4,1
@@ -581,6 +628,8 @@ memfs_setattr:
 
         .globl  memfs_truncate_words
 memfs_truncate_words:
+        pushj   17,memfs_owner_guard_v1938
+        jumpn   0,kret_neg1
         push    17,1                     ; fs
         push    17,0                     ; slot placeholder
         pushj   17,memfs_slot           ; words remain in AC3
@@ -843,6 +892,12 @@ memfs_mres_mount_done:
 ; so no live vnode may retain storage after the allocations are returned.
 memfs_mres_prepare_unmount:
         push    17,1                    ; context across reference check
+        pushj   17,memfs_owner_root_v1938
+        jumpe   1,memfs_unmount_xip_v1938
+        ldb     1,[POINT 6,1,11]
+        pushj   17,proc_swap_mount_busy
+        jumpn   1,memfs_mres_unmount_pinned
+memfs_unmount_xip_v1938:
         pushj   17,memfs_xip_any_pinned
         jumpn   1,memfs_mres_unmount_pinned
         pop     17,1
