@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-25 (v1918 K06 synchronous DROP/PREFIX validation; K01-K05 closed).
+Updated: 2026-11-25 (v1919 K06 deferred DROP/PREFIX recovery; K01-K05 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1100,8 +1100,17 @@ history is now reachable from main (v1809); mode3 remains disabled.
   fail at 0101 and 0403; v1612 regression and READY_ONCE negative pass.
   Allocation, pin/unpin, loader and PI are fixtures; MM rebase, claim,
   release and commit use real assembly. No new permanent RAM.
-  K06 remains OPEN for deferred held DROP/PREFIX reconciliation,
-  terminal cleanup and integrated MM geometry review.
+  **v1919:** existing word 067 escrow distinguishes DROP/PREFIX from
+  FULL and shares the original slot-0 retry armer. Held DROP can
+  reconcile its original resident or RAW owner; held full-span PREFIX
+  rolls back to RAW with a fresh checked pin, not an assumed old pin.
+  Three DROP, four PREFIX and six invalid-marker cases pass, with five
+  unsafe mutants rejected; prior v1918/v1612/v1902/v1906 gates pass.
+  Folded lowmem KCC PURE MRES 3369 -> 3556 words, BSS zero; fixed
+  KCORE low end 025133 unchanged. No persistent RAM added. Existing
+  pins must be lawfully retired before deferred rollback; no forced
+  release. K06 remains OPEN for terminal uncertainty cleanup and
+  integrated MM geometry review.
 - [ ] **K07 - Executable backing lifetime.** Guarantee immutable PURE
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe

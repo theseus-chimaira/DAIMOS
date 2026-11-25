@@ -1,3 +1,32 @@
+## 2026-11-25 v1919-k06: deferred DROP/PREFIX recovery
+
+The optional PURE service now uses unused u-area 067 bits 29/30
+for DROP/PREFIX escrow kinds, retaining the original aligned RAW
+suffix and zero scratch target. The existing slot-0 tagged idle
+service and retry armer are unchanged. DROP failures can arm from
+a noncurrent reclaiming process; idle retry accepts only slot 0.
+The original RESIDENT or committed PACKED DROP owner is reconciled
+without guessing an address. A full-span PREFIX claim (PACKED or
+unpublished PROCESS) can be rolled back to its exact RAW suffix
+using a newly acquired pin under PI exclusion. A lost new-pin,
+release or unpin reply is checked against the original descriptor.
+Existing pins remain untouched; unresolved ownership remains
+TRANSITION-held, and no runnable APR is published by idle recovery.
+
+Native PDP-6 v1919 (testkit 1214632) passes three DROP, four PREFIX
+and six malformed marker/shape cases, with five unsafe source
+mutants rejected at 0101, 0403, 0412, 01004 and 0607 octal.
+The earlier v1918, v1612, v1902 and v1906 native gates pass.
+Pin/unpin, PI, allocation, backing loader and idle arm are fixtures;
+real rebase/claim/release/commit ASM runs. No physical acceptance.
+Folded lowmem tape KCC PURE MRES 3369 -> 3556 resident words
+(+187), BSS 0; fixed KCORE low end unchanged at 025133 octal.
+No new per-owner or permanent resident RAM. Existing persistent
+pins require lawful external retirement before retry; no forced unpin.
+
+K06 remains OPEN for terminal uncertainty cleanup and final MM
+geometry review. RAW PURE and mode3 remain OFF by default.
+
 ## 2026-11-25 v1918-k06: synchronous DROP/PREFIX exact-owner validation
 
 The v1918 checkpoint (417a05d9) records the original aligned RAW
