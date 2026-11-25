@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1932 delayed mutation admission; K01-K06 closed).
+Updated: 2026-11-25 (v1933 transient backing reservation; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1264,6 +1264,17 @@ history is now reachable from main (v1809); mode3 remains disabled.
   owner admission during already dispatched mutations, direct MEMFS
   namespace admission audit, poisoned administrative retirement and
   integrated physical lifetime acceptance. This is a partial K07 fix.
+  **v1933:** reserve the executable vnode before STAT/header/payload
+  through a stack-owned two-word record and a single global list head.
+  Private gateway operation 032 drains the physical provider lease
+  before publication, checks mount identity/quiescence, and the file/
+  mount scanners see in-flight loads. Exact non-LIFO release on all
+  loader exits. Eight plain DXR1 loader cases, lease/list and mutation
+  gates pass; six unsafe controls rejected. Fixed KCORE low end +91
+  words, BSS +1, two stack words per active load; MRES sizes unchanged.
+  Whole EXEC old/new backing handover, lookup and fatal/private-stack
+  lifetime, direct MEMFS mutation audit, compressed/raw-XIP integration,
+  poisoned retirement and physical acceptance remain OPEN.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

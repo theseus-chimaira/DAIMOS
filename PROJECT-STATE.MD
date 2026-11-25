@@ -1,3 +1,41 @@
+## 2026-11-25 v1933-k07: transient executable backing reservation
+
+RUN/EXEC reserve the looked-up executable vnode before STAT, permission,
+header, allocation and payload operations. Private gateway operation 032
+(octal) drains the existing serialized physical provider lease before
+publishing the reservation; MEMFS uses its non-sleeping direct path.
+The exact provider/public mount is checked against the published root,
+including the DTFS/D6FS quiescence admission guard. Each active loader
+owns a two-word (next, vnode) record on its private kernel stack. One
+resident list head exposes in-flight dependencies to the mutation and
+mount-owner scanners. Release unlinks the exact record in any order;
+a missing published record is an invariant failure. All loader exits
+release their reservation, preserving the result and saved registers.
+No process-table or mount-table growth. The v1932 final mutation check
+now also observes these reservations.
+
+Implementation 04aefcb1; testkit d595c78. Actual native gateway,
+reservation, quiescence, scanners and loader pass overlapping/non-LIFO
+reservations, prior-lease drain, quiescence refusal, exact WRITE/TRUNCATE
+refusal and unrelated mutation, plus eight plain DXR1 loader success/
+error paths. Six unsafe controls rejected. v961/v962/v966/v1563,
+v327/v917/v1078/v1088, v466, v1932 and v1649 regressions pass. Physical
+I/O, MM and attachment boundaries controlled; some historical source
+extraction runners adapted but not rerun. Folded lowmem KCC tape fixed
+KCORE low end 025256 -> 025411 octal (+91 words); DXR image 024561 ->
+024713, BSS 000415 -> 000416, reloc 000447 -> 000452. D6FS 2398,
+DTFS/TSFS 2988 and PURE 3879 unchanged. Loader frame grows by two
+words, plus transient call stack use. No complete guest acceptance.
+
+K07 remains OPEN. Next preserve both EXEC backing identities across
+staged startup, old/new record replacement, old VM destruction and
+rollback. The current reservation covers the load itself, not that
+complete handover. Integrated lookup-to-reservation namespace and
+fatal/private-stack lifetime, compressed/raw-XIP loading, direct
+MEMFS mutation audit, poisoned administrative retirement and physical
+PI6 lifetime acceptance remain open. RAW PURE/mode3 default OFF.
+K17 mandatory nonpaged KA10 unchanged.
+
 ## 2026-11-25 v1932-k07: delayed executable mutation admission
 
 Serialized WRITE_WORDS/TRUNCATE recheck the original vnode's RO policy
