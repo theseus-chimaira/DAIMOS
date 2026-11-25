@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1929 ordinary D6FS backing faults; K01-K06 closed).
+Updated: 2026-11-25 (v1930 ordinary D6FS secondary recovery; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1225,6 +1225,20 @@ history is now reachable from main (v1809); mode3 remains disabled.
   is not implemented here; ordinary success is not a physical identity
   proof. Secondary all-resident read retry, mutation/admission and
   unmount lifetime remain open. No physical guest acceptance claimed.
+  **v1930:** ordinary D6FS dispatch checks mount media state under the
+  provider lease. READ_SUSPECT reuses physical UUID proof and preserves
+  six request ACs; original media restores ordinary access and DROP
+  eligibility, foreign media refuses. Healthy path performs no extra
+  I/O. WRITE_UNCERTAIN/unknown state blocks ordinary operations, SYNC,
+  REMOUNT and PREPARE; privileged raw inspection remains available.
+  Thirteen native unsafe controls rejected; mount/remount/reader-slab
+  gates pass. D6FS MRES +24 words, PURE and fixed KCORE unchanged,
+  no new data. Automatic secondary read retry implemented. D6FS
+  PREPARE currently frees the reader before VFS's final owner check;
+  integrate quiescence, owner recheck and retirement next. Uncertain
+  write administrative retirement and executable mutation/admission
+  remain OPEN; general transactional repair is not claimed. No physical
+  guest or integrated unmount acceptance.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

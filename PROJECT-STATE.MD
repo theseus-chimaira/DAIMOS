@@ -1,3 +1,36 @@
+## 2026-11-25 v1930-k07: ordinary D6FS secondary recovery
+
+Ordinary serialized D6FS dispatch now checks the existing mount media
+word. Healthy mounts proceed without physical proof I/O. READ_SUSPECT
+uses the same physical selected-superblock/UUID verifier as PURE,
+before forwarding the original six request registers. Exact original
+media permits ordinary access and renewed DROP eligibility even when
+all executable owners were resident. Foreign or unavailable media
+refuses dispatch and retains suspicion. WRITE_UNCERTAIN, combined
+or unknown state refuses ordinary operations, including SYNC,
+REMOUNT and PREPARE_UNMOUNT; identity matching alone cannot retire
+write uncertainty. Privileged raw recovery inspection remains available
+under its existing syscall policy. No new user ABI or persistent data.
+Existing ordinary selected-root I/O fail-stop classifier unchanged.
+
+Implementation 4975f130; testkit 24e0812. Extended native v1927/v1929
+gate passes original proof/notification/lifecycle cases, foreign-media
+ordinary retry and restored six-AC dispatch, healthy no-proof path,
+poisoned operation refusal and raw recovery inspection. Thirteen
+unsafe variants rejected; selector, multimount, reader-slab and remount
+gates pass. Native vector destinations/physical transfers controlled;
+no full guest media exchange, PI6 or integrated unmount acceptance.
+Folded lowmem tape KCC D6FS MRES 2354 -> 2378 (+24); PURE 3879 unchanged;
+fixed KCORE byte-identical at 025174 octal. BSS unchanged; suspect
+recovery saves six additional temporary request words on existing stack.
+
+K07 remains OPEN for mutation/owner-admission and mount retirement.
+Specifically, D6FS PREPARE_UNMOUNT can release its reader before VFS's
+last owner check; an integrated quiescence/retirement proof is needed
+before claiming safe unmount. Uncertain writes are quarantined, not
+transactionally repaired; safe administrative retirement remains open.
+RAW PURE and mode3 default OFF. K17 mandatory nonpaged KA10 unchanged.
+
 ## 2026-11-25 v1929-k07: ordinary D6FS backing failure publication
 
 Ordinary D6FS failed read/write transfers now publish READ_SUSPECT
