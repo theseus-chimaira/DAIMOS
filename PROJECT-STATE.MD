@@ -1,3 +1,44 @@
+## 2026-11-25 v1931-k07: D6FS quiescence and reader retirement
+
+D6FS ordinary unmount reuses the mount media word's 020000 octal
+quiescence bit, acquired after the initial owner scan and retained
+through provider lease wait, physical identity proof, optional CLEAN
+publication, final owner scan and exact reader free. FILE/cwd and
+PURE/RUN attachment admission share the v1562 guard for D6FS/DTFS;
+D6FS dispatch refuses ordinary or inspection requests under the held
+barrier, except the owning PREPARE operation. The final owner scan
+runs inside PREPARE after physical I/O, before reader deletion. VFS
+unpublishes the root before clearing the barrier. Refused MM free or
+owner scan retains the reader and identity; a successful CLEAN followed
+by refusal leaves a live read-only mount. Abort removes only temporary
+quiescence; sticky WRITE_UNCERTAIN survives. Poisoned ordinary unmount
+is refused; no administrative discard or general repair implemented.
+
+REMOUNT and PREPARE now use the physically verified selected header
+for opposite-copy A/B publication rather than reading and modifying
+possibly damaged alternate contents. The private state write uses the
+backing descriptor directly, permitting the authorized RO-to-RW state
+transition without weakening ordinary file write policy. Failure marks
+write uncertainty and preserves the original reader sequence/copy and
+policy; root write failure retains the existing fail-stop classifier.
+Full transfer scratch is cleared before header proof. The existing
+physical write completion contract remains; no readback claim.
+
+Implementation 9175444e; testkit c7a950d. Extended v1927 native gate
+passes initial/late owner, foreign identity, MM free refusal, failed
+CLEAN and successful CLEAN followed by late owner refusal, final
+retirement and admission tests; all 17 unsafe variants rejected.
+Extended v1562 gate rejects eight unsafe variants; v1514/v1523/v1562
+complete unmount/v1566 seal/v1563 native and host attachment and D6FS
+RW/RO transition regressions pass. Physical callbacks, owner/MM
+boundaries and lease completion controlled, not whole-guest PI6.
+Folded KCC lowmem tape D6FS MRES 2378 -> 2392 (+14), PURE 3879 unchanged,
+fixed KCORE low end 025174 -> 025241 octal (+37 words), BSS unchanged.
+No new permanent mount or process data. K07 OPEN for executable
+mutation/admission lifetime, poisoned D6FS administrative retirement,
+remaining provider lifetime audit and integrated physical acceptance.
+RAW PURE and mode3 default OFF. K17 mandatory nonpaged KA10 unchanged.
+
 ## 2026-11-25 v1930-k07: ordinary D6FS secondary recovery
 
 Ordinary serialized D6FS dispatch now checks the existing mount media

@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1930 ordinary D6FS secondary recovery; K01-K06 closed).
+Updated: 2026-11-25 (v1931 D6FS quiescence and retirement; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1239,6 +1239,21 @@ history is now reachable from main (v1809); mode3 remains disabled.
   write administrative retirement and executable mutation/admission
   remain OPEN; general transactional repair is not claimed. No physical
   guest or integrated unmount acceptance.
+  **v1931:** D6FS normal unmount acquires existing mount quiescence
+  before sleeping, blocks new FILE/cwd/PURE owners and ordinary
+  provider requests, performs fresh selected-header UUID proof and
+  optional CLEAN, then rechecks all owners before deleting the reader.
+  VFS retires the root before clearing quiescence. Failed free/owner
+  check retains reader and identity; successful CLEAN with late refusal
+  leaves the live RO mount; failed CLEAN retains sticky uncertainty.
+  REMOUNT/PREPARE publish opposite A/B from verified selected header,
+  with private state write separated from ordinary RO file policy.
+  Seventeen native unsafe variants and eight helper variants rejected;
+  earlier unmount, DTFS seal and native/host attach gates pass. D6FS
+  MRES +14, fixed KCORE +37, PURE and BSS unchanged. No new data.
+  Normal D6FS reader-retirement ordering fixed; poisoned administrative
+  retirement, executable mutation/admission and remaining lifetime
+  audit still OPEN. No full-guest PI6 or physical exchange acceptance.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
