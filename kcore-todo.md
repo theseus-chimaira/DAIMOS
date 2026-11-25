@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1938 direct MEMFS mutation admission; K01-K06 closed).
+Updated: 2026-11-25 (v1939 poisoned D6FS retirement; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1325,6 +1325,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   byte-identical, PURE/BSS unchanged. No new data. Controlled MM/I/O
   boundaries; complete-guest execution remains unverified. Poisoned
   administrative retirement and integrated lifetime validation OPEN.
+  **v1939:** root-only existing recovery syscall accepts poisoned
+  noncritical D6FS. FD abandonment checks actual provider. Discard
+  owns admission barrier before lease wait; private op 033 validates
+  root/poison/reader and uses final owner scan/cache invalidation/exact
+  MM release without physical I/O or CLEAN. Refusal retains poison and
+  reader; success retires root before clearing barrier. Seven new and
+  17 previous unsafe native variants rejected; v1531/v1562/v1575
+  and earlier D6FS selector/remount/slab gates pass. Fixed KCORE +46,
+  D6FS MRES +21, BSS/PURE/tape unchanged. Controlled boundaries;
+  K07 remains OPEN for integrated physical/lifetime acceptance.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

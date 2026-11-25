@@ -1,3 +1,42 @@
+## 2026-11-25 v1939-k07: poisoned D6FS administrative retirement
+
+The existing root-only DTFS recovery syscall now accepts poisoned
+noncritical D6FS volumes without changing its number/action codes.
+FD abandonment validates the published mount's actual provider and
+sticky write uncertainty before clearing the descriptor and offset.
+Administrative discard refuses healthy/read-suspect/unknown states,
+the namespace root, critical SWAP/LOGSTORE owners, live owners and
+an already held D6FS barrier. D6FS closes owner admission before
+waiting for the physical provider lease. Private operation 033
+revalidates the original root, poison, provider and reader mount ID
+under the lease. It reuses normal cache invalidation, final owner
+scan and exact reader MM free, without media proof or CLEAN write.
+A failed free or final owner check retains poison and reader; abort
+releases only the owned temporary barrier. Successful free retains
+the barrier until VFS retires the root/target and clears media.
+The DTFS drain path remains separate and rechecks provider after
+its lease wait. No persistent storage or ABI numbering growth.
+
+Implementation 1c6384c5; testkit da09056. Extended native v1927 gate
+passes administrative refusal/retry and zero-physical-I/O retirement,
+with real BCACHE reclaim including refused slab free. Seven new
+unsafe controls rejected, all 17 older controls rejected. v1531
+FILE/VFS administrative oracle passes D6FS FD abandonment and
+stale-provider refusal, plus four earlier DTFS unsafe controls.
+D6FS selector/multimount/reader-slab/remount and v1562/v1575 pass.
+Physical completion, MM and lease wait/owner injection controlled.
+Other historical runners not all rerun. No full-guest acceptance.
+
+Folded lowmem KCC tape fixed KCORE low end 025554 -> 025632 octal
+(+46 words), DXR image 025133, BSS 000417 unchanged. D6FS MRES
+2398 -> 2419 (+21), DTFS/TSFS 2988 and PURE 3879 unchanged.
+
+K07 implementation checkpoint complete; milestone remains OPEN for
+integrated lifetime/physical validation. No repair or automatic
+resurrection of abandoned media. Operator quarantines it; later
+MOUNT independently validates media. RAW PURE/mode3 default OFF.
+K17 mandatory nonpaged KA10 remains open.
+
 ## 2026-11-25 v1938-k07: direct MEMFS executable mutation admission
 
 MEMFS WRITE, TRUNCATE and resolved-child UNLINK now consult the
