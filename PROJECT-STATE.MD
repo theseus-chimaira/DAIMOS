@@ -1,3 +1,28 @@
+## 2026-11-25 v1918-k06: synchronous DROP/PREFIX exact-owner validation
+
+The v1918 checkpoint (417a05d9) records the original aligned RAW
+suffix before DROP/PREFIX mutation in the existing u-area 067 escrow.
+DROP verifies the committed PACKED shape independently of the rebase
+reply. PREFIX verifies the full-span pinned claim, the committed
+PROCESS descriptor, and the original RAW suffix before rollback unpin.
+The shared sole-owner scanner rejects malformed extent geometry,
+capacity overflow, duplicate user owners and foreign overlap, including
+an earlier descriptor. No permanent DATA, fixed KCORE or per-owner
+RAM change was introduced by this checkpoint.
+
+The completed daimos-testkit v1918 native PDP-6 gate (e19a850) passes
+six lost-reply/foreign-owner/overpin transactions and seven geometry
+cases; unsafe DROP reply-trust and unchecked PREFIX unpin mutants
+fail at 0101 and 0403 octal. The existing v1612 native service and
+READY_ONCE negative control also pass. The real rebase/claim/release/
+commit ASM is linked; allocation, pin/unpin, loader and PI are
+controlled fixtures. No physical PI6 or production acceptance claim.
+
+K06 remains OPEN. Deferred reconciliation must distinguish held
+DROP resident/PACKED and PREFIX full-span owners from FULL scratch
+rollback. Terminal owner cleanup and integrated geometry review are
+still required. Default RAW PURE and mode3 enablement unchanged.
+
 ## 2026-11-24 v1917-k06: original FULL source/target escrow and rollback
 
 K06 FULL rollback now records the original aligned RAW source in the

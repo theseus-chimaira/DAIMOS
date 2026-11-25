@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-24 (v1917 K06 FULL ownership; K01-K05 closed).
+Updated: 2026-11-25 (v1918 K06 synchronous DROP/PREFIX validation; K01-K05 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1091,8 +1091,17 @@ history is now reachable from main (v1809); mode3 remains disabled.
   claim; a lost target-unpin reply cannot consume a second pin. Source-
   only recovery cannot release an unknown scratch extent. The native
   cancellation, recovery, permanent refusal and unsafe mutation gates
-  pass with the repaired KCC. K06 remains open for PREFIX/DROP and
-  terminal cleanup, plus final MM geometry review.
+  pass with the repaired KCC.
+  **v1918:** DROP/PREFIX save the original RAW suffix identity in
+  existing u-area 067 before mutation and share a strict sole-owner
+  geometry scan with ordinary retry unlock. Native validation passes
+  six transaction faults and seven scanner cases (including preceding
+  overlap and independent owner namespaces). Two unsafe source mutants
+  fail at 0101 and 0403; v1612 regression and READY_ONCE negative pass.
+  Allocation, pin/unpin, loader and PI are fixtures; MM rebase, claim,
+  release and commit use real assembly. No new permanent RAM.
+  K06 remains OPEN for deferred held DROP/PREFIX reconciliation,
+  terminal cleanup and integrated MM geometry review.
 - [ ] **K07 - Executable backing lifetime.** Guarantee immutable PURE
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe
