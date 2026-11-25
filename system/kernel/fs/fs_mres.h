@@ -48,6 +48,8 @@
  * A subsequent independent mount checks the actual physical reel.
  * Numbering intentionally overlaps MEMFS XIP release in another MRES. */
 #define FS_DTFS_DISCARD_DRAIN_V1575 22U
+/* Fresh physical identity proof for stamped DTFS PURE reconstruction. */
+#define FS_DTFS_PURE_MEDIA_V1925 24U
 
 struct fs_mres_request {
         kword_t op;

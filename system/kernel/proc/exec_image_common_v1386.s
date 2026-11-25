@@ -33,6 +33,7 @@
         .globl vfs_stat
         .globl d6codec_decode_vfs_v1458
         .globl proc_swap_unpack_backing
+        .globl fs_provider_reg_call
 
         .equ EI_DXR_MAGIC_V1386,0447062
         .equ EI_DXR_TEXT_TAG_V1386,0647022
@@ -280,6 +281,8 @@ ei_bridge_enter_v1391:
         jumpe   014,ei_bridge_bad_v1386
         jumpe   015,ei_bridge_bad_v1386
         movem   5,-012(17)             ; capacity now lives in AC16
+        pushj   17,ei_bridge_media_v1925
+        jumpn   1,ei_bridge_bad_v1386
 
         move    1,014
         movei   2,-010(17)             ; 7-word vfs_stat scratch
@@ -334,8 +337,24 @@ ei_bridge_apply_v1391:
         ; A successful provider read is not sufficient if its mount
         ; binding changed while the provider was blocked. Caller still
         ; owns the pinned destination; failure rolls back safely.
+        pushj   17,ei_bridge_media_v1925
+        jumpn   1,ei_bridge_return_v1386
         pushj   17,ei_bridge_identity_v1923
         jrst    ei_bridge_return_v1386
+
+; Use the existing serialized provider lease and physical ID metadata.
+; Other providers retain their current media contract. The complete
+; mount root is checked separately before payload and after this I/O.
+ei_bridge_media_v1925:
+        move    1,014
+        ldb     7,[POINT 6,1,5]
+        cain    7,5                     ; DTFS only
+        jrst    ei_bridge_dtfs_v1925
+        setz    1,
+        popj    17,
+ei_bridge_dtfs_v1925:
+        movei   6,030                   ; private PURE_MEDIA_V1925
+        jrst    fs_provider_reg_call
 
 ; Called inside the existing bridge frame (one extra return word).
 ; Keep the original vnode, text and complete mount-root word stable.

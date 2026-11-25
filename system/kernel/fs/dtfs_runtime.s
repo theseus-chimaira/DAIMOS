@@ -44,6 +44,8 @@ dtfs_mres_reg_dispatch:
         jumpn   1,dtfs_mres_dispatch_refuse_v1562
         pop     17,1
 dtfs_mres_dispatch_ready_v1562:
+        cain    6,030                   ; DTFS private PURE_MEDIA_V1925
+        jrst    dtfs_pure_media_v1925
         cain    6,025                   ; FS_MRES_OP_SPACE
         jrst    dtfs_space
         move    7,[dtfs_mres_vector]
@@ -1645,6 +1647,49 @@ dtfs_load_native_fail:
         jrst    kret_neg1
 
 .endif
+
+; PURE reconstruction: called only through the serialized DTFS provider
+; dispatch, with ordinary vnode admission already checked. A stamped
+; volume needs a fresh physical RBN0 proof, even without a prior fault.
+; Legacy unstamped media retain the documented operator-trust policy;
+; they cannot recover after a read fault without a saved identity.
+; Never clear poison or trust half-present identity metadata.
+        .globl dtfs_pure_media_v1925
+dtfs_pure_media_v1925:
+        ldb     1,[POINT 6,1,11]        ; public mount ID
+        sojl    1,kret_neg1
+        caml    1,vfs_mount_limit
+        jrst    kret_neg1
+        skipn   2,dtfs_media_base
+        jrst    kret_neg1
+        add     2,1
+        move    3,(2)
+        trne    3,0420000               ; write uncertain or quiescing
+        jrst    kret_neg1
+        skipn   4,tsfs_file_shape_base
+        jrst    kret_neg1
+        skipn   5,tsfs_extent_media_base
+        jrst    kret_neg1
+        ; The two slabs are indexed by the original zero-based slot.
+        add     4,1
+        move    4,(4)
+        add     5,1
+        move    5,(5)
+        jumpn   4,dtfs_pure_stamped_v1925
+        jumpn   5,kret_neg1
+        trne    3,0300000               ; V2 or prior read fault needs proof
+        jrst    kret_neg1
+        jrst    kret_zero               ; unstamped legacy/operator trust
+dtfs_pure_stamped_v1925:
+        jumpe   5,kret_neg1
+        ; Publish the existing recovery barrier before issuing I/O.
+        ; The physical verifier retires it ONLY on an exact ID match.
+        movei   3,0200000
+        iorm    3,(2)
+        setzm   dtfs_cache_mount
+        pushj   17,bcache_invalidate_all ; no stale directory/payload reuse
+        addi    1,1
+        jrst    dtfs_identity_revalidate_v1522
 
 ; AC1=public DTFS mount ID. A read fault in a mounted physical unit
 ; marks that mount in an unused bit of its existing media word. On its
