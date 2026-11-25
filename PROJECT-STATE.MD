@@ -1,3 +1,41 @@
+## 2026-11-25 v1927-k07: D6FS mounted physical volume identity
+
+D6FS retains the admitted 72-bit volume UUID in the existing disjoint
+shape/extent mount slab words; the media word records proof failure.
+Root KINIT publishes its selected UUID, and secondary mount captures
+it from a fresh selected-superblock read before publication, retaining
+the 16-word handoff/reader ABI. Failed mount rollback and successful
+reader retirement preserve independent slot identity. No new permanent
+data or per-owner words. The serialized private operation 030 verifies
+the selected physical superblock, UUID, sequence, reader geometry and
+state, bypasses and invalidates clean caches, and clears the header
+scratch before I/O. A failed proof keeps the original UUID and blocks
+new DROP; a matching retry clears that mount's proof failure. The
+shared PURE bridge calls this operation before and after reconstruction.
+Zero identity cannot authorize PURE DROP. mkd6fs now obtains a fresh
+72-bit random ID before on-media formatting writes instead of hashing
+only names and capacity; existing media are not silently rewritten.
+
+Implementation 618f8ce1; testkit 83061a0. Twelve native raw proof fault
+cases with successful original-source retries, mount capture/refusal,
+reader-free refusal/retirement and four unsafe variants pass. Host
+formatter builds warning-free, two independent equal-layout media pass
+fsck with distinct IDs and matching A/B copies. Extended v1925 bridge
+(eight DTFS, eight D6FS, two TSFS cases), v1926 DROP (112 cases), earlier
+v1608/v1612/v1649/v1684/v1923/v1924 and D6FS dispatch/multimount/slab/
+remount gates pass. Native raw I/O/MM/VFS boundaries are controlled;
+no actual guest disk exchange or physical PI6 acceptance is claimed.
+
+Folded lowmem tape KCC D6FS MRES 2184 -> 2320 (+136), PURE MRES
+3865 -> 3878 (+13), BSS unchanged and fixed KCORE byte-identical at
+025174 octal. K07 OPEN: TSFS set ID/generation still absent from runtime
+handoff. The D6FS proof is selected-superblock identity, not a fresh
+full A/B arbitration or content hash; same-ID clones and old deterministic
+UUID collisions remain possible. Secondary legacy handoff has no UUID
+so capture at publication does not prove identity across the earlier
+userspace scanner interval. Ordinary D6FS I/O failure policy, mutation/
+admission and integrated unmount remain to audit. RAW PURE/mode3 OFF.
+
 ## 2026-11-25 v1926-k07: refuse DROP with known unavailable backing
 
 RAW DROP now checks the existing provider service binding and mount

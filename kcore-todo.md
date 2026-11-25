@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-25 (v1926 K07 known-unavailable backing admission; K01-K06 closed).
+Updated: 2026-11-25 (v1927 K07 D6FS mounted identity; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1187,6 +1187,20 @@ history is now reachable from main (v1809); mode3 remains disabled.
   TSFS runtime retains locators/member map, not set ID/generation.
   Audit mount-owned identity storage and actual physical verification
   next; mutation/admission and integrated unmount remain open.
+  **v1927:** D6FS retains UUID in disjoint existing shape/extent
+  words and proof failure in media word. Root KINIT publishes UUID;
+  secondary mount captures it from the physical selected superblock
+  before publication, without changing handoff/reader ABI. Serialized
+  proof verifies selected header/UUID/sequence/geometry/state before
+  and after reconstruction; failed proof blocks DROP. mkd6fs assigns
+  fresh random 72-bit IDs. Native 12 faults/retries, lifecycle checks,
+  four unsafe controls, host equal-layout formatter and extended
+  bridge/DROP gates pass. Folded D6FS +136, PURE +13, fixed KCORE
+  byte-identical, no new data. Selected-copy proof cannot detect
+  same-ID clones, legacy deterministic collisions or a pre-publication
+  scanner swap. TSFS identity, ordinary provider-loss policy,
+  mutation/admission and integrated unmount remain OPEN. No physical
+  guest exchange/PI6 acceptance claimed.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
