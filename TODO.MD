@@ -136,7 +136,7 @@ XIP are production-integrated; do not reopen their obsolete proposals.
 - [ ] **PDP-6 production PURE acceptance:**
   v1809 integrated the source history into main and passed the native
   matrix plus default-OFF build; K05 implementation closed v1916.
-  K06-K08 implementation and K09 production safety/physical gates
+  K07-K08 implementation and K09 production safety/physical gates
   remain open, including organic allocator fragmentation/descriptor
   exhaustion and wider PI6 cases. PURE must remain OFF by default. Every named
   DAIMOS and testkit topic tip is now reachable from local main.
@@ -146,10 +146,13 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   do not remove them without separate preservation review.
   Historical procedure: `design/daimos-branch-consolidation-v1677.md`;
   current manifest: `design/daimos-branch-consolidation-v1809.md`.
-- [ ] **KA10 target backend:** implement and accept its distinct
-  mapping/APR/MM, interrupt and process-restore requirements using
-  actual KA10-specific native/simulator tests. PDP-6 physical evidence
-  cannot be reused as proof of KA10 hardware support.
+- [ ] **KA10 target backend (mandatory K17 in kcore-todo.md):**
+  implement contiguous low-segment relocation/protection, without
+  a pager or mandatory KT10A high segment. Complete target boot,
+  APR/MM, PI/trap, context, RUN/EXEC/BRK/EXIT/WAIT, swap and RAW PURE
+  with actual KA10-specific native/simulator acceptance. Reuse common
+  ownership policy. PDP-6 physical evidence cannot prove KA10 support.
+  Schedule after K09 and before optional K10-K16 mode3.
 
 ## P2. KCORE P1-E: optional compressed mutable RAM (mode3)
 

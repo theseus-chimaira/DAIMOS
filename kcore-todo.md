@@ -1,11 +1,12 @@
-# KCORE feature TODO (K01-K16)
+# KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1927 K07 D6FS mounted identity; K01-K06 closed).
+Updated: 2026-11-25 (v1928 TSFS identity and mandatory nonpaged KA10; K01-K06 closed).
 
-This is the **implementation-only** KCORE backlog. Work on these sixteen
-items is the current scope. Filesystems, storage utilities, hardware backends,
-toolchains, userland, optimization, consolidated acceptance matrices and
-release administration remain outside this list. Feature-specific tests are
+This is the **implementation-only** KCORE backlog. Work on these seventeen
+items is the current scope, including the mandatory KA10 backend (K17).
+Unrelated filesystems, storage utilities, other hardware backends,
+toolchains, userland, optimization and release administration remain
+outside this list. Feature-specific tests are
 part of each implementation task and belong in daimos-testkit.
 
 The accepted PDP-6 RAW PURE v1674 48K GENERAL/STRICT committed-MM
@@ -1201,6 +1202,17 @@ history is now reachable from main (v1809); mode3 remains disabled.
   scanner swap. TSFS identity, ordinary provider-loss policy,
   mutation/admission and integrated unmount remain OPEN. No physical
   guest exchange/PI6 acceptance claimed.
+  **v1928:** TSFS retains the admitted set ID, generation and TDIR
+  locator/checksum once in the optional tape MRES. Fresh physical
+  redundant descriptors of every member must agree with the original
+  identity before and after reconstruction. Proof failure sets the
+  existing map's suspect bit and blocks new DROP. Exact retry clears
+  it. Native 40 descriptor/map cases, seven unsafe controls, boot
+  handoff and extended bridge/DROP gates pass. Folded tape MRES +149
+  words (five BSS), PURE +1; fixed KCORE byte-identical. No added
+  per-process words. Not a full content hash or physical reel lock;
+  no whole-guest exchange acceptance. Ordinary provider-loss policy,
+  mutation/admission and integrated unmount remain OPEN.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
@@ -1212,6 +1224,29 @@ history is now reachable from main (v1809); mode3 remains disabled.
   dependencies and current-source physical/root matrices before
   promoting a production PURE configuration. Repository-wide branch
   retirement, hardware coverage and release acceptance are separate.
+
+## Mandatory KCORE: KA10 nonpaged backend
+
+- [ ] **K17 - KA10 contiguous relocation/protection backend.** Implement
+  an actual KA10 target, not a PDP-6 build relabeled as KA10. Initial
+  target uses one low segment without a pager and without requiring
+  optional KT10A high-segment hardware. Reuse common MM/process/VFS
+  ownership policy rather than forking KCORE. Complete the following:
+  - Target-specific boot image, APR initialization, PI/trap and
+    executive/user context-switch handling.
+  - Contiguous low-segment allocation/alignment and verified KA10
+    relocation/protection programming; activate only a complete
+    authoritative resident image. Separate machine-specific VM
+    load/copy/activate/restore interfaces from common policy.
+  - RUN/EXEC/BRK, fork where supported, EXIT/WAIT, raw swap and RAW
+    PURE compatibility; preserve ownership and rollback semantics.
+  - Actual native KA10 simulator boot, mapping/protection, interrupt,
+    multi-process and memory-pressure tests, including 64K target
+    configuration and measured resident/transient RAM.
+  - Target-specific acceptance; PDP-6 results cannot substitute.
+  No KI10 pager, speculative shared high text or unrelated new feature.
+  Mandatory after K09, before optional K10-K16. Existing architecture
+  boundary: design/kcore-multi-cpu-portability-v1605.md.
 
 ## Optional KCORE: compressed mutable memory (mode3)
 
@@ -1247,10 +1282,11 @@ history is now reachable from main (v1809); mode3 remains disabled.
 
 1. Finish K01-K04 correctness prerequisites.
 2. Finish K05-K09 mandatory PDP-6 RAW PURE implementation.
-3. Implement K10-K16 only as the optional compressed-memory feature;
+3. Finish K17 mandatory KA10 nonpaged backend and acceptance.
+4. Implement K10-K16 only as the optional compressed-memory feature;
    mode3 stays disabled until safe and accepted.
 
 Each item is a feature-completion task, not a claim of a newly reproduced
-bug. Full physical test matrices, RAM tuning, optimization, hardware
+bug. Full physical test matrices, RAM tuning, optimization, other hardware
 backends, filesystem features and post-feature release work are tracked
 separately in the consolidated `TODO.MD` and related documentation.

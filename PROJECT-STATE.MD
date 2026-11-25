@@ -1,3 +1,43 @@
+## 2026-11-25 v1928-k07: TSFS mounted set identity; mandatory KA10 backlog
+
+TSFS boot preserves its validated set ID (two words), generation,
+table-directory locator and checksum in an eight-word internal handoff.
+The optional tape MRES retains the five identity words once for its
+boot-only root, not per mount or process. The private serialized
+operation 030 verifies fresh redundant physical descriptors of all
+configured members against the admitted identity and member ordinals.
+One unreadable/unsealed copy is tolerated when the other matches;
+sealed contradictory or malformed copies are refused. The proof
+invalidates clean caches and clears raw transfer scratch before I/O.
+Failure retains the admitted identity and sets the suspect bit in the
+existing member-map word, blocking new DROP. Exact retry clears it.
+The shared PURE bridge invokes the proof before and after restoration.
+
+Implementation 2e096e30; testkit 2348091. Forty native descriptor/map
+cases and seven unsafe variants pass, including original-source retry,
+false success, contradictory copies, and one/two/eight-member maps.
+Boot handoff, 26 controlled restore bridge cases, 114 DROP cases, TSFS
+stored cross-member/extent, parent, root-member and fail-stop gates
+pass. Native raw I/O and VFS publication are controlled; no full guest
+reel exchange or physical PI6 acceptance. The old compressed-extent
+v1 runner remains stale (removed d6lz_pdp6.s), not a passed test.
+
+Folded KCC lowmem tape DTFS/TSFS MRES 2836 -> 2985 (+149), of which
+five new BSS words retain identity; PURE 3878 -> 3879 (+1). Fixed KCORE
+byte-identical at 025174 octal; no new per-process words. KINIT handoff
+adds five reclaimable words. Descriptor proof does not rehash the
+actual table/payload or detect same-ID copies or swap-and-return.
+K07 remains OPEN for ordinary provider loss, mutation/admission and
+integrated unmount. RAW PURE/mode3 default OFF.
+
+K17 is now an explicit mandatory KA10 nonpaged backend and acceptance
+milestone after PDP-6 K09, before optional mode3 K10-K16. Initial KA10
+scope is contiguous low-segment relocation/protection, not a pager
+or mandatory KT10A high segment. Reuse common MM/process/VFS policy;
+separate target boot, APR, PI, context and VM operations. No KA10
+runtime implementation claimed. Six of ten mandatory milestones
+are closed by implementation count; four remain (K07-K09, K17).
+
 ## 2026-11-25 v1927-k07: D6FS mounted physical volume identity
 
 D6FS retains the admitted 72-bit volume UUID in the existing disjoint
