@@ -33,6 +33,8 @@
         .globl  vm_user_mapping_hold
         .globl  vm_user_mapping_release
         .globl  exec_load_process
+        .globl  proc_exec_hold_v1934
+        .globl  proc_exec_release_v1933
         .globl  sixbit_record_words
         .globl  proc_current_slot
         .globl  proc_slot_ptr
@@ -61,7 +63,11 @@
         ; Persistent process RAM and the one-word swap record are unchanged.
         .equ    EXEC_R_OLD_EXT,-022
         .equ    EXEC_R_NEW_EXT,-021
-        .equ    EXEC_R_FRAME,023
+        ; Both PURE dependencies remain visible while the shared
+        ; process record is temporarily switched for VM teardown.
+        .equ    EXEC_R_OLD_HOLD,-026
+        .equ    EXEC_R_NEW_HOLD,-024
+        .equ    EXEC_R_FRAME,027
 
 /**
  * @brief Transactionally replace the current process image.
@@ -75,7 +81,7 @@
  * bounded launch block, stage a replacement VM, construct startup records,
  * then destroy the old image only after the replacement is complete.  The
  * compact PDP-6 spelling keeps validation pointers and transaction identity in
- * AC10..AC16 and uses only ten local words in addition to the seven saved ACs.
+ * AC10..AC16 and keeps the two transient backing holds on the private stack.
  */
         .globl  exec_replace_current
         .globl  proc_current_ptr
@@ -85,6 +91,8 @@ exec_replace_current:
         movei   0,EXEC_R_SAVE_FIRST(17)
         hrli    0,010
         blt     0,EXEC_R_SAVE_LAST(17)
+        setzm   EXEC_R_OLD_HOLD+1(17)
+        setzm   EXEC_R_NEW_HOLD+1(17)
         move    10,1                   ; launch block
         move    11,2                   ; available words, then launch words
         move    12,3                   ; result vector
@@ -162,6 +170,14 @@ exec_replace_validate_done:
         andi    2,017
         movem   2,EXEC_R_OLD_EXT(17)
 
+        ; Preserve the old dependency before a staged loader can
+        ; replace the slot's packed backing and credential identity.
+        move    1,EXEC_R_OLD_SWAP(17)
+        hlrz    2,(16)
+        movei   3,EXEC_R_OLD_HOLD(17)
+        pushj   17,proc_exec_hold_v1934
+        jumpn   1,exec_replace_invalid
+
         move    1,(16)
         movem   1,EXEC_R_STAGED(17)     ; staged.meta = current->meta
         ; A loader failure can occur before it has allocated any staged VM.
@@ -179,6 +195,10 @@ exec_replace_validate_done:
         ; is misreported as ordinary load failure and the retry is skipped.
         came    1,[-2]
         jrst    exec_replace_loaded
+        ; No staged image exists. The old permanent owner is intact.
+        ; Destructive retry owns its own lifetime transaction.
+        movei   1,EXEC_R_OLD_HOLD(17)
+        pushj   17,proc_exec_release_v1933
         move    1,10
         move    2,11
         move    3,EXEC_R_COUNTS(17)
@@ -188,6 +208,17 @@ exec_replace_validate_done:
 
 exec_replace_loaded:
         jumpl   1,exec_replace_load_failed_v1719
+        ; No yielding operation between loader return and the new
+        ; hold. The permanent record still identifies the new image.
+        move    1,proc_swap_records
+        add     1,13
+        move    1,(1)
+        hlrz    2,(16)
+        movei   3,EXEC_R_NEW_HOLD(17)
+        pushj   17,proc_exec_hold_v1934
+        ; A successful attachment must have a valid backing identity.
+        ; Losing it is an invariant failure, not a safe rollback.
+        jumpn   1,exec_replace_staged_invariant_v1719
         movei   1,EXEC_R_STAGED(17)
         move    2,15
         move    3,EXEC_R_COUNTS(17)
@@ -335,6 +366,14 @@ exec_replace_invalid:
 exec_replace_irreversible_v1719:
         movni   1,2                    ; EXEC_REPLACE_FATAL
 exec_replace_return:
+        ; Only retire transient dependencies after the surviving
+        ; permanent owner is restored/committed or the VM is gone.
+        push    17,1
+        movei   1,EXEC_R_NEW_HOLD-1(17)
+        pushj   17,proc_exec_release_v1933
+        movei   1,EXEC_R_OLD_HOLD-1(17)
+        pushj   17,proc_exec_release_v1933
+        pop     17,1
         movei   0,010
         hrli    0,EXEC_R_SAVE_FIRST(17)
         blt     0,016

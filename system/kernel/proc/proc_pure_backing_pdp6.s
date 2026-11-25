@@ -196,6 +196,20 @@ proc_exec_reserve_bad_v1933:
         seto    1,
         popj    17,
 
+; Extend an existing PURE dependency into a transaction-owned record.
+; AC1 packed backing, AC2 stable u-area, AC3 empty two-word stack record.
+; The caller still publishes this exact dependency in the process table;
+; no provider wait or new file admission is needed. Non-PURE needs no hold.
+        .globl proc_exec_hold_v1934
+proc_exec_hold_v1934:
+        tlnn    1,0777760               ; packed text length (14 bits)
+        jrst    kret_zero
+        push    17,3
+        pushj   17,proc_swap_unpack_backing
+        pop     17,2
+        jumpe   1,proc_exec_reserve_bad_v1933
+        jrst    proc_exec_reserve_v1933
+
 ; Release exactly this stack record, not necessarily the list head.
 ; A zero vnode means the reservation was never admitted (or released).
 ; An absent published record is an invariant failure, never a dangling
