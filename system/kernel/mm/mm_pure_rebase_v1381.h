@@ -22,4 +22,8 @@
 int mm_pure_rebase_pinned_v1381(kword_t base, unsigned int owner,
     kword_t prefix, kword_t original_words);
 
+/* PI-excluded managed physical range and allocated-table containment. */
+int mm_pure_range_v1922(kword_t base, kword_t words);
+int mm_pure_table_v1922(void);
+
 #endif

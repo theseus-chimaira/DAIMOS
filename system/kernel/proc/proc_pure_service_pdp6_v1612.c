@@ -299,6 +299,28 @@ out:
         return rc;
 }
 
+/* Keep malformed MM tables out of the general compactor. It must
+ * retain its ordinary PI behavior during physical moves; the proof
+ * itself runs in a short, separate PI-excluded window. */
+static int
+ppure_compact_v1922(kword_t words, kword_t alignment)
+{
+        kword_t saved = mach_pi_disable();
+        int rc = mm_pure_table_v1922();
+
+        mach_pi_restore(saved);
+        if (rc != MM_OK)
+                return rc;
+        rc = mm_compact(words, alignment);
+        if (rc < MM_ERR_DESCRIPTORS)
+                return rc;
+        saved = mach_pi_disable();
+        if (mm_pure_table_v1922() != MM_OK)
+                rc = MM_ERR_INVAL;
+        mach_pi_restore(saved);
+        return rc;
+}
+
 /* The permanent reclaim trampoline's original ABI is unchanged:
  * required words, alignment, excluded owner. */
 int
@@ -316,7 +338,7 @@ proc_pure_mres_reclaim_v1612(kword_t words, kword_t alignment,
          * Preserve hard MM refusals just as the permanent allocator does:
          * an invalid or busy move must not justify further victim DROP.
          * Ordinary resource pressure may still reclaim a PURE prefix. */
-        rc = mm_compact(words, alignment);
+        rc = ppure_compact_v1922(words, alignment);
         if (rc == MM_OK || rc < MM_ERR_DESCRIPTORS)
                 return rc;
         for (slot = 1U; slot < proc_high_slot; ++slot) {
@@ -359,7 +381,7 @@ proc_pure_mres_reclaim_v1612(kword_t words, kword_t alignment,
                 }
                 /* A completed DROP stays committed, even if a later
                  * compaction refuses. Do not reclaim another victim. */
-                rc = mm_compact(words, alignment);
+                rc = ppure_compact_v1922(words, alignment);
                 if (rc == MM_OK || rc < MM_ERR_DESCRIPTORS)
                         return rc;
         }

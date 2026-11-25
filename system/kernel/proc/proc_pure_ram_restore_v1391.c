@@ -75,7 +75,6 @@ proc_pure_full_owners_v1917(unsigned int slot, kword_t source,
     unsigned int source_pins, unsigned int target_pins)
 {
         unsigned int seen = 0U;
-        kword_t end = 0UL;
         int i;
 
         if ((!source && !target) ||
@@ -86,8 +85,9 @@ proc_pure_full_owners_v1917(unsigned int slot, kword_t source,
              (target & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
              (source && source < target + words &&
               target < source + raw))) ||
-            mm_extent_count <= 0 || mm_extent_count > MM_MAX_EXTENTS ||
-            (unsigned int)mm_extent_count > mm_extent_capacity)
+            mm_extent_count <= 0 || mm_pure_table_v1922() != MM_OK ||
+            (source && mm_pure_range_v1922(source, raw) != MM_OK) ||
+            (target && mm_pure_range_v1922(target, words) != MM_OK))
                 return -1;
         for (i = 0; i < mm_extent_count; ++i) {
                 const struct mm_extent *e = &mm_extents[i];
@@ -96,10 +96,6 @@ proc_pure_full_owners_v1917(unsigned int slot, kword_t source,
                 kword_t base = MM_EXTENT_BASE(e);
                 kword_t size = MM_EXTENT_WORDS(e);
 
-                if (!base || base < end || !size ||
-                    size > MM_HALF_MASK + 1UL - base)
-                        return -1;
-                end = base + size;
                 if (MM_EXTENT_OWNER(e) != slot ||
                     type == MM_TYPE_MODULE ||
                     type == MM_TYPE_KERNEL_DYNAMIC) {

@@ -22,6 +22,8 @@
         .globl mm_extent_count
         .globl mm_arenas
         .globl mm_arena_count
+        .globl mm_pure_range_v1922
+        .globl mm_pure_table_v1922
 
 mm_pure_claim_prefix_v1384:
         setz    0,                     ; mode 0: suffix -> full PACKED
@@ -74,6 +76,16 @@ mpure_bounds_v1384:
         camle   2,[01000000]           ; 18-bit physical address limit
         jrst    mpure_bad_v1384
 
+        ; Validate the live table before scanning it. Preserve the
+        ; argument registers across the shared range proof.
+        push    17,5
+        push    17,6
+        push    17,7
+        pushj   17,mm_pure_table_v1922
+        pop     17,7
+        pop     17,6
+        pop     17,5
+        jumpn   1,mpure_bad_v1384
         ; Scan the existing sorted extent table for the exact base.
         setz    1,
 mpure_find_v1384:
@@ -127,25 +139,16 @@ mpure_check_meta_v1384:
         jrst    mpure_fragmented_v1384
 
 mpure_check_arena_v1384:
-        ; Both the original base and the full high end must lie in ONE
-        ; actual managed MM arena; free gaps outside an arena are not RAM.
-        setz    0,
-mpure_arena_loop_v1384:
-        caml    0,mm_arena_count
-        jrst    mpure_fragmented_v1384
-        move    1,mm_arenas(0)
-        hrrz    2,1                     ; arena low
-        caml    011,2
-        jrst    mpure_arena_low_v1384
-        aoja    0,mpure_arena_loop_v1384
-mpure_arena_low_v1384:
-        hlrz    3,1                     ; arena length
-        add     2,3                     ; arena high (exclusive)
+        ; A valid live RAW suffix can have an unavailable original
+        ; prefix. Distinguish that from malformed arena geometry.
         move    1,011
-        add     1,010
-        camg    1,2                     ; skip claim if full end > arena high
-        jrst    mpure_claim_v1384
-        aoja    0,mpure_arena_loop_v1384
+        move    2,010
+        pushj   17,mm_pure_range_v1922
+        came    1,[-2]
+        jrst    mpure_arena_reply_v1922
+        jrst    mpure_fragmented_v1384
+mpure_arena_reply_v1922:
+        jumpn   1,mpure_bad_v1384
 
 mpure_claim_v1384:
         hrlz    2,010                  ; full size,,original base

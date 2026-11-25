@@ -14,6 +14,8 @@
         .globl mm_extent_count
         .globl mm_extent_capacity
         .globl mm_free
+        .globl mm_pure_range_v1922
+        .globl mm_pure_table_v1922
         .globl proc_storage_publish_v30
         .globl proc_swap_storage_invariant_v30
         .equ PPURE_TYPE_PACKED_V1609,4
@@ -138,14 +140,19 @@ ppure_detach_free_v1920:
 ; AC12 is reused for previous extent end; AC15 is the index.
 ; No new frame or static state. Caller holds PI disabled.
 ppure_detach_scan_v1920:
-        move    4,mm_extent_count
-        jumpl   4,ppure_detach_scan_bad_v1920
-        caile   4,0210
-        jrst    ppure_detach_scan_bad_v1920
-        camle   4,mm_extent_capacity
-        jrst    ppure_detach_scan_bad_v1920
+        push    17,0                   ; scan mode across shared proof
+        pushj   17,mm_pure_table_v1922
+        pop     17,0
+        jumpn   1,ppure_detach_scan_bad_v1920
+        jumpe   0,ppure_detach_table_ok_v1922
+        push    17,0
+        move    1,016
+        move    2,013
+        pushj   17,mm_pure_range_v1922
+        pop     17,0
+        jumpn   1,ppure_detach_scan_bad_v1920
+ppure_detach_table_ok_v1922:
         setz    015,
-        setz    012,
         setz    2,                     ; matching owner seen
 ppure_detach_scan_loop_v1920:
         caml    015,mm_extent_count
@@ -155,15 +162,9 @@ ppure_detach_scan_loop_v1920:
         move    5,mm_extents(4)
         move    6,mm_extents+1(4)
         hrrz    7,5                     ; base
-        jumpe   7,ppure_detach_scan_bad_v1920
-        camge   7,012                   ; sorted and nonoverlapping
-        jrst    ppure_detach_scan_bad_v1920
-        hlrz    4,5                     ; span
-        jumpe   4,ppure_detach_scan_bad_v1920
+        hlrz    4,5                     ; span (shared table proof)
         move    012,7
         add     012,4                   ; exclusive physical end
-        camle   012,[01000000]
-        jrst    ppure_detach_scan_bad_v1920
         hrrz    4,6
         came    4,010
         jrst    ppure_detach_foreign_v1920
