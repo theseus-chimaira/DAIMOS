@@ -11,8 +11,8 @@
 #include "tsfs.h"
 
 /* Published VFS mount-root slab; each public mount ID selects slot ID-1.
- * The resident swap record omits provider identity and PURE reload later
- * reconstructs it from this root, so validate the binding at attach time.
+ * The original provider is retained in spare credential/SIDL bits.
+ * Validate the binding at attach time before publishing those bits.
  */
 extern vnode_t *vfs_mount_root_base;
 
@@ -21,7 +21,7 @@ int
 proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
     unsigned int pure)
 {
-        kword_t packed;
+        kword_t packed, identity;
         unsigned int provider;
         unsigned int mount;
         unsigned int kind;
@@ -58,30 +58,21 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
         packed |= (kword_t)((mount - 1U) & PROC_SWAP_MOUNT_MASK)
             << PROC_SWAP_MOUNT_SHIFT;
         packed |= text_words << PROC_SWAP_TEXT_SHIFT;
-        /* No extra word: save the fifth zero-based mount-slot bit in the
-         * existing stable u-area. EXEC staging/rollback must treat this bit
-         * as part of the backing record, not as credential information. */
-        if (PROC_HAS_UAREA(&proc_table[slot])) {
-                if (((mount - 1U) & 020U) != 0U)
-                        PROC_CRED_WORD(&proc_table[slot]) |=
-                            PROC_SWAP_MOUNT_EXT_BIT;
-                else
-                        PROC_CRED_WORD(&proc_table[slot]) &=
-                            ~PROC_SWAP_MOUNT_EXT_BIT;
-        } else if (PROC_STATE(&proc_table[slot]) != PROC_SIDL)
+        /* Preserve credentials and the SIDL rollback flag. The identity
+         * accompanies the record even when PURE text length is zero. */
+        identity = ((kword_t)provider << PROC_SWAP_PROVIDER_SHIFT_V1924) |
+            (((mount - 1U) & 020U) ? PROC_SWAP_MOUNT_EXT_BIT : 0UL);
+        if (PROC_HAS_UAREA(&proc_table[slot]))
+                PROC_CRED_WORD(&proc_table[slot]) =
+                    (PROC_CRED_WORD(&proc_table[slot]) &
+                     ~PROC_SWAP_ID_MASK_V1924) | identity;
+        else if (PROC_STATE(&proc_table[slot]) != PROC_SIDL)
                 return -1;
-        /* v1563: even a SIDL with an already attached u-area can be in
-         * the middle of EXEC. The owner scan must use one authoritative
-         * staging bit in both RUN and EXEC, rather than reading a newly
-         * allocated or not-yet-copied credential word. SRUN never uses
-         * this temporary RH bit; it is its runnable-queue link. */
-        if (PROC_STATE(&proc_table[slot]) == PROC_SIDL) {
-                proc_table[slot].sched =
-                    (proc_table[slot].sched &
-                    ~PROC_SWAP_STAGE_MOUNT_EXT_BIT) |
-                    (((mount - 1U) & 020U) != 0U ?
-                    PROC_SWAP_STAGE_MOUNT_EXT_BIT : 0UL);
-        }
+        if (PROC_STATE(&proc_table[slot]) == PROC_SIDL)
+                proc_table[slot].sched = (proc_table[slot].sched &
+                    ~PROC_SWAP_STAGE_ID_MASK_V1924) |
+                    ((kword_t)provider << PROC_SWAP_STAGE_PROV_SHIFT_V1924) |
+                    (((mount - 1U) & 020U) ? PROC_SWAP_STAGE_MOUNT_EXT_BIT : 0UL);
         proc_swap_records[slot].state = packed;
         return 0;
 }

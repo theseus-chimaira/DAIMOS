@@ -65,6 +65,8 @@ pure_admit_source_v1608(const struct proc *p, kword_t backing)
         root = vfs_mount_root_base[mount - 1U];
         provider = VFS_PROVIDER(root);
         if (provider < MEMFS_PROVIDER || provider > TSFS_PROVIDER ||
+            provider != (unsigned int)((u[PROC_CRED_OFFSET] &
+                PROC_SWAP_PROVIDER_MASK_V1924) >> PROC_SWAP_PROVIDER_SHIFT_V1924) ||
             VFS_MOUNT_ID(root) != mount)
                 return MM_ERR_INVAL;
         return MM_OK;

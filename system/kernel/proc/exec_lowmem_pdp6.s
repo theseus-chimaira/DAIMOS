@@ -159,7 +159,7 @@ exec_replace_validate_done:
         hlrz    1,(16)
         move    2,PROC_CRED_OFFSET(1)
         lsh     2,-033
-        andi    2,1
+        andi    2,017
         movem   2,EXEC_R_OLD_EXT(17)
 
         move    1,(16)
@@ -220,7 +220,7 @@ exec_replace_startup_ok:
         hlrz    1,(16)
         move    2,PROC_CRED_OFFSET(1)
         lsh     2,-033
-        andi    2,1
+        andi    2,017
         movem   2,EXEC_R_NEW_EXT(17)
         move    1,proc_swap_records
         add     1,13
@@ -228,6 +228,9 @@ exec_replace_startup_ok:
         movem   2,EXEC_R_NEW_SWAP(17)
         move    2,EXEC_R_OLD_SWAP(17)
         movem   2,(1)
+        hlrz    1,(16)
+        move    2,EXEC_R_OLD_EXT(17)
+        dpb     2,[POINT 4,PROC_CRED_OFFSET(1),8]
 
         ; The launch block is in the old VM.  Clear its mapping hold before
         ; destroying that VM; restore the hold if destruction fails.
@@ -253,6 +256,9 @@ exec_replace_startup_ok:
         add     3,13
         move    4,EXEC_R_NEW_SWAP(17)
         movem   4,(3)
+        hlrz    3,(16)
+        move    4,EXEC_R_NEW_EXT(17)
+        dpb     4,[POINT 4,PROC_CRED_OFFSET(3),8]
         pushj   17,vm_space_destroy
         jumpn   1,exec_replace_staged_invariant_v1719
         jrst    exec_replace_restore_fail
@@ -275,7 +281,7 @@ exec_replace_commit:
         ; vm_space_destroy detached the old backing and cleared its extension.
         hlrz    1,(16)
         move    2,EXEC_R_NEW_EXT(17)
-        dpb     2,[POINT 1,PROC_CRED_OFFSET(1),8]
+        dpb     2,[POINT 4,PROC_CRED_OFFSET(1),8]
 
         hlrz    1,EXEC_R_STAGED(17)
         movem   1,(12)
@@ -316,7 +322,7 @@ exec_replace_restore_swap:
         movem   2,(1)
         hlrz    1,(16)
         move    2,EXEC_R_OLD_EXT(17)
-        dpb     2,[POINT 1,PROC_CRED_OFFSET(1),8]
+        dpb     2,[POINT 4,PROC_CRED_OFFSET(1),8]
         ; An old-VM destructor may free the PROCESS extent, publish VM_NONE
         ; and subsequently refuse backing detach. That commit is irreversible:
         ; the caller must enter fatal process teardown, not resume the old PC.

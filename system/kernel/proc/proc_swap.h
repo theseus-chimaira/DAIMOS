@@ -28,21 +28,29 @@
 #define PROC_SWAP_MOUNT_SHIFT     18U
 #define PROC_SWAP_TEXT_SHIFT      22U
 #define PROC_SWAP_MOUNT_EXT_BIT   ((kword_t)1UL << 27U)
+/* Original provider, not a provider inferred from a later mount root.
+ * Zero is invalid for a PURE record. Bits 28..30 are outside UID9. */
+#define PROC_SWAP_PROVIDER_SHIFT_V1924 28U
+#define PROC_SWAP_PROVIDER_MASK_V1924 ((kword_t)7UL << 28U)
+#define PROC_SWAP_ID_MASK_V1924 (PROC_SWAP_MOUNT_EXT_BIT | PROC_SWAP_PROVIDER_MASK_V1924)
+#define PROC_SWAP_STAGE_ID_MASK_V1924 035UL
+#define PROC_SWAP_STAGE_PROV_SHIFT_V1924 2U
+
 /* Only while SIDL lacks its u-area, the otherwise unused scheduler RH bit 0
  * temporarily carries the fifth mount-slot bit until RUN publishes u-area.
  * It is cleared before SRUN uses RH for its runnable-queue link. */
 #define PROC_SWAP_STAGE_MOUNT_EXT_BIT 1UL
 
 /* Resident record (one 36-bit word): index:18 | mount slot low 4 | PURE text:14.
- * A filesystem provider need not be stored: one public mount ID names exactly
- * one mounted provider. The mount remains pinned while swapped PURE text
- * depends on its executable, so restore derives the provider from the live
- * mount root. This preserves the full 18-bit index and 14-bit PURE span.
+ * The original filesystem provider is saved in credential bits 28..30.
+ * Reconstruct only when the published mount still names that provider.
+ * Mount lifetime guards remain necessary for same-provider reuse.
  * Mount slot bit 4 (for public IDs 17..26) lives in an otherwise spare high
  * bit of the owning stable u-area credential word (offset 066, bit 27).
  * Together they preserve all 5 slot bits and the complete 18+14 other bits,
  * with no extra per-process word. While SIDL has no u-area, RUN stages the
- * extra bit in scheduler RH bit 0, then publishes it when the u-area exists.
+ * extra bit in scheduler RH bit 0 and provider in bits 2..4, then publishes
+ * them when the u-area exists. Bit 1 retains its rollback meaning.
  * EXEC rolls the bit back or forward with the record. Swapped PURE restore
  * must read the same owner's u-area; it cannot use the record alone. */
 

@@ -49,12 +49,15 @@ proc_swap_unpack_backing:
         jrst    proc_swap_unpack_backing_bad
         add     2,1
         move    2,(2)                   ; exact published mount root
-        move    0,2
         addi    1,1                     ; public mount id
         ldb     5,[POINT 6,2,11]
         came    5,1
         jrst    proc_swap_unpack_backing_bad
+        ldb     5,[POINT 3,0,7]         ; original provider in cred bits 28..30
+        move    0,2                     ; exact root snapshot
         lsh     2,-036                  ; vnode provider:6
+        came    2,5
+        jrst    proc_swap_unpack_backing_bad
         caige   2,4                     ; reject anything outside MEMFS..TSFS
         jrst    proc_swap_unpack_backing_bad
         caile   2,7

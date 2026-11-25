@@ -313,18 +313,14 @@ proc_run_watermark_loop:
         ; file_table points at parent u-area 026. Credentials including
         ; Packed UMASK9 lives in credential word 066.
         move    4,040(7)
-        tlz     4,001000               ; PURE backing mount bit belongs to
-                                      ; parent executable, not child credentials
+        tlz     4,017000               ; no inherited executable identity
         movem   4,PROC_CRED_OFFSET(014)
-        ; EXEC was loaded while the child still had no u-area. Its fifth
-        ; backing slot bit was staged in the unused SIDL scheduler RH bit0.
-        ; Publish it only after inheriting credentials, before SRUN reuses
-        ; scheduler RH as a run-queue link. No additional process words.
-        move    4,2(013)
-        trnn    4,1
-        jrst    proc_run_pure_ext_ready
-        movsi   4,001000
-        iorm    4,PROC_CRED_OFFSET(014)
+        ; Copy staged provider bits 2..4 and mount bit 0, not the
+        ; SIDL rollback flag at bit 1, before publishing SRUN.
+        ldb     4,[POINT 3,2(013),33]
+        dpb     4,[POINT 3,PROC_CRED_OFFSET(014),7]
+        ldb     4,[POINT 1,2(013),35]
+        dpb     4,[POINT 1,PROC_CRED_OFFSET(014),8]
 proc_run_pure_ext_ready:
         ; Child's descriptor table starts zero; all mount bits are embedded
         ; in the full first word copied during explicit RUN mapping.

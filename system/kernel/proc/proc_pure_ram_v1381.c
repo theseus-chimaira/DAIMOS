@@ -305,7 +305,7 @@ proc_pure_ram_discard_v1381(unsigned int slot)
         pram_publish(slot, PROC_STORAGE_PACKED, PROC_STORAGE_RESIDENT);
         proc_swap_records[slot].state = 0UL;
         u[PROC_SWAP_BACKING_OFFSET] = 0UL;
-        u[PROC_CRED_OFFSET] &= ~PROC_SWAP_MOUNT_EXT_BIT;
+        u[PROC_CRED_OFFSET] &= ~PROC_SWAP_ID_MASK_V1924;
         /* Teardown owns TRANSITION until the complete slot is retired. */
         return MM_OK;
 }
