@@ -200,6 +200,9 @@ d6fs_get_block_io_error_v1538:
         ; AC10 is the reader that actually issued the failed block read.
         ; Its low six state bits hold the public VFS mount ID. A secondary
         ; D6FS must remain recoverable even when a D6FS root is mounted.
+        move    1,010
+        movei   2,1                     ; READ_SUSPECT
+        pushj   17,d6fs_note_failure_v1929
         movei   1,6                     ; D6FS provider
         move    2,1(010)
         andi    2,077
@@ -640,6 +643,41 @@ d6fs_mres_reg_dispatch:
         move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch
 
+; AC1=actual failed reader, AC2=READ_SUSPECT (1) or WRITE_UNCERTAIN (2).
+; Serialized provider call: record the fault only for the exact published
+; reader, never a boot probe or a reused mount slot. Invalidate the
+; overwritten workspace and the failed source's private cache tag only;
+; an independent mounted filesystem remains a valid clean cache hit.
+; No I/O or allocation.
+        .globl d6fs_note_failure_v1929
+        .globl bcache_state
+d6fs_note_failure_v1929:
+        pushj   17,bcache_workspace_invalidate
+        ldb     3,[POINT 6,1(1),35]
+        hrrz    4,bcache_state
+        jumpe   4,d6fs_note_slot_v1929
+        move    5,(4)
+        lsh     5,-030
+        move    6,3
+        iori    6,01000                  ; BCACHE_SOURCE_D6FS | mount ID
+        camn    5,6
+        setom   (4)
+d6fs_note_slot_v1929:
+        sojl    3,d6fs_note_done_v1929
+        caml    3,vfs_mount_limit
+        jrst    d6fs_note_done_v1929
+        skipn   4,d6fs_reader_slots_base
+        jrst    d6fs_note_done_v1929
+        add     4,3
+        came    1,(4)
+        jrst    d6fs_note_done_v1929
+        skipn   4,dtfs_media_base
+        jrst    d6fs_note_done_v1929
+        add     4,3
+        iorm    2,(4)
+d6fs_note_done_v1929:
+        popj    17,
+
 ; AC1=reader; physically read the selected A/B superblock, never BCACHE.
 ; Return 0 and UUID in AC2/AC3 only if the selected header matches the
 ; reader's admitted geometry, sequence and writable state. A RO recovery
@@ -737,7 +775,13 @@ d6fs_pure_media_v1927:
         move    011,2
         move    4,dtfs_media_base
         add     4,011
-        setom   (4)                     ; proof unavailable until success
+        move    6,(4)
+        ; Identity alone cannot prove that a failed write was atomic.
+        ; Keep write uncertainty sticky for this mount lifetime.
+        trne    6,2
+        jrst    d6fs_pure_media_bad_v1927
+        movei   6,1
+        iorm    6,(4)                   ; read proof unavailable until success
         move    4,tsfs_file_shape_base
         add     4,011
         move    5,tsfs_extent_media_base
@@ -757,7 +801,8 @@ d6fs_pure_media_v1927:
         jrst    d6fs_pure_media_bad_v1927
         move    4,dtfs_media_base
         add     4,011
-        setzm   (4)
+        movei   6,1
+        andcam  6,(4)
         jrst    d6fs_pure_media_done_v1927
 d6fs_pure_media_bad_v1927:
         seto    1,
@@ -1143,6 +1188,9 @@ d6fs_reader_commit_cache:
         setz    1,
         jrst    d6fs_reader_commit_done
 d6fs_reader_commit_io_error_v1538:
+        move    1,010
+        movei   2,2                     ; WRITE_UNCERTAIN
+        pushj   17,d6fs_note_failure_v1929
         movei   1,6                     ; D6FS provider
         move    2,1(010)                ; actual writing reader's mount ID
         andi    2,077

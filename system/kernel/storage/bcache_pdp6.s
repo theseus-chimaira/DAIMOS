@@ -12,6 +12,7 @@
         .globl  bcache_reclaim
         .globl  bcache_invalidate_all
         .globl  bcache_workspace_invalidate
+        .globl  bcache_state             ; optional source-scoped invalidation
         .globl  fs_block_workspace
         .globl  mm_alloc_aligned_noreclaim
         .globl  mm_free

@@ -10,6 +10,10 @@
 #define D6FS_PROVIDER_MOUNT_WRITABLE  0100U
 #define D6FS_PROVIDER_MOUNT_COPY      0200U
 #define D6FS_PROVIDER_STATE_MASK      07777UL
+/* Provider-disjoint dtfs_media slot: PURE backing availability.
+ * An exact physical UUID proof retires READ_SUSPECT only. */
+#define D6FS_MEDIA_RD_SUSPECT_V1929 1UL
+#define D6FS_MEDIA_WR_UNCERT_V1929  2UL
 #define D6FS_PROVIDER_SUMMARY_SHIFT   12U
 #define D6FS_PROVIDER_SUMMARY_START(reader) \
         ((reader)->opaque >> D6FS_PROVIDER_SUMMARY_SHIFT)
