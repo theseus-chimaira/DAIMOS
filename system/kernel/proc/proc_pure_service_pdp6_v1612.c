@@ -67,23 +67,23 @@ ppure_mode3_v1667(unsigned int slot)
 }
 #endif
 
-/* PI-excluded RAM owner proof, not a VFS backing lookup. Reuse the
- * FULL scanner so that capacity, foreign overlaps, unexpected types
- * and pins cannot be interpreted differently during retry unlock. */
+/* PI-excluded retry proof, using the same sole-owner scanner as DROP
+ * and PREFIX. Escrowed transactions must use their saved identities,
+ * not discover a replacement owner here.
+ */
 static int
 ppure_retryable_v1612(unsigned int slot, struct proc *p,
     unsigned int mode)
 {
         kword_t backing, words, prefix, base;
         kword_t *u;
-        int i;
 
         if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
             !PROC_UAREA_BASE(p))
                 return 0;
         backing = proc_swap_records[slot].state;
         words = VM_SPACE_WORDS(p);
-        if (!backing || !words)
+        if (!backing || !words || (words & (VM_PDP6_ALIGN_WORDS - 1UL)))
                 return 0;
         u = (kword_t *)(unsigned long)PROC_UAREA_BASE(p);
         if (u[PROC_FINALIZE_OFFSET] &
@@ -91,31 +91,22 @@ ppure_retryable_v1612(unsigned int slot, struct proc *p,
                 return 0;
         if (mode == PROC_STORAGE_RESIDENT) {
                 base = VM_PDP6_BASE(p);
-                return base && !u[PROC_SWAP_BACKING_OFFSET] &&
+                return base && !(base & (VM_PDP6_ALIGN_WORDS - 1UL)) &&
+                    !u[PROC_SWAP_BACKING_OFFSET] &&
                     proc_storage_expect_v30(slot, mode) == 0 &&
-                    proc_pure_full_owners_v1917(slot, 0UL, 0UL, base,
-                        words, 0U, 0U) == 2;
+                    proc_pure_owner_v1918(slot, MM_TYPE_PROCESS,
+                        base, words, 0U) != 0UL;
         }
         if (mode != PROC_STORAGE_PACKED ||
             VM_PDP6_BASE(p) ||
             u[PROC_SWAP_BACKING_OFFSET] != backing ||
             pdp6_pure_skip_v1604(backing, words, &prefix) != MM_OK ||
-            proc_storage_expect_v30(slot, mode) != 0 ||
-            mm_extent_count <= 0 || mm_extent_count > MM_MAX_EXTENTS ||
-            (unsigned int)mm_extent_count > mm_extent_capacity)
+            proc_storage_expect_v30(slot, mode) != 0)
                 return 0;
-        for (i = 0; i < mm_extent_count; ++i) {
-                const struct mm_extent *e = &mm_extents[i];
-                if (MM_EXTENT_OWNER(e) != slot ||
-                    MM_EXTENT_TYPE(e) != MM_TYPE_PACKED_PROCESS)
-                        continue;
-                base = MM_EXTENT_BASE(e);
-                return base > prefix &&
-                    !((base - prefix) & (VM_PDP6_ALIGN_WORDS - 1UL)) &&
-                    proc_pure_full_owners_v1917(slot, base,
-                        words - prefix, 0UL, 0UL, 0U, 0U) == 1;
-        }
-        return 0;
+        base = proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS,
+            0UL, words - prefix, 0U);
+        return base > prefix &&
+            !((base - prefix) & (VM_PDP6_ALIGN_WORDS - 1UL));
 }
 
 /* Keep the owner proof and TRANSITION release in the same PI window. */

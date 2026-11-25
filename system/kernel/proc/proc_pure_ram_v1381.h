@@ -16,6 +16,12 @@
 typedef int (*proc_pure_ram_reload_v1381)(kword_t backing,
     kword_t base, kword_t uarea);
 
+/* PI-excluded exact single-owner proof. Base zero discovers an owner;
+ * nonzero requires the original base. Zero return means uncertainty.
+ */
+kword_t proc_pure_owner_v1918(unsigned int slot, unsigned int type,
+    kword_t base, kword_t words, unsigned int pins);
+
 int proc_pure_ram_drop_v1381(unsigned int slot);
 int proc_pure_ram_restore_v1381(unsigned int slot,
     proc_pure_ram_reload_v1381 reload);

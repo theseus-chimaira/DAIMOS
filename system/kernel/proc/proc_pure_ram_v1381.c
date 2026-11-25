@@ -44,34 +44,50 @@ extern void proc_swap_storage_invariant_v30(void);
 extern kword_t mach_pi_disable(void);
 extern void mach_pi_restore(kword_t saved);
 
-/*
- * Both the original APR extent and the shorter inactive raw suffix
- * are identified by the MM owner/type alone, with no persistent layout.
+/* PI-excluded proof of a sole user extent. A zero expected base permits
+ * discovery only before a transaction starts. Independent MODULE and
+ * KERNEL_DYNAMIC owner namespaces are allowed, but never overlapping.
+ * The second pass checks every other physical range, including a
+ * foreign descriptor preceding the discovered source in the table.
  */
-static int
-pram_extent(unsigned int slot, unsigned int type, kword_t words,
-    kword_t *basep)
+kword_t
+proc_pure_owner_v1918(unsigned int slot, unsigned int type,
+    kword_t base, kword_t words, unsigned int pins)
 {
-        int i;
-        unsigned int found = 0U;
-        kword_t base = 0UL;
+        int i, found = -1;
+
+        if (!words || mm_extent_count <= 0 ||
+            mm_extent_count > MM_MAX_EXTENTS ||
+            (unsigned int)mm_extent_count > mm_extent_capacity)
+                return 0UL;
         for (i = 0; i < mm_extent_count; ++i) {
                 const struct mm_extent *e = &mm_extents[i];
                 unsigned int kind = MM_EXTENT_TYPE(e);
+                kword_t start = MM_EXTENT_BASE(e);
+                kword_t size = MM_EXTENT_WORDS(e);
+
+                if (!start || !size || size > MM_HALF_MASK + 1UL - start)
+                        return 0UL;
                 if (MM_EXTENT_OWNER(e) != slot ||
-                    (kind != MM_TYPE_PROCESS &&
-                     kind != MM_TYPE_PACKED_PROCESS))
+                    kind == MM_TYPE_MODULE || kind == MM_TYPE_KERNEL_DYNAMIC)
                         continue;
-                if (++found != 1U || kind != type ||
-                    MM_EXTENT_WORDS(e) != words ||
-                    MM_EXTENT_PINNED(e) ||
-                    !(base = MM_EXTENT_BASE(e)))
-                        return MM_ERR_INVAL;
+                if (found >= 0 || kind != type || size != words ||
+                    MM_EXTENT_PINS(e) != pins || (base && base != start))
+                        return 0UL;
+                found = i;
+                base = start;
         }
-        if (found != 1U)
-                return MM_ERR_INVAL;
-        *basep = base;
-        return MM_OK;
+        if (found < 0)
+                return 0UL;
+        for (i = 0; i < mm_extent_count; ++i) {
+                const struct mm_extent *e = &mm_extents[i];
+                kword_t start = MM_EXTENT_BASE(e);
+
+                if (i != found && start < base + words &&
+                    base < start + MM_EXTENT_WORDS(e))
+                        return 0UL;
+        }
+        return base;
 }
 
 /*
@@ -132,50 +148,66 @@ proc_pure_ram_drop_v1381(unsigned int slot)
         source = VM_PDP6_BASE(p);
         u = PRAM_PTR(PROC_UAREA_BASE(p));
         if (!source || u[PROC_SWAP_BACKING_OFFSET] ||
-            pram_extent(slot, MM_TYPE_PROCESS, words, &source) != MM_OK ||
-            source != VM_PDP6_BASE(p))
+            (u[PROC_FINALIZE_OFFSET] &
+             (PROC_FINALIZE_MARK | PROC_SWAP_RETRY_TAG_V1507)) ||
+            (source & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            (words & (VM_PDP6_ALIGN_WORDS - 1UL)))
                 return MM_ERR_INVAL;
+        pi_state = mach_pi_disable();
+        if (!proc_pure_owner_v1918(slot, MM_TYPE_PROCESS, source,
+            words, 0U)) {
+                rc = MM_ERR_INVAL;
+                goto out;
+        }
+        suffix = source + skip;
+        /* Save the original suffix identity before any mutation. A
+         * failed pin/rebase must not authorize an unrelated RAW owner
+         * discovered later by the service. */
+        u[PROC_FINALIZE_OFFSET] = PROC_PURE_FULL_ESCROW_V1917(suffix, 0UL);
         rc = mm_pin(source);
         if (rc != MM_OK)
-                return rc;
+                goto resident_done;
+        if (!proc_pure_owner_v1918(slot, MM_TYPE_PROCESS, source,
+            words, 1U))
+                goto uncertain;
 
-        /*
-         * The suffix already occupies [source + skip, source + words).
-         * No physical copy is necessary. The MM primitive validates every
-         * descriptor field BEFORE its two metadata stores and cannot
-         * fail after them. Keep PI disabled across the descriptor rebase
-         * and the resident -> inactive backing/VM/mode publication, so
-         * neither a VFS busy scanner nor the MM allocator observes an
-         * inconsistent owner state.
-         *
-         * Because the source words are untouched, a rejected rebase
-         * leaves the complete runnable image available for retry.
-         */
-        pi_state = mach_pi_disable();
+        /* Both shapes keep the same high end. Reconcile a reported
+         * failure using the original physical addresses, never a
+         * newly discovered descriptor. PI remains off through
+         * rebase, mode publication and checked pin retirement. */
         rc = mm_pure_rebase_pinned_v1381(source, slot, skip, words);
-        if (rc == MM_OK) {
+        if (proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS, suffix,
+            words - skip, 1U)) {
                 u[PROC_SWAP_BACKING_OFFSET] = backing;
                 VM_PDP6_SET_BASE(p, 0UL);
                 pram_publish(slot, PROC_STORAGE_RESIDENT,
                     PROC_STORAGE_PACKED);
+                rc = mm_unpin(suffix);
+                if (!proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS,
+                    suffix, words - skip, 0U))
+                        goto uncertain;
+                u[PROC_FINALIZE_OFFSET] = 0UL;
+                if (rc == MM_OK)
+                        PROC_CLEAR_TRANSITION(p);
+                goto out;
         }
+        if (rc == MM_OK ||
+            !proc_pure_owner_v1918(slot, MM_TYPE_PROCESS, source,
+                words, 1U))
+                goto uncertain;
+        if (mm_unpin(source) != MM_OK)
+                rc = MM_ERR_BUSY;
+resident_done:
+        if (!proc_pure_owner_v1918(slot, MM_TYPE_PROCESS, source,
+            words, 0U))
+                goto uncertain;
+        u[PROC_FINALIZE_OFFSET] = 0UL;
+        goto out;
+uncertain:
+        rc = MM_ERR_BUSY;
+out:
         mach_pi_restore(pi_state);
-        if (rc != MM_OK) {
-                /* A rejected rebase leaves the original MM owner intact.
-                 * If its cleanup unpin also fails, report BUSY rather than
-                 * the earlier geometry error: the original VM remains
-                 * TRANSITION-held and must not resume with an unknown pin. */
-                if (mm_unpin(source) != MM_OK)
-                        return MM_ERR_BUSY;
-                return rc;
-        }
-
-        suffix = source + skip;
-        rc = mm_unpin(suffix);
-        if (rc != MM_OK)
-                return MM_ERR_BUSY; /* committed: keep TRANSITION */
-        PROC_CLEAR_TRANSITION(p);
-        return MM_OK;
+        return rc;
 }
 
 /* v1611: the resident swapless MRES only needs the zero-copy DROP.
@@ -208,8 +240,8 @@ proc_pure_ram_restore_v1381(unsigned int slot,
         raw = words - skip;
         if (VM_PDP6_BASE(p) ||
             u[PROC_SWAP_BACKING_OFFSET] != backing ||
-            pram_extent(slot, MM_TYPE_PACKED_PROCESS, raw, &source) !=
-                MM_OK)
+            !(source = proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS,
+                0UL, raw, 0U)))
                 return MM_ERR_INVAL;
         rc = mm_pin(source);
         if (rc != MM_OK)
@@ -278,8 +310,8 @@ proc_pure_ram_discard_v1381(unsigned int slot)
         if (VM_PDP6_BASE(p) ||
             u[PROC_SWAP_BACKING_OFFSET] != backing ||
             proc_storage_expect_v30(slot, PROC_STORAGE_PACKED) != 0 ||
-            pram_extent(slot, MM_TYPE_PACKED_PROCESS, words - skip,
-                &source) != MM_OK)
+            !(source = proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS,
+                0UL, words - skip, 0U)))
                 return MM_ERR_INVAL;
         rc = mm_free(source, MM_TYPE_PACKED_PROCESS, slot);
         if (rc != MM_OK)
