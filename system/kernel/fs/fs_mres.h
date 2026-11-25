@@ -55,6 +55,8 @@
 #define FS_TSFS_PURE_MEDIA_V1928 24U
 /* Gateway-only transient executable reservation; never a provider op. */
 #define FS_EXEC_RESERVE_V1933 26U
+/* D6FS-only administrative retirement under VFS barrier and lease. */
+#define FS_D6FS_DISCARD_V1939 27U
 
 struct fs_mres_request {
         kword_t op;

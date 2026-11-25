@@ -520,7 +520,7 @@ file_close_fail:
         seto    1,
         jrst    file_close_done
 
-; Root explicitly abandons ONE poisoned DTFS FILE descriptor without a
+; Root explicitly abandons ONE poisoned DTFS/D6FS FILE descriptor without a
 ; writeback. Ordinary CLOSE is still fail-closed and never uses this code.
 ; No hardware I/O, mounted-slot recycle, PIPE release or implicit repair
 ; occurs here. Discarding the last reference is the administrator's own
@@ -535,12 +535,20 @@ file_dtfs_abandon_fd_v1531:
         push    17,1                     ; exact live FILE entry
         pushj   17,file_node_from_fd
         ldb     2,[POINT 6,1,5]         ; provider
-        caie    2,5                      ; only DTFS, never PIPE or root
+        caie    2,5
+        cain    2,6
+        jrst    file_poison_provider_v1939
         jrst    file_dtfs_abandon_bad_v1531
+file_poison_provider_v1939:
         ldb     1,[POINT 6,1,11]        ; full six-bit mount ID
         sojl    1,file_dtfs_abandon_bad_v1531
         pushj   17,vfs_dtfs_poisoned_slot_v1531
         jumpn   1,file_dtfs_abandon_bad_v1531
+        move    1,(17)
+        pushj   17,file_node_from_fd
+        ldb     1,[POINT 6,1,5]
+        came    1,7                     ; stale provider is not this mount
+        jrst    file_dtfs_abandon_bad_v1531
         pop     17,2
         setzm   (2)                     ; no stale packed vnode/lock bits
         setzm   1(2)                    ; clear seek position with descriptor

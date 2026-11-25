@@ -1459,17 +1459,19 @@ vfs_dtfs_quiesce_end_done_v1562:
         pop     17,2
         popj    17,
 
-; Validate a zero-based, currently published non-root DTFS mount slot
+; Validate a zero-based, currently published non-root DTFS/D6FS mount slot
 ; that has definitively entered sticky WRITE_UNCERTAIN. Never use this
 ; for READ_SUSPECT or clean volumes; matching a 72-bit volume ID is not
 ; proof of repaired data after an interrupted physical block write.
 ; Return 0 only for the still-mounted, explicitly discardable slot.
-; AC1=slot, AC2..AC7 scratch, AC10..AC13 preserved.
+; AC1=slot; success returns AC2=media address, AC3=state,
+; AC6=published root, AC7=provider. AC10..AC13 preserved.
         .globl  dtfs_media_base
         .globl  tsfs_file_shape_base
         .globl  tsfs_extent_media_base
         .globl  vfs_dtfs_poisoned_slot_v1531
 vfs_dtfs_poisoned_slot_v1531:
+        jumpl   1,kret_neg1
         caml    1,vfs_mount_limit
         jrst    kret_neg1
         skipn   2,vfs_mount_root_base
@@ -1479,9 +1481,13 @@ vfs_dtfs_poisoned_slot_v1531:
         jrst    kret_neg1
         camn    3,vfs_namespace_root
         jrst    kret_neg1              ; never discard the selected root
-        ldb     4,[POINT 6,3,5]
-        caie    4,5                     ; DTFS_PROVIDER, not TSFS/D6FS
+        move    6,3                     ; exact root for caller
+        ldb     7,[POINT 6,3,5]
+        caie    7,5
+        cain    7,6
+        jrst    vfs_poison_provider_v1939
         jrst    kret_neg1
+vfs_poison_provider_v1939:
         ldb     4,[POINT 6,3,11]        ; root must belong to this slot
         movei   5,1(1)
         came    4,5
@@ -1497,10 +1503,21 @@ vfs_dtfs_poisoned_slot_v1531:
         jrst    kret_neg1
         add     2,1
         move    3,(2)
+        cain    7,6
+        jrst    vfs_d6fs_poison_v1939
         trnn    3,0400000              ; sticky WRITE_UNCERTAIN, not read
         jrst    kret_neg1
         trne    3,030                   ; native DTFS only, no foreign mode
         jrst    kret_neg1
+        jrst    vfs_poison_slabs_v1939
+vfs_d6fs_poison_v1939:
+        move    4,3
+        trz     4,0020000               ; temporary barrier is independent
+        caie    4,2
+        cain    4,3
+        jrst    vfs_poison_slabs_v1939
+        jrst    kret_neg1
+vfs_poison_slabs_v1939:
         skipn   tsfs_file_shape_base
         jrst    kret_neg1
         skipn   tsfs_extent_media_base
@@ -1524,6 +1541,8 @@ vfs_dtfs_discard_slot_v1531:
         move    010,1
         pushj   17,vfs_dtfs_poisoned_slot_v1531
         jumpn   1,vfs_dtfs_discard_bad_v1531
+        cain    7,6
+        jrst    vfs_d6fs_discard_v1939
         movei   1,1(010)
         pushj   17,vfs_unmount_owner_check_v1523
         jumpn   1,vfs_dtfs_discard_bad_v1531
@@ -1540,6 +1559,8 @@ vfs_dtfs_discard_slot_v1531:
         move    1,010
         pushj   17,vfs_dtfs_poisoned_slot_v1531
         jumpn   1,vfs_dtfs_discard_bad_v1531
+        caie    7,5                     ; DTFS drain cannot retire D6FS
+        jrst    vfs_dtfs_discard_bad_v1531
         movei   1,1(010)
         pushj   17,vfs_unmount_owner_check_v1523
         jumpn   1,vfs_dtfs_discard_bad_v1531
@@ -1549,6 +1570,7 @@ vfs_dtfs_discard_slot_v1531:
         move    1,010
         pushj   17,vfs_dtfs_aux_empty_v1560
         jumpn   1,vfs_dtfs_discard_bad_v1531
+vfs_poison_retire_v1939:
         movei   1,1(010)
         pushj   17,file_unlock_mount
         move    2,010
@@ -1567,6 +1589,36 @@ vfs_dtfs_discard_slot_v1531:
 vfs_dtfs_discard_bad_v1531:
         pop     17,010
         jrst    kret_neg1
+
+; D6FS administrative retirement: own the existing admission barrier
+; before the potentially sleeping lease wait. Provider validates exact
+; root and poison again, checks owners and frees the reader under lease.
+; On success there is no further fallible or sleeping operation.
+vfs_d6fs_discard_v1939:
+        trne    3,0020000               ; do not borrow another barrier
+        jrst    vfs_dtfs_discard_bad_v1531
+        push    17,6                    ; exact original root
+        movei   1,1(010)
+        pushj   17,vfs_unmount_owner_check_v1523
+        jumpn   1,vfs_d6fs_discard_refuse_v1939
+        move    2,dtfs_media_base
+        add     2,010
+        movei   3,0020000
+        iorm    3,(2)
+        move    1,(17)
+        movei   6,033                   ; private D6FS discard, no media I/O
+        movei   7,6
+        pushj   17,fs_provider_reg_call
+        jumpn   1,vfs_d6fs_discard_abort_v1939
+        pop     17,6
+        jrst    vfs_poison_retire_v1939
+vfs_d6fs_discard_abort_v1939:
+        move    1,010
+        move    2,(17)
+        pushj   17,vfs_dtfs_quiesce_end_v1562
+vfs_d6fs_discard_refuse_v1939:
+        pop     17,6
+        jrst    vfs_dtfs_discard_bad_v1531
 
         .data
 ; KINIT publishes both bases after MRES installation and before the first

@@ -642,6 +642,8 @@ d6fs_mres_reg_dispatch:
         addi    7,-1(2)
         pop     17,2
         move    7,(7)
+        cain    6,033                   ; explicit administrative discard
+        jrst    d6fs_discard_v1939
         trne    7,0020000               ; exclusive VFS retirement
         jrst    d6fs_dispatch_unmount_v1931
         cain    6,020                   ; PREPARE needs held barrier
@@ -1531,6 +1533,30 @@ d6fs_toggle_fail_v1931:
 ; int d6fs_provider_prepare_unmount(vnode_t root)
         .globl  d6fs_provider_prepare_unmount
         .globl vfs_unmount_owner_check_v1523
+        .globl vfs_dtfs_poisoned_slot_v1531
+; Called with the physical lease and VFS barrier. No media proof or
+; publication is permitted for an explicitly abandoned poisoned disk.
+; Revalidate the exact published root and reader's public mount ID.
+d6fs_discard_v1939:
+        trnn    7,0020000
+        jrst    kret_neg1
+        push    17,1
+        ldb     1,[POINT 6,1,11]
+        subi    1,1
+        pushj   17,vfs_dtfs_poisoned_slot_v1531
+        pop     17,2
+        jumpn   1,kret_neg1
+        caie    7,6
+        jrst    kret_neg1
+        came    2,6
+        jrst    kret_neg1
+        move    5,d6fs_active_reader
+        ldb     3,[POINT 6,1(5),35]
+        ldb     4,[POINT 6,6,11]
+        came    3,4
+        jrst    kret_neg1
+        jrst    d6fs_provider_unmount_done
+
 d6fs_provider_prepare_unmount:
         ; Entered only via the serialized, quiescing dispatcher.
         move    5,d6fs_active_reader

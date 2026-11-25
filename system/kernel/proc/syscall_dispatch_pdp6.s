@@ -641,12 +641,13 @@ native_sys_clock_table_word:
         .word   native_sys_brk,,native_sys_d6fs_read_block
         .word   native_sys_dtfs_recover_v1531,,native_sys_procctl
 
-; Explicit destructive administration of a quarantined noncritical DTFS.
+; Explicit destructive administration of a quarantined noncritical DTFS/D6FS.
 ; This is deliberately *not* the retired DTFS_FORMAT UUO: there is no
 ; implicit reformat or "media looks valid" recovery.  The caller supplies
 ; either a live FD to abandon or a zero-based MM mount slot to discard.
 ; Under v1575 operator trust, retirement requires no physical new reel:
 ; the operator quarantines damaged media; the next MOUNT validates it.
+; D6FS discard does not publish CLEAN or attempt repair.
 ; Only uid 0 may initiate the operation. Each target helper independently
 ; checks the published VFS slot and its sticky WRITE_UNCERTAIN flag.
 native_sys_dtfs_recover_v1531:
