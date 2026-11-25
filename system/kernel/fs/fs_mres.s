@@ -185,9 +185,7 @@ fs_provider_reg_call:
         jumpn   7,fs_provider_serialized ; index zero: MEMFS never sleeps
         cain    6,032                   ; private executable reservation
         jrst    proc_exec_reserve_v1933
-        ; MINIT patches a JRST target into each provider slot.  Follow its
-        ; address field directly rather than extracting it into AC7 first.
-        jrst    @fs_memfs_service_jump(7)
+        jrst    fs_provider_epoch_dispatch_v1936
 
 ; DTFS, TSFS and D6FS share fs_block_workspace and provider state across calls.
 ; A physical disk request may sleep, so another process can otherwise enter
@@ -244,8 +242,33 @@ fs_provider_dispatch_v1932:
         sub     17,kconst_7_7
         ; The missing-service trampoline already returns -1 normally.
         ; Invoke it under the same lease and use the common unlock path.
-        pushj   17,@fs_memfs_service_jump(7)
+        pushj   17,fs_provider_epoch_dispatch_v1936
         jrst    fs_provider_unlock
+
+; Namespace revision for optimistic executable path validation.
+; Bracket every potentially mutating provider dispatch, even a refused
+; or partially completed write. Physical completion is recorded before
+; unlocking; MEMFS does not sleep. AC1..7 remain the original request.
+; Saturate on wrap: a saturated revision cannot admit another walk.
+        .globl fs_namespace_epoch_v1936
+fs_provider_epoch_dispatch_v1936:
+        cail    6,6
+        caile   6,014                  ; CREATE..CHMOD
+        jrst    fs_provider_epoch_other_v1936
+        jrst    fs_provider_epoch_write_v1936
+fs_provider_epoch_other_v1936:
+        cain    6,016                  ; WRITE_WORDS (also symlink data)
+        jrst    fs_provider_epoch_write_v1936
+        cail    6,020
+        caile   6,024                  ; PREPARE..REMOUNT/private usage
+        jrst    @fs_memfs_service_jump(7)
+fs_provider_epoch_write_v1936:
+        aosn    fs_namespace_epoch_v1936
+        setom   fs_namespace_epoch_v1936
+        pushj   17,@fs_memfs_service_jump(7)
+        aosn    fs_namespace_epoch_v1936
+        setom   fs_namespace_epoch_v1936
+        popj    17,
 
         .globl  proc_exec_reserve_v1933
 fs_provider_reserve_v1933:
@@ -325,6 +348,10 @@ fs_d6fs_service_jump:
         jrst    fs_mres_no_service
 fs_tsfs_service_jump:
         jrst    fs_mres_no_service
+
+        .bss
+fs_namespace_epoch_v1936: .block 1
+        .text
 
 ; KCORE memory-pressure bridge for reclaimable filesystem memory.
 ; AC1=requested words, AC2=0 cheap/discardable cache, AC2=1 backed eviction.

@@ -1,6 +1,7 @@
 ; vfs.s -- compact resident VFS primitives for PDP-6/PDP-10.
         .text
         .globl  file_table
+        .globl  fs_namespace_epoch_v1936
         .globl  kret_zero
         .globl  kret_one
         .globl  kret_neg1
@@ -953,6 +954,8 @@ vfs_mount_aux_checked_v1560:
 ; AC1 = target, AC5 = mounted root, AC7 = slot, AC0 = packed flags.
 ; The caller holds the same serialization as the former inline publication.
 vfs_mount_publish_slot:
+        aosn    fs_namespace_epoch_v1936
+        setom   fs_namespace_epoch_v1936
         move    6,vfs_mount_target_base
         add     6,7
         movem   1,(6)
@@ -1192,6 +1195,8 @@ vfs_unmount_return_v1931:
 ; AC2 = zero-based slot, AC3 scratch. Keep all cleanup in one place so the
 ; dynamic tables can be cleared together in the eventual cutover.
 vfs_mount_retire_slot:
+        aosn    fs_namespace_epoch_v1936
+        setom   fs_namespace_epoch_v1936
         move    3,vfs_mount_target_base
         add     3,2
         setzm   (3)

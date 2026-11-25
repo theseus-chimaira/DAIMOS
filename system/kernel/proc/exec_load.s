@@ -54,6 +54,7 @@
         .globl  d6codec_decode_vfs_v1458
         .globl  proc_rt_owner
         .globl  proc_current_ptr
+        .globl  fs_namespace_epoch_v1936
         .globl  fs_provider_reg_call
         .globl  proc_exec_release_v1933
 
@@ -121,6 +122,15 @@ exec_load_process:
         ; AC12 and its former -012 scratch word can hold this flag.
         jumpe   10,exec_load_fail_result
         jumpe   12,exec_load_fail_result
+        ; A pathname walk may sleep between any two components or
+        ; symlink reads. Keep its original namespace revision in the
+        ; not-yet-used STAT scratch word until reservation admission.
+        move    0,fs_namespace_epoch_v1936
+        came    0,[-1]
+        jrst    exec_load_lookup_v1936
+        jrst    exec_load_fail_result
+exec_load_lookup_v1936:
+        movem   0,-011(17)
         move    1,12
         movei   2,-012(17)              ; vnode
         pushj   17,file_lookup_path
@@ -136,6 +146,12 @@ exec_load_process:
         movei   6,032
         pushj   17,fs_provider_reg_call
         jumpn   1,exec_load_fail
+        ; The lease drained preceding physical mutations and the
+        ; reservation now excludes subsequent backing mutations.
+        ; Reject stale/ABA pathname resolution before touching data.
+        move    0,fs_namespace_epoch_v1936
+        came    0,-011(17)
+        jrst    exec_load_fail
 
         move    1,12
         movei   2,-011(17)              ; struct vfs_stat
