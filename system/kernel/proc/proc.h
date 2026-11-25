@@ -180,6 +180,12 @@
         (PROC_PURE_DROP_TAG_V1919 | PROC_PURE_PREFIX_TAG_V1919)
 #define PROC_PURE_INPLACE_ESCROW_V1919(source, kind) \
         (PROC_PURE_FULL_ESCROW_V1917(source, 0UL) | (kind))
+/* v1920: a terminal transaction uses bit31 and the same source
+ * sector field, with FINALIZE status still in the RH. PREVM retains
+ * this identity until the exact RAW range is proven absent. */
+#define PROC_PURE_TERM_TAG_V1920      ((kword_t)1UL << 31U)
+#define PROC_PURE_TERM_ESCROW_V1920(source) \
+        (PROC_PURE_TERM_TAG_V1920 | (((source) >> 7U) << 18U))
 #define PROC_SWAP_RETRY_TICKS_V1507   0100U
 #define PROC_TIMER_TAG_RH            0400000UL
 #define PROC_TIMER_CLOCK_MASK         0377777UL

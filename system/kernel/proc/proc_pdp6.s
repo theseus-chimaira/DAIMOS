@@ -819,6 +819,12 @@ proc_finish_prevm_fail_v1081:
         hlrz    3,(12)
         movsi   4,PROC_FINALIZE_MARK_LH+PROC_FINALIZE_PREVM_LH
         hrr     4,11
+        ; Preserve the PURE terminal escrow payload across PREVM
+        ; rearming. Malformed payloads stay visible to the rejecting
+        ; terminal leaf; do not normalize them into fresh discovery.
+        hllz    5,PROC_FINALIZE_OFFSET(3)
+        tlz     5,0740000              ; discard lifecycle bits, not identity
+        ior     4,5
         pushj   17,proc_finish_mark_pending_v892
         jrst    proc_finish_fail
 proc_finish_vm_done:
