@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-25 (v1924 K07 provider identity; K01-K06 closed).
+Updated: 2026-11-25 (v1925 K07 stamped DTFS media proof; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1164,6 +1164,18 @@ history is now reachable from main (v1809); mode3 remains disabled.
   pass. Folded PURE +21, fixed KCORE +22, BSS unchanged. Same-provider
   media reuse and mutation/admission/unmount races remain OPEN;
   physical concurrency not claimed.
+  **v1925:** stamped DTFS PREFIX/FULL uses a serialized private
+  provider operation before loading and after payload, forcing the
+  existing physical RBN0 identity validator and invalidating both
+  clean cache tags and directory identity. Reject poison/quiescence,
+  incomplete identity, changed ID or inconsistent state; preserve RAW
+  on refusal. Native 19 media, ten bridge cases and four unsafe controls
+  pass. Legacy unstamped operator-trust policy unchanged. Folded PURE
+  +13, DTFS +31, fixed KCORE byte-identical; no new data. Not a hardware
+  reel lock: same-ID clone, mid-I/O swap-and-return or replaced mounted
+  metadata are not covered. D6FS/TSFS identity, known-unavailable
+  backing admission before DROP, mutation/admission and integrated
+  unmount remain OPEN. No physical concurrency acceptance claimed.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

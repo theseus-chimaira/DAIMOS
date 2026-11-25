@@ -1,3 +1,40 @@
+## 2026-11-25 v1925-k07: stamped DTFS physical media proof
+
+PURE PREFIX/FULL reconstruction now invokes a private DTFS operation
+through the existing serialized filesystem-provider dispatch before
+header/payload loading and again after successful payload I/O. For a
+stamped reel it sets the existing READ_SUSPECT barrier, invalidates
+both clean cache tags and directory identity, and runs the original
+physical RBN0 validator against the two saved 36-bit volume-ID halves.
+A failed check leaves the original RAW suffix authoritative. Poison,
+quiescence, inconsistent V2 state/RO policy and incomplete saved
+identity are refused. The complete root check still follows the final
+physical proof. No new media format, cache, generation or owner word.
+Legacy unstamped media keep the documented operator-trust contract;
+READ_SUSPECT on such media cannot be cleared without identity proof.
+
+Implementation b8361714; testkit 0fa4b8c and f502625. Native 19 media
+leaf cases and ten bridge cases pass; four executed unsafe variants
+are rejected. The leaf uses real independently formatted DTVOL1/V2
+records, original identity/BCACHE assembly and controlled raw reads.
+The bridge uses actual PREFIX/FULL and controlled provider/MM calls.
+Native v1522/v1556/v1563/v1386/v1387/v1388/v1390/v1487/v1923/v1924
+regressions pass. Historical v1386/v1388 codec fixtures now export the
+current ABI, and v1487 no longer needs its test-only alias. No full
+guest physical reel exchange or PI6 acceptance is claimed.
+
+Folded KCC lowmem tape PURE MRES 3694 -> 3707 words (+13), DTFS MRES
+2805 -> 2836 resident words (+31; includes two unchanged BSS words).
+Fixed KCORE is byte-identical, low end 025174 octal. No new permanent
+or per-process data. K07 OPEN: this is stamped DTFS reconstruction
+proof, not a physical reel lock or content authentication. Same-ID
+clones, intervening swap-and-return, and previously overwritten mount
+metadata are not detected. D6FS UUID is deliberately not retained in
+its runtime reader; D6FS/TSFS media identity and loss policy require
+separate audit. Known-unavailable source admission before DROP,
+mutation/EXEC admission races and integrated unmount remain open.
+RAW PURE/mode3 remain OFF by default. K01-K06 implementation closed.
+
 ## 2026-11-25 v1924-k07: persistent executable provider identity
 
 The original filesystem provider (4..7) is retained in previously
