@@ -1,3 +1,38 @@
+## 2026-11-25 v1941-k07: physical pressure refusal and current FULL replay
+
+The original v1940 48K GCC TSFS guest was replayed with unchanged
+KCORE/KINIT/PURE hashes. Five checked children (one plain, four
+compressed) start, but the sixth RUN is refused (aaaaa!r).
+Operator interrupted SIMH after the failure marker. This is NOT a
+successful B checkpoint; the new controller correctly rejects the
+incomplete trace. Post-failure slot0 MM17/capacity32 snapshot has
+four unpinned 07000 PACKED extents (slots3..6), slot2 pinned expanded
+010000 PACKED extent, no slot7 VM/u-area and zero reservation head.
+Parent VM already gone; 130000..140000 APR free. Cannot infer exact
+pre-RUN allocation failure from this later snapshot. No completed
+FULL callback or WAIT acceptance. No simulator remains running.
+
+Testkit fafaa41 adds current-map replay/controller, MM and opcode
+verifier, diagnostic refusal audit and five-child fixture builder.
+Actual service and reclaim JRSTs independently derive PURE base
+033136 and candidate FULL entry 040756. Opcode/actual breakpoint
+and same-owner pinned geometry remain required. Permanent boot MRES
+is outside dynamic MM arenas, not a dynamic MODULE descriptor.
+Monitor pipe smoke, seven synthetic unsafe geometry cases and
+actual incomplete-trace rejection pass. Five-child source changes
+only count and comments, retaining required sixth refusal and exact
+child data/WAIT checks. The adapted guest compiled and verified
+three-member TSFS (54 files,315 extents); original kernel images
+byte-identical. Its full physical replay has NOT been executed.
+
+Evidence $TMPDIR/pure-k07-full-v1941.iOwGkG/physical.clean.
+Ready five-child build $TMPDIR/pure-k07-five-v1941.3uWwvd/build.
+Run with V1941_BUILD=<that build> make test-pure-k07-full-v1941
+from daimos-testkit. No production or toolchain code change; no
+kernel RAM growth. K07 OPEN: physical FULL/WAIT, PI6 concurrent
+reservation/retirement, source-loss acceptance. K08/K09/K17 open.
+RAW PURE/mode3 default OFF.
+
 ## 2026-11-25 v1940-k07: integrated acceptance checkpoint
 
 All 13 distinct K07 native regression groups passed on production

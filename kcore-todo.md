@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1940 native K07 acceptance, physical incomplete; K01-K06 closed).
+Updated: 2026-11-25 (v1941 physical pressure refusal; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1344,6 +1344,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   source loss acceptance remain OPEN. Longer physical runner added
   but not yet executed; historical replay offsets require updating.
   No kernel code or permanent RAM growth.
+  **v1941:** unchanged physical 48K guest admits five children but
+  sixth RUN refuses. Interrupted post-failure slot0 MM snapshot has
+  four unpinned PACKED owners and one pinned expanded PACKED owner;
+  zero reservation head, no slot7 VM/u-area. Parent already exited:
+  not pre-RUN NOMEM proof. Current-map FULL replay derives actual
+  installed base from service/reclaim jumps. Diagnostic audit and
+  seven synthetic verifier negatives pass; incomplete trace rejected.
+  Five-child fixture rebuilt with identical kernel images, retains
+  sixth refusal and exact WAIT checks, TSFS verified; full replay
+  pending. No kernel growth. K07 remains OPEN.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
