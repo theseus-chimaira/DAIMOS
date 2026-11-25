@@ -28,6 +28,7 @@
  * Linked only by the opt-in PURE MRES. The default KCORE is unchanged.
  */
 #include "proc_pure_ram_restore_v1391.h"
+#include "proc_pure_ram_v1381.h"
 #include "proc_swap.h"
 #include "proc_storage_map_v28.h"
 #include "vm_pdp6.h"
@@ -57,39 +58,6 @@ extern void proc_swap_storage_invariant_v30(void);
 extern kword_t mach_pi_disable(void);
 extern void mach_pi_restore(kword_t saved);
 
-/*
- * Both the original APR extent and the shorter inactive raw suffix
- * are identified by the MM owner/type alone, with no persistent layout.
- */
-static int
-pram_extent(unsigned int slot, unsigned int type, kword_t words,
-    kword_t *basep)
-{
-        int i;
-        unsigned int found = 0U;
-        kword_t base = 0UL;
-        if (mm_extent_count <= 0 || mm_extent_count > MM_MAX_EXTENTS ||
-            (unsigned int)mm_extent_count > mm_extent_capacity)
-                return MM_ERR_INVAL;
-        for (i = 0; i < mm_extent_count; ++i) {
-                const struct mm_extent *e = &mm_extents[i];
-                unsigned int kind = MM_EXTENT_TYPE(e);
-                if (MM_EXTENT_OWNER(e) != slot ||
-                    (kind != MM_TYPE_PROCESS &&
-                     kind != MM_TYPE_PACKED_PROCESS))
-                        continue;
-                if (++found != 1U || kind != type ||
-                    MM_EXTENT_WORDS(e) != words ||
-                    MM_EXTENT_PINNED(e) ||
-                    !(base = MM_EXTENT_BASE(e)))
-                        return MM_ERR_INVAL;
-        }
-        if (found != 1U)
-                return MM_ERR_INVAL;
-        *basep = base;
-        return MM_OK;
-}
-
 /* Both v1839's failed-free reply and v1855's precommit pin check
  * inspect the same authoritative MM descriptors under PI exclusion.
  * Return a bitset: 1 for the exact PACKED source, 2 for the exact
@@ -107,6 +75,7 @@ proc_pure_full_owners_v1917(unsigned int slot, kword_t source,
     unsigned int source_pins, unsigned int target_pins)
 {
         unsigned int seen = 0U;
+        kword_t end = 0UL;
         int i;
 
         if ((!source && !target) ||
@@ -127,8 +96,10 @@ proc_pure_full_owners_v1917(unsigned int slot, kword_t source,
                 kword_t base = MM_EXTENT_BASE(e);
                 kword_t size = MM_EXTENT_WORDS(e);
 
-                if (!base || !size || size > MM_HALF_MASK + 1UL - base)
+                if (!base || base < end || !size ||
+                    size > MM_HALF_MASK + 1UL - base)
                         return -1;
+                end = base + size;
                 if (MM_EXTENT_OWNER(e) != slot ||
                     type == MM_TYPE_MODULE ||
                     type == MM_TYPE_KERNEL_DYNAMIC) {
@@ -251,22 +222,18 @@ proc_pure_ram_restore_v1391(unsigned int slot,
                 return MM_ERR_INVAL;
         u = PRAM_PTR(PROC_UAREA_BASE(p));
         raw = words - skip;
-        if (VM_PDP6_BASE(p) ||
+        if (VM_PDP6_BASE(p) || (words & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
             (u[PROC_FINALIZE_OFFSET] &
              (PROC_FINALIZE_MARK | PROC_SWAP_RETRY_TAG_V1507)) ||
             u[PROC_SWAP_BACKING_OFFSET] != backing)
                 return MM_ERR_INVAL;
         pi_state = mach_pi_disable();
-        if (pram_extent(slot, MM_TYPE_PACKED_PROCESS, raw, &source) !=
-            MM_OK || source <= skip ||
+        source = proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS,
+            0UL, raw, 0U);
+        if (source <= skip ||
             ((source - skip) & (VM_PDP6_ALIGN_WORDS - 1UL))) {
                 mach_pi_restore(pi_state);
                 return MM_ERR_INVAL;
-        }
-        if (proc_pure_full_owners_v1917(slot, source, raw, 0UL, words,
-            0U, 0U) != 1) {
-                mach_pi_restore(pi_state);
-                return MM_ERR_BUSY;
         }
         /* Retain the exact RAW identity even if the first pin or the
          * allocation refuses. Zero target means no target was allocated;
@@ -276,6 +243,9 @@ proc_pure_ram_restore_v1391(unsigned int slot,
         if (rc != MM_OK)
                 goto fail_source_locked;
         source_pinned = 1;
+        if (proc_pure_full_owners_v1917(slot, source, raw, 0UL, words,
+            1U, 0U) != 1)
+                goto uncertain;
         target = 0UL;
         /* Keep disk PI enabled during the allocator's gap scan. Its
          * own PI6 exclusion, our slot-0 TRANSITION and the source pin
@@ -300,10 +270,13 @@ proc_pure_ram_restore_v1391(unsigned int slot,
             1U, 0U) != 3)
                 goto uncertain;
         rc = mm_pin(target);
-        mach_pi_restore(pi_state);
         if (rc != MM_OK)
-                goto fail_target;
+                goto fail_target_locked;
         target_pinned = 1;
+        if (proc_pure_full_owners_v1917(slot, source, raw, target, words,
+            1U, 1U) != 3)
+                goto uncertain;
+        mach_pi_restore(pi_state);
         fs_zero_words(PRAM_PTR(target), (unsigned int)skip);
         /* Only the allocator-supplied APR length is trusted. This call
          * happens after the complete destination extent is allocated
@@ -351,32 +324,30 @@ proc_pure_ram_restore_v1391(unsigned int slot,
                 goto fail_target_locked;
         }
         target_pinned = 0;
+        if (proc_pure_full_owners_v1917(slot, source, raw, target, words,
+            1U, 0U) != 3)
+                goto uncertain;
         rc = mm_unpin(source);
         if (rc != MM_OK) {
                 source_uncertain = 1;
                 goto fail_target_locked;
         }
         source_pinned = 0;
+        /* Do not release the authoritative source until BOTH original
+         * owners are independently proven unpinned. Check deletion even
+         * on reported success, before publishing the sole successor. */
+        if (pram_exact_owner_set_v1855(slot, source, raw,
+            target, words, 0U) != 3)
+                goto uncertain;
         rc = mm_free(source, MM_TYPE_PACKED_PROCESS, slot);
-        if (rc != MM_OK) {
-                int reply = pram_source_free_reply_v1839(slot, source,
-                    raw, target, words);
-
-                if (reply == 1) {
-                        /* The source was freed despite its failed reply.
-                         * Its exact sole successor contains the original
-                         * writable suffix and the loaded immutable text.
-                         */
-                        rc = MM_OK;
-                } else if (reply == 0) {
-                        goto fail_target_locked;
-                } else {
-                        /* An uncertain physical owner must not be freed
-                         * by rollback, even if it looks like scratch.
-                         */
-                        mach_pi_restore(pi_state);
-                        return MM_ERR_BUSY;
-                }
+        switch (pram_source_free_reply_v1839(slot, source, raw, target, words)) {
+        case 1:
+                break;
+        case 0:
+                rc = MM_ERR_BUSY;
+                goto fail_target_locked;
+        default:
+                goto uncertain;
         }
 
         VM_PDP6_SET_BASE(p, target);
@@ -406,6 +377,9 @@ fail_target_locked:
                 goto uncertain;
         if (target_pinned && mm_unpin(target) != MM_OK)
                 goto uncertain;
+        if (proc_pure_full_owners_v1917(slot, source, raw, target, words,
+            source_uncertain ? 2U : (unsigned int)source_pinned, 0U) != 3)
+                goto uncertain;
         if (mm_free(target, MM_TYPE_PROCESS, slot) != MM_OK)
                 rc = MM_ERR_BUSY;
         if (proc_pure_full_owners_v1917(slot, source, raw, target, words,
@@ -419,9 +393,11 @@ fail_source:
             1U, 0U) != 1)
                 goto uncertain;
 fail_source_locked:
-        if (source_pinned && !source_uncertain &&
-            mm_unpin(source) != MM_OK)
-                goto uncertain;
+        if (source_pinned && !source_uncertain) {
+                if (proc_pure_full_owners_v1917(slot, source, raw, 0UL, words,
+                    1U, 0U) != 1 || mm_unpin(source) != MM_OK)
+                        goto uncertain;
+        }
         if (proc_pure_full_owners_v1917(slot, source, raw, 0UL, words,
             0U, 0U) == 1)
                 u[PROC_FINALIZE_OFFSET] = 0UL;

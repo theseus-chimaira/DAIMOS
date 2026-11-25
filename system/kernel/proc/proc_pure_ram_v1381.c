@@ -45,16 +45,16 @@ extern kword_t mach_pi_disable(void);
 extern void mach_pi_restore(kword_t saved);
 
 /* PI-excluded proof of a sole user extent. A zero expected base permits
- * discovery only before a transaction starts. Independent MODULE and
- * KERNEL_DYNAMIC owner namespaces are allowed, but never overlapping.
- * The second pass checks every other physical range, including a
- * foreign descriptor preceding the discovered source in the table.
+ * discovery only before a transaction starts. The allocator's sorted,
+ * nonoverlapping table invariant permits one pass, including foreign
+ * geometry. MODULE and KERNEL_DYNAMIC use independent owner namespaces.
  */
 kword_t
 proc_pure_owner_v1918(unsigned int slot, unsigned int type,
     kword_t base, kword_t words, unsigned int pins)
 {
-        int i, found = -1;
+        int i;
+        kword_t found = 0UL, end = 0UL;
 
         if (!words || mm_extent_count <= 0 ||
             mm_extent_count > MM_MAX_EXTENTS ||
@@ -66,28 +66,19 @@ proc_pure_owner_v1918(unsigned int slot, unsigned int type,
                 kword_t start = MM_EXTENT_BASE(e);
                 kword_t size = MM_EXTENT_WORDS(e);
 
-                if (!start || !size || size > MM_HALF_MASK + 1UL - start)
+                if (!start || start < end || !size ||
+                    size > MM_HALF_MASK + 1UL - start)
                         return 0UL;
+                end = start + size;
                 if (MM_EXTENT_OWNER(e) != slot ||
                     kind == MM_TYPE_MODULE || kind == MM_TYPE_KERNEL_DYNAMIC)
                         continue;
-                if (found >= 0 || kind != type || size != words ||
+                if (found || kind != type || size != words ||
                     MM_EXTENT_PINS(e) != pins || (base && base != start))
                         return 0UL;
-                found = i;
-                base = start;
+                found = start;
         }
-        if (found < 0)
-                return 0UL;
-        for (i = 0; i < mm_extent_count; ++i) {
-                const struct mm_extent *e = &mm_extents[i];
-                kword_t start = MM_EXTENT_BASE(e);
-
-                if (i != found && start < base + words &&
-                    base < start + MM_EXTENT_WORDS(e))
-                        return 0UL;
-        }
-        return base;
+        return found;
 }
 
 /*
