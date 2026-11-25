@@ -1,3 +1,33 @@
+## 2026-11-25 v1920-k06: terminal RAW ownership identity
+
+Terminal teardown now requires a reconciled sole RAW owner. The
+historical v1900 speculative second PROCESS deletion is superseded:
+FULL/DROP/PREFIX uncertainty must be resolved by the idle service
+before terminal destruction. The terminal scan validates sorted,
+nonoverlapping, nonzero, physically bounded MM geometry and capacity.
+It escrows the original exact sector base in existing u-area 067
+(bit31 plus source field), including on an initial pinned refusal.
+A retry cannot adopt a replacement owner. Both MM-free success and
+failure replies require proof of the original range's absence and
+no surviving same-slot user owner. PREVM preserves the escrow and
+exit status; successful terminal publication clears the escrow.
+
+Implementation 6fe45a1d; testkit 8025153: 23 native owner cases and
+five unsafe leaf mutations, plus integrated actual MM deletion,
+FINALIZE/PREVM, replacement refusal and an escrow-loss negative
+control pass. Earlier v1609/v1666/v1680/v1681/v1919 native gates pass.
+The test-only gateway injects a foreign interior claim after real
+MM free; the subsequent replacement and removal are test stimuli,
+not automatic kernel repair. Historical v1900 direct dual-owner
+fixtures require pre-v1920 source. No physical PI6 acceptance claim.
+
+Folded lowmem tape KCC PURE MRES 3556 -> 3585 resident words (+29).
+Fixed KCORE low end 025133 -> 025136 octal (+3 words), DXR IMAGE
+024436 -> 024441, BSS 000415 unchanged. No additional per-process
+fields, fixed DATA/BSS or MM descriptors. RAW PURE/mode3 default OFF.
+K06 remains OPEN for final integrated MM geometry review and any
+resulting corrections. K07-K09 acceptance is still separate.
+
 ## 2026-11-25 v1919-k06: deferred DROP/PREFIX recovery
 
 The optional PURE service now uses unused u-area 067 bits 29/30

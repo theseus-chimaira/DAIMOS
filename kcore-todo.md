@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-25 (v1919 K06 deferred DROP/PREFIX recovery; K01-K05 closed).
+Updated: 2026-11-25 (v1920 K06 terminal ownership; K01-K05 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1109,8 +1109,17 @@ history is now reachable from main (v1809); mode3 remains disabled.
   Folded lowmem KCC PURE MRES 3369 -> 3556 words, BSS zero; fixed
   KCORE low end 025133 unchanged. No persistent RAM added. Existing
   pins must be lawfully retired before deferred rollback; no forced
-  release. K06 remains OPEN for terminal uncertainty cleanup and
-  integrated MM geometry review.
+  release.
+  **v1920:** terminal cleanup accepts only reconciled sole RAW, never
+  speculative FULL scratch. Exact original sector identity survives
+  pinned refusal, false/lost free replies and PREVM retries in word
+  067 (bit31/source field). Replacements/foreign intersections and
+  malformed MM geometry fail closed. Native 23 cases, five leaf mutants
+  and actual MM/FINALIZE/PREVM integrated escrow-loss gate pass; prior
+  v1609/v1666/v1680/v1681/v1919 pass. Historical v1900 direct dual-owner
+  acceptance is superseded. Folded PURE +29 words; fixed KCORE +3,
+  BSS and per-owner storage unchanged. K06 remains OPEN for final
+  integrated MM geometry review; no physical PI6 acceptance claimed.
 - [ ] **K07 - Executable backing lifetime.** Guarantee immutable PURE
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe
