@@ -1,3 +1,33 @@
+## 2026-11-25 v1932-k07: delayed executable mutation admission
+
+Serialized WRITE_WORDS/TRUNCATE recheck the original vnode's RO policy
+and PURE owner scan after acquiring the provider lease, before
+restoring the saved seven request ACs and dispatching. A refusal
+releases the acquired lease and wakes waiters through the common
+unlock path. The early VFS checks remain, including the MEMFS path.
+D6FS and DTFS UNLINK additionally check the exact child resolved
+inside the provider, before deleting it. The inspected rename paths
+refuse destination replacement; no new rename semantics introduced.
+
+Implementation 6810c892; testkit 75e3dd7. Native source-linked gateway
+and actual backing scanner pass 16 delayed WRITE/TRUNCATE cases
+and two D6FS child checks, with all four unsafe variants rejected.
+DTFS native/TENEX protected-child and original unlink cases pass.
+Historical v326/v327/v428/v681/v866/v915/v916/v917/v962/v1078/v1088
+and v466 gates pass; old isolated fixtures have explicit test-only
+linkage for the mutation checks and mount metadata. Folded lowmem
+KCC tape fixed KCORE low end 025241 -> 025256 (+13 words), D6FS
+2392 -> 2398 (+6), DTFS/TSFS 2985 -> 2988 (+3), PURE 3879 unchanged.
+No BSS, mount slab or process storage growth.
+
+K07 remains OPEN. This closes the provider-lease wait admission gap,
+not the complete executable lifetime race: RUN/EXEC still needs a
+reservation spanning the entire load and protection against owner
+publication during an in-progress mutation. Direct MEMFS namespace
+mutation admission needs audit; poisoned administrative retirement
+and whole-guest PI6/physical lifetime acceptance remain outstanding.
+RAW PURE/mode3 default OFF; K17 mandatory nonpaged KA10 unchanged.
+
 ## 2026-11-25 v1931-k07: D6FS quiescence and reader retirement
 
 D6FS ordinary unmount reuses the mount media word's 020000 octal

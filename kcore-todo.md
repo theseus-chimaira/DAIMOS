@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1931 D6FS quiescence and retirement; K01-K06 closed).
+Updated: 2026-11-25 (v1932 delayed mutation admission; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1254,6 +1254,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   Normal D6FS reader-retirement ordering fixed; poisoned administrative
   retirement, executable mutation/admission and remaining lifetime
   audit still OPEN. No full-guest PI6 or physical exchange acceptance.
+  **v1932:** WRITE/TRUNCATE repeat RO and PURE owner checks after
+  acquiring the physical provider lease; refusal uses common unlock.
+  D6FS/DTFS UNLINK check the actual resolved child. Native 16 delayed
+  mutation and two D6FS child cases pass; four unsafe controls rejected.
+  Earlier DTFS unlink, provider lease and rename gateway gates pass.
+  Fixed KCORE +13, D6FS MRES +6, tape MRES +3, PURE unchanged; no data
+  growth. Still OPEN: whole-load RUN/EXEC reservation, prevention of
+  owner admission during already dispatched mutations, direct MEMFS
+  namespace admission audit, poisoned administrative retirement and
+  integrated physical lifetime acceptance. This is a partial K07 fix.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
