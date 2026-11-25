@@ -1,3 +1,36 @@
+## 2026-11-25 v1938-k07: direct MEMFS executable mutation admission
+
+MEMFS WRITE, TRUNCATE and resolved-child UNLINK now consult the
+existing executable backing-owner scanner, independently of the early
+VFS mutation guard and existing XIP pin checks. The singleton provider
+resolves its canonical published mount root before comparing local
+vnode indices; provider-local aliases cannot bypass the mount identity.
+PREPARE_UNMOUNT checks mount ownership before data destruction.
+No additional permanent or process data. Existing internal resize
+and teardown helpers retain their caller-owned admission contract.
+
+Implementation 3dbfb51b; testkit 5d78b7c. Source-linked native MEMFS
+runtime/data allocator and real PURE scanners pass eight owner
+configurations (transient, staged RUN, resident and nonresident,
+each at mount 2/18). Five unsafe variants fail executed assertions.
+Protected contents and allocation unchanged; unrelated writes and
+post-release mutations succeed. Earlier MEMFS allocator, fatal
+backstore/XIP and FIFO tests pass. Isolated historical fixture linkage
+updated; other historical runners not all rerun. MM and physical
+backing completion controlled. The earlier DEVSPACE interruption was
+recovered without losing the source changes.
+
+Folded lowmem KCC tape MEMFS MRES 1854 -> 1892 resident words (+38),
+initialized 1841 -> 1879, BSS 13 unchanged. Baseline relink uses the
+same KCORE map and unchanged data/snapshot objects. KCORE byte-identical
+at 025554 octal, PURE MRES 3879 unchanged. Native gate covers existing
+non-sleeping MEMFS execution contract, not complete-guest scheduler
+or physical I/O acceptance.
+
+K07 remains OPEN for poisoned-volume administrative retirement and
+integrated lifetime/physical validation. RAW PURE/mode3 default OFF.
+K17 mandatory nonpaged KA10 remains open.
+
 ## 2026-11-25 v1937-k07: executable reservation private-stack lifetime
 
 The v1933 reservation list now supplies an address-based u-area busy

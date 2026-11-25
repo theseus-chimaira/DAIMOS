@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1937 reservation private-stack lifetime; K01-K06 closed).
+Updated: 2026-11-25 (v1938 direct MEMFS mutation admission; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1316,6 +1316,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   BSS/PURE unchanged. Old v925 fixture stale, other historical runners
   not all rerun. Direct MEMFS mutation, poisoned administrative
   retirement and integrated fatal/physical PI6 lifetime remain OPEN.
+  **v1938:** MEMFS WRITE/TRUNCATE and resolved-child UNLINK check
+  backing owners using the singleton's published canonical mount.
+  PREPARE checks mount owners before data destruction. Existing XIP
+  pins retained. Eight native owner configurations (mount 2/18),
+  five rejected unsafe controls; earlier allocator/fatal XIP/FIFO
+  gates pass. MEMFS MRES +38 words (1854 -> 1892), fixed KCORE
+  byte-identical, PURE/BSS unchanged. No new data. Controlled MM/I/O
+  boundaries; complete-guest execution remains unverified. Poisoned
+  administrative retirement and integrated lifetime validation OPEN.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
