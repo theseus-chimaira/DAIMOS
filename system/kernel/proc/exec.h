@@ -36,7 +36,10 @@
 #define EXEC_LOAD_NOMEM             -2
 #define EXEC_REPLACE_FATAL          -2
 
-/** Load and validate one DXR image into a process VM. */
+/** Load and validate one DXR image into a process VM.
+ * The PDP-6 register ABI additionally returns the logical entry in AC2
+ * on success; a live descriptor retains its stable META and SCHED.
+ */
 int exec_load_process(struct proc *p, unsigned int owner,
     const kword_t *path);
 /** Transactionally replace the current process image from an EXEC V1 block. */

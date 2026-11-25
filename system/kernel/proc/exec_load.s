@@ -53,6 +53,7 @@
         .globl  proc_swap_attach
         .globl  d6codec_decode_vfs_v1458
         .globl  proc_rt_owner
+        .globl  proc_current_ptr
         .globl  fs_provider_reg_call
         .globl  proc_exec_release_v1933
 
@@ -96,7 +97,8 @@ sixbit_record_bad:
  * @param AC1 Process descriptor to populate.
  * @param AC2 Process/VM owner slot.
  * @param AC3 Counted SIXBIT executable path.
- * @return AC1 = EXEC_LOAD_OK, EXEC_LOAD_RT_REQUIRED, or -1 on failure.
+ * @return AC1 = EXEC_LOAD_OK, EXEC_LOAD_RT_REQUIRED, -1 or -2 on failure.
+ *         AC2 = logical entry on success (also for a live descriptor).
  *
  * The routine creates the VM only after validating file/header shape, and any
  * failure after VM creation destroys that staged VM before returning.  Entry PC
@@ -265,14 +267,8 @@ exec_load_xip_header_v1469:
         hrlz    1,-006(17)             ; APR words from verified stat
         hrr     1,-011(17)             ; pinned MEMFS physical extent
         movem   1,1(10)                ; publish rollback owner immediately
-        move    0,(10)
-        andi    0,0177400              ; preserve parent slot only
-        movei   1,020
-        hrlz    1,1                    ; exact certified entry 020
-        ior     0,1
-        movem   0,(10)
-        movsi   0,EXEC_SCHED_SIDL_LH
-        movem   0,2(10)
+        setz    14,                    ; certified entry = origin + 0
+        pushj   17,exec_load_publish_v1935
         move    1,11
         move    2,12
         setz    3,                     ; no omitted PURE disk-swap prefix
@@ -314,6 +310,19 @@ exec_load_plain_image:
         jumpn   1,exec_load_vm_fail
 
 exec_load_image_ok:
+        pushj   17,exec_load_publish_v1935
+        move    4,-007(17)              ; validated header_words is 2 or 3
+        subi    4,2                     ; DXR2 => 1, DXR1 => 0
+        trnn    15,0200000              ; non-pure images never keep backing
+        setz    4,
+        jrst    exec_load_attach
+
+; RUN and staged EXEC need entry/SIDL metadata in their detached
+; descriptors. Destructive EXEC already owns a stable live u-area
+; and scheduler state. Never overwrite either, even on attach failure.
+exec_load_publish_v1935:
+        camn    10,proc_current_ptr
+        popj    17,
         move    0,0(10)
         andi    0,0177400               ; preserve parent slot only
         move    1,14
@@ -323,11 +332,7 @@ exec_load_image_ok:
         movem   0,0(10)
         movsi   0,EXEC_SCHED_SIDL_LH
         movem   0,2(10)
-
-        move    4,-007(17)              ; validated header_words is 2 or 3
-        subi    4,2                     ; DXR2 => 1, DXR1 => 0
-        trnn    15,0200000              ; non-pure images never keep backing
-        setz    4,
+        popj    17,
 exec_load_attach:
         move    1,11
         move    2,12
@@ -344,7 +349,8 @@ exec_load_vm_fail:
         move    2,11
         pushj   17,vm_space_destroy
         jumpn   1,exec_load_fail
-        hrrzs   0(10)                   ; clear entry LH after destroy
+        came    10,proc_current_ptr
+        hrrzs   0(10)                   ; clear only detached entry LH
 exec_load_fail:
         seto    1,
         jrst    exec_load_release_rt
@@ -365,6 +371,7 @@ exec_load_return:
         movei   1,-015(17)
         pushj   17,proc_exec_release_v1933
         pop     17,1
+        movei   2,020(14)              ; entry on success, including live EXEC
         ; Restore the contiguous callee-saved range with one BLT.
         movei   0,010
         hrli    0,-023(17)

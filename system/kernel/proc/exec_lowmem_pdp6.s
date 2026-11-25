@@ -387,11 +387,10 @@ exec_replace_staged_invariant_v1719:
         jrst    .-1
 
         ; Frame offsets relative to the fully advanced AC17.
-        .equ    EXEC_LM_SAVE_FIRST,-011
-        .equ    EXEC_LM_SAVE_LAST,-003
-        .equ    EXEC_LM_META,-002
+        .equ    EXEC_LM_SAVE_FIRST,-010
+        .equ    EXEC_LM_SAVE_LAST,-002
         .equ    EXEC_LM_LAUNCH,-001
-        .equ    EXEC_LM_FRAME,012
+        .equ    EXEC_LM_FRAME,011
 
 exec_replace_current_lowmem:
         add     17,[EXEC_LM_FRAME,,EXEC_LM_FRAME]
@@ -409,8 +408,6 @@ exec_replace_current_lowmem:
         move    1,14
         pushj   17,proc_slot_ptr
         move    15,1
-        move    1,(15)
-        movem   1,EXEC_LM_META(17)      ; stable u-area/pgrp metadata
 
         ; Allocate a transient copy before invalidating the mapped user source.
         setzm   EXEC_LM_LAUNCH(17)
@@ -464,22 +461,17 @@ exec_lowmem_old_gone:
         add     1,10
         move    11,1                    ; argv/env record stream
 
+        ; The new VM can become visible while the loader sleeps. Hold
+        ; its mapping until load/startup complete; META and SCHED remain
+        ; the live process identity throughout. Entry returns separately.
+        pushj   17,vm_user_mapping_hold
         move    1,15
         move    2,14
         move    3,10
         pushj   17,exec_load_process
         move    16,1
         jumpl   1,exec_lowmem_fatal
-
-        ; exec_load_process normally populates a detached staged descriptor
-        ; and therefore keeps only parent+entry in META.  Low-memory EXEC must
-        ; load directly into the live descriptor after freeing the old VM, so
-        ; capture the new entry and restore the stable process metadata before
-        ; any u-area-dependent startup/credential path observes the descriptor.
-        hlrz    1,(15)
-        movem   1,(13)
-        move    1,EXEC_LM_META(17)
-        movem   1,(15)
+        movem   2,(13)
 
         move    1,15
         move    2,11
@@ -521,16 +513,14 @@ exec_lowmem_release_old_rt:
         camn    14,proc_rt_owner        ; release only current owner
         setzm   proc_rt_owner
 exec_lowmem_success:
+        pushj   17,vm_user_mapping_release
         setz    16,
         jrst    exec_lowmem_free
 
 exec_lowmem_fatal:
-        ; The replacement loader runs directly on the current descriptor.
-        ; It can overwrite META with its entry PC and clear that left half
-        ; during its own failed VM rollback. Restore the stable u-area owner
-        ; before the fatal FILE/VM/EXIT continuation inspects this process.
-        move    1,EXEC_LM_META(17)
-        movem   1,(15)
+        ; Live identity remains published even if VM teardown refused.
+        ; Fatal EXIT owns the remaining VM and must not inherit a map hold.
+        pushj   17,vm_user_mapping_release
         movni   16,2                    ; EXEC_REPLACE_FATAL
 
 exec_lowmem_free:
