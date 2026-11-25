@@ -1,3 +1,35 @@
+## 2026-11-25 v1943-k07: physical reservation/retirement race fixture
+
+Testkit d11a4d2 and 5f42e68 prepare both real PI6 orderings with
+small source-derived 48K guest, sealed DTVOL2 on DTC3, TSFS root.
+Disposable loader delay after actual reservation/epoch check, before
+STAT: 010000 ticks. Disposable V2 unmount delay after owner barrier,
+before SYNC: 04000 ticks. Independent root-backed actor first tries
+UNMOUNT during the live loader reservation, then the reverse order
+challenges RUN during a live quiescing mount. Exact WAIT and final
+retirement remain required. Runtime pointer/owner verifier; original
+kernel source and physical provider behavior unchanged.
+
+First physical run booted and loaded PURE/DTFS, but manually stopped
+after about seven minutes during volume seeding, before IE marker.
+Actual PC032077 CONI 214,4, slot1/high2, lease LH2/RH0, no reservation,
+MM8/capacity32, epoch021, clock061145 octal. Same physical volume ID,
+RBN0 DIRTY and eight changed DATA records 100..107 decimal, proving
+physical write progress but not seed completion or a deadlock.
+Controller rejected missing guest marker, as required. No race PASS.
+Evidence $TMPDIR/pure-k07-race-physical-v1943.5eSZOf/physical.clean.
+
+Revised fixture adds seed-progress markers and captures runtime
+tables before rejecting interrupted checkpoints. Source comparisons,
+DTVOL2/CLEAN and TSFS verification (54 files,320 extents) pass.
+Ready build $TMPDIR/pure-k07-race-v1943.ZEw7l7/build. Run from
+daimos-testkit with V1943_BUILD=<build> make test-pure-k07-race-v1943.
+Revised physical gate not yet executed. Do not reuse interrupted
+DIRTY tape. No simulator running. No production RAM change.
+K07 remains OPEN for both physical race orderings and integrated
+source loss/recovery. Prior v1942 pressure/FULL/WAIT PASS retained.
+RAW PURE/mode3 default OFF. SSH agent unavailable.
+
 ## 2026-11-25 v1942-k07: physical pressure and bounded FULL PASS
 
 The adapted five-child 48K TSFS guest completes on original PDP-6
