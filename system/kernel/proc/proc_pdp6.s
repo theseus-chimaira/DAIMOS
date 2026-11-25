@@ -126,6 +126,8 @@
         .globl  proc_runq_remove
         .globl  proc_trim_high
         .globl  proc_uarea_release
+        .globl  proc_exec_stack_busy_v1937
+        .globl  proc_swap_storage_invariant_v30
         .globl  proc_tty_release_session
         .globl  proc_tty_line_reset
         .globl  proc_tty_line_try_reset_v897
@@ -697,6 +699,14 @@ proc_finish_common_v932:
         lsh     12,1
         add     12,10
         add     12,proc_table           ; descriptor
+        ; Check before HUP, TTY or VM teardown, including FINALIZE retry.
+        move    1,(12)
+        trnn    1,0400000
+        jrst    proc_finish_stack_ok_v1937
+        hlrz    1,1
+        pushj   17,proc_exec_stack_busy_v1937
+        jumpn   1,proc_finish_fail
+proc_finish_stack_ok_v1937:
         ; Last-chance teardown invariant: the target must own a stable
         ; u-area and have no live FILE entries. Some fatal exits bypass
         ; syscall-level closes (e.g. unrecoverable EXEC and APR faults).
@@ -1103,6 +1113,13 @@ proc_slot_discard:
         lsh     10,1
         add     10,11
         add     10,proc_table
+        move    1,(10)
+        trnn    1,0400000
+        jrst    proc_discard_stack_ok_v1937
+        hlrz    1,1
+        pushj   17,proc_exec_stack_busy_v1937
+        jumpn   1,proc_discard_fail
+proc_discard_stack_ok_v1937:
         ; A failed pre-VM rollback may have no u-area at all. Its
         ; SIDL scheduler RH marker is not a run-queue link and survives
         ; until VM destruction actually succeeds.
@@ -1228,6 +1245,15 @@ proc_uarea_release:
         jumpe   4,proc_uarea_release_invalid_v1097
         push    17,10
         move    10,2
+        push    17,1                   ; preserve slot through stack check
+        move    1,4
+        pushj   17,proc_exec_stack_busy_v1937
+        move    5,1
+        pop     17,1
+        jumpe   5,proc_uarea_stack_ok_v1937
+        move    1,5
+        jrst    proc_uarea_release_fail
+proc_uarea_stack_ok_v1937:
         addi    1,01000                ; PROC_UAREA_MM_OWNER_BASE
         move    3,1                    ; owner
         move    1,4                    ; base
@@ -1552,6 +1578,15 @@ proc_wait_status_return:
  * The machine idles for another runnable process or halts after the final user.
  */
 proc_exit_current:
+        ; All owner EXIT routes must have unwound their loader frames.
+        ; A published stack record here is a kernel invariant failure:
+        ; never abandon the continuation or its backing dependency.
+        push    17,1
+        move    1,proc_current_ptr
+        hlrz    1,(1)
+        pushj   17,proc_exec_stack_busy_v1937
+        jumpn   1,proc_swap_storage_invariant_v30
+        pop     17,1
         move    3,1                    ; preserve low 18-bit exit status
         pushj   17,mach_pi_disable
         move    2,1                    ; saved global PI on/off state
@@ -2044,6 +2079,11 @@ proc_event_fatal_other:
         move    2,CTX_PC(1)
         tlnn    2,010000               ; no saved executive continuation
         jrst    proc_event_fatal_other_defer_term_v926
+        ; Even a user-mode saved PC must not authorize remote teardown
+        ; if a stack-owned executable dependency is still published.
+        pushj   17,proc_exec_stack_busy_v1937
+        jumpn   1,proc_event_fatal_other_defer_term_v926
+        hlrz    1,(012)
         addi    1,PROC_FILE_TABLE_OFFSET ; target private file table
         pushj   17,file_close_all_at_v865
         ; A failed SYNC leaves the descriptor live. Do not release the

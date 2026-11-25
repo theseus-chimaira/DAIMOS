@@ -210,6 +210,31 @@ proc_exec_hold_v1934:
         jumpe   1,proc_exec_reserve_bad_v1933
         jrst    proc_exec_reserve_v1933
 
+; AC1 = u-area base. Refuse release while any reservation record
+; intersects the extent. Scan addresses before dereferencing the next
+; link; even a malformed boundary record must not permit stack reuse.
+; AC2..5 preserved for finalization callers. No scheduling or I/O.
+        .globl proc_exec_stack_busy_v1937
+proc_exec_stack_busy_v1937:
+        jumpe   1,kret_zero
+        move    7,1
+        addi    7,0410                ; PROC_UAREA_WORDS, exclusive end
+        move    6,proc_exec_resv_head_v1933
+proc_exec_stack_scan_v1937:
+        jumpe   6,kret_zero
+        caml    6,7
+        jrst    proc_exec_stack_next_v1937
+        addi    6,1                   ; two-word record overlaps base?
+        caml    6,1
+        jrst    proc_exec_stack_found_v1937
+        subi    6,1
+proc_exec_stack_next_v1937:
+        move    6,(6)
+        jrst    proc_exec_stack_scan_v1937
+proc_exec_stack_found_v1937:
+        movni   1,5
+        popj    17,
+
 ; Release exactly this stack record, not necessarily the list head.
 ; A zero vnode means the reservation was never admitted (or released).
 ; An absent published record is an invariant failure, never a dangling
