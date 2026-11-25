@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-25 (v1925 K07 stamped DTFS media proof; K01-K06 closed).
+Updated: 2026-11-25 (v1926 K07 known-unavailable backing admission; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1176,6 +1176,17 @@ history is now reachable from main (v1809); mode3 remains disabled.
   metadata are not covered. D6FS/TSFS identity, known-unavailable
   backing admission before DROP, mutation/admission and integrated
   unmount remain OPEN. No physical concurrency acceptance claimed.
+  **v1926:** non-sleeping DROP admission rechecks the original public
+  mount/provider under PI, validates the service JRST and refuses known
+  DTFS poison/suspect/quiescence or inconsistent V2 identity/armed RO,
+  missing D6FS reader or missing TSFS metadata. Refusal preserves the
+  resident image and terminal cleanup is independent. Native 108 cases
+  and five unsafe controls pass, earlier admission/recovery gates pass.
+  Folded PURE +158 words, fixed KCORE byte-identical, no new data.
+  D6FS/TSFS physical identity remains OPEN: D6FS runtime discards UUID,
+  TSFS runtime retains locators/member map, not set ID/generation.
+  Audit mount-owned identity storage and actual physical verification
+  next; mutation/admission and integrated unmount remain open.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

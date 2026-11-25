@@ -1,3 +1,38 @@
+## 2026-11-25 v1926-k07: refuse DROP with known unavailable backing
+
+RAW DROP now checks the existing provider service binding and mount
+metadata inside the PI-excluded rebase window. It rechecks the saved
+provider and public mount ID after early admission, rejects absent or
+malformed service JRSTs and the no-service fallback, refuses DTFS
+READ_SUSPECT/WRITE_UNCERTAIN/QUIESCING and incomplete or inconsistent
+V2 identity/armed policy, requires a D6FS mount-owned reader, and
+requires published TSFS file/extent/member metadata. This is a
+non-sleeping admission check, not a physical medium probe. Refusal
+retains the complete resident image; terminal cleanup remains independent
+of backing availability. Shortened the v1924 staged-provider macro to
+avoid KCC identifier truncation.
+
+Implementation d6da62cb; testkit 122bb8f. Native 108 admission cases
+cover all four providers, public mounts 1/18, state and binding refusals,
+and simulated mount changes at the final PI boundary. Five executed
+unsafe variants fail assertions 04022, 05052, 04302, 06152 and 07212
+(octal). The older v1382 fixture initializes its saved provider, and the
+v1924 unsafe-admission mutant removes both redundant provider checks.
+Native v1381/v1382/v1608/v1612/v1918/v1919/v1923/v1924/v1925 and v1563
+gates pass. No physical controller or whole-guest PI6 claim.
+
+Folded KCC lowmem tape PURE MRES 3707 -> 3865 resident words (+158),
+DTFS 2836 unchanged, fixed KCORE byte-identical at 025174 octal.
+No new persistent data or per-owner words. K07 remains OPEN. D6FS
+superblock validation has both UUID halves but the runtime reader
+intentionally discards them. TSFS boot validates set ID and generation,
+but its three-word runtime handoff preserves only locators/member map.
+The next stage must retain and verify actual mounted identities, not
+infer them from locators. D6FS may reuse the disjoint tape metadata
+slab words; TSFS needs a separately accounted mount-owned identity
+representation. Neither is implemented in v1926. Mutation/admission
+and integrated unmount remain open. RAW PURE/mode3 default OFF.
+
 ## 2026-11-25 v1925-k07: stamped DTFS physical media proof
 
 PURE PREFIX/FULL reconstruction now invokes a private DTFS operation
