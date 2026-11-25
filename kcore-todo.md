@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1934 staged EXEC backing handover; K01-K06 closed).
+Updated: 2026-11-25 (v1935 destructive EXEC live identity; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1286,6 +1286,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   Destructive low-memory EXEC direct publication of stable u-area and
   credentials requires separate audit, as do namespace and fatal
   lifetime, MEMFS mutation, poisoned retirement and integrated PI6.
+  **v1935:** destructive EXEC preserves live META/SCHED during actual
+  loader attachment and rollback. Shared staged/live publication leaf;
+  AC2 entry result; existing mapping hold spans new load/startup.
+  Seven native DXR2 cases with real compiled attachment pass, four
+  unsafe variants rejected. v1720/v1933/v1934/v1563/v200/v1719 pass.
+  Fixed KCORE -2 words, lowmem frame -1 word, BSS/PURE unchanged.
+  Lookup-to-reservation, fatal/private-stack lifetime, MEMFS mutation,
+  poisoned retirement and integrated physical validation remain OPEN.
+  Compressed/XIP execution not covered by the new fixture.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

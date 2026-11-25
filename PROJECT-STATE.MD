@@ -1,3 +1,30 @@
+## 2026-11-25 v1935-k07: destructive low-memory EXEC live identity
+
+The loader now distinguishes the live current descriptor from a staged
+RUN/EXEC descriptor. Live META and SCHED are preserved through payload,
+backing attachment and VM rollback; staged publication retains its
+existing entry/SIDL contract. Plain/compressed DXR and certified XIP
+share the publication leaf. AC2 returns the logical entry on success.
+Destructive EXEC uses this register instead of overwriting/restoring
+META and holds the existing user mapping bit through replacement load
+and startup, releasing it on success or fatal exit. No new permanent
+state; the low-memory frame shrinks by one word.
+
+Implementation 27f6be53; testkit 902f1ed. Seven native destructive EXEC
+cases pass using actual loader, compiled proc_swap_attach, reservation,
+provider gateway, owner scans and mapping leaves with controlled
+MM/I/O/startup callbacks. Four executed unsafe controls reject live
+metadata overwrite, rollback u-area clearing, missing entry and map
+hold. v1720/v1933/v1934/v1563/v200/v1719 regressions pass. Folded lowmem
+KCC tape KCORE low end 025446 -> 025444 octal (-2 words); DXR image
+024746, BSS 000416; PURE MRES 3879 unchanged. No whole-guest PI6 or
+physical acceptance; compressed and XIP execution not tested here.
+
+K07 OPEN: pathname lookup-to-reservation, fatal/private-stack lifetime,
+direct MEMFS mutation, poisoned-volume administrative retirement and
+integrated physical validation. RAW PURE/mode3 default OFF. K17 mandatory
+nonpaged KA10 unchanged.
+
 ## 2026-11-25 v1934-k07: transactional EXEC backing handover
 
 Normal staged EXEC holds the old PURE backing before the loader can
