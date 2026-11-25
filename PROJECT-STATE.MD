@@ -1,3 +1,35 @@
+## 2026-11-25 v1922-k06: managed-arena proof; K06 implementation closed
+
+The shared optional PURE assembly proof checks installed core size,
+nonempty sorted arenas, maximum arena count (three), allocated extent
+count/capacity, nonzero sorted nonoverlapping extents and containment
+of each in one actual managed arena. It reuses the containing arena
+end across adjacent sorted descriptors and validates trailing arenas,
+including empty extent-table cases. DROP, PREFIX, FULL, deferred
+rollback, terminal release and PURE reclaim share the proof. PREFIX
+with a valid retained RAW suffix but unavailable original prefix
+returns ordinary fragmentation; malformed geometry is a hard refusal.
+Terminal absence proof also requires the original escrowed range to
+remain managed. PURE reclaim validates before and after ordinary
+compaction without globally disabling PI across physical moves.
+
+Implementation 225aa401; testkit a3ecdda: 18 arena, 12 table and seven
+native mutation-refusal cases pass, with five unsafe assembly variants
+rejected. Two additional malformed-table reclaim cases and four
+terminal arena cases pass. Native v1381/v1384/v1612/v1666/v1667/
+v1680/v1681/v1839/v1855/v1902/v1906/v1918/v1919/v1920/v1921 gates
+pass in this stage. The historical fixture arenas are explicit;
+v1381 models the actual top-of-256K boundary and v1855 places its
+independent bystander inside managed memory. Optional mode3 terminal
+fixture duplicate capacity declaration corrected. These are native
+source-linked gates, not general physical corruption protection.
+
+Folded lowmem tape KCC PURE MRES 3565 -> 3649 resident words (+84),
+BSS zero, fixed KCORE byte-identical to v1921 (low end 025136 octal).
+No new permanent or per-process RAM. K06 implementation audit CLOSED;
+K07 backing lifetime is next. Physical PI6, broad pressure and
+production acceptance remain K08/K09. RAW PURE/mode3 default OFF.
+
 ## 2026-11-25 v1921-k06: sorted MM geometry and FULL reply proof
 
 The sole-owner scanner now uses the native allocator's sorted,

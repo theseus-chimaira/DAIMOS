@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-25 (v1921 K06 geometry and FULL reply proof; K01-K05 closed).
+Updated: 2026-11-25 (v1922 K06 implementation closed; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1079,7 +1079,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
     K05 remains OPEN for remaining allocator/MM/PI6 and
     broad platform tests. See
     `design/kcore-k05-orphan-oom-v1915.md`.
-- [ ] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
+- [x] **K06 - MM ownership uncertainty.** Preserve exact PROCESS/PACKED
   ownership, pins, TRANSITION and READY_ONCE state across persistent
   pin/free/rebase errors, restore cancellation and terminal cleanup.
   Never publish an ambiguous APR or release the sole retained suffix.
@@ -1126,8 +1126,20 @@ history is now reachable from main (v1809); mode3 remains disabled.
   Six FULL faults, five geometry cases and seven unsafe mutations
   pass; prior native rollback/commit/recovery gates remain green.
   Folded PURE 3585 -> 3565 words (-20), fixed KCORE byte-identical.
-  K06 remains OPEN for managed-arena bounds/containment audit and
-  native validation. No physical PI6 acceptance claimed.
+  **v1922:** shared optional ASM proof validates installed core, all
+  managed arenas and sorted nonoverlapping live extent containment.
+  It bounds arena count, extent count and capacity; caches the current
+  containing arena end, handles empty tables, and rejects malformed
+  geometry before PURE compaction, claim, rollback or terminal free.
+  Valid RAW with an unavailable prefix remains fragmentation. Exact
+  absence on retry still requires managed containment. Native 18 arena,
+  12 table, seven mutation-refusal cases, five unsafe ASM mutants,
+  two reclaim cases and four extra terminal cases pass. Prior native
+  ownership and terminal gates remain green. Folded PURE 3565 -> 3649
+  words (+84), fixed KCORE byte-identical, no extra persistent RAM.
+  K06 implementation CLOSED; real PI6 and production acceptance
+  remain K08/K09. General allocator serialization and valid-table
+  contract unchanged; no arbitrary memory corruption claim.
 - [ ] **K07 - Executable backing lifetime.** Guarantee immutable PURE
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe
