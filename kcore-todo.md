@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K16)
 
-Updated: 2026-11-25 (v1923 K07 backing reconstruction; K01-K06 closed).
+Updated: 2026-11-25 (v1924 K07 provider identity; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these sixteen
 items is the current scope. Filesystems, storage utilities, hardware backends,
@@ -1156,6 +1156,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
   admission races, provider/RO handling and unmount verification.
   Root snapshots cannot identify reuse before admission or an
   identical handle ABA replacement; no physical acceptance claimed.
+  **v1924:** original provider stored in word 066 bits 28..30 and
+  SIDL RH bits 2..4, with no new words. RUN/EXEC/detach preserve
+  record/identity pairs; RAW admission and unpacker reject provider
+  substitution. Nine native substitution, 16 RUN-transfer cases,
+  three unsafe controls, extended v1563 attach and v200 EXEC gates
+  pass. Folded PURE +21, fixed KCORE +22, BSS unchanged. Same-provider
+  media reuse and mutation/admission/unmount races remain OPEN;
+  physical concurrency not claimed.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

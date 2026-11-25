@@ -1,3 +1,33 @@
+## 2026-11-25 v1924-k07: persistent executable provider identity
+
+The original filesystem provider (4..7) is retained in previously
+unused credential word 066 bits 28..30, and in SIDL scheduler RH bits
+2..4 before a stable u-area is published. The fifth mount-slot bit
+and SIDL discard-pending bit keep their existing meanings. Attachment
+publishes the record and identity; RUN inherits credentials separately
+from the staged executable identity. EXEC saves and restores all four
+backing identity bits alongside the old/new records, including before
+old/staged VM destruction; detach retires them together. Both the RAW
+admission check and shared backing unpacker verify the original provider
+instead of accepting a different provider at the same public mount ID.
+
+Implementation 5466c1e6; testkit e950900. Nine native DROP/PREFIX/FULL
+provider-substitution cases, 16 RUN transfer cases and three executed
+unsafe variants pass. The extended v1563 attach and v200 EXEC eight-case
+gates pass. Earlier v1381/v1390/v1563/v1612/v1649/v1667/v1684/v1855/
+v1919/v1920/v1921/v1922/v1923 gates pass. The older v1684 fixture now
+publishes allocations in sorted order like actual MM. The new native
+gates use controlled VFS/MM or extracted original production leaves.
+No whole-guest concurrency acceptance claimed.
+
+Folded KCC lowmem tape PURE MRES 3673 -> 3694 words (+21), fixed
+KCORE low end 025146 -> 025174 octal (+22 words), BSS 000415 unchanged.
+No additional permanent data or per-process allocation. K07 OPEN:
+same-provider media identity cannot be inferred from the saved provider
+and mount slot. Audit physical media verification and mutation/admission
+lifetime next; avoid a wrapping short generation counter. RAW PURE and
+mode3 default OFF. K01-K06 implementation closed.
+
 ## 2026-11-25 v1923-k07: backing identity during PURE reconstruction
 
 The shared resident backing decoder now rejects null backing/u-area,
