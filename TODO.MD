@@ -150,12 +150,14 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   do not remove them without separate preservation review.
   Historical procedure: `design/daimos-branch-consolidation-v1677.md`;
   current manifest: `design/daimos-branch-consolidation-v1809.md`.
-- [ ] **KA10 target backend (mandatory K17 in kcore-todo.md):**
-  implement contiguous low-segment relocation/protection, without
-  a pager or mandatory KT10A high segment. Complete target boot,
-  APR/MM, PI/trap, context, RUN/EXEC/BRK/EXIT/WAIT, swap and RAW PURE
-  with actual KA10-specific native/simulator acceptance. Reuse common
-  ownership policy. PDP-6 physical evidence cannot prove KA10 support.
+- [ ] **Basic KA10 compatibility (mandatory K17 for 0.9):** native
+  64K single-segment KA10 boot and ordinary PDP-6-equivalent operation.
+  Reserve 060/061 and move shared KCORE/decompressor to 062 on both CPUs.
+  Retain paper-tape bootstrap, existing essential drivers, TSFS DECtape
+  root and unmodified PDP-6 user binaries. Verify native APR/protection,
+  PI/trap, context, shell and normal process/syscall behavior, plus PDP-6
+  regressions. Keep optional unqualified features OFF. Full KA10 support
+  is post-0.9 (P7); see kcore-todo.md for the precise acceptance boundary.
   Schedule after K09 and before optional K10-K16 mode3.
 
 ## P2. KCORE P1-E: optional compressed mutable RAM (mode3)
@@ -331,6 +333,14 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   regressions; keep ordinary C unless measured benefit is clear.
 
 ## P7. Post-KCORE / explicitly deferred architecture
+
+- [ ] **Full KA10 support (post-0.9):** dual relocation/protection
+  registers and high-segment VM, shared TEXT evaluation, KA10-native
+  executable and reverse PDP-6 compatibility policy, additional native
+  controllers and alternative hardware read-in media. Complete wider
+  KA10 hardware, swap, RAW PURE, pressure/recovery and RAM qualification
+  before claiming full support. Only basic native boot and ordinary
+  PDP-6-equivalent operation are required for 0.9 (K17).
 
 - [ ] **Unified TSFS before 0.9 release:** after KCORE freeze and its
   RAM sweep, implement a compact single TSFS namespace/read engine and

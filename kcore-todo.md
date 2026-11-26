@@ -1,9 +1,9 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1947 K07/K08 integrated physical PASS; K01-K08 closed).
+Updated: 2026-11-26 (v1960 K17 release scope; K01-K09 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
-items is the current scope, including the mandatory KA10 backend (K17).
+items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
 Unrelated filesystems, storage utilities, other hardware backends,
 toolchains, userland, optimization and release administration remain
 outside this list. Feature-specific tests are
@@ -1518,28 +1518,45 @@ history is now reachable from main (v1809); mode3 remains disabled.
   $TMPDIR/k09-address-v1959.1opCid.
 
 
-## Mandatory KCORE: KA10 nonpaged backend
+## Mandatory KCORE: basic KA10 compatibility for 0.9
 
-- [ ] **K17 - KA10 contiguous relocation/protection backend.** Implement
-  an actual KA10 target, not a PDP-6 build relabeled as KA10. Initial
-  target uses one low segment without a pager and without requiring
-  optional KT10A high-segment hardware. Reuse common MM/process/VFS
-  ownership policy rather than forking KCORE. Complete the following:
-  - Target-specific boot image, APR initialization, PI/trap and
-    executive/user context-switch handling.
-  - Contiguous low-segment allocation/alignment and verified KA10
-    relocation/protection programming; activate only a complete
-    authoritative resident image. Separate machine-specific VM
-    load/copy/activate/restore interfaces from common policy.
-  - RUN/EXEC/BRK, fork where supported, EXIT/WAIT, raw swap and RAW
-    PURE compatibility; preserve ownership and rollback semantics.
-  - Actual native KA10 simulator boot, mapping/protection, interrupt,
-    multi-process and memory-pressure tests, including 64K target
-    configuration and measured resident/transient RAM.
-  - Target-specific acceptance; PDP-6 results cannot substitute.
-  No KI10 pager, speculative shared high text or unrelated new feature.
-  Mandatory after K09, before optional K10-K16. Existing architecture
-  boundary: design/kcore-multi-cpu-portability-v1605.md.
+- [ ] **K17 - Native KA10 boot and PDP-6-equivalent operation.** Full
+  KA10 support is explicitly post-0.9. Implement an actual KA10 target,
+  not a relabeled PDP-6 binary. Keep one contiguous low user segment,
+  no pager, no dependency on optional KT10A hardware, and the existing
+  PDP-6 user executable/syscall ABI. Reuse common MM/process/VFS policy
+  and select native processor operations at build time.
+  - Reserve octal 060/061 on both machines. Move KCORE and its shared
+    53-word Stage1/runtime decompressor together to 062. Retain one
+    decoder implementation; verify bootstrap overwrite boundaries,
+    image construction, memory accounting and PDP-6 regressions.
+  - Paper tape remains the sole initial bootstrap medium. Retain the
+    PDP-6 Stage0 path and use native KA10 paper-tape read-in; reuse
+    Stage1, existing essential drivers and TSFS DECtape root.
+  - Implement native APR relocation/protection, PI/trap, and executive/
+    user context handling; keep common ownership and rollback semantics.
+    Avoid additional per-process state unless required for correctness.
+  - Boot KA10 in 64K ONESEG, complete KINIT, mount root, run the unchanged
+    PDP-6 INIT and reach an interactive shell. Verify ordinary syscalls,
+    timer interrupts, user protection, RUN/EXEC/BRK/EXIT/WAIT and normal
+    process operation in the supported configuration. Verify PDP-6 boot
+    and runtime regressions; PDP-6 results alone cannot accept KA10.
+  - Keep unqualified optional features (including RAW PURE and mode3)
+    disabled; do not defer correctness bugs in the supported path.
+    No new peripheral drivers or speculative runtime CPU dispatcher.
+  Mandatory after K09, before optional K10-K16. Architecture boundary:
+  design/kcore-multi-cpu-portability-v1605.md.
+
+## Post-0.9: full KA10 support (not a 0.9 release gate)
+
+- [ ] **K17 follow-up - Full KA10 architecture and qualification.**
+  Implement both relocation registers and the optional high segment,
+  evaluate shared TEXT, define KA10-native executable and reverse PDP-6
+  compatibility policy, support additional native controllers and direct
+  non-paper-tape read-in, and complete the wider hardware, root, swap,
+  RAW PURE, multi-process pressure, failure/recovery and measured RAM
+  qualification matrix. Qualify optional features before enabling them.
+  Do not make these tasks prerequisites for the basic 0.9 KA10 milestone.
 
 ## Optional KCORE: compressed mutable memory (mode3)
 
@@ -1575,7 +1592,8 @@ history is now reachable from main (v1809); mode3 remains disabled.
 
 1. Finish K01-K04 correctness prerequisites.
 2. Finish K05-K09 mandatory PDP-6 RAW PURE implementation.
-3. Finish K17 mandatory KA10 nonpaged backend and acceptance.
+3. Finish K17 basic native KA10 boot and PDP-6-equivalent acceptance for 0.9.
+   Full KA10 support follows after 0.9.
 4. Implement K10-K16 only as the optional compressed-memory feature;
    mode3 stays disabled until safe and accepted.
 

@@ -15,8 +15,9 @@ backing lifetime and K08 scheduler integration closed v1947. The
 v1945 repeated breakpoint foreign witness remains withdrawn; v1947
 verifies genuine later foreign refusal, pinned FULL PI6, independent
 peer execution, original-medium READY_ONCE dispatch and exact WAITs
-with complete resource conservation in one run. K09 production
-acceptance remains OPEN. K17 native KA10 is mandatory.
+with complete resource conservation in one run. K09 functional production acceptance closed v1959. K17 basic native
+KA10 boot and PDP-6-equivalent operation are mandatory for 0.9; full
+KA10 support is post-0.9 (v1960 scope decision, see kcore-todo.md).
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

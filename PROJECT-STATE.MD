@@ -1,3 +1,18 @@
+## 2026-11-26 v1960: K17 release scope decision (no implementation yet)
+
+User decision: DAIMOS 0.9 requires only native KA10 boot and ordinary
+PDP-6-equivalent operation. Full KA10 support is post-0.9. Initial KA10
+uses 64K ONESEG and existing PDP-6 user binaries, essential drivers and
+TSFS DECtape root. Paper tape remains the sole initial bootstrap medium;
+KA10 uses native read-in, PDP-6 retains Stage0. Reserve 060/061 and move
+KCORE and the shared Stage1/runtime decompressor together to 062 on both
+CPUs. Keep processor-specific operations build-selected and preserve
+common ownership policy. Dual-segment VM, additional controllers,
+alternative read-in media and full KA10 qualification are deferred.
+K01-K09 remain closed; K17 basic compatibility remains OPEN. Optional
+unqualified features remain OFF. Scope recorded in TODO.MD and
+kcore-todo.md; no code, image or test results changed.
+
 ## 2026-11-26 v1959-k09: functional integration CLOSED
 
 DAIMOS 06eff089 corrects Type-270 ADT/DFR address race
