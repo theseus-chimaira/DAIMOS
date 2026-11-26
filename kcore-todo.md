@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1963 common APR and KA10 Stage1 probes).
+Updated: 2026-11-26 (v1964 native KA10 first INIT).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
@@ -1542,15 +1542,20 @@ history is now reachable from main (v1809); mode3 remains disabled.
     PDP-6 Stage0 path and use native KA10 paper-tape read-in; reuse
     Stage1, existing essential drivers and TSFS DECtape root.
     v1963 counted paper-tape converter and native 64K KA10 Stage1
-    to KINIT entry PASS; production KA10 image/build remains open.
+    to KINIT entry PASS. v1964 native KA10 build/boot through INIT
+    passes with identical Stage1 DXR and PDP-6 user binaries. Type270
+    native controller/driver recovery tests pass; disk-root deferred.
   - Implement native APR relocation/protection, PI/trap, and executive/
     user context handling; keep common ownership and rollback semantics.
     Avoid additional per-process state unless required for correctness.
     v1963 confirms identical aligned APR word on PDP-6 and KA10
     ONESEG/TWOSEG; first-user descriptor fix saves three words.
-    Native KA10 trap/PI/context integration remains open.
+    v1964 native 060/061 trap and APR address-break selection are
+    implemented; user/executive instruction-trap probes pass. Normal
+    process-context and full protection/PI qualification remain open.
   - Boot KA10 in 64K ONESEG, complete KINIT, mount root, run the unchanged
-    PDP-6 INIT and reach an interactive shell. Verify ordinary syscalls,
+    PDP-6 INIT and reach an interactive shell. v1964 reaches INIT on
+    native KA10; interactive shell still OPEN. Verify ordinary syscalls,
     timer interrupts, user protection, RUN/EXEC/BRK/EXIT/WAIT and normal
     process operation in the supported configuration. Verify PDP-6 boot
     and runtime regressions; PDP-6 results alone cannot accept KA10.

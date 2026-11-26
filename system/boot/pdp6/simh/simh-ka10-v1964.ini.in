@@ -1,0 +1,38 @@
+; Initial KA10 0.9 target: one segment, existing Type 136/551 storage.
+; DSK is available for later attachment; the initial TSFS root needs no disk.
+; Unsupported PDP-6 terminal/drum hardware is not enabled or probed.
+set -q -n log @SIMH_LOG@
+set cpu @CPU_KWORDS@k
+set cpu oneseg
+set cpu nomaoff
+deposit SW @ROOT_SWITCH@
+set pclk enabled
+set pclk @PCLK_MODE@
+set ptr enabled
+set dct enabled
+; RH10 is assigned 270 first; select Type 270 instead of RH10 hardware.
+set rpa disabled
+set rpb disabled
+set rpc disabled
+set rpd disabled
+set tua disabled
+set dsk enabled
+set dtc dct=04
+set dtc enabled
+set dtc0 enabled
+set dtc1 enabled
+set dtc2 enabled
+set dtc3 enabled
+set mtc disabled
+set dcs disabled
+set dpy disabled
+set wcnsls disabled
+set ocnsls disabled
+attach -q ptr @STAGE1_TAPE@
+deposit ptr time 1
+attach -q dtc0 @DTC0_IMAGE@
+attach -q dtc1 @DTC1_IMAGE@
+attach -q dtc2 @DTC2_IMAGE@
+attach -q dtc3 @DTC3_IMAGE@
+@BOOT_COMMANDS@
+exit

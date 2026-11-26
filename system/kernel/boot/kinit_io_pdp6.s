@@ -35,8 +35,15 @@
 /* These PDP-6 BSS cells lie below the linked KCORE clearing range.
  * Stage1 occupied them; discard that content before resident services. */
 kinit_lowcore_init:
+        .ifdef DAIMOS_KA10
+        .globl mach_unassigned_save
+        setzm 000060
+        move 1,[jsr mach_unassigned_save]
+        movem 1,000061
+        .else
         setzm vm_pdp6_apr
         setzm mach_kernel_stack_base
+        .endif
         popj 17,
 
 /* Save/test/restore a physical core word. The two diagnostic bit patterns

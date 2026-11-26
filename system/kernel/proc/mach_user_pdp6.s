@@ -24,6 +24,24 @@
         .globl proc_fatal_close_current_v879
         .globl file_table
 
+        .ifdef DAIMOS_KA10
+/* KA10 instruction trap at 060/061, distinct from monitor UUOs. An
+ * executive undefined instruction is fatal; a user instruction failure
+ * follows the existing owned-stack fatal-process cleanup path. */
+        .globl mach_unassigned_save
+mach_unassigned_save:
+        .word 0
+        move 1,mach_unassigned_save
+        tlne 1,010000
+        jrst mach_unassigned_user
+        halt
+        jrst .-1
+mach_unassigned_user:
+        move 17,mach_kernel_sp
+        movei 1,0400001
+        jrst proc_fatal_close_current_v879
+        .endif
+
 /** Saved PDP-6 hardware JSR return word for the current monitor UUO. */
 mach_syscall_save:
         .word 0

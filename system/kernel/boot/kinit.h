@@ -47,7 +47,11 @@ typedef unsigned long kword_t;
 #define KINIT_BOOT_WORD0         000040UL
 #define KINIT_BOOT_WORD1         000041UL
 /* Six-character machine name printed by early boot diagnostics. */
+#ifdef DAIMOS_KA10
+#define KINIT_MACHINE_NAME       "KA10  "
+#else
 #define KINIT_MACHINE_NAME       "PDP6  "
+#endif
 
 /**
  * @brief Console-switch root-selection encoding.

@@ -1,25 +1,13 @@
-# PDP-6 KCORE source-level machine selection; zero resident cost.
-#
-# This is a list of the source owners in the CURRENT PDP-6 image, not a
-# promise that the named files are exclusively hardware-specific.
-# A KA10 port replaces the low-level CPU and VM backends; a KI10 port
-# additionally implements page maps and 22-bit physical-frame ownership.
-# Neither backend is implemented or silently enabled by this fragment.
-#
-# Keep the existing generated names, object order, fixed-image placement,
-# KCORE end marker, and P10FOLD input order intact during preparation.
-# A future port gets a separate architecture-specific boot/link manifest;
-# it must not reuse the PDP-6 hardware-specific object names blindly.
-#
-# v1606 completion rule: PDP-6 P1-E/PI/MM/EXEC correctness and physical
-# acceptance come first. This map is the ONLY implemented CPU selection.
-# Leave later segmented/paged models as interface constraints in docs;
-# do not add untested CPU targets, dynamic backend dispatch, shared page
-# descriptors, or speculative per-process fields to the current image.
-
+# PDP-6 and KA10 contiguous-core source ownership. The common sources
+# retain the original object order and the PDP-6 instruction subset.
+# Only native processor differences are selected at assembly time.
 DAIMOS_MACHINE ?= pdp6
-ifneq ($(DAIMOS_MACHINE),pdp6)
-$(error DAIMOS_MACHINE=$(DAIMOS_MACHINE) has no accepted KCORE/boot backend)
+ifneq ($(filter $(DAIMOS_MACHINE),pdp6 ka10),$(DAIMOS_MACHINE))
+$(error DAIMOS_MACHINE=$(DAIMOS_MACHINE) has no KCORE/boot backend)
+endif
+ifeq ($(DAIMOS_MACHINE),ka10)
+DAIMOS_CPU_ASM_PREFIX = .set DAIMOS_KA10,1
+DAIMOS_CPU_CFLAGS = -DDAIMOS_KA10=1
 endif
 
 # CPU-sensitive process, trap, priority interrupt and syscall boundaries.

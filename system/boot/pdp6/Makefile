@@ -3,11 +3,22 @@ PROJECT_ROOT != cd ../../.. && pwd
 KCC_REPO ?= $(PROJECT_ROOT)/../kcc
 KERNEL_DIR = $(PROJECT_ROOT)/system/kernel
 # The PDP-6 image keeps its exact historical generated object names/order.
-# Only source ownership is selected here; this is not a KA10/KI10 boot target.
+# PDP-6 and KA10 use the common contiguous-core image builder.
 include $(KERNEL_DIR)/arch/pdp6_source_map_v1605.mk
 PICTURE_DIR ?= $(PROJECT_ROOT)/pictures
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
-BUILD ?= $(BUILD_ROOT)/system/boot/pdp6
+BUILD ?= $(BUILD_ROOT)/system/boot/$(DAIMOS_MACHINE)
+MACHINE_STAMP = $(BUILD)/.machine-$(DAIMOS_MACHINE)
+ifneq ($(filter-out $(MACHINE_STAMP),$(wildcard $(BUILD)/.machine-*)),)
+$(error BUILD belongs to another machine; use a separate directory)
+endif
+ifeq ($(DAIMOS_MACHINE),ka10)
+ifeq ($(wildcard $(MACHINE_STAMP)),)
+ifneq ($(wildcard $(BUILD)/kcore.dxr $(BUILD)/.kcore-built $(BUILD)/.kinit-built),)
+$(error KA10 requires an empty or KA10-marked BUILD directory)
+endif
+endif
+endif
 PDP10_PREFIX ?= $(HOME)/cross
 WALL_CLOCK_HZ ?= 60
 ifneq ($(filter $(WALL_CLOCK_HZ),50 60),$(WALL_CLOCK_HZ))
@@ -47,7 +58,7 @@ S6TEXT ?= s6text
 CSIX ?= csix
 LOGSTORE ?= logstore
 SIMH_PDP6 ?= pdp6
-ROOT ?= auto
+ROOT ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),tape,auto)
 ROOTSET ?= 1
 # A dedicated TSFS root never mounts D6FS, even if DSK/DRM hardware is
 # available for auxiliary swap, LOGSTORE, or MEMFS backing.  Auto-root retains
@@ -68,16 +79,16 @@ TAPE_FS_ENABLED = 0
 endif
 # Tape boot is a filesystem capability, not a full-profile feature.
 KINIT_TAPE_BOOT = $(TAPE_FS_ENABLED)
-BOOT ?= auto
-BOOT_PROFILE ?= full
+BOOT ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),dtc,auto)
+BOOT_PROFILE ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),lowmem,full)
 DPY_LOGIN ?= 0
 ifneq ($(filter $(BOOT_PROFILE),full lowmem),$(BOOT_PROFILE))
 $(error unsupported BOOT_PROFILE=$(BOOT_PROFILE); expected full or lowmem)
 endif
 KINIT_STACK_RESERVE_WORDS ?= 0400
 ifeq ($(BOOT_PROFILE),lowmem)
-BOOT_CORE_WORDS ?= 0100000
-SIMH_CPU_KWORDS ?= 32
+BOOT_CORE_WORDS ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),0200000,0100000)
+SIMH_CPU_KWORDS ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),64,32)
 KINIT_BADMAP ?= 0
 else
 BOOT_CORE_WORDS ?= 01000000
@@ -138,7 +149,7 @@ PDP10_OBJDUMP ?= pdp10-objdump
 PDP10_KCC ?= kcc
 # The 32K profile is GCC-only for measured image and memory optimization.
 ifeq ($(BOOT_PROFILE),lowmem)
-COMPILER ?= gcc
+COMPILER ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),kcc,gcc)
 else
 COMPILER ?= kcc
 endif
@@ -457,6 +468,10 @@ ifeq ($(DAIMOS_PURE_MRES_ENABLED)$(KINIT_TAPE_BOOT),11)
 MRES_PACKAGE_OBJS += $(PURE_MRES_OBJ_V1612)
 endif
 KINIT_DRM_ENABLED = 1
+ifeq ($(DAIMOS_MACHINE),ka10)
+override KINIT_DRM_ENABLED = 0
+MRES_PACKAGE_OBJS := $(filter-out $(DRM_MRES_OBJ) $(DCS_MRES_OBJ) $(GE_MRES_OBJ),$(MRES_PACKAGE_OBJS))
+endif
 
 MINIT_TABLE_ASM = $(BUILD)/module-table-runtime.s
 MINIT_TABLE_OBJ = $(BUILD)/module-table-runtime.dobj
@@ -731,8 +746,16 @@ $(BUILD)/tsfscheck-v1461: $(PROJECT_ROOT)/tools/host/tsfscheck.c $(TSFS_HOST_SRC
 		$(PROJECT_ROOT)/tools/host/tsfscheck.c \
 		$(PROJECT_ROOT)/tools/host/tsfs-format.c \
 		$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c
-TSFS_ROOT_MEMBERS ?= 1
-TSFS_INPLACE_BOOT ?= 0
+TSFS_ROOT_MEMBERS ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),3,1)
+TSFS_INPLACE_BOOT ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),1,0)
+ifeq ($(DAIMOS_MACHINE),ka10)
+ifneq ($(ROOT):$(STAGE1_DEVICE):$(BOOT_PROFILE):$(SIMH_CPU_KWORDS):$(BOOT_CORE_WORDS):$(TSFS_INPLACE_BOOT):$(TSFS_ROOT_MEMBERS),tape:dtc:lowmem:64:0200000:1:3)
+$(error initial KA10 target requires 64K LOWMEM hybrid TSFS DECtape root)
+endif
+ifneq ($(DAIMOS_PURE_MRES_ENABLED)$(DAIMOS_PBM_V1667)$(DAIMOS_SWAPLESS_ONLY_V1668),000)
+$(error optional PURE features not yet qualified on KA10)
+endif
+endif
 ifneq ($(filter $(TSFS_ROOT_MEMBERS),1 2 3),$(TSFS_ROOT_MEMBERS))
 $(error TSFS_ROOT_MEMBERS must be 1, 2, or 3 with this DTC boot layout)
 endif
@@ -786,6 +809,9 @@ force-simh-config:
 $(BUILD):
 	mkdir -p $@
 
+$(MACHINE_STAMP): | $(BUILD)
+	@touch $@
+
 $(MONITORFS_MODE_STAMP): | $(BUILD)
 	@rm -f $(BUILD)/.monitorfs-v17-mode-0 $(BUILD)/.monitorfs-v17-mode-1
 	@touch $@
@@ -801,12 +827,12 @@ $(KINIT_STACK_MODE_STAMP): | $(BUILD)
 $(MEDIA_DIR): | $(BUILD)
 	mkdir -p $@
 
-$(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(KINIT_TAPE_MODE_STAMP) $(KINIT_STACK_MODE_STAMP) $(KINIT_PURE_MODE_STAMP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kinit COMPILER='$(COMPILER)' BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' KINIT_DRM_ENABLED='$(KINIT_DRM_ENABLED)' KINIT_TAPE_BOOT='$(KINIT_TAPE_BOOT)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' DAIMOS_SWAPLESS_ONLY_V1668='$(DAIMOS_SWAPLESS_ONLY_V1668)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' MONITORFS_MRES_ENABLED='$(MONITORFS_MRES_ENABLED)' VM_BACKEND='$(VM_BACKEND)'
+$(KINIT_STAMP): $(MACHINE_STAMP) $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(KINIT_TAPE_MODE_STAMP) $(KINIT_STACK_MODE_STAMP) $(KINIT_PURE_MODE_STAMP) $(BUILD)
+	$(MAKE) -C $(KERNEL_DIR) kinit COMPILER='$(COMPILER)' BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' KINIT_DRM_ENABLED='$(KINIT_DRM_ENABLED)' KINIT_TAPE_BOOT='$(KINIT_TAPE_BOOT)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' DAIMOS_SWAPLESS_ONLY_V1668='$(DAIMOS_SWAPLESS_ONLY_V1668)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' MONITORFS_MRES_ENABLED='$(MONITORFS_MRES_ENABLED)' VM_BACKEND='$(VM_BACKEND)' DAIMOS_MACHINE='$(DAIMOS_MACHINE)'
 	touch $@
 
-$(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(WALL_CLOCK_HZ_STAMP) $(KINIT_PURE_MODE_STAMP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' WALL_CLOCK_HZ='$(WALL_CLOCK_HZ)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' DAIMOS_PBM_V1667='$(DAIMOS_PBM_V1667)' VM_BACKEND='$(VM_BACKEND)'
+$(KCORE_STAMP): $(MACHINE_STAMP) $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(WALL_CLOCK_HZ_STAMP) $(KINIT_PURE_MODE_STAMP) $(BUILD)
+	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' WALL_CLOCK_HZ='$(WALL_CLOCK_HZ)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' DAIMOS_PBM_V1667='$(DAIMOS_PBM_V1667)' VM_BACKEND='$(VM_BACKEND)' DAIMOS_MACHINE='$(DAIMOS_MACHINE)'
 	touch $@
 
 $(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
@@ -926,7 +952,7 @@ $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM
 force-minit-config:
 
 $(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(BUILD)
-	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_DRM_ENABLED,$(KINIT_DRM_ENABLED)"; echo ".set KINIT_TAPE_BOOT,$(KINIT_TAPE_BOOT)"; echo ".set MONITORFS_MRES_ENABLED,$(MONITORFS_MRES_ENABLED)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; echo ".set BLOCKSET_FS_ENABLED,$(BLOCKSET_FS_ENABLED)"; echo ".set DAIMOS_SWAPLESS_ONLY_V1668,$(DAIMOS_SWAPLESS_ONLY_V1668)"; cat $<; } > $@
+	{ printf '%s\n' '$(DAIMOS_CPU_ASM_PREFIX)'; echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_DRM_ENABLED,$(KINIT_DRM_ENABLED)"; echo ".set KINIT_TAPE_BOOT,$(KINIT_TAPE_BOOT)"; echo ".set MONITORFS_MRES_ENABLED,$(MONITORFS_MRES_ENABLED)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; echo ".set BLOCKSET_FS_ENABLED,$(BLOCKSET_FS_ENABLED)"; echo ".set DAIMOS_SWAPLESS_ONLY_V1668,$(DAIMOS_SWAPLESS_ONLY_V1668)"; cat $<; } > $@
 
 $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
@@ -1371,9 +1397,13 @@ $(IMAGE_COMPRESSED_WORDS): $(IMAGE_WORDS) $(BUILD)/d6block-v1464
 $(STAGE1_DXR): $(STAGE1_SRC) $(STAGE1_COMMON) $(BUILD)
 	$(DAS) $(DASFLAGS) -K -O $@ $<
 
-$(STAGE1_TAPE): $(STAGE1_DXR)
+$(STAGE1_TAPE): $(STAGE1_DXR) $(MACHINE_STAMP) Makefile
+ifeq ($(DAIMOS_MACHINE),ka10)
+	$(DXRCONVERT) --ka10-readin -b 060 $< $@
+else
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
 	printf '\252' >> $@
+endif
 
 D6FS_ROOT_DEPS = $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) \
 	$(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(DSHCOMP_DXR) $(SYSTEM_LIBRARY_COMMAND_BLOCK_DXRS) \
@@ -1519,7 +1549,15 @@ $(TSFS_ROOT_IMAGE): $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH
 	    set -- "$$@" '$(TSFS_ROOT_PREFIX)'"$$i".dta; i=$$((i + 1)); done; \
 	    $(TSFSCHECK) "$$@"
 
-$(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGES) $(DRUM_IMAGES) \
+ifeq ($(DAIMOS_MACHINE),ka10)
+SIMH_TEMPLATE = simh/simh-ka10-v1964.ini.in
+SIMH_MEDIA_DEPS =
+else
+SIMH_TEMPLATE = simh/simh.ini.in
+SIMH_MEDIA_DEPS = $(DISK_IMAGES) $(DRUM_IMAGES)
+endif
+
+$(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(SIMH_MEDIA_DEPS) \
 	$(STAGE1_TAPE) $(ROOT_MEDIA_DEPS) | $(BUILD)
 	@set -eu; \
 	if [ '$(BOOT_PROFILE)' = lowmem ] && [ '$(STAGE1_DEVICE)' != dsk ] && [ '$(STAGE1_DEVICE)' != dtc ]; then \
@@ -1564,7 +1602,9 @@ $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGES) $(DRUM_IMAGES) \
 	  $(MKDTFS) -o '$(DTC3_IMAGE)'; \
 	fi; \
 	{ \
-	  if [ '$(STAGE1_DEVICE)' = ptr ]; then \
+	  if [ '$(DAIMOS_MACHINE)' = ka10 ]; then \
+	    echo 'boot ptr'; \
+	  elif [ '$(STAGE1_DEVICE)' = ptr ]; then \
 	    echo 'break 060'; \
 	    echo 'go 020'; \
 	    echo 'nobreak 060'; \
@@ -1579,7 +1619,7 @@ $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGES) $(DRUM_IMAGES) \
 	} > '$(BOOT_COMMANDS)'; \
 	touch '$@'
 
-$(SIMH_INI): simh/simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGES) $(DRUM_IMAGES) \
+$(SIMH_INI): $(SIMH_TEMPLATE) $(STAGE1_TAPE) $(SIMH_MEDIA_DEPS) \
 	$(BOOT_MEDIA_STAMP) force-simh-config
 	@case '$(SIMH_PCLK_MODE)' in \
 	  REALTIME|HISTORICAL) ;; \
@@ -1646,10 +1686,15 @@ permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
 	    $(if $(filter 0,$(BLOCKSET_FS_ENABLED)),--no-blockset) \
 	    $(if $(filter 0,$(KINIT_BADMAP)),--omit-badmap)
 
+ifeq ($(DAIMOS_MACHINE),ka10)
+boot: image
+	$(PDP10_PREFIX)/bin/pdp10-ka $(SIMH_INI)
+else
 boot:
 	rm -rf $(DISK_DIR) $(DRUM_DIR) $(SIMH_INI)
 	$(MAKE) image BOOT=dsk ROOT=disk SIMH_DPY_MODE=GUI DPY_LOGIN=0
 	$(SIMH_PDP6) $(SIMH_INI)
+endif
 
 clean:
 	rm -rf $(BUILD)

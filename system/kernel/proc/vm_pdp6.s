@@ -1002,7 +1002,14 @@ vm_enter_initial_user_start:
         /* PDP-6 private low core; KA10 uses 060 for an instruction trap.
          * KINIT clears this cell before any resident service runs. */
         .globl vm_pdp6_apr
+        .ifdef DAIMOS_KA10
+        .bss
+vm_pdp6_apr:
+        .block 1
+        .text
+        .else
         .equ vm_pdp6_apr,000060
+        .endif
 
 /**
  * @brief Enter a committed EXEC replacement image; does not return.

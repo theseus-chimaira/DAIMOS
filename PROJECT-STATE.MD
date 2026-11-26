@@ -1,3 +1,30 @@
+## 2026-11-26 v1964: native KA10 build and first INIT
+
+DAIMOS_MACHINE=ka10 builds a distinct 64K ONESEG LOWMEM hybrid TSFS
+image, counted PTR read-in and common Type136/551 Stage1. The build
+refuses mixed-machine directories and unqualified optional PURE modes.
+KA10 retains APR shadow/idle-stack base in BSS; installs native
+unassigned-instruction trap at 060/061 and handles APR address break.
+DCS/GE and Type236 are excluded from this initial MINIT configuration;
+Type270 remains available. No per-process state or runtime dispatch.
+Native KA10 cec5436 reaches INIT V1 with KA10 banner, 64K, CTY, APR
+clock, PCLK, DTC, DSK270 and DTFS; RL=170000 PL=007777, native 061
+and monitor 041 verified. User/executive instruction-trap probes pass
+with terminal cleanup stub. Native unmodified INIT/LOGIN/DSH DXRs and
+Stage1 DXR byte-identical across machines. PDP-6 KCORE, KINIT, maps,
+streams and paper tape byte-identical to v1963. PDP-6 10840 init/11109
+fixed KCORE words; KA10 10849 init/11120 fixed (9 code/data + 2 BSS).
+KA10 simulator rebuilt from cec5436 and installed in PDP10_PREFIX;
+previous installed binary fe979121 lacked recent Type270 corrections.
+Initial DSK enable collided with RH10 address 270; disabling RPA/RPB/
+RPC/RPD/TUA resolves hardware configuration, not driver workaround.
+Native CLEAR/reselect/DFR and source-linked Type270 queue/read/silent
+recovery all PASS using unchanged production driver. No direct DSK
+read-in (simulator stub); no KA10 disk-root/ordinary swap qualification.
+Testkit 2ed7881, docs fb23e97; evidence $TMPDIR/k17-ka10-v1964.PNHo2E.
+K17 remains OPEN: interactive CTY login/shell, RUN/EXEC/BRK/WAIT/EXIT,
+normal context switching and full protection/fault cleanup acceptance.
+
 ## 2026-11-26 v1963: common APR geometry and native KA10 Stage1
 
 First-user activation now constructs the canonical APR word from the

@@ -76,7 +76,10 @@ two distinct development states (now historical):
   versus v1959 including low core). v1963 first-user APR descriptor
   correction saves another three words (11109 fixed KCORE). The aligned
   common APR encoding passes native PDP-6 and KA10 ONESEG/TWOSEG probes;
-  KA10 counted read-in reaches KINIT, but KA10 KINIT is not yet implemented.
+  v1964 native KA10 build completes KINIT and reaches INIT. KA10 fixed
+  KCORE is 11120 words (10849 initialized), 11 above PDP-6 (9 trap
+  words and 2 BSS cells). No per-process cost. Native shell/process
+  lifecycle qualification remains open; PDP-6 images unchanged.
 
 - KCORE holds mandatory, immediately callable kernel/interrupt, process,
   syscall, VM/MM, device and VFS dispatch. Optional policy and provider

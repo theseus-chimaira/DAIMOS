@@ -1,7 +1,7 @@
 # Kernel build.  Keep this makefile within the common GNU/BSD make subset.
 PROJECT_ROOT != cd ../.. && pwd
 BUILD_ROOT ?= ${PROJECT_ROOT}/build
-BUILD ?= ${BUILD_ROOT}/system/kernel
+BUILD ?= ${BUILD_ROOT}/system/kernel$(if $(filter ka10,$(DAIMOS_MACHINE)),-ka10)
 PDP10_PREFIX ?= ${HOME}/cross
 HOST_TOOLS ?= ${PDP10_PREFIX}/bin
 PDP10_GCC ?= pdp10-dec-none-gcc
@@ -73,8 +73,23 @@ ${KINIT_PURE_MODE_STAMP}:
 	@touch $@
 VM_BACKEND ?= pdp6
 # Source selection is a compile/link-time choice, never runtime dispatch.
-# No KA10 or KI10 backend has been validated yet.
+# KA10 shares the aligned contiguous VM representation.
 include arch/pdp6_source_map_v1605.mk
+MACHINE_STAMP = ${BUILD}/.machine-${DAIMOS_MACHINE}
+ifneq ($(filter-out ${MACHINE_STAMP},$(wildcard ${BUILD}/.machine-*)),)
+$(error BUILD belongs to another machine; use a separate directory)
+endif
+ifeq ($(DAIMOS_MACHINE),ka10)
+ifeq ($(wildcard ${MACHINE_STAMP}),)
+ifneq ($(wildcard ${BUILD}/*.s),)
+$(error KA10 requires an empty or KA10-marked BUILD directory)
+endif
+endif
+endif
+${MACHINE_STAMP}:
+	@mkdir -p ${BUILD}
+	@touch $@
+
 VM_BACKEND_C = proc/vm_${VM_BACKEND}.c
 VM_BACKEND_H = proc/vm_${VM_BACKEND}.h
 VM_BACKEND_FIXED = proc/vm_${VM_BACKEND}.s
@@ -336,9 +351,9 @@ MRES_ASM = $(BUILD)/dtfs.s \
 
 .PHONY: kinit kcore clean
 
-kinit: ${KINIT_ASM}
+kinit: ${MACHINE_STAMP} ${KINIT_ASM}
 
-kcore: ${KCORE_FIXED_ASM} ${MRES_ASM} ${BUILD}/proc_swap_mres_v481.s
+kcore: ${MACHINE_STAMP} ${KCORE_FIXED_ASM} ${MRES_ASM} ${BUILD}/proc_swap_mres_v481.s
 kcore: ${BUILD}/backstore_entry_v484.s ${BUILD}/backstore_mres_v484.s
 ${BUILD}/backstore_entry_v484.s: storage/backstore_entry_v484.s
 	@mkdir -p ${BUILD}
@@ -355,7 +370,7 @@ ${BUILD}/backstore_mres_v484.s: storage/backstore.s Makefile
 
 ${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE} ${MONITORFS_MODE_STAMP} ${KINIT_TAPE_MODE_STAMP} ${KINIT_STACK_MODE_STAMP} ${KINIT_PURE_MODE_STAMP}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DKINIT_DRM_ENABLED=${KINIT_DRM_ENABLED} -DKINIT_TAPE_BOOT=${KINIT_TAPE_BOOT} -DMONITORFS_MRES_ENABLED=${MONITORFS_MRES_ENABLED} -DD6FS_FS_ENABLED=${D6FS_FS_ENABLED} -DDAIMOS_PURE_MRES_ENABLED=${DAIMOS_PURE_MRES_ENABLED} -DDAIMOS_SWAPLESS_ONLY_V1668=${DAIMOS_SWAPLESS_ONLY_V1668} -DBLOCKSET_FS_ENABLED=${BLOCKSET_FS_ENABLED} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} ${DAIMOS_CPU_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DKINIT_DRM_ENABLED=${KINIT_DRM_ENABLED} -DKINIT_TAPE_BOOT=${KINIT_TAPE_BOOT} -DMONITORFS_MRES_ENABLED=${MONITORFS_MRES_ENABLED} -DD6FS_FS_ENABLED=${D6FS_FS_ENABLED} -DDAIMOS_PURE_MRES_ENABLED=${DAIMOS_PURE_MRES_ENABLED} -DDAIMOS_SWAPLESS_ONLY_V1668=${DAIMOS_SWAPLESS_ONLY_V1668} -DBLOCKSET_FS_ENABLED=${BLOCKSET_FS_ENABLED} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/bootbanner_generated.s: ${VERSION_FILE} ${MKBOOTBANNER_DEP}
 	@mkdir -p ${BUILD}
@@ -477,9 +492,9 @@ ${BUILD}/proc_swap_entry_v481.s: proc/proc_swap_entry_v481.s
 	@mkdir -p ${BUILD}
 	cp $< $@
 
-${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}
+${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED} arch/pdp6_source_map_v1605.mk
 	@mkdir -p ${BUILD}
-	cp ${VM_BACKEND_FIXED} $@
+	{ printf '%s\n' '${DAIMOS_CPU_ASM_PREFIX}'; cat ${VM_BACKEND_FIXED}; } > $@
 
 ${BUILD}/dpy_text.s: drivers/dpy_text_control_pdp6.s drivers/dpy_text_blocks_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
@@ -508,13 +523,13 @@ ${BUILD}/tsfs.s: fs/tsfs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/tsfs.c -o $@
 
-${BUILD}/kinit_io_pdp6.s: ${DAIMOS_CPU_KINIT_IO_SOURCE} ${KINIT_STACK_MODE_STAMP}
+${BUILD}/kinit_io_pdp6.s: ${DAIMOS_CPU_KINIT_IO_SOURCE} ${KINIT_STACK_MODE_STAMP} arch/pdp6_source_map_v1605.mk
 	@mkdir -p ${BUILD}
-	{ echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; echo ".set KINIT_STACK_RESERVE_WORDS,${KINIT_STACK_RESERVE_WORDS}"; cat ${DAIMOS_CPU_KINIT_IO_SOURCE}; } > $@
+	{ printf '%s\n' '${DAIMOS_CPU_ASM_PREFIX}'; echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; echo ".set KINIT_STACK_RESERVE_WORDS,${KINIT_STACK_RESERVE_WORDS}"; cat ${DAIMOS_CPU_KINIT_IO_SOURCE}; } > $@
 
-${BUILD}/proc_pdp6.s: ${DAIMOS_CPU_PROCESS_SOURCE}
+${BUILD}/proc_pdp6.s: ${DAIMOS_CPU_PROCESS_SOURCE} arch/pdp6_source_map_v1605.mk
 	@mkdir -p ${BUILD}
-	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; cat ${DAIMOS_CPU_PROCESS_SOURCE}; } > $@
+	{ printf '%s\n' '${DAIMOS_CPU_ASM_PREFIX}'; echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; cat ${DAIMOS_CPU_PROCESS_SOURCE}; } > $@
 
 ${BUILD}/proc_run.s: proc/proc_run.s
 	@mkdir -p ${BUILD}
@@ -620,9 +635,9 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/kinit_late_begin_pdp6.s \
 	$(BUILD)/kinit_late_end.s
 
-${COPY_ASM_TARGETS}: ${COPY_ASM_SRCS}
+${COPY_ASM_TARGETS}: ${COPY_ASM_SRCS} arch/pdp6_source_map_v1605.mk
 	@mkdir -p ${BUILD}
-	@base=`basename "$@"`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; if test "$$base" = monitorfs_runtime.s && test "${MONITORFS_MRES_ENABLED}" = 1; then src=fs/monitorfs_dispatch_v14.s; fi; cp "$$src" "$@"
+	@base=`basename "$@"`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; if test "$$base" = monitorfs_runtime.s && test "${MONITORFS_MRES_ENABLED}" = 1; then src=fs/monitorfs_dispatch_v14.s; fi; case "$$base" in mach_user_pdp6.s|clk_io.s) { printf '%s\n' '${DAIMOS_CPU_ASM_PREFIX}'; cat "$$src"; } > "$@" ;; *) cp "$$src" "$@" ;; esac
 
 ${BUILD}/monitorfs_runtime.s: ${MONITORFS_MODE_STAMP} fs/monitorfs_dispatch_v14.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

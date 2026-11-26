@@ -32,9 +32,14 @@
         .globl proc_fatal_close_current_v879
 
         .equ APR_ST_CLOCK,0001000
+        .ifdef DAIMOS_KA10
+        .equ APR_ST_FAULTS,0270000
+        .equ APR_CO_CLEAR_FAULTS,0470000
+        .else
         .equ APR_ST_FAULTS,0230000
-        .equ APR_CO_RUNTIME,002006
         .equ APR_CO_CLEAR_FAULTS,0430000
+        .endif
+        .equ APR_CO_RUNTIME,002006
         .equ SYS_WAIT_EVENT_TERM,0400001
 
 /**
