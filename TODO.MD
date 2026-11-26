@@ -193,13 +193,15 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   RUN/EXEC/detach/boot transfer; no existing FORK. +29 KCORE words,
   zero BSS/slot growth. No mode3 activation. Future FORK inherits only
   eligibility. See PROJECT-STATE.MD and design/kcore-k10-v1976.md.
-- [ ] **Source-linked bounded overlap codec:** complete read-only
+- [x] **Source-linked bounded overlap codec:** complete read-only
   preflight, 35/36/37-word and sparse/dense tests, exact encoded size,
   RAW fallback, partial overlap and forward/backward encoding/decoding.
   Reject nonshrinking outputs. Do not rely on a disjoint codec test as
   proof of in-place safety.
-  v1975 forward-only bounded preflight component PASS; reverse
-  traversal and ownership/restore integration remain open.
+  v1977 bounded directory codec leaf accepted (2760 cases each native
+  PDP6/KA10, four executed unsafe mutants, hard write-fault injection).
+  395 staged TEXT words, zero DATA/BSS; no installed mode3 change.
+  Ownership/restore integration remains K12-K16, not claimed here.
 - [ ] **Temporary memory ownership:** reuse the still-owned prefix only
   where its full lifetime is proved; evaluate a VFS workspace solely
   with an explicit exclusive lease and callback/BCACHE safety.

@@ -1,3 +1,33 @@
+## 2026-11-26 v1977: K11 bounded bidirectional directory codec CLOSED (leaf)
+
+Staged mask-directory bitmap [ceil(RAW/36) masks][ordered nonzero
+literals], same exact size as v1451, different stream layout. Both
+forward/reverse encode and decode use identical native walk schedule
+for read-only preflight and write. All normal refusals leave both
+spans/count intact; unexpected write-pass error is hard -6, never
+RAW fallback or success. No extra format word, array, BSS or per-slot
+word. 262 TEXT frontend +133 TEXT PDP6-compatible ASM =395 words;
+initial C candidate625, shared C521, signed518, ASM389 before hard
+error propagation. Staged, not linked to KCORE/MRES, no RAM payback.
+Native PDP6 and KA10 each 2760 exact independent ledger/arena cases:
+1202 successful,862 overlap refusals,696 no-gain. 50 encode and99
+decode geometries reverse-only;288 both-direction refusals. Exact
+end-aligned and synthetic5248-word large in-place/disjoint cases PASS.
+Four executed unsafe mutants and injected late write error PASS;
+original v1975 forward matrix and its two mutants PASS.
+Integrated host/native DLINK missing prior standalone 48fc3df negative
+RH18 effective-address wrap rule; restored bounded local/symbol wrap,
+positive/LH18 guards unchanged. Host native loads and guards PASS;
+actual DAIMOS native linker+archive+marked output executes RH18 WRAP OK.
+Installed updated host dlink via local.tar.gz. Testkit fcd228f.
+Evidence $TMPDIR/daimos-bitmap-directory-v1977.bcA6nu,
+daimos-bitmap-overlap-v1975.rIUsCn, dlink-rh18-test-v1977.R7Kf4y,
+daimos-native-tools-v1-24018, dlink-rh18-v1977.nLmQxv.
+See design/kcore-k11-v1977.md. K12-K16 still OPEN: select exclusive
+scratch/target ownership, change staged old producer/verifier/restore
+together, prove source survival and commit/recovery. No mode3 publication;
+RAW PURE/mode3 default OFF. K10 +29 KCORE remains unchanged.
+
 ## 2026-11-26 v1976: K10 executable admission CLOSED (current RUN/EXEC ABI)
 
 DXR2 TX2 LH0400000 is COMPRESSIBLE_MUTABLE; LH0377777 text count.

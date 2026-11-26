@@ -1690,13 +1690,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   acceptance and exact marker lifetime PASS; future FORK inherits
   eligibility only. +29 fixed KCORE words, 0 extra process words.
   Mode3 disabled; no compression RAM payoff claimed.
-- [ ] **K11 - Bounded compression.** Complete source-linked, bounded
+- [x] **K11 - Bounded compression.** Complete source-linked, bounded
   overlapping encoding and decoding with read-only preflight, exact
   encoded size, RAW fallback and nonshrinking-output rejection.
   Cover 35/36/37-word boundaries and sparse/dense data.
-  v1975: native bounded forward overlap and exact-size preflight PASS
-  (612 matrix cases, both hazard mutants). Reverse traversal and
-  ownership-linked integration remain OPEN; no installed mode3 code.
+  v1977 CLOSED at codec-leaf level: fixed mask directory, identical
+  shrinking size, bounded forward/reverse read-only preflight, 2760
+  native cases each PDP6/KA10, four unsafe mutants and hard write-error
+  propagation PASS. 395 staged TEXT, zero DATA/BSS. K12-K16 must
+  integrate ownership and replace old interleaved producer/verifier/
+  decoder together. No installed mode3 code.
 - [ ] **K12 - Temporary memory ownership.** Prove scratch lifetime and
   exclusive ownership, preferentially using the still-owned prefix.
   Otherwise use bounded pinned no-reclaim MM scratch. Never borrow

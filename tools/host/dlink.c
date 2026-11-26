@@ -989,7 +989,14 @@ static int apply_relocs(struct linker *l, struct dobj_word *image,
                 fprintf(stderr, "dlink: unsupported relocation type\n");
                 return -1;
             }
-            if ((long)target + add < 0L || (unsigned long)((long)target + add) > HALF_MASK) {
+            /* Negative RH18 effective-address displacements wrap modulo
+             * 2^18. Restore the previously validated standalone DLINK
+             * rule (48fc3df); retain strict positive and LH18 bounds. */
+            if (((long)target + add < 0L &&
+                 !((r->type == DOBJ_RELOC_SYMBOL_RH18 ||
+                    r->type == DOBJ_RELOC_LOCAL_RH18) && add < 0L &&
+                   (long)target + add >= -(long)HALF_MASK)) ||
+                (long)target + add > (long)HALF_MASK) {
                 fprintf(stderr, "dlink: RH18 relocation overflow\n");
                 return -1;
             }

@@ -20,8 +20,9 @@ KA10 boot and PDP-6-equivalent operation are mandatory for 0.9; full
 KA10 support is post-0.9 (v1960 scope decision, see kcore-todo.md).
 K17 scoped native KA10 functional gate closed in v1974. K10 current
 RUN/EXEC executable admission closed v1976; +29 KCORE words, zero BSS
-or per-process growth, mode3 not enabled. K11 forward codec v1975
-validated but not installed; reverse and K12-K16 remain open.
+or per-process growth, mode3 not enabled. K11 bounded bidirectional mask-directory codec leaf closed v1977:
+395 staged instruction words, zero DATA/BSS; native PDP6/KA10 and
+negative controls PASS. No installed link change. K12-K16 remain open.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

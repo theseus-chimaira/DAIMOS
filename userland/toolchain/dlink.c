@@ -621,7 +621,13 @@ apply_reloc(unsigned int oi, const struct nd_reloc *r, kword_t global_off,
         } else {
                 return -1;
         }
-        if ((int)target + add < 0 || (kword_t)((int)target + add) > NL_HALF_MASK)
+        /* Match host DLINK: only representable negative RH18 effective
+         * address displacements may wrap. nd_halves masks the result. */
+        if (((int)target + add < 0 &&
+            !((r->type == ND_RELOC_LOCAL_RH18 ||
+               r->type == ND_RELOC_SYMBOL_RH18) && add < 0 &&
+              (int)target + add >= -(int)NL_HALF_MASK)) ||
+            (int)target + add > (int)NL_HALF_MASK)
                 return -1;
         if (r->type == ND_RELOC_LOCAL_LH18 ||
             r->type == ND_RELOC_SYMBOL_LH18) {
