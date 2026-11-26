@@ -1,3 +1,36 @@
+## 2026-11-26 v1982: K15 exact terminal ownership and staged VM destroy
+
+Directory terminal uses existing BRK word0407 as exact encoded,,base
+span escrow ONLY after nonreturning terminal exclusion. Word067 LH
+uses terminal tag plus both kind bits and source sector; RH remains
+exit status. Existing PREVM rearm preserves LH identity and BRK.
+Both executable backing identities remain unchanged until common
+proc_swap_detach commits. Exact u-area/slot, noncurrent TRANSITION,
+mode3, marked backing, absent APR, no user map/live FILE, valid MM
+table and sole owner required. Discovery includes pinned owners,
+records original span before free; retry never adopts changed length
+or base. No decode, backing I/O, allocation or speculative unpin.
+Free reply reconciled via exact original interval absence and no
+other process owner; retain escrow/mode/backing on uncertainty.
+RAW terminal delegates unchanged v1609. Staged VM assembly symbol
+DAIMOS_PBM_VM_TERM_V1982 delegates nonresident zero-base teardown to
+selected terminal gateway; old/default explicit mode3 refusal stays.
+PDP6/KA10 each65 direct detach +65 staged VM operations, actual PREVM
+marker/rearm instructions and common detach/MM, six unsafe mutants
+rejected through staged VM. K14/K15 service regression and RAW v1920
+27 cases +5 mutants PASS. Testkit6d684e2. Evidence relative TMPDIR:
+pure-bitmap-terminal-v1982.grVrtN, pure-bitmap-service-v1981.uqclD7,
+pure-bitmap-full-v1980.VohPuz, pure-terminal-v1920.jLkPWX,
+k15-term-v1982.KrwgYl. FULL object1904->2240 (+336), VM gate73->65
+(-8 staged only), combined incremental MRES TEXT2516; hypothetical
+net TEXT2508 with staged VM gate. Zero DATA/BSS or per-slot growth.
+Disabled RAW FULL and default VM gate DOBJ byte-identical.
+K15 remains OPEN: complete actual scheduler/PI6, RUN/EXEC/EXIT/WAIT
+and finalizer stack exclusion, source-built package integration.
+No installed flag sets directory terminal or VM gate. K16 deferred
+uncertain recovery, latency/stack, physical acceptance, net RAM open.
+See design/kcore-k15-terminal-v1982.md.
+
 ## 2026-11-26 v1981: K15 slot-zero directory service (staged subgate)
 
 K14 DAIMOS dd65001b, testkit333f07f, documentation ce094a1 pushed.

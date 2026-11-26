@@ -1735,9 +1735,13 @@ history is now reachable from main (v1809); mode3 remains disabled.
   v1981 staged slot-zero service selection and clean retry subgate
   accepted: native PDP6/KA10 each46 calls, five unsafe controls and
   K14 regression PASS. +173 staged TEXT (combined2180), zero DATA/BSS.
-  Terminal exact-span retry identity and actual scheduler/PI6,
-  RUN/EXEC/EXIT/WAIT/VM destroy still open. Word067 RH is PREVM status,
-  not free space for a persistent encoded count.
+  v1982 terminal exact-span PREVM identity and staged VM destroy
+  accepted: existing dying BRK word0407 retains encoded,,base;
+  word067 RH remains EXIT status. Native each65 direct +65 staged VM
+  operations/CPU, six unsafe controls and RAW/K14/service regressions
+  PASS. +336 MRES TEXT, staged VM -8, default OFF byte-identical.
+  Actual scheduler/PI6, RUN/EXEC/EXIT/WAIT, complete finalizer and
+  source-built package integration remain open; no installed enable.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,
   restore cancellation and terminal failure without leaks, double

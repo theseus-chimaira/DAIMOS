@@ -14,4 +14,7 @@ int proc_pure_bitmap_restore_v1980(unsigned int slot,
 /* Release only a clean inactive mode3 transition on slot zero. No
  * backing I/O, pin retirement or deferred transaction recovery. */
 int proc_pure_bitmap_unlock_v1981(unsigned int slot);
+/* Terminal-only export. Caller excludes returning executive stack;
+ * success retires bitmap mode but not common backing/u-area metadata. */
+int proc_pure_term_v1982(int slot, struct proc *p, kword_t backing);
 #endif

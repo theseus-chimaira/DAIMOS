@@ -534,6 +534,11 @@ vm_space_destroy:
         movei   2,0                    ; RESIDENT
         pushj   17,proc_storage_expect_v30
         jumpe   1,vm_space_destroy_mode_ok
+        ; v1982 staged directory terminal export validates the exact
+        ; nonresident mode and physical owner before common detach.
+        ; Only a zero APR base may reach it. Default builds retain
+        ; the original explicit mode3 refusal until K15/K16 acceptance.
+        .ifndef DAIMOS_PBM_VM_TERM_V1982
         move    1,(17)
         movei   2,1                    ; DISK
         pushj   17,proc_storage_expect_v30
@@ -542,6 +547,7 @@ vm_space_destroy:
         movei   2,2                    ; PACKED raw suffix
         pushj   17,proc_storage_expect_v30
         jumpn   1,vm_space_destroy_fail
+        .endif
 vm_space_destroy_check_absent_v1609:
         move    2,-1(17)              ; DISK cannot have a resident VM base
         hrrz    3,1(2)

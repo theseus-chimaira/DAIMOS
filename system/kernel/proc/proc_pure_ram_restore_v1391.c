@@ -428,13 +428,14 @@ struct pbr_identity_v1980 {
  * words. The original bitmap owner is immovable, but a stale u-area
  * pointer must not authorize a physical write or release. */
 static struct proc *
-pbr_process_v1980(unsigned int slot)
+pbr_process_v1980(unsigned int slot, unsigned int terminal)
 {
         struct proc *p;
         kword_t area;
         int i;
 
-        if (!slot || proc_current_slot || !proc_table || !proc_swap_records ||
+        if (!slot || (terminal ? proc_current_slot == slot : proc_current_slot != 0UL) ||
+            !proc_table || !proc_swap_records ||
             !proc_storage_runtime_v29.words || slot >= proc_slots ||
             slot >= proc_high_slot || slot >= proc_storage_runtime_v29.slots)
                 return 0;
@@ -462,7 +463,7 @@ pbr_process_v1980(unsigned int slot)
 static int
 pbr_identity_ok_v1980(unsigned int slot, const struct pbr_identity_v1980 *id)
 {
-        struct proc *p = pbr_process_v1980(slot);
+        struct proc *p = pbr_process_v1980(slot, 0U);
         kword_t *u;
         if (!p || PROC_UAREA_BASE(p) != id->uarea ||
             VM_SPACE_WORDS(p) != id->words ||
@@ -510,7 +511,7 @@ int
 proc_pure_bitmap_unlock_v1981(unsigned int slot)
 {
         kword_t saved = mach_pi_disable(), source, encoded, skip, backing, words;
-        struct proc *p = pbr_process_v1980(slot);
+        struct proc *p = pbr_process_v1980(slot, 0U);
         kword_t *u, mode;
         int rc = MM_ERR_BUSY;
         if (!p)
@@ -548,7 +549,7 @@ proc_pure_bitmap_restore_v1980(unsigned int slot,
 
         saved = mach_pi_disable();
         rc = MM_ERR_INVAL;
-        if (!loader || !(p = pbr_process_v1980(slot)))
+        if (!loader || !(p = pbr_process_v1980(slot, 0U)))
                 goto out;
         if (pram_prepare(slot, PURE_LIFE_RESTORE_V1610, &p,
             &id.backing, &id.words, &skip) != MM_OK ||
@@ -677,4 +678,123 @@ out:
         mach_pi_restore(saved);
         return rc;
 }
+#ifdef DAIMOS_PBM_TERM_V1982
+/* Terminal only: word 0407 is no longer a user heap bound once a
+ * nonreturning finalizer owns TRANSITION. Retain the exact MM span
+ * there across PREVM retry; word 067 RH remains the exit status.
+ * Do not change either immutable backing identity before release. */
+#define PBT_SPAN_TAG_V1982 (PROC_PURE_TERM_TAG_V1920 | PROC_PURE_KIND_MASK_V1919)
+#define PBT_LIFE_V1982 (PROC_FINALIZE_MARK | PROC_FINALIZE_PREVM | PROC_FINISH_RETRY_ARMED_V1763)
+
+extern int pdp6_pure_detach_v1609(int, struct proc *, kword_t);
+
+static int
+pbt_geometry_v1982(kword_t base, kword_t encoded, kword_t words, kword_t skip)
+{
+        kword_t raw = words - skip;
+        return base && !(base & (VM_PDP6_ALIGN_WORDS - 1UL)) &&
+            encoded <= skip && encoded < raw && encoded >= (raw + 35UL) / 36UL;
+}
+
+/* Called exclusively by the terminal MRES gateway after the caller
+ * has excluded a returning executive stack and owns TRANSITION.
+ * No backing I/O, decoding, allocation or speculative pin retirement. */
+static int
+pbt_detach_v1982(unsigned int slot, struct proc *p, kword_t backing)
+{
+        kword_t saved = mach_pi_disable(), words, skip, base, encoded, tag;
+        kword_t *u, *modep, mask, shift;
+        int i, owners, rc = MM_ERR_BUSY;
+
+        if (!p || pbr_process_v1980(slot, 1U) != p || !backing ||
+            proc_swap_records[slot].state != backing)
+                goto out;
+        u = PRAM_PTR(PROC_UAREA_BASE(p));
+        words = VM_SPACE_WORDS(p);
+        if ((words & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            u[PROC_SWAP_BACKING_OFFSET] != backing ||
+            !(u[PROC_CRED_OFFSET] & PROC_SWAP_MUTABLE_V1976) ||
+            (u[PROC_FDCTL_OFFSET] & PROC_USER_MAP_BIT) ||
+            pdp6_pure_skip_v1604(backing, words, &skip) != MM_OK)
+                goto out;
+        shift = (slot % PROC_STMAP_SLOTS_WORD_V28) * 2U;
+        mask = 3UL << shift;
+        modep = &proc_storage_runtime_v29.words[slot / PROC_STMAP_SLOTS_WORD_V28];
+        if (((*modep & mask) >> shift) != PROC_STORAGE_BITMAP_V1661)
+                goto out;
+        /* The caller normally already checked all FILE entries. Refuse
+         * direct terminal use while a descriptor still owns a FILE. */
+        for (i = 0; i < 020; ++i)
+                if (u[PROC_FILE_TABLE_OFFSET + 2U * i])
+                        goto out;
+        tag = u[PROC_FINALIZE_OFFSET];
+        if ((tag & PROC_FINALIZE_MARK) ? !(tag & PROC_FINALIZE_PREVM) :
+            (tag & (PBT_LIFE_V1982 | MM_HALF_MASK)) != 0UL)
+                goto out;
+        if (tag & PBT_SPAN_TAG_V1982) {
+                /* Combined kind + terminal tag distinguishes this
+                 * exact-span escrow from dirty DROP/FULL and RAW. */
+                if ((tag & PBT_SPAN_TAG_V1982) != PBT_SPAN_TAG_V1982)
+                        goto out;
+                base = u[PROC_BRK_OFFSET] & MM_HALF_MASK;
+                encoded = u[PROC_BRK_OFFSET] >> 18U;
+                if (!pbt_geometry_v1982(base, encoded, words, skip) ||
+                    (tag & ~(PBT_LIFE_V1982 | MM_HALF_MASK)) !=
+                        (PBT_SPAN_TAG_V1982 | PROC_PURE_TERM_ESCROW_V1920(base)))
+                        goto out;
+        } else {
+                if (tag & ~(PBT_LIFE_V1982 | MM_HALF_MASK))
+                        goto out;
+                /* Discover once, including pinned owners: a refused
+                 * free must not adopt a replacement on a later retry. */
+                for (i = 0; i < mm_extent_count; ++i) {
+                        const struct mm_extent *e = &mm_extents[i];
+                        if (MM_EXTENT_OWNER(e) == slot && MM_EXTENT_TYPE(e) == MM_TYPE_PACKED_PROCESS)
+                                break;
+                }
+                if (i == mm_extent_count)
+                        goto out;
+                base = MM_EXTENT_BASE(&mm_extents[i]);
+                encoded = MM_EXTENT_WORDS(&mm_extents[i]);
+                if (!pbt_geometry_v1982(base, encoded, words, skip) ||
+                    !proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS, base,
+                        encoded, MM_EXTENT_PINS(&mm_extents[i])))
+                        goto out;
+                u[PROC_BRK_OFFSET] = (encoded << 18U) | base;
+                tag |= PBT_SPAN_TAG_V1982 | PROC_PURE_TERM_ESCROW_V1920(base);
+                u[PROC_FINALIZE_OFFSET] = tag;
+        }
+        owners = proc_pure_full_owners_v1917(slot, base, encoded, 0UL, words, 0U, 0U);
+        if (owners == 1) {
+                (void)mm_free(base, MM_TYPE_PACKED_PROCESS, slot);
+                owners = proc_pure_full_owners_v1917(slot, base, encoded, 0UL, words, 0U, 0U);
+        }
+        if (owners != 0)
+                goto out;
+        /* Exact original interval absent, no other user owner. PI
+         * excluded from discovery through free, witness and publish. */
+        *modep &= ~mask;
+        u[PROC_FINALIZE_OFFSET] = tag & (PBT_LIFE_V1982 | MM_HALF_MASK);
+        u[PROC_BRK_OFFSET] = 0UL;
+        rc = MM_OK;
+out:
+        mach_pi_restore(saved);
+        return rc;
+}
+
+/* New directory terminal export; mode2 uses the unchanged RAW leaf.
+ * No installed build selects this export until K15/K16 are complete. */
+int
+proc_pure_term_v1982(int slot, struct proc *p, kword_t backing)
+{
+        if (slot <= 0 || !proc_table || !proc_swap_records ||
+            (unsigned int)slot >= proc_slots || (unsigned int)slot >= proc_high_slot ||
+            p != &proc_table[slot] || proc_swap_records[slot].state != backing)
+                return MM_ERR_INVAL;
+        if (proc_storage_expect_v30((unsigned int)slot, PROC_STORAGE_PACKED) == 0)
+                return pdp6_pure_detach_v1609(slot, p, backing);
+        return pbt_detach_v1982((unsigned int)slot, p, backing);
+}
+#endif
+
 #endif
