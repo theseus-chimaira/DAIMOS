@@ -478,6 +478,63 @@ pbr_identity_ok_v1980(unsigned int slot, const struct pbr_identity_v1980 *id)
             !(u[PROC_FDCTL_OFFSET] & (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT));
 }
 
+/* PI excluded. Discover only an inactive, exact unpinned owner.
+ * Restore and clean retry share the K13 geometry contract. */
+static int
+pbr_source_v1981(unsigned int slot, kword_t words, kword_t skip,
+    kword_t *sourcep, kword_t *encodedp)
+{
+        kword_t source, encoded, raw = words - skip;
+        int i;
+        for (i = 0; i < mm_extent_count; ++i) {
+                const struct mm_extent *e = &mm_extents[i];
+                if (MM_EXTENT_OWNER(e) != slot || MM_EXTENT_TYPE(e) != MM_TYPE_PACKED_PROCESS)
+                        continue;
+                source = MM_EXTENT_BASE(e);
+                encoded = MM_EXTENT_WORDS(e);
+                if (!source || (source & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+                    encoded > skip || encoded >= raw || encoded < (raw + 35UL) / 36UL ||
+                    proc_pure_full_owners_v1917(slot, source, encoded, 0UL, words, 0U, 0U) != 1)
+                        return 0;
+                *sourcep = source;
+                *encodedp = encoded;
+                return 1;
+        }
+        return 0;
+}
+
+/* A clean retry is still inactive, never a dispatch. Backing may be
+ * unavailable. Do not clear any escrow (including old RAW/terminal
+ * markers), adopt a provisional target or consume a deferred pin. */
+int
+proc_pure_bitmap_unlock_v1981(unsigned int slot)
+{
+        kword_t saved = mach_pi_disable(), source, encoded, skip, backing, words;
+        struct proc *p = pbr_process_v1980(slot);
+        kword_t *u, mode;
+        int rc = MM_ERR_BUSY;
+        if (!p)
+                goto out;
+        u = PRAM_PTR(PROC_UAREA_BASE(p));
+        backing = proc_swap_records[slot].state;
+        words = VM_SPACE_WORDS(p);
+        mode = proc_storage_runtime_v29.words[slot / PROC_STMAP_SLOTS_WORD_V28];
+        mode = (mode >> ((slot % PROC_STMAP_SLOTS_WORD_V28) * 2U)) & 3UL;
+        if (mode != PROC_STORAGE_BITMAP_V1661 || !backing ||
+            (words & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            u[PROC_SWAP_BACKING_OFFSET] != backing || u[PROC_FINALIZE_OFFSET] ||
+            !(u[PROC_CRED_OFFSET] & PROC_SWAP_MUTABLE_V1976) ||
+            (u[PROC_FDCTL_OFFSET] & (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT)) ||
+            pdp6_pure_skip_v1604(backing, words, &skip) != MM_OK ||
+            !pbr_source_v1981(slot, words, skip, &source, &encoded))
+                goto out;
+        PROC_CLEAR_TRANSITION(p);
+        rc = MM_OK;
+out:
+        mach_pi_restore(saved);
+        return rc;
+}
+
 int
 proc_pure_bitmap_restore_v1980(unsigned int slot,
     proc_pure_ram_loader_v1391 loader)
@@ -487,7 +544,7 @@ proc_pure_bitmap_restore_v1980(unsigned int slot,
         kword_t skip, raw, source = 0UL, encoded = 0UL, target = 0UL;
         kword_t saved, *u, mask;
         unsigned int target_pins = 0U;
-        int i, rc, owners;
+        int rc, owners;
 
         saved = mach_pi_disable();
         rc = MM_ERR_INVAL;
@@ -506,20 +563,7 @@ proc_pure_bitmap_restore_v1980(unsigned int slot,
         if (!(id.cred & PROC_SWAP_MUTABLE_V1976) || !pbr_identity_ok_v1980(slot, &id))
                 goto out;
         raw = id.words - skip;
-        /* K13 preserves original APR base and fits wholly in PURE skip.
-         * Discover the length only before the transaction; then use
-         * the shared exact owner proof for all subsequent mutations. */
-        for (i = 0; i < mm_extent_count; ++i) {
-                const struct mm_extent *e = &mm_extents[i];
-                if (MM_EXTENT_OWNER(e) == slot && MM_EXTENT_TYPE(e) == MM_TYPE_PACKED_PROCESS) {
-                        source = MM_EXTENT_BASE(e);
-                        encoded = MM_EXTENT_WORDS(e);
-                        break;
-                }
-        }
-        if (!source || (source & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
-            encoded > skip || encoded >= raw || encoded < (raw + 35UL) / 36UL ||
-            proc_pure_full_owners_v1917(slot, source, encoded, 0UL, id.words, 0U, 0U) != 1)
+        if (!pbr_source_v1981(slot, id.words, skip, &source, &encoded))
                 goto out;
         /* Combined old kind bits deliberately refuse old RAW recovery.
          * RH holds the original target address here (not DROP count).

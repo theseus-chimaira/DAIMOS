@@ -1732,6 +1732,12 @@ history is now reachable from main (v1809); mode3 remains disabled.
   SLEEP, wake, WAIT, EXIT, PI6 retry, terminal detach and VM destroy
   for mode3, with exact finalizer/owner accounting. Keep the existing
   mode3 destroy refusal until the lifecycle is demonstrably safe.
+  v1981 staged slot-zero service selection and clean retry subgate
+  accepted: native PDP6/KA10 each46 calls, five unsafe controls and
+  K14 regression PASS. +173 staged TEXT (combined2180), zero DATA/BSS.
+  Terminal exact-span retry identity and actual scheduler/PI6,
+  RUN/EXEC/EXIT/WAIT/VM destroy still open. Word067 RH is PREVM status,
+  not free space for a persistent encoded count.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,
   restore cancellation and terminal failure without leaks, double

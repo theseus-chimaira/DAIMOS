@@ -34,7 +34,10 @@ K14 staged bounded directory FULL restore closed v1980: shared bounded
 DXR loader and MM owner proof, disjoint pinned APR, PI-enabled decode
 and compare, atomic finish; native PDP6/KA10 each52 calls and six
 unsafe controls PASS. Incremental K14 TEXT872, cumulative staged2007,
-zero DATA/BSS. K15-K16 remain open, including live dispatch, terminal,
+zero DATA/BSS. K15 staged slot-zero service v1981 selects directory
+restore and checks clean retry under PI; +173 staged TEXT, native
+PDP6/KA10 each46 calls and five unsafe controls PASS. K15-K16 remain
+open for actual scheduler/PI6, terminal, VM destroy, EXIT/WAIT,
 uncertain recovery, latency, stack high-water and net RAM.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main

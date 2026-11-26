@@ -46,6 +46,15 @@
 #endif
 #endif
 
+#ifdef DAIMOS_PBM_RESTORE_V1980
+#include "proc_pure_bitmap_restore_v1980.h"
+#include "proc_pure_bitmap_terminal_v1661.h"
+#if DAIMOS_PBM_V1667 == 1
+#error directory_restore_incompatible_with_v1667
+#endif
+#define PPURE_BITMAP_SERVICE_V1981 1
+#endif
+
 #define PPURE_READY_ONCE_V1612 01000UL
 #define PPURE_COOLDOWN_V1612 0100UL
 #define PPURE_RECOVER_REQUEST_V1902 0400000UL
@@ -62,7 +71,7 @@ extern int exec_image_prefix_backing_v1386(kword_t, kword_t,
 extern int exec_image_full_bounded_v1391(kword_t, kword_t,
     kword_t, kword_t);
 
-#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+#if (defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1) || defined(PPURE_BITMAP_SERVICE_V1981)
 /* Fixed proc_storage_expect_v30 intentionally cannot read mode3.
  * Check the unchanged two-bit map only in this opt-in PURE module.
  */
@@ -411,7 +420,7 @@ proc_pure_mres_service_v1612(kword_t command_v1902)
         struct proc *p;
         kword_t request = proc_sched_cursor;
         int rc;
-#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+#if (defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1) || defined(PPURE_BITMAP_SERVICE_V1981)
         int bitmap;
 #endif
 
@@ -433,22 +442,27 @@ proc_pure_mres_service_v1612(kword_t command_v1902)
         if (PROC_STATE(p) != PROC_SRUN || PROC_TRANSITION(p) ||
             VM_PDP6_BASE(p) ||
             !proc_swap_records[slot].state
-#if !defined(DAIMOS_PBM_V1667) || DAIMOS_PBM_V1667 != 1
+#if (!defined(DAIMOS_PBM_V1667) || DAIMOS_PBM_V1667 != 1) && !defined(PPURE_BITMAP_SERVICE_V1981)
             || proc_storage_expect_v30(slot, PROC_STORAGE_PACKED) != 0
 #endif
             )
                 return 0;
-#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+#if (defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1) || defined(PPURE_BITMAP_SERVICE_V1981)
         bitmap = ppure_mode3_v1667(slot);
         if (!bitmap && proc_storage_expect_v30(slot,
             PROC_STORAGE_PACKED) != 0)
                 return 0;
 #endif
         PROC_SET_TRANSITION(p);
-#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+#if (defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1) || defined(PPURE_BITMAP_SERVICE_V1981)
         if (bitmap) {
+#ifdef PPURE_BITMAP_SERVICE_V1981
+                rc = proc_pure_bitmap_restore_v1980(slot,
+                    exec_image_full_bounded_v1391);
+#else
                 rc = proc_pure_bitmap_restore_v1664(slot,
                     exec_image_full_bounded_v1391);
+#endif
         } else {
 #endif
         rc = proc_pure_restore_v1384(slot,
@@ -456,7 +470,7 @@ proc_pure_mres_service_v1612(kword_t command_v1902)
         if (rc == PROC_PURE_PREFIX_FALLBACK_V1384)
                 rc = proc_pure_ram_restore_v1391(slot,
                     exec_image_full_bounded_v1391);
-#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+#if (defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1) || defined(PPURE_BITMAP_SERVICE_V1981)
         }
 #endif
         /* Both restore transactions publish the runnable APR/mode and
@@ -476,10 +490,18 @@ proc_pure_mres_service_v1612(kword_t command_v1902)
          * remains an exact unpinned PACKED owner. Other failures retain
          * TRANSITION and must be handled by the existing terminal reaper;
          * never unlock an unknown MM owner or attempt a disk exchange. */
-#if defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1
+#if (defined(DAIMOS_PBM_V1667) && DAIMOS_PBM_V1667 == 1) || defined(PPURE_BITMAP_SERVICE_V1981)
         if (bitmap) {
+#ifdef PPURE_BITMAP_SERVICE_V1981
+                (void)proc_pure_bitmap_unlock_v1981(slot);
+                /* A dirty directory transaction is not an old RAW
+                 * recovery request. K16 owns its deferred recovery. */
+                proc_swap_pressure_ticks = PPURE_COOLDOWN_V1612;
+                return 0;
+#else
                 if (proc_pure_bitmap_retry_v1667(slot) == MM_OK)
                         PROC_CLEAR_TRANSITION(p);
+#endif
         } else
 #endif
                 (void)ppure_unlock_v1917(slot, p, PROC_STORAGE_PACKED);

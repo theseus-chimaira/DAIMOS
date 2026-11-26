@@ -225,6 +225,9 @@ XIP are production-integrated; do not reopen their obsolete proposals.
 - [ ] **Mode3 process lifecycle and terminal path:** integrate actual
   wake/retry/EXIT/WAIT/finalizer, raw/bitmap terminal detach and VM
   destroy. Preserve exact pin/owner identity on every error path.
+  v1981 staged service selection and clean retry accepted (46 native
+  calls/CPU, five unsafe mutants, +173 staged TEXT). Actual PI6,
+  scheduler and terminal/VM lifecycle still open; default OFF.
 - [ ] **PI6, MM and backing failure matrix for mode3:** verify actual
   process scheduler wake, READY_ONCE, source loss, corruption,
   allocation refusal, torn/overlapping data, uncertain MM and

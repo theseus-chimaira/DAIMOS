@@ -11,4 +11,7 @@
  * and TRANSITION; never run old interleaved restore or RAW recovery. */
 int proc_pure_bitmap_restore_v1980(unsigned int slot,
     proc_pure_ram_loader_v1391 loader);
+/* Release only a clean inactive mode3 transition on slot zero. No
+ * backing I/O, pin retirement or deferred transaction recovery. */
+int proc_pure_bitmap_unlock_v1981(unsigned int slot);
 #endif

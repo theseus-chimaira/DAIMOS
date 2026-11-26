@@ -1,3 +1,29 @@
+## 2026-11-26 v1981: K15 slot-zero directory service (staged subgate)
+
+K14 DAIMOS dd65001b, testkit333f07f, documentation ce094a1 pushed.
+Under DAIMOS_PBM_RESTORE_V1980 the full PURE service now selects
+v1980 directory restore for mode3 and original RAW PREFIX/FULL for
+mode2. Old interleaved v1667 remains incompatible. READY_ONCE follows
+actual resident publication, not reply. Clean mode3 retry unlock
+proves exact sole unpinned K13-geometry bitmap, stable u-area, saved
+backing, marked identity, VM0 and zero escrow under PI exclusion.
+It does not require available backing and does not retire any pins.
+Dirty bitmap escrow never arms legacy RAW recovery; old tagged RAW
+recovery refuses it. Existing cooldown retained. No installed target
+sets the new flags. Native PDP6/KA10 each46 service/unlock calls and
+five executed unsafe mutants PASS; K14 each52 and six mutants PASS.
+Full object1785->1904 (+119); service901->955 (+54). Total +173
+staged TEXT, cumulative incremental2180. Zero DATA/BSS; disabled
+FULL and service DOBJ byte-identical to v1980. Testkit2c48581.
+Evidence $TMPDIR/pure-bitmap-service-v1981.eLvFjy,
+pure-bitmap-full-v1980.RaNDxM,k15-service-v1981.aJVPtd.
+K15 remains OPEN: terminal exact-span PREVM escrow, VM destroy,
+RUN/EXEC/EXIT/WAIT and actual scheduler/PI6 lifecycle acceptance.
+Word067 RH is EXIT status during PREVM; do not overwrite it with
+bitmap length across terminal retries. See design/kcore-k15-service-v1981.md.
+K16 deferred dirty recovery and physical/net-RAM/latency acceptance
+remain open. Default OFF and fixed mode3 destroy refusal unchanged.
+
 ## 2026-11-26 v1980: K14 bounded directory FULL restore CLOSED (staged)
 
 Reuse existing v1391 bounded DXR loader, v1917 exact two-owner proof,
