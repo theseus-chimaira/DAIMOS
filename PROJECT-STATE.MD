@@ -1,3 +1,41 @@
+## 2026-11-26 v1973: current KA10 TSFS swap and critical RM10 loss
+
+No production code or emulator change. Test-only split-member
+TSFS layout validated exact boot tail, FILE/EXTENT payloads
+and stock tsfscheck. Full reference byte-identical to stock
+43-file/256-extent set; pressure compact 13/11. Hardware
+timing unchanged. Initial current TSFS pressure test passed
+six WAITs/canaries but strict oracle rejected premature B:
+sixth child not grown/blocked yet. Added optional native
+quiescence check before canonical snapshot, without relaxing
+existing MM oracle. Final A/B/C each quiescent first check.
+Current DCS-enabled native 64K TSFS+RM10 actual swap PASS:
+MM9/20/8 free42661/117/42675 bitmap0/64/0, reads2/2/66,
+writes0/64/64 errors0. All six 8192-word children,
+exact WAIT/canaries and stable MM owners restored, pipe
+released, idle DCS mailbox/event zero and inactive DF10
+pair unchanged. Four private tapes unchanged, drum reserved
+region unchanged, backing area written. Both original
+v1959 disk and v1972 drum reports still reproduce exactly.
+
+Actual full-kernel RM10 READ/WRITE loss on v1972 D6FS
+pressure image, selected drum detached at instruction
+after native DATAO. Both final probes exit0: exactly300
+ticks, dedicated BACKSTORE reason2 HALT, active request
+cleared, event -1, one error counted, exact original MM
+table, pinned source/destination, transition and bitmap
+64 bits retained, inactive DMA pair and detached medium
+hash unchanged. No connected DCS reader, no arbitrary
+mid-sector coverage or recovery after critical loss.
+Initial read host TCP port collision corrected; initial
+write wrapper returned127 after successful oracle due
+stray terminator; clean replay passes.
+Testkit 2dd106f/46c1be7; docs94a9d9b/d7f740f.
+Evidence $TMPDIR/k17-tape-v1973.fel8Sn.
+K17 current both RM10-root swap and critical loss accepted.
+Remaining interactive/live owner qualification and
+active RX+DMA, ordinary process/protection/PI remain open.
+
 ## 2026-11-26 v1972: native KA10 DCS enabled
 
 v1971 d8ac3b25 fixed stock lowmem INIT: NO INITTAB (DCS0

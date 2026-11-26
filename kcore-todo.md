@@ -1595,6 +1595,13 @@ history is now reachable from main (v1809); mode3 remains disabled.
     Current D6FS+RM10 swap PASS, idle DCS mailbox/event zero
     across128 runtime drum completions. Current TSFS shell
     and pressure replay, active RX+DMA remain open.
+    v1973 current DCS-enabled TSFS+RM10 six-child swap PASS,
+    MM9/20/8 free42661/117/42675, bitmap0/64/0, exact
+    owners/canaries/WAIT and unchanged tapes. Native RM10
+    READ/WRITE detach immediately after DATAO PASS:
+    300-tick STOP then reason2 fail-stop, original MM/pins/
+    backing retained exactly. No mid-sector or critical
+    recovery claim. Active RX+DMA remains open.
 
     All additional pdp10-ka devices audited in pdp10-doc
     KERNEL/KA10-LOWCORE-DEVICE-OWNERSHIP-V1968.MD; future devices stay
