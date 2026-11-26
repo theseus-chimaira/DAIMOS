@@ -1,3 +1,38 @@
+## 2026-11-26 v1957-k09: complete 48K nine-owner lifecycle and MM high-water
+
+Both current KCC GENERAL/STRICT native nine-owner workloads
+complete with exact original v1951 two-grown/seven-ordinary
+geometry and v1954 installed SIMH. Long prior test execution
+was dominated by physical tape locality plus pty-run monitor
+command pacing. Compact three-member test manifest retains
+unchanged INIT/MOUNTALL/CONFIG and boot words; test-only copy
+of formatter starts file data on member1. Stock tsfscheck
+and independent exact Stage1/bootstrap/file table/extent
+payload equality vs stock compact layout PASS. No production
+formatter or timing change. Member0 controls intentionally
+stopped after A, not accepted as full original-manifest runs.
+Batch monitor setup/teardown; all 71 physical write watches
+retained. Both profiles A/B/C MM9/26/9 free24224/2649/24224,
+largest24224/1496/24224, packed0/9/0, tenth RUN refused
+despite aggregate free>=2048. All nine exact WAIT and data
+checks PASS. Final exact original MM table and parent
+APR/u-area/backing/mode restored. Parent retains original
+coordination pipe in unchanged fixture; no child owners.
+Idle-stack pin only. PID1 PASS marker then harness stop,
+not normal HALT. Four private tapes unchanged per run.
+Both high-water reports identical: 2931 writes, 170 count
+commits, 18 PURE resizes (9/9), 2 BRK (2/0), 2741 staging
+writes. Peak occupied/reserved47940/49152, min free1212,
+MM28/32. Five unsafe trace changes plus forged summary
+rejected per profile. No production code/data change.
+Testkit bb33e3a docs12126b0. Evidence
+$TMPDIR/k09-compact-v1957.BOOsmY/{general,strict}-locality.
+K09 48K nine-owner lifecycle and write-watch accepted.
+Remaining: final runtime controller matrix (including
+noncritical/queued/mid-sector recovery as applicable) and
+overall functional acceptance review. Size optimization
+and 16K target deferred; RAW/mode3 OFF.
+
 ## 2026-11-26 v1956-k09: actual Type-270 critical BACKSTORE loss
 
 Native current KCC 64K disk-root v1955 build, v1954 SIMH.

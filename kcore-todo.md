@@ -1486,6 +1486,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   coverage claim. Both fresh 48K write-watch runs armed all
   71 watches, intentionally stopped during second RUN.
   Complete 48K lifecycle/high-water still outstanding.
+  v1957: both current KCC 48K GENERAL/STRICT nine-owner
+  native lifecycle and complete physical MM write-watch
+  PASS. Valid compact split-member TSFS with unchanged
+  guest/boot bytes; no timing or production changes.
+  MM9/26/9, free24224/2649/24224, exact baseline MM
+  restoration, nine WAIT/data checks, unchanged tapes.
+  2931 writes, 170 count commits, 18 PURE and 2 BRK resizes;
+  peak47940/49152, MM28/32; six negatives rejected/profile.
+  Original parent pipe remains open, harness stops after PASS.
+  Remaining controller matrix/final acceptance review OPEN.
 
 
 ## Mandatory KCORE: KA10 nonpaged backend
