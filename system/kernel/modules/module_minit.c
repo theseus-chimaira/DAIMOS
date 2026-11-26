@@ -1291,7 +1291,11 @@ drm236_minit(void)
         unsigned int read_service;
         unsigned int write_service;
 
+#ifdef DAIMOS_KA10
+        name = (kword_t)SIXBIT("RM10  ");
+#else
         name = (kword_t)SIXBIT("DRM236");
+#endif
         st = minit_drm236_probe();
         if ((st & DRM_PI_MASK) != DRM_PROBE_PI) {
                 minit_diag_nodev(name);

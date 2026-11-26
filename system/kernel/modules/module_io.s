@@ -261,9 +261,16 @@ minit_storage_probe_dsk:
 ; Probe the Type 167 I/O Processor independently of Type-136 storage.
 ; Use PI level 7 only as a recognizable probe value, then leave DP disabled.
 minit_drm236_probe:
+        .ifdef DAIMOS_KA10
+        ; RC10 PIA probe; do not start a transfer or touch either pair.
+        cono 0170,7
+        coni 0170,1
+        cono 0170,0
+        .else
         cono 0010,7
         coni 0010,1
         cono 0010,0
+        .endif
         popj 017,
 minit_slv_coni:
         coni 0020,1

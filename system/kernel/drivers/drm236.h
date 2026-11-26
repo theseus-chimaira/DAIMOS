@@ -21,7 +21,12 @@
 /** DAIMOS physical block size in 36-bit words. */
 #define DRM236_WORDS_PER_BLOCK   BSTORE_BLOCK_WORDS
 /** Number of 128-word blocks per drum unit. */
+#ifdef DAIMOS_KA10
+/* Common drum provider; RC10/RM10 has 90 tracks of 30 logical blocks. */
+#define DRM236_BLOCKS_PER_UNIT   05214U
+#else
 #define DRM236_BLOCKS_PER_UNIT   020000U
+#endif
 /** Native Type 236 address granularity: 16 words per hardware group. */
 #define DRM236_GROUP_WORDS       020U
 /** Number of 16-word groups in one DAIMOS 128-word block. */

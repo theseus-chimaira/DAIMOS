@@ -1,6 +1,6 @@
 ; Initial KA10 0.9 target: one segment, Type 136/551 and Type 270 storage.
 ; The selected root determines which media are attached.
-; Unsupported PDP-6 terminal/drum hardware is not enabled or probed.
+; The optional native RM10 controller is disabled unless explicitly selected.
 set -q -n log @SIMH_LOG@
 set cpu @CPU_KWORDS@k
 set cpu oneseg
@@ -17,6 +17,7 @@ set rpc disabled
 set rpd disabled
 set tua disabled
 set dsk enabled
+set fha disabled
 set dtc dct=04
 set dtc enabled
 set dtc0 enabled

@@ -13,6 +13,9 @@
 #include "vfs_mount_slab_v4.h"
 #include "root_select.h"
 #include "vfs.h"
+#if defined(DAIMOS_KA10) && !KINIT_FULL && D6FS_FS_ENABLED
+#include "auxstore.h"
+#endif
 
 
 extern kword_t sys_resident_words_immediate;
@@ -621,6 +624,17 @@ kinit_enter(void)
          * otherwise D6FS can replace its direct-tail mapping while
          * leaving backstore_blocks advertised at AUXSTORE capacity. */
         auxstore_post_minits();
+#elif defined(DAIMOS_KA10) && D6FS_FS_ENABLED
+        /* KA10 lowmem disk root can have a separate native RM10.
+         * Mount first: D6FS installs its own default disk BACKSTORE.
+         * Only a validated drum descriptor may replace that mapping.
+         * This code and the AUXSTORE discovery state leave with KINIT.
+         */
+        if (root_select_class() == KINIT_ROOT_DSK &&
+            module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) != 0U &&
+            auxstore_boot_discover() == 0 &&
+            auxstore_kind == AUXSTORE_KIND_DRM)
+                auxstore_post_minits();
 #endif
 #if KINIT_STACK_WATERMARK
         kinit_stack_watermark_record();

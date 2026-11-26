@@ -229,6 +229,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/drivers/drm236.s \
 	$(KERNEL_DIR)/drivers/dsk_io.s \
 	$(KERNEL_DIR)/drivers/drm236_io.s \
+	$(KERNEL_DIR)/drivers/rm10_io_v1970.s \
 	$(KERNEL_DIR)/drivers/ge.h \
 	$(KERNEL_DIR)/drivers/ge_io.s \
 	$(KERNEL_DIR)/drivers/lpt.h \
@@ -470,8 +471,8 @@ MRES_PACKAGE_OBJS += $(PURE_MRES_OBJ_V1612)
 endif
 KINIT_DRM_ENABLED = 1
 ifeq ($(DAIMOS_MACHINE),ka10)
-override KINIT_DRM_ENABLED = 0
-MRES_PACKAGE_OBJS := $(filter-out $(DRM_MRES_OBJ) $(DCS_MRES_OBJ) $(GE_MRES_OBJ),$(MRES_PACKAGE_OBJS))
+# The KA10 DRM package uses native RC10/RM10 instead of Type 167/236.
+MRES_PACKAGE_OBJS := $(filter-out $(DCS_MRES_OBJ) $(GE_MRES_OBJ),$(MRES_PACKAGE_OBJS))
 endif
 
 MINIT_TABLE_ASM = $(BUILD)/module-table-runtime.s

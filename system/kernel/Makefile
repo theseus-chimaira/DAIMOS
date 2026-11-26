@@ -314,6 +314,7 @@ MRES_FIXED_SRCS = fs/d6fs_validate.s \
 	drivers/ocnsls_io.s \
 	drivers/dsk_io.s \
 	drivers/drm236_io.s \
+	drivers/rm10_io_v1970.s \
 	drivers/tape_io.s \
 	drivers/slv_io.s
 
@@ -585,6 +586,7 @@ COPY_ASM_SRCS = core/ret.s \
 	drivers/ocnsls_io.s \
 	drivers/dsk_io.s \
 	drivers/drm236_io.s \
+	drivers/rm10_io_v1970.s \
 	drivers/tape_io.s \
 	drivers/slv_io.s \
 	modules/module_io.s \
@@ -641,7 +643,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 
 ${COPY_ASM_TARGETS}: ${COPY_ASM_SRCS} arch/pdp6_source_map_v1605.mk
 	@mkdir -p ${BUILD}
-	@base=`basename "$@"`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; if test "$$base" = monitorfs_runtime.s && test "${MONITORFS_MRES_ENABLED}" = 1; then src=fs/monitorfs_dispatch_v14.s; fi; case "$$base" in mach_user_pdp6.s|clk_io.s) { printf '%s\n' '${DAIMOS_CPU_ASM_PREFIX}'; cat "$$src"; } > "$@" ;; *) cp "$$src" "$@" ;; esac
+	@base=`basename "$@"`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; if test "$$base" = monitorfs_runtime.s && test "${MONITORFS_MRES_ENABLED}" = 1; then src=fs/monitorfs_dispatch_v14.s; fi; if test "$$base" = drm236_io.s && test "${DAIMOS_MACHINE}" = ka10; then src=drivers/rm10_io_v1970.s; fi; case "$$base" in mach_user_pdp6.s|clk_io.s|module_io.s) { printf '%s\n' '${DAIMOS_CPU_ASM_PREFIX}'; cat "$$src"; } > "$@" ;; *) cp "$$src" "$@" ;; esac
 
 ${BUILD}/monitorfs_runtime.s: ${MONITORFS_MODE_STAMP} fs/monitorfs_dispatch_v14.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
