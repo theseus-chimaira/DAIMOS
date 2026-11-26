@@ -1,3 +1,36 @@
+## 2026-11-26 v1956-k09: actual Type-270 critical BACKSTORE loss
+
+Native current KCC 64K disk-root v1955 build, v1954 SIMH.
+At original READ CONO boundary032053, slot0 actual swap-in
+request043220 raw177210 DSK0, original slot2 DISK run0..63,
+8192-word destination152000 pinned1, TRANSITION. DETACH DSK0
+reaches dedicated BACKSTORE HALT004510 reason2. Failed event
+-1, storage_state and active DSK request0, exact original
+DISK record, bitmap64, counters64, complete MM table unchanged.
+At actual WRITE boundary032050 slot0 request044332 raw177210,
+slot2 RESIDENT and TRANSITION, source152000 pinned1, reserved
+bitmap64, published disk sectors0. DETACH reaches same HALT
+in allocation caller slot1, original record/mode/VM, bitmap
+and entire MM table unchanged, failed event-1, request0.
+First WRITE oracle incorrectly required slot0 at HALT;
+corrected complete physical replay passes. These establish
+v1541 critical fail-stop, not continuing after loss or exhaustive
+mid-sector/queued/noncritical recovery. No production changes.
+Testkit7905494 docs14b1e34. Evidence
+$TMPDIR/k09-disk-swap-v1955.MbLEZM/{read,write}-loss-final-v1956.
+
+Fresh 48K KCC GENERAL/STRICT v1954 source and simulator
+physical write-watch runs: both baseline A reached, resident
+20932, 71 real MM watches armed. One child admitted each,
+second launch underway; 53/72 write-stop observations,
+intentionally stopped before B/C due to slow tape-backed
+execution. No new lifecycle/high-water acceptance, no proof
+of hang; no simulator processes left running. Evidence
+$TMPDIR/k09-nine-v1956.UGyDrH/{general,strict}.
+K09 remains OPEN for complete 48K nine-owner lifecycle and
+write-watch, and remaining runtime controller matrix scope.
+Optimization/16K target deferred; RAW/mode3 OFF.
+
 ## 2026-11-26 v1955-k09: active 64K DISK swap accepted
 
 Current KCC lowmem D6FS disk root, v1954 installed SIMH.

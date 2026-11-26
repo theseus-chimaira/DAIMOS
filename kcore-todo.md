@@ -1478,6 +1478,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
   bitmap and counters; both canaries, all six WAITs, exact
   final owners, pipe and bitmap cleanup. MM9/20/8.
   Runtime provider loss and 48K final lifecycle remain open.
+  v1956: actual critical BACKSTORE READ and WRITE loss
+  both reach dedicated reason2 HALT, original owner/bitmap
+  and entire MM table conserved, failed request cleared.
+  Runtime fail-stop accepted for issued commands; no general
+  interrupted WRITE recovery or exhaustive queued/mid-sector
+  coverage claim. Both fresh 48K write-watch runs armed all
+  71 watches, intentionally stopped during second RUN.
+  Complete 48K lifecycle/high-water still outstanding.
 
 
 ## Mandatory KCORE: KA10 nonpaged backend
