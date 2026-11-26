@@ -1,3 +1,50 @@
+## 2026-11-26 v1970: native KA10 RM10 provider and first full swap
+
+DAIMOS 52063b63 installs native RC10/RM10 MRES through the
+existing DRM provider ABI, PI2, clock hook and active word.
+128-word blocks map to two BCD-addressed 64-word segments,
+2700 blocks/unit. DF10 pair0150/0151 exclusive through
+verified completion/STOP; pair0152/0153 preserved. Native
+DONE/status and exact completion address checked. Atomic
+300-tick watchdog stops and verifies quiescence before
+releasing the descriptor. Other callers wait on active
+event and retry; no new fixed queue, per-process words or
+emulator changes. RM10 MRES130 initialized words, BSS0.
+KA10 fixed KCORE11124 words unchanged. PDP6 matched
+KCORE/KINIT/maps/streams and Stage1 byte-identical v1969.
+All five Stage1 decoder identity/embedding checks PASS
+for both KA10 roots and matched PDP6.
+
+Native source-linked PI2/PI6 read/write blocks0/29/30/2699
+on units0/1, absent unit2, locked write, invalid block2700,
+NXM read and selected detach timeout exactly300 ticks PASS.
+Distinct 128-word peer read after each hardware failure
+without reset; process wait/wake stubs, not scheduler test.
+Initial AUXSTORE fixture with no D6FS reservation rejected
+by stock formatter; corrected unused region1+04213 with
+512-block backing at04214 passes. All four native 64K
+paper-tape configurations reach INIT: TSFS provider7
+BACKSTORE0/512, D6FS provider6 BACKSTORE1024/512 without/
+with RM10. Drum map400000,,004214, two reads and zero
+writes, media unchanged at INIT. KA10 lowmem D6FS selects
+validated drum after root mount, otherwise preserves disk
+tail. No shell acceptance implied.
+
+Actual native D6FS+RM10 six-child v1955 swap workload:
+MM9/20/8 free43812/1268/43826, bitmap0/64/0, slot2 DISK
+8192 words run0..63. Reads2/2/66 writes0/64/64 errors0.
+Six exact WAIT/canary/token checks, parent pipe FDs closed,
+original stable owners and parent VM retained, idle-stack
+pin only, no child/pipe/reservation, active descriptor0,
+second DF10 pair0. Drum descriptor/reserved region unchanged,
+backing area actually written. PID1 success marker then
+harness stop. Original v1959 disk oracle byte-identical
+replay. Testkit a9de99f/cf5fac6; docs3912931. Evidence
+$TMPDIR/k17-rm10-v1970.H7ccUx. K17 remains OPEN for TSFS+
+RM10 actual swap, all four interactive shells and broader
+ordinary process/protection/PI and full-kernel fault/
+contended DMA qualification. RAW/mode3 OFF.
+
 ## 2026-11-26 v1969: two generic KA10 DMA channel pairs
 
 User approved a four-word low-core DMA workspace. Pair 0 remains at

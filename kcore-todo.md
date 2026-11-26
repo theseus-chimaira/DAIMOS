@@ -1577,14 +1577,23 @@ history is now reachable from main (v1809); mode3 remains disabled.
     further fixed workspace beyond v1969: two pairs 150/151 and 152/153.
     Both passed independent native DMA isolation. Concurrent operation
     is unqualified. MRES/PI and error qualification open.
+    v1970: native RM10 MRES (130 initialized words, zero BSS) uses
+    the existing DRM request descriptor, PI2 and watchdog, and pair
+    0150/0151. No fixed KCORE or per-process growth. Native transfer,
+    geometry, NXM, write lock, absence, timeout and peer recovery
+    pass. All four 64K KA10 root profiles reach INIT. D6FS with RM10
+    completes genuine six-child swap pressure and restoration (64
+    backing blocks allocated then released, zero drum errors).
+    TSFS with RM10 swap, interactive shells, protection and contended
+    DMA/full-kernel fault qualification remain open.
     All additional pdp10-ka devices audited in pdp10-doc
     KERNEL/KA10-LOWCORE-DEVICE-OWNERSHIP-V1968.MD; future devices stay
     outside K17. Testkit 83abd8c.
     RM10 root boot, RD10 support and other controller families are
     post-0.9.
   - [ ] K17 four-profile acceptance: TSFS without RM10 (INIT PASS),
-    D6FS without RM10 (INIT PASS), TSFS with RM10 (OPEN), D6FS with
-    RM10 (OPEN). Each must boot from paper tape, mount the requested
+    D6FS without RM10 (INIT PASS), TSFS with RM10 (INIT PASS), D6FS with
+    RM10 (INIT and swap lifecycle PASS). Each must boot from paper tape, mount the requested
     root and reach a usable shell. RM10-present profiles must use the
     validated drum AUXSTORE/BACKSTORE and exercise ordinary swap;
     no-drum profiles must operate correctly without it (D6FS retains
