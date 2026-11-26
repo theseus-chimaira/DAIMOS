@@ -33,8 +33,19 @@ stray terminator; clean replay passes.
 Testkit 2dd106f/46c1be7; docs94a9d9b/d7f740f.
 Evidence $TMPDIR/k17-tape-v1973.fel8Sn.
 K17 current both RM10-root swap and critical loss accepted.
-Remaining interactive/live owner qualification and
-active RX+DMA, ordinary process/protection/PI remain open.
+Both full stock TSFS command trees also pass native usable
+CTY and DCS0 shells. No-backing serial CTY ROOT/ECHO/EXIT
+and DCS ROOT/ECHO/PWD, exact live APR owners and no backing.
+RM10 simultaneous ROOT shells, distinct ECHO/PWD and CTY
+still usable; exact bitmap/owner verification finds PID1
+slot1 DISK run first0,count32, not a leak. Both tape sets
+unchanged. Prior RM10 shell run passed logout/invalid login/
+respawn/CTY before an incorrect zero-used assertion.
+Initial no-drum concurrent DSH attempt stopped without
+acceptance; do not claim concurrent DSH there. Testkit
+71a793a; docs6d17b61. All four usable shell and both current
+RM10 swap profiles accepted. Active RX+DMA and broader
+ordinary process/protection/PI qualification remain open.
 
 ## 2026-11-26 v1972: native KA10 DCS enabled
 

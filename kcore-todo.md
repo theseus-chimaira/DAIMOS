@@ -1608,15 +1608,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
     outside K17. Testkit 83abd8c.
     RM10 root boot, RD10 support and other controller families are
     post-0.9.
-  - [ ] K17 four-profile acceptance: TSFS without RM10 (INIT PASS),
-    D6FS without RM10 (INIT PASS), TSFS with RM10 (INIT PASS), D6FS with
-    RM10 (INIT and swap lifecycle PASS). v1972 both D6FS profiles
-    also pass simultaneous CTY/DCS0 shell and DCS logout/respawn. Each must boot from paper tape, mount the requested
-    root and reach a usable shell. RM10-present profiles must use the
-    validated drum AUXSTORE/BACKSTORE and exercise ordinary swap;
-    no-drum profiles must operate correctly without it (D6FS retains
-    its normal disk backstore; TSFS may be swapless). Verify ownership
-    and process behavior, not merely the INIT banner. Testkit 34beeb8.
+  - [x] K17 four-profile acceptance (v1973): all native 64K paper-tape
+    configurations mount the requested root and reach usable shell.
+    D6FS without/with RM10 simultaneous CTY/DCS0 PASS v1972.
+    TSFS without RM10 serial CTY then DCS0 shell PASS; no concurrent
+    DSH without backing claim. TSFS with RM10 simultaneous shell
+    PASS, exact live APR/backstore bitmap (PID1 DISK run32 blocks).
+    Both current DCS-enabled RM10 root swap workloads PASS, actual
+    READ/WRITE critical fail-stop accepted. Testkit71a793a, docs6d17b61.
+    Active RX+DMA overlap and broader native process/protection/PI
+    qualification remain separate open K17 gates.
   - Implement native APR relocation/protection, PI/trap, and executive/
     user context handling; keep common ownership and rollback semantics.
     Avoid additional per-process state unless required for correctness.
