@@ -66,7 +66,19 @@ ifneq ($(DAIMOS_PURE_MRES_ENABLED),1)
 $(error DAIMOS_PBM_V1667 requires PURE MRES enabled)
 endif
 endif
-KINIT_PURE_MODE_STAMP = ${BUILD}/.pure-mres-mode-v1611-${DAIMOS_PURE_MRES_ENABLED}-${DAIMOS_PBM_V1667}-${DAIMOS_SWAPLESS_ONLY_V1668}
+# Experimental directory-bitmap package; never select the historical
+# interleaved codec or the disk-swap backend in this profile.
+DAIMOS_PBM_DIRECTORY_V1983 ?= 0
+ifneq ($(filter $(DAIMOS_PBM_DIRECTORY_V1983),0 1),$(DAIMOS_PBM_DIRECTORY_V1983))
+$(error DAIMOS_PBM_DIRECTORY_V1983 must be 0 or 1)
+endif
+ifeq ($(DAIMOS_PBM_DIRECTORY_V1983),1)
+ifneq ($(DAIMOS_PURE_MRES_ENABLED):$(DAIMOS_SWAPLESS_ONLY_V1668):$(DAIMOS_PBM_V1667):$(KINIT_TAPE_BOOT),1:1:0:1)
+$(error directory bitmap requires strict swapless TSFS PURE and no v1667)
+endif
+endif
+
+KINIT_PURE_MODE_STAMP = ${BUILD}/.pure-mres-mode-v1611-${DAIMOS_PURE_MRES_ENABLED}-${DAIMOS_PBM_V1667}-${DAIMOS_SWAPLESS_ONLY_V1668}-${DAIMOS_PBM_DIRECTORY_V1983}
 ${KINIT_PURE_MODE_STAMP}:
 	@mkdir -p ${BUILD}
 	@rm -f ${BUILD}/.pure-mres-mode-v1611-*
@@ -445,9 +457,20 @@ kcore: $(BUILD)/proc_pure_service_v1612.s \
     $(BUILD)/proc_pure_full_v1611.s
 endif
 
-$(BUILD)/proc_pure_service_v1612.s: $(DAIMOS_VM_PURE_SERVICE_SOURCE) $(KERNEL_HEADERS)
+$(BUILD)/proc_pure_service_v1612.s: $(DAIMOS_VM_PURE_SERVICE_SOURCE) $(KERNEL_HEADERS) $(KINIT_PURE_MODE_STAMP)
 	@mkdir -p $(BUILD)
-	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PBM_V1667=$(DAIMOS_PBM_V1667) $(INCLUDES) -S $< -o $@
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PBM_V1667=$(DAIMOS_PBM_V1667) $(PBM_SERVICE_FLAGS_V1983) $(INCLUDES) -S $< -o $@
+
+ifeq ($(DAIMOS_PBM_DIRECTORY_V1983),1)
+PBM_SERVICE_FLAGS_V1983 = -DDAIMOS_PBM_COMMIT_V1979=1 -DDAIMOS_PBM_RESTORE_V1980=1
+PBM_DROP_FLAGS_V1983 = -DDAIMOS_PBM_PREFIX_V1978=1 -DDAIMOS_PBM_COMMIT_V1979=1
+PBM_FULL_FLAGS_V1983 = -DDAIMOS_PBM_RESTORE_V1980=1 -DDAIMOS_PBM_TERM_V1982=1
+PBM_VM_PREFIX_V1983 = .equ DAIMOS_PBM_VM_TERM_V1982,1
+kcore: $(BUILD)/proc_pure_bitmap_directory_v1977.s
+$(BUILD)/proc_pure_bitmap_directory_v1977.s: proc/proc_pure_bitmap_directory_v1977.c $(KERNEL_HEADERS)
+	@mkdir -p $(BUILD)
+	$(PDP10_CC) $(PDP10_CFLAGS) $(INCLUDES) -S $< -o $@
+endif
 
 # Source-linked opt-in bitmap MRES helpers. The fixed kernel and the
 # default PURE MRES contain none of these code words.
@@ -478,28 +501,28 @@ $(BUILD)/proc_pure_bitmap_decode_v1667.s: proc/proc_pure_bitmap_decode_v1660.c $
 	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_BITMAP_DECODE_V1660=1 $(INCLUDES) -S $< -o $@
 endif
 
-$(BUILD)/proc_pure_drop_v1611.s: proc/proc_pure_ram_v1381.c $(KERNEL_HEADERS)
+$(BUILD)/proc_pure_drop_v1611.s: proc/proc_pure_ram_v1381.c $(KERNEL_HEADERS) $(KINIT_PURE_MODE_STAMP)
 	@mkdir -p $(BUILD)
 	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_SWAPLESS_PURE_RAM_V1381=1 \
-	    -DDAIMOS_PURE_DROP_ONLY_V1611=1 $(INCLUDES) -S $< -o $@
+	    -DDAIMOS_PURE_DROP_ONLY_V1611=1 $(PBM_DROP_FLAGS_V1983) $(INCLUDES) -S $< -o $@
 
 $(BUILD)/proc_pure_prefix_v1611.s: proc/proc_pure_restore_v1384.c $(KERNEL_HEADERS)
 	@mkdir -p $(BUILD)
 	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_SWAPLESS_PREFIX_V1384=1 \
 	    $(INCLUDES) -S $< -o $@
 
-$(BUILD)/proc_pure_full_v1611.s: proc/proc_pure_ram_restore_v1391.c $(KERNEL_HEADERS)
+$(BUILD)/proc_pure_full_v1611.s: proc/proc_pure_ram_restore_v1391.c $(KERNEL_HEADERS) $(KINIT_PURE_MODE_STAMP)
 	@mkdir -p $(BUILD)
-	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_FULL_V1391=1 \
+	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_FULL_V1391=1 $(PBM_FULL_FLAGS_V1983) \
 	    $(INCLUDES) -S $< -o $@
 
 ${BUILD}/proc_swap_entry_v481.s: proc/proc_swap_entry_v481.s
 	@mkdir -p ${BUILD}
 	cp $< $@
 
-${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED} arch/pdp6_source_map_v1605.mk
+${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED} arch/pdp6_source_map_v1605.mk $(KINIT_PURE_MODE_STAMP)
 	@mkdir -p ${BUILD}
-	{ printf '%s\n' '${DAIMOS_CPU_ASM_PREFIX}'; cat ${VM_BACKEND_FIXED}; } > $@
+	{ printf '%s\n' '${DAIMOS_CPU_ASM_PREFIX}' '$(PBM_VM_PREFIX_V1983)'; cat ${VM_BACKEND_FIXED}; } > $@
 
 ${BUILD}/dpy_text.s: drivers/dpy_text_control_pdp6.s drivers/dpy_text_blocks_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

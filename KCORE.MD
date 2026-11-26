@@ -42,6 +42,11 @@ status and original extent. Staged VM destroy delegates validated
 nonresident terminal release, saves8 TEXT. PDP6/KA10 each65 direct
 +65 VM calls, six unsafe controls PASS. +336 MRES TEXT (combined2516),
 zero DATA/BSS. Default VM gate and RAW FULL DOBJ byte-identical.
+v1983 source-built experimental directory package: GCC3258->5359,
+KCC3885->6401 resident MRES, fixed KCORE -8, no BSS/per-slot growth.
+Both compiler mode-switch checks PASS. Strict swapless TSFS only,
+default OFF. 64K physical SIMH installed PURE and admitted three
+children before bounded timeout; no mode3 lifecycle acceptance.
 K15-K16 remain open for actual scheduler/PI6, RUN/EXEC/EXIT/WAIT,
 full finalizer integration, uncertain recovery, latency, stack and net RAM.
 RAW PURE/mode3 remain OFF by default. Dated statements

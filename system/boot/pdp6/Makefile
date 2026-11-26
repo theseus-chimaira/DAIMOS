@@ -131,6 +131,18 @@ ifneq ($(DAIMOS_PURE_MRES_ENABLED)$(KINIT_TAPE_BOOT),11)
 $(error DAIMOS_PBM_V1667 requires TSFS-capable PURE MRES)
 endif
 endif
+# Experimental directory-bitmap package; never select the historical
+# interleaved codec or the disk-swap backend in this profile.
+DAIMOS_PBM_DIRECTORY_V1983 ?= 0
+ifneq ($(filter $(DAIMOS_PBM_DIRECTORY_V1983),0 1),$(DAIMOS_PBM_DIRECTORY_V1983))
+$(error DAIMOS_PBM_DIRECTORY_V1983 must be 0 or 1)
+endif
+ifeq ($(DAIMOS_PBM_DIRECTORY_V1983),1)
+ifneq ($(DAIMOS_PURE_MRES_ENABLED):$(DAIMOS_SWAPLESS_ONLY_V1668):$(DAIMOS_PBM_V1667):$(KINIT_TAPE_BOOT),1:1:0:1)
+$(error directory bitmap requires strict swapless TSFS PURE and no v1667)
+endif
+endif
+
 # MonitorFS runtime is exclusively in its pinned, boot-loaded MRES.
 override MONITORFS_MRES_ENABLED := 1
 MONITORFS_MODE_STAMP = $(BUILD)/.monitorfs-v17-mode-$(MONITORFS_MRES_ENABLED)
@@ -141,7 +153,7 @@ KINIT_TAPE_MODE_STAMP = $(BUILD)/.kinit-tape-v20-mode-$(KINIT_TAPE_BOOT)
 KINIT_STACK_MODE_STAMP = $(BUILD)/.kinit-stack-v655-$(KINIT_STACK_RESERVE_WORDS)-$(KINIT_STACK_WATERMARK)
 PDP10_GCC ?= pdp10-dec-none-gcc
 # Switch v1611 PURE MRES on/off without reusing stale KINIT output.
-KINIT_PURE_MODE_STAMP = $(BUILD)/.kinit-pure-v1611-mode-$(DAIMOS_PURE_MRES_ENABLED)-$(DAIMOS_PBM_V1667)-$(DAIMOS_SWAPLESS_ONLY_V1668)
+KINIT_PURE_MODE_STAMP = $(BUILD)/.kinit-pure-v1611-mode-$(DAIMOS_PURE_MRES_ENABLED)-$(DAIMOS_PBM_V1667)-$(DAIMOS_SWAPLESS_ONLY_V1668)-$(DAIMOS_PBM_DIRECTORY_V1983)
 $(KINIT_PURE_MODE_STAMP): | $(BUILD)
 	@rm -f $(BUILD)/.kinit-pure-v1611-mode-*
 	@touch $@
@@ -388,6 +400,9 @@ PURE_MRES_ASM_V1612 = $(KCORE_BUILD)/proc_pure_service_v1612.s \
 	$(KCORE_BUILD)/proc_pure_full_v1611.s
 ifeq ($(DAIMOS_PURE_MRES_ENABLED),1)
 MRES_ASM += $(PURE_MRES_ASM_V1612)
+endif
+ifeq ($(DAIMOS_PBM_DIRECTORY_V1983),1)
+MRES_ASM += $(KCORE_BUILD)/proc_pure_bitmap_directory_v1977.s
 endif
 
 KCORE_DXR = $(BUILD)/kcore.dxr
@@ -769,7 +784,7 @@ endif
 else
 $(error KA10 currently supports ROOT=tape or ROOT=disk)
 endif
-ifneq ($(DAIMOS_PURE_MRES_ENABLED)$(DAIMOS_PBM_V1667)$(DAIMOS_SWAPLESS_ONLY_V1668),000)
+ifneq ($(DAIMOS_PURE_MRES_ENABLED)$(DAIMOS_PBM_V1667)$(DAIMOS_SWAPLESS_ONLY_V1668)$(DAIMOS_PBM_DIRECTORY_V1983),0000)
 $(error optional PURE features not yet qualified on KA10)
 endif
 endif
@@ -849,7 +864,7 @@ $(KINIT_STAMP): $(MACHINE_STAMP) $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP
 	touch $@
 
 $(KCORE_STAMP): $(MACHINE_STAMP) $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(WALL_CLOCK_HZ_STAMP) $(KINIT_PURE_MODE_STAMP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' WALL_CLOCK_HZ='$(WALL_CLOCK_HZ)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' DAIMOS_PBM_V1667='$(DAIMOS_PBM_V1667)' VM_BACKEND='$(VM_BACKEND)' DAIMOS_MACHINE='$(DAIMOS_MACHINE)'
+	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' WALL_CLOCK_HZ='$(WALL_CLOCK_HZ)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' DAIMOS_PURE_MRES_ENABLED='$(DAIMOS_PURE_MRES_ENABLED)' DAIMOS_PBM_V1667='$(DAIMOS_PBM_V1667)' DAIMOS_PBM_DIRECTORY_V1983='$(DAIMOS_PBM_DIRECTORY_V1983)' DAIMOS_SWAPLESS_ONLY_V1668='$(DAIMOS_SWAPLESS_ONLY_V1668)' KINIT_TAPE_BOOT='$(KINIT_TAPE_BOOT)' VM_BACKEND='$(VM_BACKEND)' DAIMOS_MACHINE='$(DAIMOS_MACHINE)'
 	touch $@
 
 $(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
@@ -872,6 +887,10 @@ KERNEL_ASM_OBJS += $(BUILD)/proc_pure_term_v1667.dobj \
 	$(BUILD)/proc_pure_bitmap_terminal_v1667.dobj \
 	$(BUILD)/proc_pure_bitmap_restore_v1667.dobj \
 	$(BUILD)/proc_pure_bitmap_decode_v1667.dobj
+endif
+
+ifeq ($(DAIMOS_PBM_DIRECTORY_V1983),1)
+KERNEL_ASM_OBJS += $(BUILD)/proc_pure_bitmap_directory_v1977.dobj
 endif
 
 $(SWAP_MRES_OBJ_V481): $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres_v484.dobj $(KCORE_MAP)
@@ -915,6 +934,19 @@ PURE_BITMAP_PARTS_V1667 =
 PURE_TERMINAL_EXPORT_V1667 = pdp6_pure_detach_v1609
 endif
 
+ifeq ($(DAIMOS_PBM_DIRECTORY_V1983),1)
+$(BUILD)/pure-directory-walk-v1983.dobj: $(KERNEL_DIR)/proc/proc_pure_bitmap_walk_v1977.s | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+$(BUILD)/pure-directory-commit-v1983.dobj: $(KERNEL_DIR)/mm/mm_pure_bitmap_commit_v1979.s | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+$(BUILD)/pure-directory-finish-v1983.dobj: $(KERNEL_DIR)/mm/mm_pure_bitmap_finish_v1664.s | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+PURE_BITMAP_PARTS_V1667 = $(BUILD)/proc_pure_bitmap_directory_v1977.dobj \
+	$(BUILD)/pure-directory-walk-v1983.dobj $(BUILD)/pure-directory-commit-v1983.dobj \
+	$(BUILD)/pure-directory-finish-v1983.dobj
+PURE_TERMINAL_EXPORT_V1667 = proc_pure_term_v1982
+endif
+
 $(BUILD)/pure-rebase-v1611.dobj: $(KERNEL_DIR)/$(DAIMOS_VM_PURE_REBASE_SOURCE) | $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
@@ -936,7 +968,7 @@ PURE_MRES_PARTS_V1612 = $(BUILD)/proc_pure_service_v1612.dobj \
 # A KCORE-safe, relocation-verified donor equivalence. The v1611
 # source-identical v1381/v1391 helper region saves 49 words without an
 # added JRST; keep the minimum run high to avoid fragile hotpath folds.
-$(PURE_MRES_FOLD_PLAN_V1612): $(PURE_MRES_PARTS_V1612) $(P10FOLD_DEP)
+$(PURE_MRES_FOLD_PLAN_V1612): $(PURE_MRES_PARTS_V1612) $(P10FOLD_DEP) $(KINIT_PURE_MODE_STAMP)
 	$(P10FOLD) -m 20 -P $@ $(PURE_MRES_PARTS_V1612) >/dev/null
 
 $(PURE_MRES_OBJ_V1612): $(BUILD)/proc_pure_service_v1612.dobj \

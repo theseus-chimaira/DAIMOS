@@ -230,6 +230,10 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   escrow and staged VM destroy accepted (65+65 native calls/CPU,
   six unsafe mutants, +336 MRES TEXT, staged VM -8). Actual scheduler,
   PI6, RUN/EXEC/EXIT/WAIT/finalizer integration remains open; default OFF.
+  v1983 experimental source-built strict TSFS package accepted with
+  GCC/KCC switch/regeneration and native regressions. Physical 64K
+  boot and three child admissions observed, timeout before pressure;
+  continue actual mode3 scheduler/terminal lifecycle, not activation.
 - [ ] **PI6, MM and backing failure matrix for mode3:** verify actual
   process scheduler wake, READY_ONCE, source loss, corruption,
   allocation refusal, torn/overlapping data, uncertain MM and

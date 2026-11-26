@@ -1,3 +1,37 @@
+## 2026-11-26 v1983: K15 source-built directory PURE package
+
+New explicit experimental DAIMOS_PBM_DIRECTORY_V1983=1 requires
+strict swapless TSFS PURE (DAIMOS_PURE_MRES_ENABLED=1,
+DAIMOS_SWAPLESS_ONLY_V1668=1, no v1667). Existing KA10 optional PURE
+boot restriction retained. Default OFF. Reuse original three MRES
+exports/package ABI, select v1979 DROP/v1980 FULL/v1982 terminal and
+staged VM gate; directory walker/commit/finish remain MRES-only.
+Mode stamps cover all conditional objects and fold plan; same build
+GCC/KCC directory->RAW->directory byte-identical regeneration PASS.
+Incompatible historical format/non-strict builds rejected. Actual
+linked resident MRES GCC3258->5359 (+2101), KCC3885->6401 (+2516),
+BSS0. Fixed KCORE -8 both, net+2093/+2508. No added per-slot RAM.
+Testkit4e6dc7d; evidence $TMPDIR/pure-directory-package-v1983.ATbVyg.
+Native v1677 PI6 fault, v1808 reply, v1934 EXEC and v1937 stack
+lifetime regressions and unsafe controls PASS (evidence relative
+TMPDIR: pure-directory-native-regression-v1983.LzOloX).
+64K PDP6 physical SIMH source-built TSFS fixture with unmarked INIT,
+marked compressed DXR2 child, actual link and three-member TSFS
+validation PASS. Capacity-driven 4..12 children and exact sparse
+array/WAIT checks. $TMPDIR/pure-directory-guest-v1983.jLrxmz.
+Bounded 150s replay reached 64K, PURE LOADED, DTFS LOADED, three
+child RUN/SLEEP admissions (first unmarked, two marked compressed),
+then timed out before pressure checkpoint; no actual mode3 restore
+or lifecycle acceptance. Evidence pure-directory-physical-v1983.LOsJwC.
+First observer attempt refused relocatable entry before simulator;
+corrected RH relocation. Final observer strengthened after launch,
+syntax checked but not yet validated through full trace.
+K15 source-built package subgate CLOSED, actual scheduler/PI6,
+RUN/EXEC/EXIT/WAIT/finalizer lifecycle OPEN. K16 dirty recovery,
+RT policy, net RAM/latency/stack and physical acceptance remain open.
+Default mode3 and RAW PURE remain OFF; experimental flag not a
+production qualification. See design/kcore-k15-package-v1983.md.
+
 ## 2026-11-26 v1982: K15 exact terminal ownership and staged VM destroy
 
 Directory terminal uses existing BRK word0407 as exact encoded,,base
