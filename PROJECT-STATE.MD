@@ -1,3 +1,36 @@
+## 2026-11-26 v1968: KA10 DF10 low-core ownership and device audit
+
+Approved KA10-only layout implemented: APR shadow moved from BSS to
+0147, DF10 CIA at 0150 and completion at 0151, both initialized zero.
+Link-time check requires exact decoder end/APR/CIA/completion symbols.
+Shared decoder remains 062..146 (53 words); Stage1 unchanged. Fixed
+KA10 KCORE 10852 initialized + 270 BSS = 11122 words, two net words
+above v1967. PDP-6 10840 initialized + 269 BSS = 11109, byte-identical
+KCORE/KINIT/maps/streams and paper tape versus v1963. Both KA10 no-drum
+roots reach INIT with live APR shadow matching RL/PL, CIA/completion
+zero. All five Stage1 decoder identity and embedding checks pass for
+all three builds. Native RC10 128-word DMA read/write through 150/151
+against actual linked KCORE preserves every other 11120 resident
+word, including APR/decoder; exact completion word verified. Testkit
+83abd8c; docs d71398e; evidence $TMPDIR/k17-lowcore-v1968.uQbv7U.
+
+All implemented DAIMOS drivers and all additional pdp10-ka devices
+were audited. Existing Type136 storage shares PI3 046/047 and a
+relocatable IOWD; DPY owns PI7 056/057. No existing driver needs a
+new DF10 pair. Future RP10 (DPA/DPB), TM10B (MTA) and RH10 (FSA,
+RPA-RPD,TUA) use the same even low-core CIA restriction as RC10.
+One pair may be shared only with exclusive ownership through hardware
+completion/verified quiescence. Independent concurrent channels need
+separate pairs; no speculative pool or allocator now. PMP/DDC/AI/
+DPK/III/DD use programmable addresses; DPK needs a 32-word table in
+ordinary pinned memory. TEN11/AUXCPU use ITS remote memory mapping,
+not current ONESEG. Remaining devices use programmed I/O. Audit and
+address conflicts documented in pdp10-doc KERNEL/KA10-LOWCORE-DEVICE-
+OWNERSHIP-V1968.MD. No new future peripheral drivers or simulator
+changes. K17 RM10 MRES, error/PI/swap integration, and interactive
+four-profile qualification remain OPEN. Static audit is not runtime
+qualification of all additional hardware.
+
 ## 2026-11-26 v1967: native KA10 D6FS boot and RC10 transfer correction
 
 K17 acceptance requires four 64K KA10 configurations: TSFS/DECtape and

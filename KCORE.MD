@@ -87,6 +87,11 @@ two distinct development states (now historical):
   D6FS root profiles reach INIT without RM10; RC10 final DMA write
   word loss corrected and native boundary transfers pass. Four
   root/drum configurations remain the acceptance matrix; see kcore-todo.md.
+  v1968 reserves KA10 DF10 CIA/completion at 150/151 with APR shadow
+  moved to 147. Net two fixed words; no PDP-6 or per-process growth.
+  Both no-drum roots and physical DMA isolation pass. Additional
+  DF10/RH10 drivers must own a pair exclusively until quiescent; no
+  future driver allocations yet.
 
 - KCORE holds mandatory, immediately callable kernel/interrupt, process,
   syscall, VM/MM, device and VFS dispatch. Optional policy and provider

@@ -185,6 +185,7 @@ KCORE_BUILD = $(BUILD)/kcore-asm
 KINIT_STAMP = $(BUILD)/.kinit-built
 KCORE_STAMP = $(BUILD)/.kcore-built
 KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
+	$(KERNEL_DIR)/arch/ka10_lowcore_v1968.s \
 	$(KERNEL_DIR)/arch/pdp6_source_map_v1605.mk \
 	$(KERNEL_DIR)/proc/proc_swap_entry_v481.s \
 	$(KERNEL_DIR)/storage/backstore_entry_v484.s \
@@ -978,6 +979,14 @@ $(KCORE_DXR): $(KCORE_FIXED_OBJS) $(KCORE_FOLD_PLAN) Makefile
 	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
 	$(DLINK) -b $(KCORE_BASE) --fold-plan $(KCORE_FOLD_PLAN) -o $@ -M $(KCORE_MAP) \
 	    $(KCORE_FIXED_OBJS) $$libgcc
+ifeq ($(DAIMOS_MACHINE),ka10)
+	@awk '$$1=="d6b_image_end_v1458" {end=$$2} \
+	    $$1=="vm_pdp6_apr" {apr=$$2} \
+	    $$1=="ka10_df10_cia" {cia=$$2} \
+	    $$1=="ka10_df10_completion" {cw=$$2} \
+	    END {if (end!="000147" || apr!="000147" || cia!="000150" || cw!="000151") exit 1}' $(KCORE_MAP) || \
+	    { echo 'invalid KA10 DF10 low-core layout' >&2; rm -f $@ $(KCORE_MAP); exit 1; }
+endif
 
 $(KCORE_MAP): $(KCORE_DXR)
 	@test -f $@

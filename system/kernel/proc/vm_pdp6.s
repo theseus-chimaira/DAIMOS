@@ -999,15 +999,11 @@ vm_enter_initial_user_start:
         move 3,6
         jrst 1,(7)
 
-        /* PDP-6 private low core; KA10 uses 060 for an instruction trap.
-         * KINIT clears this cell before any resident service runs. */
+        /* PDP-6 private low core; KINIT clears it before resident I/O.
+         * On KA10 the shadow is defined in arch/ka10_lowcore_v1968.s
+         * to align the DF10 pair while preserving the trap at 060. */
         .globl vm_pdp6_apr
-        .ifdef DAIMOS_KA10
-        .bss
-vm_pdp6_apr:
-        .block 1
-        .text
-        .else
+        .ifndef DAIMOS_KA10
         .equ vm_pdp6_apr,000060
         .endif
 

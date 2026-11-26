@@ -162,6 +162,9 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   four root/drum profiles: TSFS and D6FS, both with and without RM10.
   Both no-drum profiles reach INIT; RM10 integration and interactive
   qualification remain open. RC10 final-word DMA defect corrected.
+  v1968 allocates the generic KA10 DF10 pair at 150/151, verifies
+  both no-drum boots and native DMA isolation, and audits all other
+  available KA10 devices; only RM10 is required for 0.9.
   Use the existing KA10 RC10/RM10 emulator (FHA) with a new minimal
   removable native driver. Type 167/236 remains PDP-6-only; emulator
   changes are restricted to demonstrated defect fixes. Direct

@@ -385,9 +385,13 @@ ${BUILD}/mm.s: ${DAIMOS_VM_CONTIG_MM_SOURCE} ${KERNEL_HEADERS}
 	cp ${DAIMOS_VM_CONTIG_MM_SOURCE} $@
 
 
-${BUILD}/d6block_fixed_v1458.s: ../stand/pdp6/common/block_decompressor_v1458.inc
+${BUILD}/d6block_fixed_v1458.s: ../stand/pdp6/common/block_decompressor_v1458.inc arch/pdp6_source_map_v1605.mk arch/ka10_lowcore_v1968.s
 	@mkdir -p ${BUILD}
+ifeq ($(DAIMOS_MACHINE),ka10)
+	cat $< arch/ka10_lowcore_v1968.s > $@
+else
 	cp $< $@
+endif
 
 ${BUILD}/exec.s: ${DAIMOS_CPU_EXEC_LOW_SOURCE} proc/exec_load.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
