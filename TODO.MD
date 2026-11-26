@@ -159,9 +159,11 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   root and unmodified PDP-6 user binaries. v1965 additionally requires
   Type 270/D6FS disk-root boot via paper-tape Stage1 and one working
   drum-backed AUXSTORE/BACKSTORE and ordinary swap configuration.
-  Prefer Type 167/236 emulator/driver reuse; RC10/RM10 is the fallback
-  if needed. Direct non-paper-tape read-in and drum-root boot remain
-  deferred. Verify native APR/protection,
+  Use the existing KA10 RC10/RM10 emulator (FHA) with a new minimal
+  removable native driver. Type 167/236 remains PDP-6-only; emulator
+  changes are restricted to demonstrated defect fixes. Direct
+  non-paper-tape read-in and drum-root boot remain deferred. Verify
+  native APR/protection,
   PI/trap, context, shell and normal process/syscall behavior, plus PDP-6
   regressions. Keep optional unqualified features OFF. Full KA10 support
   is post-0.9 (P7); see kcore-todo.md for the precise acceptance boundary.

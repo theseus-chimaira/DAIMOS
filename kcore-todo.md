@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1965 K17 disk and drum scope extension).
+Updated: 2026-11-26 (v1966 K17 selects native RC10/RM10).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
@@ -1553,18 +1553,21 @@ history is now reachable from main (v1809); mode3 remains disabled.
     Resolve the current tape-only build restriction and verify 64K
     staging/RAM geometry. Direct hardware DSK read-in stays post-0.9.
     RH10 controllers remain disabled in the Type 270 configuration.
-  - [ ] K17 drum support (required for 0.9): provide at least one
-    functional drum-backed auxiliary storage configuration on KA10,
-    including ordinary AUXSTORE/BACKSTORE operation and swap. First
-    evaluate reusing the existing Type 167/236 simulator model and
-    DAIMOS DRM236 MRES at 010/0400; verify device conflicts, physical
-    DMA, PI/completion, NXM, read/write and existing recovery tests.
-    The common simulator memory interfaces are promising, not proof
-    of historical electrical compatibility. If reuse is unsuitable,
-    implement the minimum RC10/RM10 backend (FHA at 0170) with the
-    existing block-provider contract. Prefer zero fixed KCORE growth
-    and no extra per-process state. Drum-root boot and additional
-    drum/controller families remain post-0.9.
+  - [ ] K17 RC10/RM10 drum support (required for 0.9): implement the
+    minimal native KA10 RM10 block provider using the existing simulator
+    FHA controller at octal 0170 and its DF10 channel. Keep the existing
+    128-word block-provider contract, mapping each block to two adjacent
+    64-word RM10 segments (60 segments per track, 90 tracks, 2700
+    blocks per unit in the simulator). Integrate a removable MRES with
+    AUXSTORE/BACKSTORE and ordinary swap; avoid fixed KCORE growth and
+    per-process overhead. Verify physical DMA, PI/completion, NXM,
+    read/write, geometry boundaries, media errors and recovery. Confirm
+    coexistence with Type 270 and DECtape and preserve PDP-6 regressions.
+    Type 167/236 stays PDP-6-only: do not port its model to KA10.
+    No emulator changes except demonstrated defect fixes with regression
+    tests; do not extend the emulator to simplify the DAIMOS driver.
+    RM10 root boot, RD10 support and other controller families are
+    post-0.9.
   - Implement native APR relocation/protection, PI/trap, and executive/
     user context handling; keep common ownership and rollback semantics.
     Avoid additional per-process state unless required for correctness.
@@ -1581,8 +1584,9 @@ history is now reachable from main (v1809); mode3 remains disabled.
     and runtime regressions; PDP-6 results alone cannot accept KA10.
   - Keep unqualified optional features (including RAW PURE and mode3)
     disabled; do not defer correctness bugs in the supported path.
-    Reuse existing peripheral drivers where possible; only the
-    minimum drum backend is in scope if Type 167/236 reuse fails.
+    Reuse existing peripheral drivers where possible; RC10/RM10 is
+    the only new storage backend in scope. Emulator changes are limited
+    to verified defect fixes.
     No speculative runtime CPU dispatcher.
   Mandatory after K09, before optional K10-K16. Architecture boundary:
   design/kcore-multi-cpu-portability-v1605.md.
@@ -1594,7 +1598,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
   evaluate shared TEXT, define KA10-native executable and reverse PDP-6
   compatibility policy, support additional native controllers and direct
   non-paper-tape read-in, and complete the wider hardware, drum-root,
-  root, swap,
+  root and swap,
   RAW PURE, multi-process pressure, failure/recovery and measured RAM
   qualification matrix. Qualify optional features before enabling them.
   Do not make these tasks prerequisites for the basic 0.9 KA10 milestone.

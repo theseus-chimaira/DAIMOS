@@ -1,3 +1,21 @@
+## 2026-11-26 v1966: select native RC10/RM10 for KA10
+
+User selects RM10 for mandatory K17 auxiliary drum storage and rejects
+porting Type167/236 into the KA10 emulator. The v1965 reuse proposal is
+superseded; existing PDP-6 drum support remains unchanged. Use the
+existing FHA/RC10 at octal 0170 with DF10 in simulator cec5436. RM10
+geometry in kx10_rc.c is 64 words/segment, 60 segments/track, 90 tracks:
+345600 words or 2700 128-word DAIMOS blocks per unit. Two consecutive
+segments per block, 30 logical blocks per track. Implement a minimal
+removable native provider with existing AUXSTORE/BACKSTORE/swap contract;
+no extra fixed KCORE or per-process storage as design goals. Qualify
+DMA, interrupts, boundaries, error/recovery and Type270/DTC coexistence.
+No emulator modifications except verified defects with regression tests;
+no added device models, compatibility extensions or driver workarounds.
+RD10, RM10 root boot and other new controllers remain post-0.9.
+Type270/D6FS paper-tape boot remains mandatory. This is a scope-only
+increment: no RM10 driver, transfer tests or emulator modifications yet.
+
 ## 2026-11-26 v1965: K17 disk and drum scope extension
 
 User adds Type 270 boot and a functional drum device to the basic KA10

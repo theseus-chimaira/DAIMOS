@@ -80,6 +80,10 @@ two distinct development states (now historical):
   KCORE is 11120 words (10849 initialized), 11 above PDP-6 (9 trap
   words and 2 BSS cells). No per-process cost. Native shell/process
   lifecycle qualification remains open; PDP-6 images unchanged.
+  v1966 K17 requires Type 270/D6FS boot and RC10/RM10 auxiliary storage
+  with ordinary swap on KA10. Type 167/236 remains PDP-6-only. The
+  RM10 backend belongs in a removable MRES; emulator changes are
+  restricted to verified defect fixes. See kcore-todo.md.
 
 - KCORE holds mandatory, immediately callable kernel/interrupt, process,
   syscall, VM/MM, device and VFS dispatch. Optional policy and provider
