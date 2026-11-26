@@ -241,7 +241,10 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   process scheduler wake, READY_ONCE, source loss, corruption,
   allocation refusal, torn/overlapping data, uncertain MM and
   terminal cancellation under native/physical fault injection.
-  Do not lift the permanent mode3 destroy refusal until safe.
+  v1986 healthy physical PI6/READY_ONCE/first dispatch accepted,
+  all12 WAITs and final MM/HALT PASS; native actual selector and
+  six mutants per compiler PASS. Physical fault matrix and genuine
+  nonresident terminal still open. Keep permanent refusal until safe.
 - [x] **Mode3 placement and matched 64K aligned capacity:** v1984
   directory8 vs RAW9 despite31078 free. v1985 lower 0200-aligned
   placement inside original atomic DROP, no extra descriptor or

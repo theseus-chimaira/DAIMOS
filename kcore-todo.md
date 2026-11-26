@@ -1760,6 +1760,12 @@ history is now reachable from main (v1809); mode3 remains disabled.
   FULL/finish and12 checked WAITs, final MM/HALT. Net equivalent
   saving11186; no maximum-capacity claim. PI6/READY_ONCE, EXEC,
   nonresident terminal and K16 still open before live activation.
+  v1986 native actual selector44/service16 per CPU/compiler, six
+  unsafe selector mutants per compiler reject. Actual healthy physical
+  PI6 in TAPE during relocated mode3 restore, READY_ONCE and first
+  dispatch, all12 WAITs and exact final MM/HALT PASS. Ten corrupted
+  trace controls reject. Healthy PI6 gate closed, no production growth.
+  Actual EXEC/nonresident terminal and physical fault matrix remain open.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,

@@ -1,3 +1,38 @@
+## 2026-11-26 v1986: native selector and complete physical mode3 PI6/READY_ONCE
+
+Validation only, original v1985 kernel/MRES unchanged. Actual production
+selector clock and reschedule entry linked with complete directory
+service, real MM/FULL and independent resident peer: GCC/KCC PDP6/KA10
+each44 selections/16 services, six unsafe selector mutants per compiler
+reject. Healthy/lost success READY consumed once even against higher
+priority ordinary peer; clean failure peer/cooldown/retry, dirty
+false-success and stale READY rejected. Historical v1650/v1677/v1808/
+default v1981 PASS. Testkit83e3ff1, evidence relative TMPDIR:
+pure-bitmap-service-v1981.yR19lT, pure-bitmap-service-v1981.SzbumO,
+pure-directory-pi6-regression-v1986.KVv6Xc.
+First unchanged 64K physical replay12 children, actual loader and
+clock PI6 on slot0 with exact slot3 source061400/239, target160000/4096,
+once-pinned pair and all239 bitmap words unchanged. Real saved TAPE
+PC032131, clock15814 -> finish/READY16929. Actual idle-service return
+020335 publishes READY01003 and exact sole unpinned APR. First observer
+rearmed current PC, same-PC stop before dispatch; isolated SIMH rearm
+probe confirms no execution. Corrected guard to service entry only.
+Independent scoped verifier and7 corrupted traces PASS through READY;
+first run did not capture dispatch/final lifecycle. Evidence
+pure-directory-pi6-v1986.yw48Uh/verified-scoped-v1986.txt and
+k08-simh-break-rearm-v1946.Nqo9HS. Corrected full replay independently
+PASS: actual PI6 tick17905 -> finish/READY/dispatch/guest19058, exact
+slot3 first dispatch and one-shot consumption, checked guest data,
+all12 WAITs, exact final MM and normal HALT. Ten corrupted trace
+controls rejected. Evidence pure-directory-pi6-v1986.aHbEE0,
+verified-final-v1986.txt and trace-controls-v1986.log; testkit96889a8.
+KCC repeat Makefile run pure-bitmap-service-v1981.pWDyrI PASS.
+Healthy physical PI6/READY_ONCE gate closed. No production growth.
+K15/K16 OPEN for actual EXEC, nonresident terminal/finalizer, physical
+fault injection and remaining broader acceptance. Actual successful foreign mode3 TERM needs a stopped
+saved-user-PC owner, not a PIPE-held returning executive continuation.
+See design/kcore-k15-pi6-v1986.md.
+
 ## 2026-11-26 v1985: atomic bitmap placement during DROP
 
 Replace original-base placement in explicit directory profile with

@@ -64,7 +64,13 @@ Matched 64K capacity gate PASS:12 children (fixture cap) vs9 RAW/8
 old placement, four239-word bitmaps and seven resident children.
 Actual moved-source FULL/finish, all12 checked WAITs, exact final MM
 and normal HALT. Net equivalent RAW11186; no measured maximum.
-Physical PI6/EXEC/nonresident terminal and K16 remain open.
+v1986 actual native selector + service GCC/KCC PDP6/KA10 each44
+selections/16 services, six unsafe mutants per compiler reject.
+Unchanged 64K physical image actual PI6 during pinned mode3 restore,
+READY_ONCE, first dispatch, guest data, all12 WAITs, final MM/HALT
+PASS. Ten corrupted trace controls reject. Healthy PI6/READY_ONCE
+gate closed, zero production growth. Actual EXEC/nonresident terminal,
+physical fault injection and K16 remain open.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See
