@@ -1,3 +1,20 @@
+## 2026-11-26 v1962: PDP-6 reuses low-core 060/061
+
+PDP-6 absolute symbols vm_pdp6_apr=060 and mach_kernel_stack_base=061
+replace two existing BSS words. Disposable KINIT clears both immediately
+after KCORE copy, before any resident services. Native 64K TSFS boot
+reaches INIT; initial zero readback, effective APR RL=170000 PL=007777,
+idle stack=041637 and all 53 decoder words verified. KCORE initialized
+10843, total 11112; total fixed footprint including low core 11162, equal
+to v1959. All five Stage1 decoder identities and embedding PASS.
+DAS/DLINK absolute export and external reference accepted. Testkit
+868a510. Evidence $TMPDIR/k17-reclaim-v1962.EkBuYS.
+Initial-user APR shadow observed 006005170000: low LH bits come from
+startup stack rather than descriptor size. PDP-6 hardware masks them;
+software limit and KA10 high register field require an exact canonical
+word. Correct this separately before enabling KA10. KA10 trap cells
+must not be used for these variables; KA10 backend remains OPEN.
+
 ## 2026-11-26 v1961: K17.1 common low-core relocation accepted
 
 KCORE and its existing 53-word block decoder moved from octal 060 to

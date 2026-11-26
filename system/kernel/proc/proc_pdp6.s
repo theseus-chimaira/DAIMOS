@@ -4544,8 +4544,9 @@ kinit_stack_highwater:
         .long   0
 .endif
 
-mach_kernel_stack_base:
-        .block  1
+; PDP-6 private low core. KINIT clears it before interrupts and
+; publishes the permanent idle stack during the late handoff.
+        .equ mach_kernel_stack_base,000061
 
         .data
         .globl  proc_comm_words

@@ -112,6 +112,8 @@ extern kword_t kinit_boot_handoff[2];
 unsigned int kinit_memory_kwords(void);
 /** @brief Clear/normalize APR state before normal interrupt setup. */
 void kinit_apr_clear(void);
+/** @brief Initialize processor-private low-core cells after KCORE copy. */
+void kinit_lowcore_init(void);
 /** @brief Print the fixed early boot identification banner. */
 void kinit_diag_banner(void);
 /**

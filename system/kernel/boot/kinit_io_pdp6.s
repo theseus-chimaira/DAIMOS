@@ -28,6 +28,16 @@
         .globl kinit_put_memory
         .globl kinit_put6_spaces
         .globl kinit_probe_word
+        .globl kinit_lowcore_init
+        .globl vm_pdp6_apr
+        .globl mach_kernel_stack_base
+
+/* These PDP-6 BSS cells lie below the linked KCORE clearing range.
+ * Stage1 occupied them; discard that content before resident services. */
+kinit_lowcore_init:
+        setzm vm_pdp6_apr
+        setzm mach_kernel_stack_base
+        popj 17,
 
 /* Save/test/restore a physical core word. The two diagnostic bit patterns
  * are complements, so one literal suffices. Preserve all original content

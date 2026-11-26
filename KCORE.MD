@@ -70,7 +70,10 @@ two distinct development states (now historical):
   The KCC fixed image remains 11114 words including BSS (10843
   initialized), with all 462 common map symbols shifted by two. Native
   PDP-6 256K compressed KINIT entry and 64K raw TSFS INIT pass; no
-  native KA10 boot is claimed yet.
+  native KA10 boot is claimed yet. v1962 reuses 060/061 on PDP-6
+  for the APR shadow and idle-stack base; KINIT clears both before
+  resident services. Fixed KCORE is now 11112 words (net RAM-neutral
+  versus v1959 including low core).
 
 - KCORE holds mandatory, immediately callable kernel/interrupt, process,
   syscall, VM/MM, device and VFS dispatch. Optional policy and provider

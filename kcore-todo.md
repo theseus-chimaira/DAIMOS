@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1961 K17.1 common low core accepted; K01-K09 closed).
+Updated: 2026-11-26 (v1962 K17.1 PDP-6 low-core reuse accepted).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
@@ -1534,6 +1534,10 @@ history is now reachable from main (v1809); mode3 remains disabled.
     unchanged at 11114 words; only two more low words reserved.
     Initial read-in remains 060. Full PDP-6 shell/pressure replay is
     not claimed by this focused regression. Testkit 068ede6; docs 2c878b1.
+    v1962 reuses 060/061 for APR shadow and idle stack on PDP-6,
+    with transient KINIT initialization; KCORE 11112 words, net
+    fixed RAM unchanged versus v1959. KA10 reserves both trap cells.
+    Testkit 868a510.
   - Paper tape remains the sole initial bootstrap medium. Retain the
     PDP-6 Stage0 path and use native KA10 paper-tape read-in; reuse
     Stage1, existing essential drivers and TSFS DECtape root.

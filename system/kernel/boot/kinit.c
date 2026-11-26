@@ -483,6 +483,7 @@ kinit_enter(void)
         KINIT_TRACE(KINIT_ENTER);
 #endif
         kcore_load();
+        kinit_lowcore_init();
         memory_kwords = kinit_memory_kwords();
         {
                 kword_t core_words;
