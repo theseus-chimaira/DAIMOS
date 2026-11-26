@@ -1,3 +1,59 @@
+## 2026-11-26 v1953-k09: 64K lifecycle, descriptor exhaustion, DSK loss
+
+Native MM error classification v1111 repeated on current source
+and v1950 SIMH: total shortage -1, fragmentation -2, descriptor
+exhaustion -3, free/retry and both wrong-error implementations
+PASS. Evidence $TMPDIR/daimos-mm-exhaustion-class-v1111.Do3Cvh.
+
+64K KCC GENERAL and STRICT mixed nine-child FULL lifecycle PASS
+on v1950 SIMH, unchanged production images. Tenth RUN refused;
+B/A MM26, free5072, largest847, packed32256. Actual FULL042435
+opcode200000000004 slot0: child3 PACKED151000..160000 and
+PROCESS160000..170000 both pin1; free4695, pinned7936 including
+idle stack. Nine exact WAITs and data checks, normal HALT exit0.
+Z MM8, free39589 contiguous, parent VM/u-area unchanged,
+no child or pipe owner, no reservation, high slot2, baseline pin.
+B/A ticks19859/19806, FULL29680/28969, Z59448/57700 GENERAL/STRICT.
+Both independent conservation checks and four modified-observation
+controls per profile PASS. Evidence $TMPDIR/k09-physical-v1953.qmouUY,
+64-general/physical and 64-strict/physical. Testkit 9bbd172.
+
+Organic 48K KCC GENERAL descriptor exhaustion PASS, four native
+children each allocate three pipes and block on the coordination
+pipe, parent admits four more pipes, then refuses despite ample
+FD slots and contiguous memory. Actual A/B/C/D MM9/32/32/7,
+free24247/14904/14904/24390; B/C largest14789. Close/recreate
+then refuse again, four exact WAITs, baseline owner identities
+unchanged except closed 14-word pipe and reclaimed 129-word cache.
+No packing, child or pipe leak, baseline idle stack pin unchanged.
+Intentional harness stop after completion marker, not HALT.
+Evidence $TMPDIR/k09-descriptors-v1953.XFiqba; testkit 77a2a9c.
+
+Type-270 v1953 SIMH 12dcd35 fixes selected-unit SNA/ADT removal:
+retain SNA ATP, latch FER and complete address error in ADT;
+ADT cancels seek and latches ADE/FER. Immediate reattach cannot
+complete the abandoned address acquisition. Unselected unit
+detach unchanged. Four native probes and three v1950 probes
+PASS on clean committed simulator; first three fail on v1950.
+Actual unmodified KCC FULL explicit disk root DATAO034127 then
+DETACH DSK0 reaches PI5 error CONI000125200003; HALT101271,
+namespace root0, no INIT, four private disks unchanged.
+Candidate FULL disk, AUTO tape-DSK, explicit tape-DSK root
+regressions PASS. Clean commit repeats native and KINIT loss.
+Testkit c641074/94c8944, docs a32a1c4, evidence
+$TMPDIR/k09-dsk-loss-v1953.iSRMsJ.
+
+Separate unresolved issued-READ loss reproduced on clean v1953:
+CONO270,1105 at 033650, detach after instruction at 033651;
+301 real storage clock ticks (wall_clock_ticks035->0512) later
+storage_state remains -3, no root/INIT, unchanged media. v1953
+does not change DFR/busy detach semantics. The boot dsk_wait
+polls without timeout; proper controller error/termination and
+bounded boot recovery still require resolution. No fabricated IDS
+reset or timeout workaround. Evidence read-stall/console.clean.
+K09 remains OPEN; optimization and 16K target deferred as v1952.
+No production kernel source change.
+
 ## 2026-11-26 v1952-k09: defer RAM optimization
 
 User decision: defer PURE/KCORE size optimization and the 16K

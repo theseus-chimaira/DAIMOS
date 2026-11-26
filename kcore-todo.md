@@ -1455,6 +1455,13 @@ history is now reachable from main (v1809); mode3 remains disabled.
   RAM accounting and the measured budget miss. Nine-owner/64K
   pressure, descriptor exhaustion, transient ownership and
   controller loss/recovery remain required. Default flags unchanged.
+  v1953: 64K GENERAL/STRICT mixed nine-child FULL native
+  lifecycle and MM conservation PASS. Native MM classification
+  and organic 48K GENERAL descriptor exhaustion/free/retry/WAIT
+  PASS. Type-270 SNA/ADT selected-media-loss and actual KINIT
+  fail-closed correction PASS on SIMH 12dcd35. Later READ loss
+  stalls real KINIT beyond 301 ticks; DFR/busy loss semantics
+  and bounded boot recovery remain OPEN. No kernel change.
 
 
 ## Mandatory KCORE: KA10 nonpaged backend
