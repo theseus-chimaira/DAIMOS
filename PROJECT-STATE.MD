@@ -1,3 +1,53 @@
+## 2026-11-26 v1951-k09: current KCC 48K mixed FULL and 64K budget PASS
+
+Installed v1950 simulator cb6a255 SHA256
+60eb5ed95aab5da99d014c6c49eb0ef77635dc0b878e62b47da4d807f7e8a204.
+Actual 48K GENERAL/STRICT KCC native TSFS, no AUXSTORE,
+five children (one plain, four compressed), sixth RUN refused.
+Unmodified production images from the v1949 build, rerun on the
+corrected simulator; old interrupted v1949 runs not accepted.
+B/A MM18 identical; actual FULL042415 opcode200000000004, slot0,
+child3 source111000..120000 and target120000..130000 both pin1.
+All five exact PID/EXITED/status WAITs and data checks; Z MM8,
+high slot2, stable parent VM/u-area, no child owner or pipe,
+no reservation, baseline idle-stack pin, normal HALT and exit0.
+Both profiles managed28195; free B/A4112 (largest1935),
+FULL3735 (pinned7936 incl idle stack), Z23237 (largest23237).
+Ticks B/A15214/14365, FULL24208/23022, Z32121/31484 GENERAL/STRICT.
+Original and extra conservation verifier pass both, four altered
+conservation controls per profile rejected. No kernel code growth.
+Evidence $TMPDIR/k09-kcc48-pressure-v1951.T6qP70, source builds
+$TMPDIR/k09-kcc48-pressure-v1949.Yzi0LN. Testkit 8cae32d.
+
+Physical matched 64K lowmem KCC standard INIT OFF/RAW noaux
+budget PASS on same installed simulator. Actual resident code/data
+16966/20845, fixed MM table80 both, SYS_MEMINFO inclusive count
+17046/20925. Core vector reserve48 separately. Managed kernel
+boot allocations614 both, PID1 VM4096/u-area264. Allocated4974
+both; free43468/39589. Actual installed PURE delta3879; fixed
+KCORE11114 byte-identical. 16K fixed budget FAIL already OFF
+(+662) and RAW (+4541) before managed scratch. Initial budget
+oracle double-counted MM table; corrected replay of the actual
+unchanged physical observations passes four adverse controls.
+Linked transient KINIT image+0400 bootstrap stack reserve
+27911 OFF /32056 GENERAL /30172 STRICT words, not a measured
+peak. Evidence $TMPDIR/k09-budget64-v1951.d5Qr6j.
+Gross five-child RAW prefix saving2560 < module cost3879.
+No default enablement or net-benefit claim.
+
+Historical nine-child v1674 geometry (five 3072 and four 2048
+APR words, 9*264 u-areas, less 9*128 RAW) requires24776 words,
+but current native KCC baseline has24247 free. Initial graphical
+test harness stopped and corrected to headless/isolated ports;
+both reached A and launched children, stopped deliberately.
+Two-grown/seven-ordinary test geometry prepared, GENERAL
+build and live baseline A observed; stopped before full run.
+Actual nine-owner pressure, full write-watch and 64K active
+lifecycle remain open. Fresh 64K nine-child mixed GENERAL/STRICT
+KCC builds $TMPDIR/k09-kcc64-pressure-v1951.7hfblX ready,
+not executed. No simulator remains. Controller disappearance
+and K09 release gates still open; RAW/mode3 default OFF.
+
 ## 2026-11-26 v1950-k09: H-270 address acquisition correction
 
 v1948 AUTO/DSK failure traced on original SIMH fe97912 to actual

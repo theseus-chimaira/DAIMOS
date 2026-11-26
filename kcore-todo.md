@@ -1442,6 +1442,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
   v1949 CLEAR-to-IDS assumption; no kernel workaround or growth. KCC 64K GENERAL/STRICT build and bounded
   physical noaux boot PASS. Remaining
   physical pressure/lifecycle and controller matrix gates OPEN.
+  v1951: actual current KCC 48K GENERAL/STRICT mixed FULL
+  five-child lifecycle and MM conservation PASS on v1950 SIMH.
+  Matched 64K OFF/RAW physical budget PASS in measurement;
+  16K fixed ceiling FAIL 17046/20925 incl MM table before
+  scratch, installed RAW delta3879. Nine-owner v1674 geometry
+  no longer fits current KCC baseline; recalibrated two-grown
+  fixture build/A reached, full run pending. Fresh 64K active
+  mixed builds ready, unexecuted. No production growth.
 
 ## Mandatory KCORE: KA10 nonpaged backend
 
