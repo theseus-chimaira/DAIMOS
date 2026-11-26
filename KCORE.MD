@@ -91,7 +91,9 @@ two distinct development states (now historical):
   moved to 147. Net two fixed words; no PDP-6 or per-process growth.
   Both no-drum roots and physical DMA isolation pass. Additional
   DF10/RH10 drivers must own a pair exclusively until quiescent; no
-  future driver allocations yet.
+  future driver allocations yet. v1969 adds a second generic pair at
+  152/153, for four words total; ordinary KCORE begins at 154. Both
+  pairs passed separate DMA isolation tests. No concurrent qualification.
 
 - KCORE holds mandatory, immediately callable kernel/interrupt, process,
   syscall, VM/MM, device and VFS dispatch. Optional policy and provider

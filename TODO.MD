@@ -165,6 +165,8 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   v1968 allocates the generic KA10 DF10 pair at 150/151, verifies
   both no-drum boots and native DMA isolation, and audits all other
   available KA10 devices; only RM10 is required for 0.9.
+  v1969 expands the workspace to two pairs at 150/151 and 152/153,
+  four words total. Both pass separate native DMA isolation tests.
   Use the existing KA10 RC10/RM10 emulator (FHA) with a new minimal
   removable native driver. Type 167/236 remains PDP-6-only; emulator
   changes are restricted to demonstrated defect fixes. Direct

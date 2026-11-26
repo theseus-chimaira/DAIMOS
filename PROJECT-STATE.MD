@@ -1,3 +1,20 @@
+## 2026-11-26 v1969: two generic KA10 DMA channel pairs
+
+User approved a four-word low-core DMA workspace. Pair 0 remains at
+0150/0151, pair 1 at 0152/0153, APR shadow at 0147, ordinary KCORE at
+0154. Link-time guard covers all five addresses. Both pairs initialized
+zero. Both KA10 no-drum root profiles reached INIT with the live APR
+shadow and all four DMA words zero. Fixed KA10 KCORE is 10854 initialized + 270 BSS = 11124 words;
++2 versus v1968, +4 versus v1967. PDP-6 11109 words, unchanged binaries,
+linker maps and Stage1 tape. All five Stage1 decoder identity and
+KCORE embedding checks pass for both KA10 root profiles and PDP-6.
+Native 128-word DMA isolation read/write passes independently for
+both pairs, preserving all other 11122 KCORE words, including distinct
+sentinels in the inactive pair. Concurrent controllers not qualified.
+No allocator, additional per-process space, emulator changes or future
+controller driver. RM10 MRES integration remains open. Testkit 1e00ed8;
+docs 546c3c2; evidence $TMPDIR/k17-lowcore-v1969.AFaHzM.
+
 ## 2026-11-26 v1968: KA10 DF10 low-core ownership and device audit
 
 Approved KA10-only layout implemented: APR shadow moved from BSS to

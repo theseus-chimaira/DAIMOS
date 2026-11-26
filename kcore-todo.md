@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1968 KA10 DF10 low-core ownership).
+Updated: 2026-11-26 (v1969 two generic KA10 DMA channel pairs).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
@@ -1561,7 +1561,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
     64-word RM10 segments (60 segments per track, 90 tracks, 2700
     blocks per unit in the simulator). Integrate a removable MRES with
     AUXSTORE/BACKSTORE and ordinary swap; no additional fixed KCORE
-    growth beyond the approved two-word DF10 pair, and no per-process
+    growth beyond the approved four-word DMA workspace, and no per-process
     overhead. Verify physical DMA, PI/completion, NXM,
     read/write, geometry boundaries, media errors and recovery. Confirm
     coexistence with Type 270 and DECtape and preserve PDP-6 regressions.
@@ -1574,7 +1574,9 @@ history is now reachable from main (v1809); mode3 remains disabled.
     address mask). v1968 allocates 150/151, APR shadow at 147; link
     guard, both no-drum boots, and native DMA isolation PASS. Future
     DF10/RH10 channels can share only after verified quiescence; no
-    further fixed workspace now. MRES/PI and error qualification open.
+    further fixed workspace beyond v1969: two pairs 150/151 and 152/153.
+    Both passed independent native DMA isolation. Concurrent operation
+    is unqualified. MRES/PI and error qualification open.
     All additional pdp10-ka devices audited in pdp10-doc
     KERNEL/KA10-LOWCORE-DEVICE-OWNERSHIP-V1968.MD; future devices stay
     outside K17. Testkit 83abd8c.

@@ -984,7 +984,9 @@ ifeq ($(DAIMOS_MACHINE),ka10)
 	    $$1=="vm_pdp6_apr" {apr=$$2} \
 	    $$1=="ka10_df10_cia" {cia=$$2} \
 	    $$1=="ka10_df10_completion" {cw=$$2} \
-	    END {if (end!="000147" || apr!="000147" || cia!="000150" || cw!="000151") exit 1}' $(KCORE_MAP) || \
+	    $$1=="ka10_df10_cia1" {cia1=$$2} \
+	    $$1=="ka10_df10_completion1" {cw1=$$2} \
+	    END {if (end!="000147" || apr!="000147" || cia!="000150" || cw!="000151" || cia1!="000152" || cw1!="000153") exit 1}' $(KCORE_MAP) || \
 	    { echo 'invalid KA10 DF10 low-core layout' >&2; rm -f $@ $(KCORE_MAP); exit 1; }
 endif
 
