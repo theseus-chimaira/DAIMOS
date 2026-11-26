@@ -13,6 +13,11 @@
  * the send-buffer line through CONO. The scanner is armed only while a reader
  * is waiting and is disabled after PI service until the consuming path rearms
  * it, so dcs_rx_word cannot be overwritten by a second line.
+ *
+ * The current KA10 simulator exposes its historical WAITS convention:
+ * line numbers are biased by two and DATAO DCSB sends to the explicitly
+ * selected buffer. Translate only at the device boundary; the common
+ * logical TTY and mailbox remain zero-based. Do not change PDP-6 I/O.
  */
 
         .text
@@ -38,12 +43,24 @@
  * scanner is simply disabled, preventing overwrite until a reader consumes it.
  */
 dcs_pi_handler:
+        .ifdef DAIMOS_KA10
+        ; PI2 is shared with RM10. A stopped but unarmed scanner
+        ; is not an interrupt source; do not fabricate an input byte.
+        coni 0300,1
+        andi 1,017
+        caie 1,012
+        jrst dcs_pi_tail
+        .else
         conso 0300,000010
         jrst dcs_pi_tail
+        .endif
         skipe dcs_rx_word
         jrst dcs_pi_disable
         coni 0304,1
         andi 1,077
+        .ifdef DAIMOS_KA10
+        subi 1,2                     ; WAITS line number -> physical line
+        .endif
         lsh 1,010
         movem 1,dcs_rx_word
         datai 0304,1
@@ -129,9 +146,15 @@ dcs_putchar:
         ldb 2,[POINT 6,1,27]
         caile 2,017
         jrst kret_arg
+        .ifdef DAIMOS_KA10
+        cono 0304,2(2)               ; KA10 simulator's biased send line
+        andi 1,0377
+        datao 0304,1                 ; explicitly selected send buffer
+        .else
         cono 0304,0(2)
         andi 1,0377
         datao 0300,1
+        .endif
         jrst kret_ok
 
         .bss

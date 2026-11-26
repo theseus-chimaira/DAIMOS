@@ -25,12 +25,14 @@ set dtc1 enabled
 set dtc2 enabled
 set dtc3 enabled
 set mtc disabled
-set dcs disabled
+set dcs enabled
+set dcs lines=8
 set dpy disabled
 set wcnsls disabled
 set ocnsls disabled
 attach -q ptr @STAGE1_TAPE@
 deposit ptr time 1
+attach -q dcs0 @DCS0_PORT@
 @KA10_ROOT_ATTACH@
 @BOOT_COMMANDS@
 exit

@@ -23,8 +23,8 @@
         .globl cr_minit
         .globl cp_minit
 .endif
-        .ifndef DAIMOS_KA10
         .globl dcs_minit
+        .ifndef DAIMOS_KA10
         .globl ge_minit
         .endif
 .if KINIT_FULL
@@ -85,8 +85,8 @@
         .globl cr_mres_package
         .globl cp_mres_package
 .endif
-        .ifndef DAIMOS_KA10
         .globl dcs_mres_package
+        .ifndef DAIMOS_KA10
         .globl ge_mres_package
         .endif
 .if KINIT_FULL
@@ -143,8 +143,8 @@ __minit_table_begin:
         .word cr_minit,,cr_mres_package
         .word cp_minit,,cp_mres_package
 .endif
-        .ifndef DAIMOS_KA10
         .word dcs_minit,,dcs_mres_package
+        .ifndef DAIMOS_KA10
         .word ge_minit,,ge_mres_package
         .endif
 .if KINIT_FULL

@@ -472,7 +472,7 @@ endif
 KINIT_DRM_ENABLED = 1
 ifeq ($(DAIMOS_MACHINE),ka10)
 # The KA10 DRM package uses native RC10/RM10 instead of Type 167/236.
-MRES_PACKAGE_OBJS := $(filter-out $(DCS_MRES_OBJ) $(GE_MRES_OBJ),$(MRES_PACKAGE_OBJS))
+MRES_PACKAGE_OBJS := $(filter-out $(GE_MRES_OBJ),$(MRES_PACKAGE_OBJS))
 endif
 
 MINIT_TABLE_ASM = $(BUILD)/module-table-runtime.s
