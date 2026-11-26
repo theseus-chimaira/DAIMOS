@@ -983,12 +983,11 @@ vm_enter_initial_user_start:
         movem 17,mach_kernel_sp
         pushj 17,proc_record_kernel_sp
 
-        ; APR DATAO: LH contains (user words - 02000), RH relocation base.
-        move 0,3
-        addi 0,1
-        hrl 0,0
-        hrrz 1,1(1)
-        hrr 0,1
+        ; Use the exact descriptor extent, not the startup stack offset.
+        ; Both halves are 02000-aligned: this word also encodes the KA10
+        ; low-segment APR fields with every high-segment field zero.
+        move 0,1(1)
+        sub 0,[02000,,0]
         movem 0,vm_pdp6_apr
         datao 0000,vm_pdp6_apr
 

@@ -73,7 +73,10 @@ two distinct development states (now historical):
   native KA10 boot is claimed yet. v1962 reuses 060/061 on PDP-6
   for the APR shadow and idle-stack base; KINIT clears both before
   resident services. Fixed KCORE is now 11112 words (net RAM-neutral
-  versus v1959 including low core).
+  versus v1959 including low core). v1963 first-user APR descriptor
+  correction saves another three words (11109 fixed KCORE). The aligned
+  common APR encoding passes native PDP-6 and KA10 ONESEG/TWOSEG probes;
+  KA10 counted read-in reaches KINIT, but KA10 KINIT is not yet implemented.
 
 - KCORE holds mandatory, immediately callable kernel/interrupt, process,
   syscall, VM/MM, device and VFS dispatch. Optional policy and provider

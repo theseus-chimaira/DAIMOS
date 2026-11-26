@@ -1,3 +1,25 @@
+## 2026-11-26 v1963: common APR geometry and native KA10 Stage1
+
+First-user activation now constructs the canonical APR word from the
+aligned VM descriptor, not the startup stack. Native 64K PDP-6 TSFS
+reaches INIT with APR 006000170000 (RL=170000, PL=007777), idle
+stack=041634, both reclaimed cells initially zero and all 53 decoder
+words identical. KCORE initialized 10840, total 11109; three resident
+words saved beyond v1962, total fixed footprint 11159. Native source
+activation/translation probes PASS on PDP-6 and KA10 ONESEG/TWOSEG:
+aligned low limit/bias identical, KA10 RH=0 PH=01777, high unusable.
+No APR encoding translation required for the aligned common model.
+DAS c59787f adds --ka10-readin, compiled C99 warning-free and installed
+in PDP10_PREFIX. Native KA10 64K ONESEG hardware read-in of unchanged
+DTC Stage1 from counted paper tape reaches 060 and linked KINIT entry
+056034 using Type136/551. Tape words compared independently; missing
+final JRST and wrapping blocks rejected. Initial PDP-6 executable
+read-in attempt failed; counted format fixes it. KINIT is still the
+PDP-6 image and was deliberately not executed on KA10. Testkit 9ee6590,
+docs 72a6831; evidence $TMPDIR/k17-apr-v1963.AjuTV3.
+Next: native KA10 build selection, trap/PI/context and boot integration.
+K17 remains OPEN; no full shell or KA10 user execution claimed.
+
 ## 2026-11-26 v1962: PDP-6 reuses low-core 060/061
 
 PDP-6 absolute symbols vm_pdp6_apr=060 and mach_kernel_stack_base=061
