@@ -1754,8 +1754,12 @@ history is now reachable from main (v1809); mode3 remains disabled.
   v1985 lower-sector placement during original pinned DROP accepts
   native/source-build gate. Exact proposed destination escrow, no
   extra owner/descriptor or published RAW/bitmap relocation. GCC5460/
-  KCC6504 MRES, fixed KCORE and RAW byte-identical. Actual aligned
-  capacity replay required before live activation.
+  KCC6504 MRES, fixed KCORE and RAW byte-identical. Matched 64K
+  aligned-capacity replay PASS:12 children (fixture ceiling) vs9 RAW
+  and8 old placement, four239-word bitmap owners, actual moved-source
+  FULL/finish and12 checked WAITs, final MM/HALT. Net equivalent
+  saving11186; no maximum-capacity claim. PI6/READY_ONCE, EXEC,
+  nonresident terminal and K16 still open before live activation.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,

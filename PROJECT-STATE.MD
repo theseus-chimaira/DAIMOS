@@ -27,9 +27,20 @@ fixed KCORE byte-identical to v1983. Directory GCC5460/KCC6504 words,
 Testkit4df3cf2; evidence relative TMPDIR: pure-bitmap-placement-v1985.f5IRAH,
 pure-bitmap-placement-v1985.97yGI3, pure-placement-regression-v1985.uvVqvy,
 pure-directory-package-v1983.zYDnuc, pure-placement-build-v1985.s17eYq.
-Native/source-build placement subgate accepted. Physical 64K replay
-must demonstrate actual aligned admission gain before activation.
-K15/K16 still OPEN; see design/kcore-k15-placement-v1985.md.
+Native/source-build and matched 64K aligned-capacity subgates accepted.
+Actual placement image admits12 children (fixture ceiling), vs9 RAW
+and8 old bitmap; 4 bitmap239 at octal061400,062400,063400,064400,
+1 RAW3584,7 resident4096, 33 nonoverlapping extents. Free1837, largest
+aligned1024. Gross equivalent RAW saving13380, net11186 after measured
+2194 resident overhead. Actual slot3 FULL/finish source061400/239,
+target160000/4096 once-pinned pair; all12 exact data/WAIT checks,
+final child storage/user extents/u-areas absent, normal HALT. Independent
+verifier plus five final-state negative controls PASS, testkit6028851.
+Evidence pure-placement-physical-v1985.GSp074 (verified-pressure-v1985.txt,
+verified-final-v1985.txt, physical.clean). No simulator remains running.
+K15/K16 still OPEN for actual PI6/READY_ONCE, EXEC, nonresident terminal,
+dirty recovery, RT latency/stack, real DSH/48K; no production enable.
+See design/kcore-k15-placement-v1985.md.
 
 ## 2026-11-26 v1984: actual directory pressure, restore and RT fallback
 

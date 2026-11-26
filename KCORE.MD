@@ -60,7 +60,11 @@ v1985 atomic lower-sector placement at original DROP, no extra owner,
 scratch or permanent word; existing exact commit/escrow proof extended.
 GCC/KCC native25+4+2 calls/CPU and six mutants PASS. Source-built
 GCC5460/KCC6504 MRES; fixed KCORE and RAW packages byte-identical.
-Physical aligned-capacity gate remains open until matched replay.
+Matched 64K capacity gate PASS:12 children (fixture cap) vs9 RAW/8
+old placement, four239-word bitmaps and seven resident children.
+Actual moved-source FULL/finish, all12 checked WAITs, exact final MM
+and normal HALT. Net equivalent RAW11186; no measured maximum.
+Physical PI6/EXEC/nonresident terminal and K16 remain open.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

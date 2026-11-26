@@ -83,7 +83,36 @@ three members validated. Existing replay recognizes new alignment
 and independent verifier accepts exact sleeping resident children
 if admitted without pressure. Final MM/HALT verification now requires
 all child storage cells, user extents and u-areas retired. Reject old
-incomplete traces. Physical aligned admission gain remains a mandatory
-gate; do not infer capacity from gross free words. K15 actual PI6,
-READY_ONCE, EXEC/nonresident terminal and K16 uncertain recovery,
-RT latency/stack, 48K/real DSH remain open. Default OFF.
+incomplete traces. Actual matched physical replay PASSED:
+
+| Physical pressure metric (decimal words) | RAW | Old bitmap | v1985 |
+| --- | ---: | ---: | ---: |
+| Children admitted | 9 | 8 | 12 |
+| RAW children | 9 | 1 | 1 |
+| Directory children | 0 | 7 | 4 |
+| Resident children | 0 | 0 | 7 |
+| Total free | 5908 | 31078 | 1837 |
+| Largest 1024-aligned free interval | 1536 | 3584 | 1024 |
+
+Same independently linked executable hashes. 12 is fixture ceiling,
+not measured maximum. All33 MM extents valid and nonoverlapping.
+New bitmap bases octal061400,062400,063400,064400, each239 words;
+actual resident APRs reused former high bitmap locations. Equivalent
+RAW saving4*(3584-239)=13380 gross, net11186 after actual2194 resident
+overhead. Measured admission +3 vs RAW, +4 vs original bitmap; free
+RAM is lower because additional children actually use it.
+Actual slot-zero restore slot3, original relocated source061400/239,
+disjoint target160000/4096; each pinned once at atomic finish. Peak
+image4335 words. All12 complete sparse data/status WAIT checks, parent
+Z, exact final child mode0/free, no user or u-area owners, normal HALT
+PC0 and Goodbye. Independent verifier testkit6028851 checks old/raw/new
+fixture hashes, capacity gain, relocated source, full lifecycle trace
+and final MM/HALT; five final-state trace controls reject stale mode,
+stale u-area bit, orphan u-area, wrong current and missing HALT.
+Evidence pure-placement-physical-v1985.GSp074/physical.clean,
+verified-pressure-v1985.txt and verified-final-v1985.txt. Runtime
+replay completed with exit0; no running simulator. Close matched 64K
+placement/capacity and successful RUN/SLEEP/restore/EXIT/WAIT/final MM
+subgates, not all K15 or K16. Actual PI6/READY_ONCE, EXEC/nonresident
+terminal, dirty recovery, RT latency/stack and 48K/real DSH remain
+open. Default OFF.

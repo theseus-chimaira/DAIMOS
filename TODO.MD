@@ -242,12 +242,13 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   allocation refusal, torn/overlapping data, uncertain MM and
   terminal cancellation under native/physical fault injection.
   Do not lift the permanent mode3 destroy refusal until safe.
-- [ ] **Mode3 placement and aligned capacity:** v1984 measured7 bitmap239
-  vs RAW3584, equivalent net21322 saved, but directory8 vs RAW9 children.
-  31078 free, largest aligned3584 <4096 required. v1985 implements
-  lower 0200-aligned placement inside original atomic DROP; no extra
-  descriptor or published-owner move. Native/source-build PASS.
-  Prove actual contiguous capacity gain and recovery before activation.
+- [x] **Mode3 placement and matched 64K aligned capacity:** v1984
+  directory8 vs RAW9 despite31078 free. v1985 lower 0200-aligned
+  placement inside original atomic DROP, no extra descriptor or
+  published-owner move; native/source-build PASS. Matched actual
+  directory12 (fixture ceiling) vs9 RAW and8 old placement; relocated
+  FULL/finish, all12 checked WAITs, final MM/HALT PASS. Net11186.
+  Broader physical/dirty recovery acceptance remains in K15/K16.
 - [ ] **End-to-end mode3 acceptance:** source-built 48K/64K physical
   marked and unmarked process RUN/EXEC/EXIT/WAIT; repeat sleep/wake,
   real DSH mutable-state samples, kernel/process memory high-water,
