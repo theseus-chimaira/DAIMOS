@@ -194,6 +194,8 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   RAW fallback, partial overlap and forward/backward encoding/decoding.
   Reject nonshrinking outputs. Do not rely on a disjoint codec test as
   proof of in-place safety.
+  v1975 forward-only bounded preflight component PASS; reverse
+  traversal and ownership/restore integration remain open.
 - [ ] **Temporary memory ownership:** reuse the still-owned prefix only
   where its full lifetime is proved; evaluate a VFS workspace solely
   with an explicit exclusive lease and callback/BCACHE safety.

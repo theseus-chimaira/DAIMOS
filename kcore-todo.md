@@ -1690,6 +1690,9 @@ history is now reachable from main (v1809); mode3 remains disabled.
   overlapping encoding and decoding with read-only preflight, exact
   encoded size, RAW fallback and nonshrinking-output rejection.
   Cover 35/36/37-word boundaries and sparse/dense data.
+  v1975: native bounded forward overlap and exact-size preflight PASS
+  (612 matrix cases, both hazard mutants). Reverse traversal and
+  ownership-linked integration remain OPEN; no installed mode3 code.
 - [ ] **K12 - Temporary memory ownership.** Prove scratch lifetime and
   exclusive ownership, preferentially using the still-owned prefix.
   Otherwise use bounded pinned no-reclaim MM scratch. Never borrow

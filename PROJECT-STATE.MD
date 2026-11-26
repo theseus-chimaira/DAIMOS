@@ -1,3 +1,23 @@
+## 2026-11-26 v1975: K11 bounded forward bitmap component
+
+K01-K09 and scoped K17 accepted; K10-K16 optional.
+Native source-linked v1975 forward bitmap read-only exact-size
+planner/encode/decode uses unchanged v1451 assembler. 612 matrix
+cases PASS (269 success,199 unsafe overlap,144 no gain), separate
+capacity/corruption/guard cases and both executed hazard mutants
+(exit2/5) PASS. Original v1660 exact-consumption regression PASS.
+DOBJ v1975 286 TEXT,0 DATA/BSS; original codec30 TEXT. Not installed;
+no KCORE, MRES, mode-map or per-process RAM change. Reverse traversal,
+MM lease/commit, live admission and physical lifecycle remain OPEN.
+K10 audit finds occupied flags/BSS RH; candidate TX2 LH0400000
+marker and spare credential/SIDL bits require full implementation.
+No new DXR ABI yet. KCC v59g89c036e fixes static qualified absolute
+word-pointer .LINK emission; old compiler negative, new -O/-O0
+native PASS, installed. Testkit944b19b. Evidence
+$TMPDIR/daimos-bitmap-overlap-v1975.5M0mWA and
+$TMPDIR/daimos-bitmap-decode-v1660.KkQmLi.
+See design/kcore-k10-k11-v1975.md. RAW PURE/mode3 default OFF.
+
 ## 2026-11-26 v1974: K17 basic KA10 functional integration CLOSED
 
 No production code, simulator or RAM change. Three native
