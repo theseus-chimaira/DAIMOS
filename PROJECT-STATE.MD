@@ -1,3 +1,36 @@
+## 2026-11-26 v1950-k09: H-270 address acquisition correction
+
+v1948 AUTO/DSK failure traced on original SIMH fe97912 to actual
+128 successful DSK0 reads, absent DSK1-3 probes, false DFR with
+ADE/FER/OPR (040103), stale event and END/CLR across subsequent
+DATAO/CONO. Original trace k09-dsk-trace-v1949.cRHfKI/dsk.debug.
+
+The first simulator patch 227f563 (v1949) passed all six root
+cases but forced CLEAR to IDS and tested DATAO in DFR. That
+interpretation is WITHDRAWN after checking DEC H-270 (Apr 1966),
+pp. 2-11, 3-7/8, 3-11, 3-26 and Fig. 3-1. Do not accept the
+v1949 tests as hardware-contract evidence.
+
+Corrected simulator cb6a255 (v1950): DATAO accepted only IDS/ADT;
+legal ADT seek interruption cancels the old unit event and
+schedules the new unit. Absent-unit address error remains ADT
+with ADE/FER and no false DFR. Nonbusy CONO reloads command
+bits instead of retaining stale END/CLR; CLR implies END.
+No fabricated CLEAR reset, no DAIMOS root selection workaround.
+Three independent native tests (clear_test, reselect_test,
+dfr_test) fail on original and v1949 and pass on v1950. Testkit
+d82e532. Original/speculative/fixed logs under
+$TMPDIR/k09-sims-v1950.zk3e6w. Actual six-case KCC FULL matrix
+PASS on corrected simulator, unchanged KCORE/KINIT/PURE/SWAP:
+$TMPDIR/k09-root-v1950.qEXzJF. AUTO TSFS/DSK AUXSTORE publishes
+512 backing blocks and DISK SWAP; other five cases unchanged.
+No kernel source, ABI, resident or transient RAM change.
+
+K09 remains OPEN for active KCC pressure/lifecycle matrices,
+controller disappearance and actual release acceptance.
+The v1950 change does not claim all Type-270 states or
+mid-transfer detach are fully hardware-faithful.
+
 ## 2026-11-26 v1948-k09: FULL boot geometry repaired; K09 OPEN
 
 Fresh current-source KCC FULL OFF and RAW images build and reach

@@ -1437,8 +1437,9 @@ history is now reachable from main (v1809); mode3 remains disabled.
   zero permanent growth). Corrected FULL AUTO disk/drum,
   TSFS noaux/PURE and TSFS DRM AUXSTORE/SWAP selections PASS.
   Explicit TSFS with full-size DSK AUXSTORE PASS, AUTO FAIL
-  (PURE selected instead of SWAP); investigate root probe and
-  controller state. KCC 64K GENERAL/STRICT build and bounded
+  (PURE selected instead of SWAP). v1950: fixed in SIMH cb6a255
+  after DEC H-270 review; six-case root matrix PASS. Withdrawn
+  v1949 CLEAR-to-IDS assumption; no kernel workaround or growth. KCC 64K GENERAL/STRICT build and bounded
   physical noaux boot PASS. Remaining
   physical pressure/lifecycle and controller matrix gates OPEN.
 
