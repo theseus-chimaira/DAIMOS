@@ -217,11 +217,14 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   quarantine. Native PDP6/KA10 each47 calls, six unsafe mutants PASS.
   Combined incremental staged TEXT1135, zero DATA/BSS. No installed
   mode3 link; live lifecycle, restore and recovery still open.
-- [ ] **Mode3 FULL restoration and terminal path:** integrate bounded
-  decode, immutable backing/restore fallback, 02000-octal (1024-word) APR alignment,
-  target-pin ordering, raw/bitmap terminal detach and VM destroy.
-  Add exact wake/retry/EXIT/WAIT/finalizer accounting and preserve
-  pin/owner identity on every error path.
+- [x] **Mode3 FULL restoration (staged):** v1980 bounded immutable
+  DXR loader, disjoint aligned pinned APR, directory decode/compare,
+  atomic MM finish, exact original-owner publication and rollback.
+  PDP6/KA10 each52 calls and six unsafe mutants PASS; +872 staged
+  TEXT, zero DATA/BSS. No installed restore dispatch yet.
+- [ ] **Mode3 process lifecycle and terminal path:** integrate actual
+  wake/retry/EXIT/WAIT/finalizer, raw/bitmap terminal detach and VM
+  destroy. Preserve exact pin/owner identity on every error path.
 - [ ] **PI6, MM and backing failure matrix for mode3:** verify actual
   process scheduler wake, READY_ONCE, source loss, corruption,
   allocation refusal, torn/overlapping data, uncertain MM and

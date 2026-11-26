@@ -408,3 +408,229 @@ uncertain:
         mach_pi_restore(pi_state);
         return MM_ERR_BUSY;
 }
+
+#ifdef DAIMOS_PBM_RESTORE_V1980
+#include "proc_pure_bitmap_directory_v1977.h"
+#include "proc_pure_bitmap_terminal_v1661.h"
+#include "proc_pure_bitmap_restore_v1980.h"
+
+extern int mm_pure_bitmap_finish_v1664(unsigned int, kword_t, kword_t,
+    kword_t, kword_t);
+
+/* Private continuation identity, not a new resident registry. The exact
+ * source/target geometry is kept in ordinary call locals. */
+struct pbr_identity_v1980 {
+        kword_t backing, words, uarea, cred, escrow;
+        kword_t *modep;
+};
+
+/* PI excluded. Validate u-area ownership before reading any of its
+ * words. The original bitmap owner is immovable, but a stale u-area
+ * pointer must not authorize a physical write or release. */
+static struct proc *
+pbr_process_v1980(unsigned int slot)
+{
+        struct proc *p;
+        kword_t area;
+        int i;
+
+        if (!slot || proc_current_slot || !proc_table || !proc_swap_records ||
+            !proc_storage_runtime_v29.words || slot >= proc_slots ||
+            slot >= proc_high_slot || slot >= proc_storage_runtime_v29.slots)
+                return 0;
+        p = &proc_table[slot];
+        area = PROC_UAREA_BASE(p);
+        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) || !area ||
+            VM_PDP6_BASE(p) || (PROC_STATE(p) != PROC_SRUN &&
+            PROC_STATE(p) != PROC_SLEEP && PROC_STATE(p) != PROC_STOP) ||
+            mm_pure_table_v1922() != MM_OK)
+                return 0;
+        for (i = 0; i < mm_extent_count; ++i) {
+                const struct mm_extent *e = &mm_extents[i];
+                if (MM_EXTENT_BASE(e) == area)
+                        return MM_EXTENT_TYPE(e) == MM_TYPE_KERNEL_DYNAMIC &&
+                            MM_EXTENT_OWNER(e) == 01000U + slot &&
+                            MM_EXTENT_WORDS(e) == PROC_UAREA_WORDS &&
+                            !MM_EXTENT_PINS(e) ? p : 0;
+        }
+        return 0;
+}
+
+/* Recheck after returning from interruptible backing I/O, and before
+ * rollback. Backing availability is NOT required to discard a failed
+ * provisional target. Identity and original ownership still are. */
+static int
+pbr_identity_ok_v1980(unsigned int slot, const struct pbr_identity_v1980 *id)
+{
+        struct proc *p = pbr_process_v1980(slot);
+        kword_t *u;
+        if (!p || PROC_UAREA_BASE(p) != id->uarea ||
+            VM_SPACE_WORDS(p) != id->words ||
+            proc_swap_records[slot].state != id->backing ||
+            proc_storage_runtime_v29.words + slot / PROC_STMAP_SLOTS_WORD_V28 != id->modep ||
+            ((*id->modep >> ((slot % PROC_STMAP_SLOTS_WORD_V28) * 2U)) & 3UL) !=
+                PROC_STORAGE_BITMAP_V1661)
+                return 0;
+        u = PRAM_PTR(id->uarea);
+        return u[PROC_SWAP_BACKING_OFFSET] == id->backing &&
+            (u[PROC_CRED_OFFSET] & PROC_SWAP_EXEC_MASK_V1976) == id->cred &&
+            u[PROC_FINALIZE_OFFSET] == id->escrow &&
+            !(u[PROC_FDCTL_OFFSET] & (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT));
+}
+
+int
+proc_pure_bitmap_restore_v1980(unsigned int slot,
+    proc_pure_ram_loader_v1391 loader)
+{
+        struct pbr_identity_v1980 id;
+        struct proc *p;
+        kword_t skip, raw, source = 0UL, encoded = 0UL, target = 0UL;
+        kword_t saved, *u, mask;
+        unsigned int target_pins = 0U;
+        int i, rc, owners;
+
+        saved = mach_pi_disable();
+        rc = MM_ERR_INVAL;
+        if (!loader || !(p = pbr_process_v1980(slot)))
+                goto out;
+        if (pram_prepare(slot, PURE_LIFE_RESTORE_V1610, &p,
+            &id.backing, &id.words, &skip) != MM_OK ||
+            (id.words & (VM_PDP6_ALIGN_WORDS - 1UL)))
+                goto out;
+        id.uarea = PROC_UAREA_BASE(p);
+        u = PRAM_PTR(id.uarea);
+        id.cred = u[PROC_CRED_OFFSET] & PROC_SWAP_EXEC_MASK_V1976;
+        id.escrow = 0UL;
+        id.modep = &proc_storage_runtime_v29.words[slot / PROC_STMAP_SLOTS_WORD_V28];
+        mask = 3UL << ((slot % PROC_STMAP_SLOTS_WORD_V28) * 2U);
+        if (!(id.cred & PROC_SWAP_MUTABLE_V1976) || !pbr_identity_ok_v1980(slot, &id))
+                goto out;
+        raw = id.words - skip;
+        /* K13 preserves original APR base and fits wholly in PURE skip.
+         * Discover the length only before the transaction; then use
+         * the shared exact owner proof for all subsequent mutations. */
+        for (i = 0; i < mm_extent_count; ++i) {
+                const struct mm_extent *e = &mm_extents[i];
+                if (MM_EXTENT_OWNER(e) == slot && MM_EXTENT_TYPE(e) == MM_TYPE_PACKED_PROCESS) {
+                        source = MM_EXTENT_BASE(e);
+                        encoded = MM_EXTENT_WORDS(e);
+                        break;
+                }
+        }
+        if (!source || (source & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            encoded > skip || encoded >= raw || encoded < (raw + 35UL) / 36UL ||
+            proc_pure_full_owners_v1917(slot, source, encoded, 0UL, id.words, 0U, 0U) != 1)
+                goto out;
+        /* Combined old kind bits deliberately refuse old RAW recovery.
+         * RH holds the original target address here (not DROP count).
+         * Mode3 distinguishes this escrow from v1978 dirty preparation. */
+        id.escrow = PROC_PURE_BITMAP_FULL_V1980(source, 0UL);
+        u[PROC_FINALIZE_OFFSET] = id.escrow;
+        rc = mm_pin(source);
+        if (proc_pure_full_owners_v1917(slot, source, encoded, 0UL, id.words, 1U, 0U) != 1) {
+                if (rc != MM_OK && pbr_identity_ok_v1980(slot, &id) &&
+                    proc_pure_full_owners_v1917(slot, source, encoded, 0UL, id.words, 0U, 0U) == 1) {
+                        u[PROC_FINALIZE_OFFSET] = 0UL;
+                        goto out;
+                }
+                goto uncertain;
+        }
+        /* A zero->one witness in this uninterrupted window establishes
+         * the pin even if its success reply was lost. No reclaim/I/O. */
+        rc = mm_alloc_aligned_noreclaim(id.words, VM_PDP6_ALIGN_WORDS,
+            MM_TYPE_PROCESS, slot, MM_ALLOC_HIGH, &target);
+        if (rc != MM_OK && !target)
+                goto rollback;
+        id.escrow = PROC_PURE_BITMAP_FULL_V1980(source,
+            target && target <= MM_HALF_MASK ? target : 1UL);
+        u[PROC_FINALIZE_OFFSET] = id.escrow;
+        if (!target || proc_pure_full_owners_v1917(slot, source, encoded,
+            target, id.words, 1U, 0U) != 3)
+                goto uncertain;
+        if (rc != MM_OK)
+                goto rollback;
+        rc = mm_pin(target);
+        if (proc_pure_full_owners_v1917(slot, source, encoded,
+            target, id.words, 1U, 1U) != 3) {
+                if (rc != MM_OK && proc_pure_full_owners_v1917(slot, source, encoded,
+                    target, id.words, 1U, 0U) == 3)
+                        goto rollback;
+                goto uncertain;
+        }
+        target_pins = 1U;
+        if (!pbr_identity_ok_v1980(slot, &id))
+                goto uncertain;
+        mach_pi_restore(saved);
+        fs_zero_words(PRAM_PTR(target), (unsigned int)skip);
+        rc = loader(id.backing, target, id.uarea, id.words) ? MM_ERR_INVAL : MM_OK;
+        saved = mach_pi_disable();
+        if (!pbr_identity_ok_v1980(slot, &id) ||
+            proc_pure_full_owners_v1917(slot, source, encoded, target, id.words, 1U, 1U) != 3)
+                goto uncertain;
+        if (rc != MM_OK)
+                goto rollback;
+        if (pure_admit_source_v1608(&proc_table[slot], id.backing) != MM_OK) {
+                rc = MM_ERR_INVAL;
+                goto rollback;
+        }
+        /* Both exact pins and TRANSITION protect disjoint physical
+         * spans. Restore normal PI behavior for the long codec pass. */
+        mach_pi_restore(saved);
+        rc = pbmd_decode_v1977(source, encoded, target + skip, raw, PBMD_FORWARD_V1977);
+        /* Same stable disjoint spans, no external callback. Compare
+         * before PI exclusion so the long verification pass is also
+         * interruptible. The final owner/identity proof follows both. */
+        if (rc == MM_OK)
+                rc = pbmd_verify_v1979(target + skip, raw, source, encoded);
+        saved = mach_pi_disable();
+        if (!pbr_identity_ok_v1980(slot, &id) ||
+            proc_pure_full_owners_v1917(slot, source, encoded, target, id.words, 1U, 1U) != 3)
+                goto uncertain;
+        if (rc == PBMD_WRITE_FAULT_V1977)
+                goto uncertain;
+        if (rc != MM_OK)
+                goto rollback;
+        rc = mm_pure_bitmap_finish_v1664(slot, source, encoded, target, id.words);
+        owners = proc_pure_full_owners_v1917(slot, source, encoded, target, id.words, 0U, 0U);
+        if (owners == 2 && pbr_identity_ok_v1980(slot, &id)) {
+                /* Original bitmap absent, exact sole APR unpinned.
+                 * Lost success reply cannot undo a verified commit. */
+                VM_PDP6_SET_BASE(&proc_table[slot], target);
+                u[PROC_SWAP_BACKING_OFFSET] = 0UL;
+                *id.modep &= ~mask;
+                u[PROC_FINALIZE_OFFSET] = 0UL;
+                PROC_CLEAR_TRANSITION(&proc_table[slot]);
+                rc = MM_OK;
+                goto out;
+        }
+        if (rc == MM_OK)
+                goto uncertain;
+rollback:
+        /* No I/O or new pin acquisitions from here. A failed operation
+         * is reconciled by exact witnesses, never by its reply alone. */
+        if (!pbr_identity_ok_v1980(slot, &id) ||
+            proc_pure_full_owners_v1917(slot, source, encoded, target, id.words, 1U, target_pins) != (target ? 3 : 1))
+                goto uncertain;
+        if (target) {
+                if (target_pins)
+                        (void)mm_unpin(target);
+                if (proc_pure_full_owners_v1917(slot, source, encoded, target, id.words, 1U, 0U) != 3)
+                        goto uncertain;
+                (void)mm_free(target, MM_TYPE_PROCESS, slot);
+                if (proc_pure_full_owners_v1917(slot, source, encoded, target, id.words, 1U, 0U) != 1)
+                        goto uncertain;
+                id.escrow = PROC_PURE_BITMAP_FULL_V1980(source, 0UL);
+                u[PROC_FINALIZE_OFFSET] = id.escrow;
+        }
+        (void)mm_unpin(source);
+        if (proc_pure_full_owners_v1917(slot, source, encoded, 0UL, id.words, 0U, 0U) != 1)
+                goto uncertain;
+        u[PROC_FINALIZE_OFFSET] = 0UL;
+        goto out;
+uncertain:
+        rc = MM_ERR_BUSY;
+out:
+        mach_pi_restore(saved);
+        return rc;
+}
+#endif

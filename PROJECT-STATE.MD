@@ -1,3 +1,41 @@
+## 2026-11-26 v1980: K14 bounded directory FULL restore CLOSED (staged)
+
+Reuse existing v1391 bounded DXR loader, v1917 exact two-owner proof,
+v1922 table validation and v1664 atomic compressed-to-APR finish leaf.
+New opt-in proc_pure_bitmap_restore_v1980, slot-zero TRANSITION, exact
+u-area and backing identity, marked mode3, original aligned bitmap
+extent and length within PURE prefix. Pin source, reserve disjoint
+full aligned PROCESS without reclaim, prove target and pin it before
+zeroing/loading. Plain/compressed backing, directory decode and exact
+comparison run with normal PI behavior. Recheck identity and exact
+owners after I/O and after codec; finish consumes both pins and deletes
+source. Exact sole unpinned APR and original identity authorize mode0
+publication, VM base, escrow clear and TRANSITION release. No old
+interleaved decoder. Clean failure retires target before source pin;
+uncertainty retains original mode/escrow and TRANSITION. Word067
+combined kind with source and original target rejects old RAW recovery.
+Native PDP6/KA10 each52 restores, including real K13 DROP, actual
+bounded DXR and fixed low-core block decoder, plain/compressed file,
+physical word overwrite/reuse, real no-fit and descriptor exhaustion,
+malformed stream, pin/owner/identity faults, lost/false replies,
+rollback refusals. Six executed unsafe variants rejected. v1839,
+v1855,v1919 RAW regressions and nine unsafe controls PASS.
+FULL DOBJ1046->1785 (+739) plus existing finish133 =872 incremental
+TEXT, cumulative staged K11-K14 TEXT2007. Zero new DATA/BSS or per-slot
+metadata. OFF FULL object byte-identical. Testkit 333f07f. Evidence
+$TMPDIR/pure-bitmap-full-v1980.2vmz4f, k14-v1980.7LDnyb,
+pure-full-free-reply-v1839.kmDJoW, pure-k05-pinned-commit-v1855.D7khZr,
+pure-mm-recover-v1919.3bXTLk. See design/kcore-k14-v1980.md.
+Disjoint restore temporarily needs a full 02000-aligned free extent
+plus the retained bitmap and second descriptor; no separate scratch.
+Synthetic image1024 + bitmap176 =1200 image words during restore,
+vs disjoint RAW FULL1792. No live payback or latency measurement.
+K15/K16 OPEN: scheduler dispatch, terminal/VM destroy, deferred
+uncertain-owner recovery, real backing/physical acceptance, stack and
+interrupt high-water, net RAM. Valid-shaped corruption is not detected
+by canonical equality alone. No installed target enables new restore.
+RAW PURE/mode3 default OFF; fixed destroy refusal unchanged.
+
 ## 2026-11-26 v1979: K13 atomic bitmap ownership CLOSED (staged)
 
 Directory candidate compared read-only against every original RAW word

@@ -1719,9 +1719,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   staged TEXT1135, no DATA/BSS or extra descriptor. K14-K16 must finish
   restoration, live lifecycle, uncertain recovery, latency and payback;
   installed mode3 remains disabled.
-- [ ] **K14 - FULL restoration.** Integrate bounded decoding, immutable
-  backing/fallback, 02000-octal (1024-word) APR alignment, target pin ordering and safe
-  restoration into a complete runnable process image.
+- [x] **K14 - FULL restoration (staged).** v1980 directory restore
+  reuses v1391 bounded immutable DXR loader and v1917 exact MM owner
+  proof. Retain pinned bitmap, allocate/pin disjoint 02000-octal
+  (1024-word) aligned full APR; reload, decode and compare before
+  atomic finish and exact owner/identity publication. PDP6/KA10
+  each52 calls, plain/compressed DXR with real codec, six unsafe
+  mutants and RAW regressions PASS. +872 staged TEXT, no DATA/BSS.
+  Full disjoint allocation required; K15/K16 own live dispatch,
+  terminal, deferred recovery, latency and net RAM acceptance.
 - [ ] **K15 - Compressed process lifecycle.** Complete RUN, EXEC,
   SLEEP, wake, WAIT, EXIT, PI6 retry, terminal detach and VM destroy
   for mode3, with exact finalizer/owner accounting. Keep the existing
