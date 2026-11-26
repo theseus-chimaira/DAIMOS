@@ -1,3 +1,29 @@
+## 2026-11-26 v1965: K17 disk and drum scope extension
+
+User adds Type 270 boot and a functional drum device to the basic KA10
+0.9 milestone. Keep paper tape as the sole initial read-in medium:
+counted PTR -> existing DSK Stage1 -> native KA10 KINIT -> Type 270
+D6FS root -> unchanged PDP-6 INIT/LOGIN/DSH. Retain the accepted TSFS
+DECtape path. Current KA10 build rejects disk-root configuration; lift
+that restriction and qualify native disk I/O, boot and shell. Direct
+DSK hardware read-in remains post-0.9. Require one drum-backed auxiliary
+storage configuration and normal BACKSTORE/swap, not drum-root boot.
+
+Simulator cec5436 audit: DP167/DR236 (010/0400) are PDP6-only build
+entries; pdp6_drum.c is not linked into KA10. Its common physical
+Mem_read_word/Mem_write_word interfaces also work on KA10. Prefer
+investigating opt-in reuse of the Type167/236 model and existing DRM236
+MRES before writing another driver. Device 0400 conflicts with MTY
+and WAITS IMP if enabled. Verify DMA, PI, NXM, read/write and recovery;
+no historical electrical compatibility or successful KA10 drum test
+is claimed. KA10 FHA (RC10 at 0170) supports RM10 (345600 words/unit)
+and RD10; a minimal RM10 provider is the fallback if reuse is invalid.
+FSA (RS03/04) uses RH10, whose first address 270 conflicts with DSK.
+No native controller change, disk/drum build or test in this scope-only
+increment. No additional fixed KCORE/per-process storage planned.
+TODO.MD and kcore-todo.md updated; K17 remains OPEN. Full KA10 support,
+additional controller families and drum-root qualification post-0.9.
+
 ## 2026-11-26 v1964: native KA10 build and first INIT
 
 DAIMOS_MACHINE=ka10 builds a distinct 64K ONESEG LOWMEM hybrid TSFS

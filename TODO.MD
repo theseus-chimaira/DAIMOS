@@ -156,7 +156,12 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   v1964 native KA10 build reaches INIT, with byte-identical PDP-6
   user binaries and Type270 controller/driver recovery tests passed.
   Retain paper-tape bootstrap, existing essential drivers, TSFS DECtape
-  root and unmodified PDP-6 user binaries. Verify native APR/protection,
+  root and unmodified PDP-6 user binaries. v1965 additionally requires
+  Type 270/D6FS disk-root boot via paper-tape Stage1 and one working
+  drum-backed AUXSTORE/BACKSTORE and ordinary swap configuration.
+  Prefer Type 167/236 emulator/driver reuse; RC10/RM10 is the fallback
+  if needed. Direct non-paper-tape read-in and drum-root boot remain
+  deferred. Verify native APR/protection,
   PI/trap, context, shell and normal process/syscall behavior, plus PDP-6
   regressions. Keep optional unqualified features OFF. Full KA10 support
   is post-0.9 (P7); see kcore-todo.md for the precise acceptance boundary.
@@ -341,8 +346,9 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   executable and reverse PDP-6 compatibility policy, additional native
   controllers and alternative hardware read-in media. Complete wider
   KA10 hardware, swap, RAW PURE, pressure/recovery and RAM qualification
-  before claiming full support. Only basic native boot and ordinary
-  PDP-6-equivalent operation are required for 0.9 (K17).
+  before claiming full support. The 0.9 K17 gate requires native TSFS
+  and Type 270/D6FS boots via paper tape, PDP-6-equivalent operation
+  and one supported auxiliary drum configuration with ordinary swap.
 
 - [ ] **Unified TSFS before 0.9 release:** after KCORE freeze and its
   RAM sweep, implement a compact single TSFS namespace/read engine and

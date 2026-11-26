@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1964 native KA10 first INIT).
+Updated: 2026-11-26 (v1965 K17 disk and drum scope extension).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
@@ -1544,7 +1544,27 @@ history is now reachable from main (v1809); mode3 remains disabled.
     v1963 counted paper-tape converter and native 64K KA10 Stage1
     to KINIT entry PASS. v1964 native KA10 build/boot through INIT
     passes with identical Stage1 DXR and PDP-6 user binaries. Type270
-    native controller/driver recovery tests pass; disk-root deferred.
+    native controller/driver recovery tests pass.
+  - [ ] K17 Type 270 boot (required for 0.9): counted paper-tape
+    read-in of the existing DSK Stage1, native KA10 KINIT and D6FS
+    Type 270 root, unchanged PDP-6 INIT/LOGIN/DSH and interactive shell.
+    Keep the TSFS DECtape boot path. Reuse the production DSK/DCT
+    driver and existing image format; qualify normal disk read/write.
+    Resolve the current tape-only build restriction and verify 64K
+    staging/RAM geometry. Direct hardware DSK read-in stays post-0.9.
+    RH10 controllers remain disabled in the Type 270 configuration.
+  - [ ] K17 drum support (required for 0.9): provide at least one
+    functional drum-backed auxiliary storage configuration on KA10,
+    including ordinary AUXSTORE/BACKSTORE operation and swap. First
+    evaluate reusing the existing Type 167/236 simulator model and
+    DAIMOS DRM236 MRES at 010/0400; verify device conflicts, physical
+    DMA, PI/completion, NXM, read/write and existing recovery tests.
+    The common simulator memory interfaces are promising, not proof
+    of historical electrical compatibility. If reuse is unsuitable,
+    implement the minimum RC10/RM10 backend (FHA at 0170) with the
+    existing block-provider contract. Prefer zero fixed KCORE growth
+    and no extra per-process state. Drum-root boot and additional
+    drum/controller families remain post-0.9.
   - Implement native APR relocation/protection, PI/trap, and executive/
     user context handling; keep common ownership and rollback semantics.
     Avoid additional per-process state unless required for correctness.
@@ -1561,7 +1581,9 @@ history is now reachable from main (v1809); mode3 remains disabled.
     and runtime regressions; PDP-6 results alone cannot accept KA10.
   - Keep unqualified optional features (including RAW PURE and mode3)
     disabled; do not defer correctness bugs in the supported path.
-    No new peripheral drivers or speculative runtime CPU dispatcher.
+    Reuse existing peripheral drivers where possible; only the
+    minimum drum backend is in scope if Type 167/236 reuse fails.
+    No speculative runtime CPU dispatcher.
   Mandatory after K09, before optional K10-K16. Architecture boundary:
   design/kcore-multi-cpu-portability-v1605.md.
 
@@ -1571,7 +1593,8 @@ history is now reachable from main (v1809); mode3 remains disabled.
   Implement both relocation registers and the optional high segment,
   evaluate shared TEXT, define KA10-native executable and reverse PDP-6
   compatibility policy, support additional native controllers and direct
-  non-paper-tape read-in, and complete the wider hardware, root, swap,
+  non-paper-tape read-in, and complete the wider hardware, drum-root,
+  root, swap,
   RAW PURE, multi-process pressure, failure/recovery and measured RAM
   qualification matrix. Qualify optional features before enabling them.
   Do not make these tasks prerequisites for the basic 0.9 KA10 milestone.
