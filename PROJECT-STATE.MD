@@ -1,3 +1,61 @@
+## 2026-11-26 v1974: K17 basic KA10 functional integration CLOSED
+
+No production code, simulator or RAM change. Three native
+source-linked DCS/RM10 shared PI2 cases PASS: receive while
+BUSY, both pending and DMA before RX. Actual TCP Z, 128
+DMA words, two wakes, guards, descriptor/completion and
+inactive pair checked. Test event/wake stubs, real devices.
+Make target test-k17-pi2-v1974 independently PASS.
+Testkit9130a75.
+
+Actual full-kernel DCS-swapped reader: v1955 test user
+fixture only changed, PID2 attaches logical TTY1 in RAW
+and waits on real DCS event before its pipe read. B original
+8192-word APR DISK base0, scheduler asleep on relocated
+DCS event, mailbox/event0. Native TCP Z wakes the owner;
+slot0 native RM10 READ has mailbox0133/event-1, original
+transition and 64 used blocks. Reader resumes syscall,
+consumes exact Z and passes original pipe/canaries/WAIT.
+C mailbox empty. MM9/20/8 free43747/1203/43761,
+bitmap0/64/0, reads2/2/66 writes0/64/64 errors0.
+Reserved drum region unchanged, backing area written.
+No simultaneous independent second DMA channel claimed.
+Testkit1b23ae5.
+
+Native matched KA10/PDP6 64K D6FS process lifecycle,
+events, five-user scheduler/preemption/private context,
+disk sleep/wakeup and PID1 APR fault PASS, original
+four user DXRs byte-identical per case. Initial PDP6
+graphical boot stopped, existing headless replay PASS.
+Additional child fault read/write outside APR, KA10
+unassigned instruction and following normal child PASS:
+exact EXITED0400001 and normal037, parent stack/static
+canaries and process/file accounting unchanged. KA10
+RWINP, PDP6 RWNP, both HALT0. Testkit8c5430f/1b23ae5.
+
+Native D6FS direct Type270 swap, FHA disabled, original
+six-child fixture PASS: MM9/20/8 free43863/1319/43877,
+bitmap0/64/0, DSK reads50/129/193 writes1/65/65 errors0.
+Slot2 8192 words, exact run64 and all WAIT/canaries,
+stable owners and pipe cleanup. Testkit3029875.
+Evidence $TMPDIR/k17-pi2-v1974.HMnc5A.
+
+K17 scoped native 64K KA10 ONESEG 0.9 functional gate
+CLOSED: counted paper-tape, four usable TSFS/D6FS shell
+profiles with/without RM10, direct disk and both RM10
+swap workloads, native shared PI2, representative media
+loss, process/BRK/EXEC/WAIT/PI/protection and matched PDP6
+regressions. KCORE11124 words unchanged, RM10 130 and
+DCS65, two approved low-core DMA pairs, no per-process
+growth. Docs f6cfcf5/f82b4bc, KERNEL/KA10-V1974.MD.
+No claim of concurrent DSH on no-backing TSFS, arbitrary
+mid-sector fault coverage, full architecture or hardware
+release qualification. Existing RAW PURE/mode3 OFF.
+K01-K09 and K17 mandatory functional gates closed;
+optional K10-K16 compression only on net RAM benefit.
+Deferred full KA10, other controllers, simultaneous
+independent DMA, 16K/size tuning and physical hardware.
+
 ## 2026-11-26 v1973: current KA10 TSFS swap and critical RM10 loss
 
 No production code or emulator change. Test-only split-member

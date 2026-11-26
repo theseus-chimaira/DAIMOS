@@ -150,7 +150,7 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   do not remove them without separate preservation review.
   Historical procedure: `design/daimos-branch-consolidation-v1677.md`;
   current manifest: `design/daimos-branch-consolidation-v1809.md`.
-- [ ] **Basic KA10 compatibility (mandatory K17 for 0.9):** native
+- [x] **Basic KA10 compatibility (mandatory K17 for 0.9, CLOSED v1974):** native
   64K single-segment KA10 boot and ordinary PDP-6-equivalent operation.
   Common low core and decoder at 062 verified; PDP-6 reuses 060/061.
   v1964 native KA10 build reaches INIT, with byte-identical PDP-6
@@ -176,6 +176,12 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   regressions. Keep optional unqualified features OFF. Full KA10 support
   is post-0.9 (P7); see kcore-todo.md for the precise acceptance boundary.
   Schedule after K09 and before optional K10-K16 mode3.
+  v1974 all four usable root/terminal profiles, actual native
+  Type270 and both RM10 swap workloads, representative media
+  loss, active DCS/PI2, process/preemption/protection/fault
+  cleanup and matched PDP6 regressions PASS. K17 scoped 0.9
+  functional CLOSED; no physical hardware or full architecture
+  claim. See PROJECT-STATE.MD and pdp10-doc KERNEL/KA10-V1974.MD.
 
 ## P2. KCORE P1-E: optional compressed mutable RAM (mode3)
 

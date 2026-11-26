@@ -1520,7 +1520,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
 
 ## Mandatory KCORE: basic KA10 compatibility for 0.9
 
-- [ ] **K17 - Native KA10 boot and PDP-6-equivalent operation.** Full
+- [x] **K17 - Native KA10 boot and PDP-6-equivalent operation (functional CLOSED v1974).** Full
   KA10 support is explicitly post-0.9. Implement an actual KA10 target,
   not a relabeled PDP-6 binary. Keep one contiguous low user segment,
   no pager, no dependency on optional KT10A hardware, and the existing
@@ -1545,7 +1545,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
     to KINIT entry PASS. v1964 native KA10 build/boot through INIT
     passes with identical Stage1 DXR and PDP-6 user binaries. Type270
     native controller/driver recovery tests pass.
-  - [ ] K17 Type 270 boot (required for 0.9): counted paper-tape
+  - [x] K17 Type 270 boot (required for 0.9): counted paper-tape
     read-in of the existing DSK Stage1, native KA10 KINIT and D6FS
     Type 270 root, unchanged PDP-6 INIT/LOGIN/DSH and interactive shell.
     Keep the TSFS DECtape boot path. Reuse the production DSK/DCT
@@ -1554,7 +1554,11 @@ history is now reachable from main (v1809); mode3 remains disabled.
     boot to INIT and VFS provider 6 pass. Interactive shell and ordinary
     process operation remain open. Direct DSK read-in stays post-0.9.
     RH10 controllers remain disabled in the Type 270 configuration.
-  - [ ] K17 RC10/RM10 drum support (required for 0.9): implement the
+    v1972 interactive CTY/DCS0 PASS; v1974 actual direct
+    Type270 native 64K swap PASS MM9/20/8 free43863/1319/
+    43877, 64 backing blocks written and read, errors0.
+    Exact canaries/WAIT/stable owners. Testkit3029875.
+  - [x] K17 RC10/RM10 drum support (required for 0.9): implement the
     minimal native KA10 RM10 block provider using the existing simulator
     FHA controller at octal 0170 and its DF10 channel. Keep the existing
     128-word block-provider contract, mapping each block to two adjacent
@@ -1602,6 +1606,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
     300-tick STOP then reason2 fail-stop, original MM/pins/
     backing retained exactly. No mid-sector or critical
     recovery claim. Active RX+DMA remains open.
+    v1974 closes scoped shared PI2: real TCP RX while
+    RM10 BUSY, both pending, DMA-first source-linked
+    PASS; actual full-kernel DISK reader on DCS event,
+    TCP wake and slot0 native RM10 READ, exact byte
+    resumed, six WAIT/canaries and owners PASS.
+    MM9/20/8 free43747/1203/43761 errors0.
+    Independent simultaneously active second DMA pair
+    remains future controller qualification.
 
     All additional pdp10-ka devices audited in pdp10-doc
     KERNEL/KA10-LOWCORE-DEVICE-OWNERSHIP-V1968.MD; future devices stay
@@ -1618,6 +1630,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
     READ/WRITE critical fail-stop accepted. Testkit71a793a, docs6d17b61.
     Active RX+DMA overlap and broader native process/protection/PI
     qualification remain separate open K17 gates.
+    v1974 all those scoped gates accepted; see below.
   - Implement native APR relocation/protection, PI/trap, and executive/
     user context handling; keep common ownership and rollback semantics.
     Avoid additional per-process state unless required for correctness.
@@ -1626,6 +1639,13 @@ history is now reachable from main (v1809); mode3 remains disabled.
     v1964 native 060/061 trap and APR address-break selection are
     implemented; user/executive instruction-trap probes pass. Normal
     process-context and full protection/PI qualification remain open.
+    v1974 actual native lifecycle/events/five-user
+    timer preemption/private contexts and protection
+    PASS, exact child fatal WAIT0400001 for native
+    READ/WRITE and unassigned instruction, parent
+    canaries and process/file accounting preserved.
+    Matched PDP6 runtime replay PASS. Testkit8c5430f/
+    1b23ae5. No production code or RAM change.
   - Boot KA10 in 64K ONESEG, complete KINIT, mount root, run the unchanged
     PDP-6 INIT and reach an interactive shell. v1964 reaches INIT on
     native KA10; interactive shell still OPEN. Verify ordinary syscalls,
@@ -1638,6 +1658,13 @@ history is now reachable from main (v1809); mode3 remains disabled.
     the only new storage backend in scope. Emulator changes are limited
     to verified defect fixes.
     No speculative runtime CPU dispatcher.
+  v1974 scoped 0.9 acceptance CLOSED. All four usable
+  profiles, three native swap providers/configurations,
+  representative critical loss and active shared PI2,
+  normal process/protection/PI and matched PDP6 pass.
+  RAW PURE/mode3 OFF. Full architecture/hardware and
+  wider controller qualification separate. Docs f82b4bc,
+  KERNEL/KA10-V1974.MD.
   Mandatory after K09, before optional K10-K16. Architecture boundary:
   design/kcore-multi-cpu-portability-v1605.md.
 
