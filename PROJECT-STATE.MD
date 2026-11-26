@@ -1,3 +1,23 @@
+## 2026-11-26 v1955-k09: active 64K DISK swap accepted
+
+Current KCC lowmem D6FS disk root, v1954 installed SIMH.
+Six non-PURE children grow to 8192-word APRs, set two
+PID-specific canaries and block on coordination pipe.
+PID1 STORAGECTL enables swap. Physical A/B/C MM9/20/8,
+free43663/1119/43677, slot2 DISK backing run0..63 at B,
+exact64 bitmap bits and both backing counters. Reads
+50/129/193, writes1/65/65, errors0. Six exact WAITs and
+canary/token checks, both parent pipe FDs closed, final
+bitmap0 and no child/pipe owner/reservation, unchanged
+parent APR/u-area and stable owners, baseline idle pin.
+Harness stops sleeping PID1 after marker, not guest HALT.
+First run retained parent's pipe; corrected fixture passes.
+No production source change. Testkit a762a86, docs c9ca329.
+Evidence $TMPDIR/k09-disk-swap-v1955.MbLEZM/physical-final.
+K09 ordinary active disk swapping accepted; runtime loss
+and interrupted WRITE, 48K nine-owner lifecycle/write-watch
+still open. Size and 16K target deferred, RAW/mode3 OFF.
+
 ## 2026-11-26 v1954-k09: Type-270 READ loss and bounded KINIT wait
 
 SIMH cec5436 implements selected-medium loss through command

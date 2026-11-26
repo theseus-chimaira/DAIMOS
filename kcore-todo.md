@@ -1473,6 +1473,11 @@ history is now reachable from main (v1809); mode3 remains disabled.
   and elevator PASS. KCORE unchanged, DSK MRES +23 words,
   no BSS growth. Runtime/WRITE and active DISK SWAP recovery
   not accepted; 48K final lifecycle still outstanding.
+  v1955: native 64K KCC active DISK swap/restore/WAIT PASS.
+  Six 8192-word children; real slot2 64-sector run matches
+  bitmap and counters; both canaries, all six WAITs, exact
+  final owners, pipe and bitmap cleanup. MM9/20/8.
+  Runtime provider loss and 48K final lifecycle remain open.
 
 
 ## Mandatory KCORE: KA10 nonpaged backend
