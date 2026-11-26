@@ -28,16 +28,26 @@
         .globl dsk_read_sector
         .globl dsk_write_sector
         .globl dsk_boot_timeout_v1954
+        .globl dsk_start_active
+        .globl dsk_active_request
+        .globl dsk_address_wait_v1959
+        .globl dsk_address_adt_datao_v1959
+        .globl dsk_address_idle_v1959
 
         .equ DSK_TIMEOUT_TICKS,0454     ; 300 ticks at 60 Hz
         .equ DSK_TIMEOUT_NEG_RH,0777324
-        .equ DSK_ADDRESS_ACCEPT,0500000 ; IDS or ADT
+        .equ DSK_IDS,0400000
+        .equ DSK_SNA,0200000
+        .equ DSK_ADT,0100000
+        .equ DSK_DFR,0040000
         .globl pdp10_pi_dispatch_done
         .globl storage_state
         .globl storage_iowd
         .globl storage_count
         .globl kret_ok
         .globl kret_zero
+        .globl kret_one
+        .globl kret_neg5
         .globl kret_busy
         .globl proc_table
         .globl proc_current_slot
@@ -136,11 +146,12 @@ dsk_dct_read_done:
         jrst pdp10_pi_dispatch_done
 
 dsk_fail_runtime:
-        aos mfsdev_storage_errors+2   ; DSK0
         hrrz 1,dsk_active_request
-        setom 2(1)
         setzm storage_state
         setzm dsk_active_request
+dsk_fail_descriptor_v1958:
+        aos mfsdev_storage_errors+2   ; DSK0
+        setom 2(1)
         addi 1,2
         jrst proc_wakeup_event
 
@@ -149,23 +160,31 @@ dsk_fail_runtime:
  *
  * CLK calls this at 60 Hz even while slot-0 swap service suppresses scheduler
  * preemption. The left half of dsk_active_request is the remaining tick count;
- * its right half is the request descriptor pointer and is unchanged by SUB.
+ * its right half is the request descriptor pointer and is unchanged by ADDM.
  */
 dsk_watchdog_tick:
         skipn dsk_active_request
         popj 017,
-        ; SUB updates only the accumulator; SUBM stores AC-minus-memory,
-        ; which reverses this subtraction.  Add a negative LH unit in
-        ; memory to age the watchdog without touching its RH pointer.
+        ; PI3/PI5 can interrupt the PI6 clock. Claim the countdown
+        ; atomically, then recheck the descriptor before ageing it.
+        ; A completion which won that race must not be aged or failed.
+        coni 0004,2
+        cono 0004,000400
+        skipn dsk_active_request
+        jrst dsk_watchdog_restore_v1958
         movsi 1,-1
         addm 1,dsk_active_request
         hlrz 1,dsk_active_request
-        jumpe 1,dsk_watchdog_timeout
-        popj 017,
+        jumpn 1,dsk_watchdog_restore_v1958
 dsk_watchdog_timeout:
-        cono 0270,0
+        ; END/CLR request real controller termination, not a fake IDS.
+        ; Stop DCT before releasing the stack-resident descriptor.
+        cono 0270,030200
         cono 0200,0
         pushj 017,dsk_fail_runtime
+dsk_watchdog_restore_v1958:
+        trne 2,000200
+        cono 0004,000200
         popj 017,
 
 /**
@@ -218,9 +237,15 @@ dsk_runtime_submit:
         jrst dsk_runtime_queue
         skipe storage_state
         jrst dsk_runtime_busy
+        ; An IRQ can finish the old active request before its caller
+        ; dispatches the queue. Do not bypass those older descriptors.
+        pushj 017,dsk_dispatch
+        jumpn 1,dsk_runtime_queue
+        movei 1,-2(017)
         pushj 017,dsk_start_active
         jrst dsk_runtime_wait
 dsk_runtime_queue:
+        movei 1,-2(017)
         pushj 017,dsk_enqueue
         jumpl 1,dsk_runtime_submit_fail
         ; Close the completion/enqueue race: if the active request completed
@@ -235,10 +260,9 @@ dsk_runtime_wait:
 
 dsk_runtime_slot0:
         pushj 017,dsk_dispatch
-        skipe dsk_active_request
-        jrst dsk_runtime_slot0
-        skipe storage_state
-        jrst dsk_runtime_slot0
+        ; A positive result requires another scan even if the active
+        ; request completed between the dispatch return and this test.
+        jumpn 1,dsk_runtime_slot0
         movei 1,-2(017)
         pushj 017,dsk_start_active
 dsk_runtime_slot0_wait:
@@ -289,26 +313,40 @@ dsk_enqueue_first:
         hrlm 1,dsk_queue(4)
         jrst dsk_enqueue_ok
 
+; AC1=0 only after observing an empty queue and no active owner.
+; AC1=1 means retry later, even if an IRQ has since completed the I/O.
 dsk_dispatch:
         skipe dsk_active_request
-        popj 017,
+        jrst kret_one
         skipe storage_state
-        popj 017,
+        jrst kret_one
         hrlzi 4,0777774             ; AOBJN count -4, unit index 0
 dsk_dispatch_scan:
         hlrz 1,dsk_queue(4)
         jumpn 1,dsk_dispatch_found
         aobjn 4,dsk_dispatch_scan
-        popj 017,
+        jrst kret_zero
 dsk_dispatch_found:
         hrlzs 2,dsk_queue(4)          ; promote q1 RH -> q0 LH, clear q1
+        pushj 017,dsk_start_active
+        ; Admission can fail synchronously without an interrupt.
+        ; Drain the remaining older waiters before a slot-0 caller
+        ; starts its own request; otherwise q1 can be stranded.
+        skipe dsk_active_request
+        jrst kret_one
+        jrst dsk_dispatch
 
 /** @brief Decode AC1 descriptor, arm watchdog state, and start one sector. */
 dsk_start_active:
+        ; Normal executive code is not scheduler-preemptible; no
+        ; outstanding driver owns storage_state here. The shared clock
+        ; can run while the controller drains a previous READ. A stuck
+        ; WRITE must fail this descriptor without DATAO or DCT setup.
         move 4,1
-        move 3,(4)
-        hlrz 1,3
-        hrrz 2,3
+        hlrz 1,(4)
+        hrrz 2,(4)
+        pushj 017,dsk_address_wait_v1959
+        jrst dsk_address_fail_v1959
         move 5,1
         lsh 5,-020
         move 6,1
@@ -328,26 +366,21 @@ dsk_start_go:
         hrli 6,DSK_TIMEOUT_TICKS
         movem 6,dsk_active_request
         movem 3,storage_state
-        datao 0270,1
         cono 0270,000125
         jrst kret_zero
+dsk_address_fail_v1959:
+        move 1,4
+        jrst dsk_fail_descriptor_v1958
 
 dsk_boot_request:
         skipe storage_state
         jrst kret_busy
-        ; The clock is already installed before root discovery.
-        ; Use the shared negative countdown, not a new resident word.
-        ; After an aborted request, DATAO must wait for IDS or ADT.
+        pushj 017,dsk_address_wait_v1959
+        jrst kret_neg5
+        ; Separate transfer deadline: address admission may have
+        ; consumed part of its own bounded wait.
         hrroi 5,DSK_TIMEOUT_NEG_RH
         movem 5,storage_count
-dsk_boot_accept_v1954:
-        coni 0270,5
-        trne 5,DSK_ADDRESS_ACCEPT
-        jrst dsk_boot_accepted_v1954
-        skipn storage_count
-        jrst kret_neg5
-        jrst dsk_boot_accept_v1954
-dsk_boot_accepted_v1954:
         movei 3,0200
         jumpe 4,dsk_boot_read
         pushj 017,dsk_setup_write
@@ -358,7 +391,6 @@ dsk_boot_read:
         hrroi 3,0777775
 dsk_boot_start:
         movem 3,storage_state
-        datao 0270,1
         cono 0270,000125
 dsk_wait:
         move 1,storage_state
@@ -394,6 +426,51 @@ dsk_wait_done:
         aos @dsk_account_table-3(1)     ; completed sector request
         setzm storage_state
         jrst kret_ok
+
+/**
+ * @brief Submit a raw address, proving it was accepted before any command.
+ * @param AC1 Raw Type-270 address; AC2 and AC4 preserved, AC5 scratch.
+ * @return Skip on accepted DATAO; ordinary return on 300-tick timeout.
+ *
+ * H-270 pp. 2-11, 3-10/11 and Fig. 3-1: IDS is quiescent, but ADT
+ * alternates with DFR until a command arrives. A legal CONI sample
+ * does not guarantee that the following DATAO in ADT is accepted.
+ * In ADT require the new address's SNA phase (43 us after ADS);
+ * if DFR appears instead, retry. Do not send a transfer command to
+ * the previous address. Wait through PTA/ADS rather than repeatedly
+ * issuing DATAO while the new address is being selected.
+ * The line clock bounds the whole admission, including retries.
+ */
+dsk_address_wait_v1959:
+        hrroi 5,DSK_TIMEOUT_NEG_RH
+        movem 5,storage_count
+dsk_address_poll_v1959:
+        coni 0270,5
+        trne 5,DSK_IDS
+        jrst dsk_address_idle_v1959
+        trnn 5,DSK_ADT
+        jrst dsk_address_retry_v1959
+dsk_address_adt_datao_v1959:
+        datao 0270,1
+dsk_address_confirm_v1959:
+        coni 0270,5
+        trne 5,DSK_SNA
+        jrst dsk_address_ready_v1959
+        trne 5,DSK_DFR
+        jrst dsk_address_retry_v1959
+        skipn storage_count
+        popj 017,
+        jrst dsk_address_confirm_v1959
+dsk_address_retry_v1959:
+        skipn storage_count
+        popj 017,
+        jrst dsk_address_poll_v1959
+dsk_address_idle_v1959:
+        datao 0270,1
+dsk_address_ready_v1959:
+        setzm storage_count
+        aos (017)
+        popj 017,
 
 dsk_account_table:
         .word mfsdev_io_in+016
