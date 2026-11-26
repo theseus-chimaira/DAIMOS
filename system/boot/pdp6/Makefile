@@ -1151,11 +1151,10 @@ $(D6FS_MRES_OBJ): $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/
 	    -X clkbind_dfr0 -X clkbind_dfr1 -X clkbind_dfm0 -X clkbind_dfn0 \
 	    $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj
 
-# KINIT contains one load slot whose size must exactly match initialized KCORE.
-# Read the absolute end symbol using shell built-ins only, then emit the tiny
-# assembler reservation directly.  This deliberately avoids AWK/sed so the
-# step remains suitable for a small future native DAIMOS build environment.
-$(KCORE_EMBED_ASM): $(KCORE_MAP) $(BUILD)
+# KINIT's dead prefix must cover the entire possible permanent MRES block.
+# The KCORE slot itself still exactly matches initialized KCORE; additional
+# boot-only zero padding precedes the slot and costs no resident words.
+$(KCORE_EMBED_ASM): $(KCORE_MAP) $(MINIT_TABLE_OBJ) $(MRES_PACKAGE_OBJS) image/mres-prefix-v1948.sh $(KERNEL_DIR)/mm/mm.h Makefile | $(BUILD)
 	@end=; \
 	while read name value rest; do \
 		if test "$$name" = "__kcore_low_init_end"; then \
@@ -1165,12 +1164,14 @@ $(KCORE_EMBED_ASM): $(KCORE_MAP) $(BUILD)
 	done < $(KCORE_MAP); \
 	test -n "$$end"; \
 	words=$$((0$$end - 060)); \
+	pad=$$(sh image/mres-prefix-v1948.sh "$(PDP10_OBJDUMP)" "$(KCORE_MAP)" "$(MINIT_TABLE_OBJ)" "$(KERNEL_DIR)/mm/mm.h" $(MRES_PACKAGE_OBJS)) || exit 1; \
 	{ \
 		printf '%s\n' \
 		    '        .text' \
 		    '        .globl __kcore_load_begin' \
-		    '        .globl __kcore_load_end' \
-		    '__kcore_load_begin:'; \
+		    '        .globl __kcore_load_end'; \
+		if test "$$pad" != 0; then printf '        .block %s\n' "$$pad"; fi; \
+		printf '%s\n' '__kcore_load_begin:'; \
 		printf '        .block %o\n' "$$words"; \
 		printf '%s\n' '__kcore_load_end:'; \
 	} > $@
