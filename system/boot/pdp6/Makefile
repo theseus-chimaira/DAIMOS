@@ -548,7 +548,11 @@ DAIMOS_NATIVE_OBJDUMP = $(USERLAND_BUILD_ROOT)/userland/objdump.dxr
 SYSTEM_PASSWD_TEXT ?= $(PROJECT_ROOT)/userland/config/passwd
 SYSTEM_SYSTEM_TEXT ?= $(PROJECT_ROOT)/userland/config/system
 ifeq ($(BOOT_PROFILE),lowmem)
+ifeq ($(DAIMOS_MACHINE),ka10)
+SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab.ka10-v1971
+else
 SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab.lowmem
+endif
 ifeq ($(TSFS_INPLACE_BOOT),1)
 SYSTEM_FSTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/fstab.lowmem.tape-v22
 else
