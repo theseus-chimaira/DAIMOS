@@ -1,3 +1,57 @@
+## 2026-11-26 v1948-k09: FULL boot geometry repaired; K09 OPEN
+
+Fresh current-source KCC FULL OFF and RAW images build and reach
+256K disk-root INIT/LOGIN. Physical AUTO TSFS without AUXSTORE
+on the original RAW image instead fails DTFS installation and
+halts 077016. Actual low free interval [047615,055172), DTFS
+package 005654 words, required end 055471: deficit 0277 octal
+(191 decimal). This is a contiguous MINIT layout issue, not a
+compiler failure or insufficient total physical RAM.
+
+Commit 46308be1 calculates a linked resident-package bound from
+KCORE, the maximum MM descriptor table, and the largest legal
+package combination. The FULL RAW boot image adds 1195 transient
+words before the embedded KCORE slot; the existing MINIT arena
+publication reclaims them. FULL OFF and 64K GENERAL/STRICT need
+no padding. KCORE endpoint 025632; KCORE/PURE/SWAP binaries
+byte-identical before/after. No permanent RAM or runtime ABI change.
+Independent linked-layout verifier passes all four corrected
+builds and rejects the original RAW image. Testkit 11db970.
+
+Corrected FULL 256K AUTO live root/service probes at actual INIT:
+disk and drum roots select DISK SWAP (1024 backing blocks);
+TSFS without AUXSTORE selects PURE (zero backing blocks);
+TSFS with DRM AUXSTORE selects DISK SWAP (512 backing blocks).
+Installed PURE 3879 words, SWAP 1849 words. All relevant live
+service targets checked against relocated MRES maps. These
+are boot-selection checks, not active swap traffic.
+
+Full-size DSK0 AUXSTORE (0130000 sectors, 512 backing blocks)
+under explicit TSFS selection correctly selects DISK SWAP.
+AUTO on identical input instead selects PURE with no backing.
+Other DSK units absent; root-probe/controller interaction is
+suspected, but exact failed transaction and cause not established.
+Keep AUTO test failing; do not switch to explicit root as a fix.
+The initial 020000-sector DSK fixture was invalid for full DSK
+geometry and is excluded from acceptance.
+
+Evidence relative to TMPDIR:
+k09-build-v1948.u9bvv8 (original builds);
+k09-dtfs-fail-v1948.L8Hmrr (failure inspection);
+k09-fixed-v1948.qV1Vkz (fixed FULL builds);
+k09-root-fixed-v1948.82BxG9 (physical root probes);
+k09-dsk-full-v1948.HpBiF7 (AUTO/explicit DSK comparison);
+k09-kcc64-v1948.6N5W0A (64K GENERAL/STRICT builds).
+Actual 120-second bounded noaux boot PASS on both KCC images:
+GENERAL pure-boot-v1665.kmKr5Q; STRICT pure-boot-v1665.88zQMC.
+Both reach PURE/DTFS LOADED and INIT V1 without premature HALT.
+Boot reachability only; active RAW pressure remains untested here.
+The testkit README records reproduction targets.
+K09 remains OPEN: fix AUTO/DSK, controller disappearance
+and actual source-matched KCC pressure/lifecycle matrices,
+measure resident/transient RAM, and complete release gates.
+K01-K08 closed. RAW PURE and bitmap mode3 default OFF.
+
 ## 2026-11-26 v1947-k07-k08: integrated physical recovery PASS; K07/K08 CLOSED
 
 The full-deadline repeat of the unchanged v1946 physical replay

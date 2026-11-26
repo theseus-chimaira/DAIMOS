@@ -1432,6 +1432,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   dependencies and current-source physical/root matrices before
   promoting a production PURE configuration. Repository-wide branch
   retirement, hardware coverage and release acceptance are separate.
+  v1948: KCC FULL OFF/RAW builds and disk boot PASS. Fixed
+  insufficient disposable KINIT prefix (1195 transient words,
+  zero permanent growth). Corrected FULL AUTO disk/drum,
+  TSFS noaux/PURE and TSFS DRM AUXSTORE/SWAP selections PASS.
+  Explicit TSFS with full-size DSK AUXSTORE PASS, AUTO FAIL
+  (PURE selected instead of SWAP); investigate root probe and
+  controller state. KCC 64K GENERAL/STRICT build and bounded
+  physical noaux boot PASS. Remaining
+  physical pressure/lifecycle and controller matrix gates OPEN.
 
 ## Mandatory KCORE: KA10 nonpaged backend
 
