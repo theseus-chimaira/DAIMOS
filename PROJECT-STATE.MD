@@ -1,3 +1,47 @@
+## 2026-11-26 v1944-k07: physical PI6 reservation/retirement PASS
+
+The revised guest completed real writable DTVOL2 setup:
+ijkccccccccdsuIE, eight writes, close/chmod, CLEAN unmount/remount.
+Old monitor parser rejected the genuine IE marker because SIMH
+inserted its DTC3 buffer-flush line before the monitor label.
+Independent actual reel audit confirms unchanged volume ID/CLEAN
+seal and 999 exact compressed words in eight owned blocks.
+Corrected marker parser rejects interrupted stops. Reuse builder
+uses that physically guest-seeded reel and original compressed
+child, replacing only parent seed copy with mount/stat. Identical
+disposable KCORE/KINIT/PURE images; real TSFS 54 files/317 extents.
+
+Complete physical race replay PASS, E,D,F,G,S,Q,R,V,M,A,U,Z,
+normal HALT PC000000, simulator exit0. First ordering: slot2
+UNMOUNT refuses while parent slot1 SLEEP with actual reservation
+050364 (next0,vnode050202000000) in u-area050251. No permanent
+secondary owner; lease free 777777777777. E/D root, media0100003,
+epoch2, MM12 unchanged, PI6 delta1476. F RUN succeeds/secondary
+slot3 backing, reservation released. G both exact WAITs/MM8.
+Second ordering: S/Q/R original root live, Q/R media0120003
+(quiescence), epoch2, backing records and MM12 identical, no
+new owner/reservation. RUN refuses under genuine barrier. V
+unmount succeeds, root0, epoch3, barrier cleared, PI6 delta2504.
+Unused healthy media tag0100003 intentionally retained by normal
+DTFS retirement (D6FS clears its tag); M actual mount republishes
+same root/tag. A successful compressed RUN and exact WAIT. U/Z
+final unmount, root0, MM8, no child owners/reservation; overall
+PI6 delta20583. Final DTC3 byte-identical to actual seeded reel.
+Ten altered actual trace controls and six synthetic reel controls
+reject. These are verifier tests, not executed fault injection.
+
+Testkit 3b57c03,8012789,71f29f4. Evidence
+$TMPDIR/pure-k07-race-physical-v1943.SE6Mwx/physical.clean
+SHA256 6b5691b66f10a81b058a5c6b3b662f27e529f4f8a0bda82bbee0a877833538fd.
+Genuine seeded reel $TMPDIR/pure-k07-race-physical-v1943.ZWOByB/
+media/dtc3.tap SHA256
+44e616a50abae9914359552e9cf55152f6250c9ae50dc526d96091d8e260593e.
+Both simulators exited. No production code or RAM growth. Physical
+PI6 admission acceptance scoped to the two real test-only sleep
+windows. K07 remains OPEN only for integrated source loss/recovery
+and final acceptance review. Prior v1942 physical pressure/FULL
+PASS retained. RAW PURE/mode3 default OFF. SSH agent unavailable.
+
 ## 2026-11-25 v1943-k07: physical reservation/retirement race fixture
 
 Testkit d11a4d2 and 5f42e68 prepare both real PI6 orderings with

@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-25 (v1943 race fixture/physical setup diagnostic; K01-K06 closed).
+Updated: 2026-11-26 (v1944 physical PI6 admission race PASS; K01-K06 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1371,7 +1371,19 @@ history is now reachable from main (v1809); mode3 remains disabled.
   Revised fixture with seed-stage markers and diagnostic table capture
   built and media verified; execute to bounded completion next.
   Production code unchanged. K07 remains OPEN.
- Complete real PI6 interruption,
+  **v1944:** actual guest seed complete, exact CLEAN reel and
+  999 compressed words verified. Corrected monitor flush parsing
+  and reuse genuine seeded reel; same disposable kernel/child.
+  Real PI6 slot2 UNMOUNT refuses while slot1 sleeps with transient
+  stack reservation, no permanent secondary owner and free lease.
+  RUN/WAIT succeeds. Reverse live V2 barrier refuses RUN with
+  unchanged backing/MM; retirement, same-medium remount, RUN/WAIT
+  and final retirement pass. MM8, no child/reservation leak, one
+  normal HALT. Final reel byte-identical. Ten altered trace and
+  six synthetic media controls rejected. Two test-only widened
+  scheduler windows; no production growth. K07 OPEN for integrated
+  source loss/recovery and final review.
+- [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
   progress without fabricated concurrent user dispatch.
