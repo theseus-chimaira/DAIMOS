@@ -1,3 +1,61 @@
+## 2026-11-26 v1959-k09: functional integration CLOSED
+
+DAIMOS 06eff089 corrects Type-270 ADT/DFR address race
+and runtime queue/watchdog. H-270 documents the intentional
+ADT/DFR alternation: do not alter simulator timing/state
+machine. Confirm new SNA after ADT DATAO before command,
+retry on DFR under bounded clock. Watchdog atomic claim
+and END/CLR/DCT disable; drain older rejected descriptors.
+Native queue refusal 900 ticks/3 wakes, actual READ loss
+and masked-PI5 timeout with three distinct peer sectors
+(384 words) PASS. Forced rejected DFR then accepted ADT
+PASS; unsafe confirmation bypass reproduces wrong medium
+020 vs040. Six FULL root cases, actual boot PI5 failure
+and independent silent 300-tick timeout, elevator PASS.
+SIMH cec5436 unchanged. DSK MRES 234->264 (+30), BSS0
+growth, fixed KCORE unchanged.
+
+Fresh KCC 64K disk-root normal swap: MM9/20/8 free
+43633/1089/43647 bitmap0/64/0 reads50/129/193
+writes1/65/65, six exact WAITs and canaries, pipe cleanup.
+Actual partial READ and WRITE after exactly eight DCT
+words with distinct replacement attached before PI5:
+reason2 HALT, exact MM/owner/pins/backing run conserved,
+failed request cleared, original/replacement hashes
+unchanged after removal. Representative partial transfer,
+not exhaustive arbitrary failure or resume after critical
+loss. Noncritical READ recovers; lost WRITE without clocks
+bounded refusal, not fictitious controller reset.
+
+Fresh current-source 48K GENERAL/STRICT native nine-owner
+lifecycle and physical MM write-watch PASS. All four tape
+images unchanged, exact baseline MM and parent VM restored.
+MM9/26/9 free24194/2619/24194, largest24194/1466/24194,
+nine packed at B, tenth refused. 2931 writes, 170 count
+commits, 18 PURE and 2 BRK changes, peak MM28/32, occupied
+or reserved47970/49152, min free1182. Reports byte-identical,
+five altered traces plus forged summary rejected/profile.
+Parent keeps original coordination pipe, PID1 PASS then
+harness stop. KCORE SHA256 848a14b5bc2f7433430194c9da61b0e3bfc7facf6073f9eba0b678ee8e420849,
+PURE SHA256 87bc6e94d5f1df44e752e05b33cc25a1b039fe2f1422e3a096176fd35b919ac7,
+DSK SHA256 c3727f658ec01c5fadfbcd9c321c6f923acc7d97e77f60232567956cfb0627ef.
+Paired highwater.json SHA256
+3a422aa647e469149440b2d8eb853c39258df49dceaed489aac901ae8b92fb49.
+Evidence $TMPDIR/k09-address-v1959.1opCid, testkit2561080,
+docs8c18304. All 13 final case RC files zero; initial boot
+opcode matcher corrected; unsafe mutation expected failure.
+Historical v1951/v1953 48K/64K mixed FULL/descriptor and
+v1947 PI6 recovery accepted; not all unchanged subsystem
+tests replayed in v1959. No hardware release qualification.
+
+K01-K09 CLOSED in defined PDP-6 functional acceptance
+scope. RAW PURE and mode3 remain OFF by default. User
+v1952 decision defers 16K fixed RAM budget and net-size
+optimization; retain measured misses, add30 where DSK
+installed. Repository branch retirement/hardware/release
+qualification separate. Next mandatory K17 native KA10
+nonpaged low segment backend; K10-K16 optional afterward.
+
 ## 2026-11-26 v1957-k09: complete 48K nine-owner lifecycle and MM high-water
 
 Both current KCC GENERAL/STRICT native nine-owner workloads

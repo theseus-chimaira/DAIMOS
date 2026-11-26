@@ -1425,7 +1425,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
   full and supplementary oracles plus 14 altered traces PASS. No
   production growth. K08 CLOSED in scoped implementation acceptance;
   K09 wider physical/root/controller and KCC acceptance separate.
-- [ ] **K09 - Production integration acceptance.** The v1809 Git
+- [x] **K09 - Production integration acceptance (functional CLOSED v1959).** The v1809 Git
   fast-forward has incorporated the PDP-6 RAW PURE source history
   into main with the feature OFF by default. Do not confuse source
   ancestry with accepted enablement. Complete K05-K08 correctness
@@ -1496,6 +1496,26 @@ history is now reachable from main (v1809); mode3 remains disabled.
   peak47940/49152, MM28/32; six negatives rejected/profile.
   Original parent pipe remains open, harness stops after PASS.
   Remaining controller matrix/final acceptance review OPEN.
+  v1959: correct ADT/DFR DATAO acceptance race, bounded
+  runtime admission/watchdog and queue drainage. Native
+  queue/READ recovery/silent timeout, forced real race and
+  wrong-medium negative PASS. Six FULL roots, actual KINIT
+  loss and timeout, elevator PASS. Fresh 64K normal swap
+  and eight-word partial READ/WRITE critical loss PASS.
+  Exact MM/backing conservation; original/replacement
+  media unchanged. DSK MRES +30 words, BSS/KCORE unchanged.
+  Fresh paired 48K nine-owner lifecycle and all 71 physical
+  watches PASS, exact MM9/26/9 free24194/2619/24194, peak
+  47970/49152, min free1182, 2931 writes/170 count commits,
+  identical reports, six negatives rejected per profile.
+  K01-K08 closed; prior 64K mixed FULL, organic descriptor
+  exhaustion and real PI6 recovery evidence retained
+  (not all replayed v1959; KCORE/PURE binaries unchanged).
+  K09 functional CLOSED. Default RAW/mode3 OFF, 16K and net
+  RAM tuning deferred. Hardware/release qualification and
+  branch retirement separate. Next mandatory K17.
+  Testkit 2561080, docs 8c18304; evidence
+  $TMPDIR/k09-address-v1959.1opCid.
 
 
 ## Mandatory KCORE: KA10 nonpaged backend
