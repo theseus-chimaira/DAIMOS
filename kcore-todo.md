@@ -1586,6 +1586,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
     backing blocks allocated then released, zero drum errors).
     TSFS with RM10 swap, interactive shells, protection and contended
     DMA/full-kernel fault qualification remain open.
+    v1971 pre-DCS TSFS+RM10 actual swap PASS, six exact WAIT/
+    canary checks, MM9/20/8 free42726/182/42740, 64 backing
+    sectors allocated/released, four tapes unchanged. Correct
+    root-specific oracle for retained positive tape count0200.
+    v1972 DCS enabled (65-word MRES, fixed KCORE unchanged),
+    both D6FS CTY and DCS simultaneous shell profiles PASS.
+    Current D6FS+RM10 swap PASS, idle DCS mailbox/event zero
+    across128 runtime drum completions. Current TSFS shell
+    and pressure replay, active RX+DMA remain open.
+
     All additional pdp10-ka devices audited in pdp10-doc
     KERNEL/KA10-LOWCORE-DEVICE-OWNERSHIP-V1968.MD; future devices stay
     outside K17. Testkit 83abd8c.
@@ -1593,7 +1603,8 @@ history is now reachable from main (v1809); mode3 remains disabled.
     post-0.9.
   - [ ] K17 four-profile acceptance: TSFS without RM10 (INIT PASS),
     D6FS without RM10 (INIT PASS), TSFS with RM10 (INIT PASS), D6FS with
-    RM10 (INIT and swap lifecycle PASS). Each must boot from paper tape, mount the requested
+    RM10 (INIT and swap lifecycle PASS). v1972 both D6FS profiles
+    also pass simultaneous CTY/DCS0 shell and DCS logout/respawn. Each must boot from paper tape, mount the requested
     root and reach a usable shell. RM10-present profiles must use the
     validated drum AUXSTORE/BACKSTORE and exercise ordinary swap;
     no-drum profiles must operate correctly without it (D6FS retains

@@ -1,3 +1,51 @@
+## 2026-11-26 v1972: native KA10 DCS enabled
+
+v1971 d8ac3b25 fixed stock lowmem INIT: NO INITTAB (DCS0
+only while DCS excluded) with KA10 CTY0 configuration.
+Two native D6FS CTY-only shells passed. v1972 50f775b6
+enables DCS package/MINIT, simulator DCS lines8 at configured
+TCP port (default1101), both CTY0 and DCS0 login. GE remains
+excluded. SIMH KA10 uses historical WAITS line bias2 and
+DCSB DATAO to selected line; translate at DCS assembly
+boundary. Guard PI2 against unarmed idle scanner claiming
+RM10 interrupts. No simulator change. MRES65 words
+(63 initialized +2 original BSS), +3 vs PDP6 DCS;
+fixed KCORE unchanged, matched PDP6 KCORE/KINIT/maps/
+stream/Stage1/DCS byte-identical.
+Both D6FS without/with RM10 PASS actual independent CTY
+and TCP DCS0 ROOT shells, distinct ECHO, PWD, EXIT,
+invalid login/respawn, CTY remains usable. Backstore
+1024/512, used0, active DRM0, second DMA pair zero.
+TSFS both INIT DCS OK, intentionally stopped before
+shell due to long tape execution, no hang established.
+Earlier CTY-only tape runs similarly incomplete.
+
+Fresh D6FS+RM10 six-child swap with DCS installed PASS:
+MM9/20/8 free43747/1203/43761, bitmap0/64/0, reads2/2/66,
+writes0/64/64, errors0; exact WAIT/canaries and owners,
+pipe cleanup and physical media reserved region preserved.
+Actual PI2 dispatch patch, DCS instruction, both DCS BSS
+words zero at A/B/C. No connected DCS reader in pressure
+fixture, active RX+DMA contention remains open.
+
+v1971 pre-DCS native TSFS+RM10 six-child swap PASS:
+MM9/20/8 free42726/182/42740, bitmap0/64/0, reads2/2/66,
+writes0/64/64, errors0, exact owners/canaries/WAIT,
+four tapes unchanged. Initial disk-only oracle rejected
+count0200; tape_wait_done clears state, not positive
+hardware transfer length. Explicit root=tape gate
+requires exact count0200 with state0; three count
+mutations rejected, original disk report unchanged.
+No production storage change. Current DCS-enabled tape
+pressure must be repeated (+65 words, tight free RAM).
+
+Testkit946d348 docs7f5e001. Evidence
+$TMPDIR/k17-tsfs-v1971.QRmruU and
+$TMPDIR/k17-dcs-v1972.3KPvNN. All tests stopped or completed.
+K17 remains OPEN for TSFS shell/current pressure,
+active contended DMA, native process/protection/PI and
+full-kernel fault qualification. RAW/mode3 OFF.
+
 ## 2026-11-26 v1970: native KA10 RM10 provider and first full swap
 
 DAIMOS 52063b63 installs native RC10/RM10 MRES through the
