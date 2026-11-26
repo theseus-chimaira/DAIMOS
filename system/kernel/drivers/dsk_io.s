@@ -27,6 +27,11 @@
         .globl dsk_current_cyl
         .globl dsk_read_sector
         .globl dsk_write_sector
+        .globl dsk_boot_timeout_v1954
+
+        .equ DSK_TIMEOUT_TICKS,0454     ; 300 ticks at 60 Hz
+        .equ DSK_TIMEOUT_NEG_RH,0777324
+        .equ DSK_ADDRESS_ACCEPT,0500000 ; IDS or ADT
         .globl pdp10_pi_dispatch_done
         .globl storage_state
         .globl storage_iowd
@@ -320,7 +325,7 @@ dsk_start_write:
         pushj 017,dsk_setup_write
         hrroi 3,0777774
 dsk_start_go:
-        hrli 6,0454                  ; 300 ticks = 5 seconds at 60 Hz
+        hrli 6,DSK_TIMEOUT_TICKS
         movem 6,dsk_active_request
         movem 3,storage_state
         datao 0270,1
@@ -330,6 +335,19 @@ dsk_start_go:
 dsk_boot_request:
         skipe storage_state
         jrst kret_busy
+        ; The clock is already installed before root discovery.
+        ; Use the shared negative countdown, not a new resident word.
+        ; After an aborted request, DATAO must wait for IDS or ADT.
+        hrroi 5,DSK_TIMEOUT_NEG_RH
+        movem 5,storage_count
+dsk_boot_accept_v1954:
+        coni 0270,5
+        trne 5,DSK_ADDRESS_ACCEPT
+        jrst dsk_boot_accepted_v1954
+        skipn storage_count
+        jrst kret_neg5
+        jrst dsk_boot_accept_v1954
+dsk_boot_accepted_v1954:
         movei 3,0200
         jumpe 4,dsk_boot_read
         pushj 017,dsk_setup_write
@@ -344,7 +362,30 @@ dsk_boot_start:
         cono 0270,000125
 dsk_wait:
         move 1,storage_state
-        jumpl 1,dsk_wait
+        jumpge 1,dsk_boot_result_v1954
+        skipn storage_count
+        jrst dsk_boot_timeout_v1954
+        jrst dsk_wait
+dsk_boot_timeout_v1954:
+        ; Claim the outstanding request atomically against PI3/PI5.
+        ; A completion that won the race remains authoritative.
+        coni 0004,4
+        cono 0004,000400
+        move 1,storage_state
+        jumpge 1,dsk_boot_timeout_restore_v1954
+        ; END/CLR terminate the command according to the controller
+        ; protocol; they do not manufacture an idle state. Disable
+        ; controller and DCT interrupts before releasing ownership.
+        cono 0270,030200
+        cono 0200,0
+        movei 1,7
+        movem 1,storage_state
+        aos mfsdev_storage_errors+2
+dsk_boot_timeout_restore_v1954:
+        trne 4,000200
+        cono 0004,000200
+dsk_boot_result_v1954:
+        setzm storage_count
         caie 1,7
         jrst dsk_wait_done
         setzm storage_state
