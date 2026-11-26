@@ -6,7 +6,7 @@
  * tape containing the DAIMON header and first compressed segment, prompts
  * "TAPE2 ", resets the reader, then appends a counted second compressed
  * segment. Both segments must exactly equal the declared compressed-word count.
- * The fixed block LZ/RLE decoder is then installed at 000060 and expands KINIT at
+ * The fixed block LZ/RLE decoder is then installed at 000062 and expands KINIT at
  * 030000. AC17 is reset above the image before entry.
  *
  * Type-760 PTR exposes no reader-error status; a missing tape therefore waits
@@ -132,7 +132,7 @@ bootstrap_sixbit_image:
         .include "../common/block_decompressor_v1458.inc"
 
 ; Production Stage0 loads PTR Stage1 at 000060.  Keep the decoder-copy and
-; post-copy instructions above the installed 000060 decoder image.
+; post-copy instructions above the installed 000062..000146 decoder image.
 stage1_handoff:
         movei 01,d6b_image_start_v1458
         hrl 01,01

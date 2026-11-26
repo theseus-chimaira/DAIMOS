@@ -25,11 +25,11 @@ typedef unsigned long kword_t;
 /**
  * First word of the permanently resident KCORE image in PDP-6 low memory.
  *
- * Address 000060 immediately follows the architectural low-memory region used
- * by the PDP-6 and is also the fixed address of the shared block LZ/RLE decoder.
+ * Address 000062 reserves 060/061 for the KA10 unassigned-instruction trap
+ * on both processors and is the fixed address of the shared block LZ/RLE decoder.
  * The KCORE link therefore begins here and all resident-size accounting uses
  * this address as its lower bound.
  */
-#define KCORE_BASE              000060UL
+#define KCORE_BASE              000062UL
 
 #endif

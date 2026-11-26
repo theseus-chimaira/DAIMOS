@@ -1,3 +1,30 @@
+## 2026-11-26 v1961: K17.1 common low-core relocation accepted
+
+KCORE and its existing 53-word block decoder moved from octal 060 to
+062. Runtime VFS call, KINIT copy origin, link/RIM/stream, image slot,
+MRES prefix and permanent report updated. Reserve 060/061 in permanent
+low core; Stage1 paper-tape read-in still starts at 060. No duplicate
+resident decoder, no wire-format or userland ABI change. KCC before/after
+10843 initialized, 11114 total fixed KCORE words; 462 shared map symbols
+all +2, fixed BSS unchanged. Additional low reservation exactly 2 words.
+
+All five Stage1 DXR1 decoder images match actual KCORE's 53 words;
+post-copy code/error/data boundaries are safe, including forward BLT
+with overlapping MTC source. Complete KCORE embedding and MRES prefix
+checks pass. Real PDP-6 256K FULL compressed DTC read-in reaches KINIT
+entry; 64K KCC LOWMEM hybrid raw TSFS root reaches INIT V1. Both physical
+readbacks match all 53 decoder words at 062..146. Native core six valid,
+five malformed; VFS eight valid, nine malformed, five full DXRs and
+stack canary (52 words) PASS; separate 060/061 sentinel replay PASS.
+FULL compressed build with 64K cap correctly refused staging endpoint
+221126 > 200000; compact raw build used for 64K. Initial codec corpus
+omitted D6FS in tape-only build; source-matched standalone AUTO D6FS
+fixture and complete corpus replay passed. Testkit 068ede6, docs 2c878b1.
+Evidence $TMPDIR/k17-lowcore-v1961.l2BMob. No full shell/pressure or
+other four physical media boot replay; native mkimage-v2 not exercised.
+No KA10 code or simulator change yet; K17.1 closed within focused scope.
+Next native KA10 processor/boot implementation, K17 remains OPEN.
+
 ## 2026-11-26 v1960: K17 release scope decision (no implementation yet)
 
 User decision: DAIMOS 0.9 requires only native KA10 boot and ordinary

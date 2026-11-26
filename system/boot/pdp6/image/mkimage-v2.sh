@@ -38,7 +38,6 @@ sym()
 }
 
 IMAGE_BASE=$((040000))
-KCORE_BASE=$((060))
 KINIT_STACK_BASE=$((076000))
 HALF_MASK=$((0777777))
 # DAIMON_MAGIC (0444151555756 octal) exceeds 32-bit INT_MAX; keep as a string
@@ -49,6 +48,8 @@ image_end=$((0$(sym "$map" __kinit_image_end)))
 load_begin=$((0$(sym "$map" __kcore_load_begin)))
 load_end=$((0$(sym "$map" __kcore_load_end)))
 entry=$((0$(sym "$map" kinit_enter)))
+KCORE_BASE=$((0$(sym "$kcore_map" d6b_image_start_v1458)))
+[ "$KCORE_BASE" -eq $((062)) ] || fail "invalid fixed decoder origin"
 kcore_init_end=$((0$(sym "$kcore_map" __kcore_low_init_end)))
 
 [ "$image_start" -eq "$IMAGE_BASE" ] && [ "$image_start" -lt "$image_end" ] && \

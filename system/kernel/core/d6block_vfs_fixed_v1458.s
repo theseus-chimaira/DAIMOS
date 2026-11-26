@@ -1,5 +1,5 @@
 /* Experimental fixed-low-core block LZ/RLE VFS adapter v1458.
- * Production v1459: calls the unique low-core decoder at 000060;
+ * Production v1459: calls the unique low-core decoder at 000062;
  * never installs or maintains a second decoder image.
  * Based on the existing compact legacy VFS refill calling convention:
  * AC11 is literal words pending, AC12 destination, AC13 remaining
@@ -105,7 +105,7 @@ d6b_vfs_refilled_v1458:
         move    4,1                    ; source-window words returned
         movei   3,D6B_V1458_VFS_INPUT(17)
 d6b_decode_window_v1458:
-        pushj   17,000060            ; shared Stage-1/KCORE fixed core
+        pushj   17,000062            ; shared Stage-1/KCORE fixed core
         jumpe   0,d6b_vfs_success_v1458
         jumpl   0,d6b_vfs_error_v1458
         jrst    d6b_vfs_refill_v1458         ; +1 = NEED_INPUT

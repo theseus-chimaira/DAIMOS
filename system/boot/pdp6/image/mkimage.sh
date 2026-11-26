@@ -40,7 +40,6 @@ sym()
 }
 
 IMAGE_BASE=$((030000))
-KCORE_BASE=$((060))
 case $core_words in
 *[!0-7]*) fail "invalid octal core size: $core_words" ;;
 esac
@@ -56,6 +55,8 @@ image_end=$((0$(sym "$map" __kinit_image_end)))
 load_begin=$((0$(sym "$map" __kcore_load_begin)))
 load_end=$((0$(sym "$map" __kcore_load_end)))
 entry=$((0$(sym "$map" kinit_enter)))
+KCORE_BASE=$((0$(sym "$kcore_map" d6b_image_start_v1458)))
+[ "$KCORE_BASE" -eq $((062)) ] || fail "invalid fixed decoder origin"
 kcore_init_end=$((0$(sym "$kcore_map" __kcore_low_init_end)))
 
 [ "$image_start" -eq "$IMAGE_BASE" ] && [ "$image_start" -lt "$image_end" ] && \

@@ -152,7 +152,8 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   current manifest: `design/daimos-branch-consolidation-v1809.md`.
 - [ ] **Basic KA10 compatibility (mandatory K17 for 0.9):** native
   64K single-segment KA10 boot and ordinary PDP-6-equivalent operation.
-  Reserve 060/061 and move shared KCORE/decompressor to 062 on both CPUs.
+  Common 060/061 reservation and shared KCORE/decompressor at 062
+  implemented and PDP-6 boot/codec verified (v1961 K17.1).
   Retain paper-tape bootstrap, existing essential drivers, TSFS DECtape
   root and unmodified PDP-6 user binaries. Verify native APR/protection,
   PI/trap, context, shell and normal process/syscall behavior, plus PDP-6

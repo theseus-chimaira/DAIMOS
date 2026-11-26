@@ -17,14 +17,15 @@ typedef unsigned long kword_t;
 /**
  * @brief Core-layout constants used while KINIT constructs the permanent kernel.
  *
- * PDP-10 addresses are 18-bit word addresses.  KCORE begins at 060, leaving
- * the low monitor/trap area below it available for fixed boot interfaces.
+ * PDP-10 addresses are 18-bit word addresses.  KCORE begins at 062,
+ * reserving 060/061 for KA10 traps and leaving the low monitor/trap
+ * area below it available for fixed boot interfaces.
  * KINIT itself is linked at 030000 and is reclaimed after initialization.
  * Its bootstrap pushdown list occupies the fixed reserve immediately above
  * the linked KINIT image until the late handoff releases both regions.
  */
 #define KINIT_HALF_MASK          0777777UL
-#define KINIT_KCORE_BASE         000060UL
+#define KINIT_KCORE_BASE         000062UL
 #define KINIT_IMAGE_BASE         030000UL
 #ifndef KINIT_STACK_RESERVE_WORDS
 #define KINIT_STACK_RESERVE_WORDS 0400UL

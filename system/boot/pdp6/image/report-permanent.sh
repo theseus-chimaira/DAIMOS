@@ -42,15 +42,18 @@ esac
 limit=$((0$limit_arg))
 
 end=
+origin=
 while read sym_name sym_value rest; do
         if [ "$sym_name" = "__kcore_low_end" ]; then
                 end=$sym_value
-                break
+        elif [ "$sym_name" = "d6b_image_start_v1458" ]; then
+                origin=$sym_value
         fi
 done < "$kmap"
 [ -n "$end" ] || { echo "missing __kcore_low_end" >&2; exit 1; }
-# KCORE starts at executive location 060.  Linker-map addresses are octal.
-kcore=$((0$end - 060))
+# The shared decoder is the first word of KCORE.  Addresses are octal.
+[ -n "$origin" ] && [ "$((0$origin))" -eq $((062)) ] || { echo "invalid fixed decoder origin" >&2; exit 1; }
+kcore=$((0$end - 0$origin))
 printf 'KCORE           %06o %6d\n' "$kcore" "$kcore"
 
 # Boot MRES keeps only the linked initialized+BSS image.  The package header,
@@ -115,7 +118,7 @@ for name in $packages; do
         total=$((total + resident))
 done
 printf 'KCORE+MRES      %06o %6d\n' "$total" "$total"
-last=$((060 + total - 1))
+last=$((0$origin + total - 1))
 printf 'PERMANENT_LAST  %06o %6d\n' "$last" "$last"
 
 check_limit()
@@ -137,7 +140,7 @@ status=0
 check_limit 'SINGLE_ROOT' "$last" || status=1
 if [ "$omit_blockset" -eq 1 ] && [ "$no_blockset" -eq 0 ]; then
         multi_total=$((total + blockset_words))
-        multi_last=$((060 + multi_total - 1))
+        multi_last=$((0$origin + multi_total - 1))
         printf 'MULTI_ROOT       %06o %6d\n' "$multi_total" "$multi_total"
         printf 'MULTI_LAST       %06o %6d\n' "$multi_last" "$multi_last"
         check_limit 'MULTI_ROOT' "$multi_last" || status=1

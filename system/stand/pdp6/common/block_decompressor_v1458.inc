@@ -4,9 +4,9 @@
  *
  * All internal jumps target d6b_low_base_v1458 plus the offset of
  * their local label relative to d6b_image_start_v1458.  Stage-1 may
- * copy this compiled image from any location to executive address 000060
+ * copy this compiled image from any location to executive address 000062
  * and execute it independently. The identical source is linked as the
- * first KCORE TEXT object at address 000060. Its compressed wire format
+ * first KCORE TEXT object at address 000062. Its compressed wire format
  * and six-register streaming state are unchanged from block v1441.
  *
  * Compared with the original 61-instruction v1452 fixed image, this
@@ -18,9 +18,9 @@
  *
  * Preserve all file-data validation here. The VFS adapter verifies
  * compressed extent consumption, input refill and available buffers.
- * Both executable code and the inline byte pointer are copied to 060.
+ * Both executable code and the inline byte pointer are copied to 062.
  */
-        .equ d6b_low_base_v1458,000060
+        .equ d6b_low_base_v1458,000062
         .text
         .globl d6codec_block_fixed_v1458
         .globl d6codec_block_core_v1458

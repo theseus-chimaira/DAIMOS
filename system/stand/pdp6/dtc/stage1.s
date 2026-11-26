@@ -151,7 +151,7 @@ read_wait:
 daimon_magic: .word 0444151555756
         .include "../common/block_decompressor_v1458.inc"
 
-; Keep the handoff above the installed decoder destination (000060..000144).
+; Keep the handoff above the installed decoder destination (000062..000146).
 ; Production Stage0 loads this Stage1 at 000060, so executing the handoff from
 ; the early part of the loader would be overwritten by the BLT itself.
 stage1_handoff:
@@ -186,7 +186,7 @@ stage1_raw_handoff:
         jrst 0(016)
 
 ; This diagnostic must remain above the decoder destination.  Decoder failure
-; is detected only after 000060..000144 has been overwritten by the installed
+; is detected only after 000062..000146 has been overwritten by the installed
 ; low-core image.
 bad_tape:
         jrst stage1_fail_b1

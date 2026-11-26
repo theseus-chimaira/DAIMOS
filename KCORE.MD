@@ -63,6 +63,15 @@ two distinct development states (now historical):
 
 ## KCORE fixed-residency and machine-specific boundaries
 
+- Since v1961, fixed KCORE begins at octal 062 on the PDP-6, reserving
+  060/061 for the KA10 unassigned-instruction trap. Stage1 and runtime
+  share exactly 53 decoder words at 062..146. Stage1 initial read-in
+  remains 060; its late handoff is outside the decoder destination.
+  The KCC fixed image remains 11114 words including BSS (10843
+  initialized), with all 462 common map symbols shifted by two. Native
+  PDP-6 256K compressed KINIT entry and 64K raw TSFS INIT pass; no
+  native KA10 boot is claimed yet.
+
 - KCORE holds mandatory, immediately callable kernel/interrupt, process,
   syscall, VM/MM, device and VFS dispatch. Optional policy and provider
   engines belong in MRES where installation is boot-selected and safe.

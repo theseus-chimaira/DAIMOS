@@ -379,6 +379,8 @@ endif
 
 KCORE_DXR = $(BUILD)/kcore.dxr
 KCORE_MAP = $(BUILD)/kcore.map
+# 060/061 are KA10 unassigned-instruction trap words.
+KCORE_BASE = 062
 KCORE_FOLD_PLAN = $(BUILD)/kcore.fold
 GE_MRES_FOLD_PLAN = $(BUILD)/ge-mres.fold
 TTY_MRES_FOLD_PLAN = $(BUILD)/tty-mres.fold
@@ -935,16 +937,16 @@ $(END_OBJ): image/image-end.s $(BUILD)
 $(KCORE_FOLD_PLAN): $(KCORE_FOLD_OBJS) $(P10FOLD_DEP)
 	$(P10FOLD) -m 2 -P $@ $(KCORE_FOLD_OBJS) >/dev/null
 
-$(KCORE_DXR): $(KCORE_FIXED_OBJS) $(KCORE_FOLD_PLAN)
+$(KCORE_DXR): $(KCORE_FIXED_OBJS) $(KCORE_FOLD_PLAN) Makefile
 	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
-	$(DLINK) -b 060 --fold-plan $(KCORE_FOLD_PLAN) -o $@ -M $(KCORE_MAP) \
+	$(DLINK) -b $(KCORE_BASE) --fold-plan $(KCORE_FOLD_PLAN) -o $@ -M $(KCORE_MAP) \
 	    $(KCORE_FIXED_OBJS) $$libgcc
 
 $(KCORE_MAP): $(KCORE_DXR)
 	@test -f $@
 
 $(KCORE_RIM): $(KCORE_DXR)
-	$(DXRCONVERT) --simh -b 060 $< $@
+	$(DXRCONVERT) --simh -b $(KCORE_BASE) $< $@
 
 $(KCORE_STREAM): $(KCORE_RIM) $(KCORE_MAP)
 	@end=; \
@@ -954,8 +956,8 @@ $(KCORE_STREAM): $(KCORE_RIM) $(KCORE_MAP)
 			break; \
 		fi; \
 	done < $(KCORE_MAP); \
-	test -n "$$end"; words=$$((0$$end - 060)); words=`printf '%o' "$$words"`; \
-	$(MKSTREAM) -i $(KCORE_RIM) -o $@ -b 060 -w "$$words"
+	test -n "$$end"; words=$$((0$$end - $(KCORE_BASE))); words=`printf '%o' "$$words"`; \
+	$(MKSTREAM) -i $(KCORE_RIM) -o $@ -b $(KCORE_BASE) -w "$$words"
 
 $(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cty-mres.dxr -M $(BUILD)/cty-mres.map \
@@ -1163,7 +1165,7 @@ $(KCORE_EMBED_ASM): $(KCORE_MAP) $(MINIT_TABLE_OBJ) $(MRES_PACKAGE_OBJS) image/m
 		fi; \
 	done < $(KCORE_MAP); \
 	test -n "$$end"; \
-	words=$$((0$$end - 060)); \
+	words=$$((0$$end - $(KCORE_BASE))); \
 	pad=$$(sh image/mres-prefix-v1948.sh "$(PDP10_OBJDUMP)" "$(KCORE_MAP)" "$(MINIT_TABLE_OBJ)" "$(KERNEL_DIR)/mm/mm.h" $(MRES_PACKAGE_OBJS)) || exit 1; \
 	{ \
 		printf '%s\n' \

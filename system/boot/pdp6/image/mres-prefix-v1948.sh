@@ -21,6 +21,8 @@ sym()
 }
 low_end=$(sym __kcore_low_end)
 init_end=$(sym __kcore_low_init_end)
+origin=$(sym d6b_image_start_v1458)
+[ "$((0$origin))" -eq $((062)) ] || exit 1
 capacity=$(awk '$1=="#define" && $2=="MM_MAX_EXTENTS" {print $3}' "$mm_header")
 case "$capacity" in ''|*[!0-9]*) exit 1 ;; esac
 table_words=
@@ -61,7 +63,7 @@ if [ "$tape_total" -gt "$resident" ]; then resident=$tape_total; fi
 # The simulator may discover more RAM than the configured image minimum,
 # so account for the maximum runtime MM table, not only the build's core.
 need=$((0$low_end+2*capacity+resident))
-prefix_end=$((030000+table_words+0$init_end-060))
+prefix_end=$((030000+table_words+0$init_end-0$origin))
 pad=0
 if [ "$need" -gt "$prefix_end" ]; then pad=$((need-prefix_end)); fi
 printf 'MRES prefix: bound %06o, unpadded end %06o, pad %06o (%d words)\n' "$need" "$prefix_end" "$pad" "$pad" >&2

@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1960 K17 release scope; K01-K09 closed).
+Updated: 2026-11-26 (v1961 K17.1 common low core accepted; K01-K09 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
@@ -1526,10 +1526,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
   no pager, no dependency on optional KT10A hardware, and the existing
   PDP-6 user executable/syscall ABI. Reuse common MM/process/VFS policy
   and select native processor operations at build time.
-  - Reserve octal 060/061 on both machines. Move KCORE and its shared
-    53-word Stage1/runtime decompressor together to 062. Retain one
-    decoder implementation; verify bootstrap overwrite boundaries,
-    image construction, memory accounting and PDP-6 regressions.
+  - [x] K17.1 (v1961): reserve octal 060/061 and move KCORE and the
+    shared 53-word Stage1/runtime decoder together to 062. All five
+    Stage1 layouts and exact decoder words verified; 256K compressed
+    DTC boot reaches KINIT, 64K hybrid raw TSFS boot reaches INIT,
+    native codec/refill and trap-cell sentinel tests pass. KCORE
+    unchanged at 11114 words; only two more low words reserved.
+    Initial read-in remains 060. Full PDP-6 shell/pressure replay is
+    not claimed by this focused regression. Testkit 068ede6; docs 2c878b1.
   - Paper tape remains the sole initial bootstrap medium. Retain the
     PDP-6 Stage0 path and use native KA10 paper-tape read-in; reuse
     Stage1, existing essential drivers and TSFS DECtape root.
