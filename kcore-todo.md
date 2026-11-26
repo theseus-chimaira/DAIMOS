@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1944 physical PI6 admission race PASS; K01-K06 closed).
+Updated: 2026-11-26 (v1945 K07 physical source recovery PASS; K01-K07 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1141,7 +1141,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
   K06 implementation CLOSED; real PI6 and production acceptance
   remain K08/K09. General allocator serialization and valid-table
   contract unchanged; no arbitrary memory corruption claim.
-- [ ] **K07 - Executable backing lifetime.** Guarantee immutable PURE
+- [x] **K07 - Executable backing lifetime (CLOSED v1945).** Guarantee immutable PURE
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe
   owner retention when the source cannot be trusted.
@@ -1383,6 +1383,20 @@ history is now reachable from main (v1809); mode3 remains disabled.
   six synthetic media controls rejected. Two test-only widened
   scheduler windows; no production growth. K07 OPEN for integrated
   source loss/recovery and final review.
+  **v1945:** current uninstrumented production images pass genuine
+  48K physical secondary source loss/replacement/return. At actual
+  FULL slot3 source113600..120000 and target122000..130000 pin1,
+  both physical removal and distinct-ID CLEAN foreign reel return
+  -4; original PACKED pin0, exact 2176 words and backing/volume ID
+  preserved, target gone, escrow0, READ_SUSPECT. Same original reel
+  restores, all five exact WAITs, final UNMOUNT and MM8, normal HALT;
+  both media byte-identical. Independent verifier and 12 altered
+  actual transcript controls pass. No production growth. Final review
+  retains v1940's 13 native PASS groups (same production source),
+  v1942 physical FULL and v1944 admission races. K07 CLOSED in its
+  implementation scope. Actual D6FS/TSFS exchange, wider PI6/production
+  matrices and KCC remain K08/K09; no same-ID clone or hidden exchange
+  claim. RAW PURE/mode3 remain default OFF.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee

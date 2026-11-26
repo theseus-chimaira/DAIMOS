@@ -136,8 +136,10 @@ XIP are production-integrated; do not reopen their obsolete proposals.
 - [ ] **PDP-6 production PURE acceptance:**
   v1809 integrated the source history into main and passed the native
   matrix plus default-OFF build; K05 implementation closed v1916.
-  K07-K08 implementation and K09 production safety/physical gates
-  remain open, including organic allocator fragmentation/descriptor
+  K06 closed v1922; K07 closed v1945 after physical source loss,
+  foreign-volume refusal and same-medium recovery. K08 implementation
+  and K09 production safety/physical gates remain open, including
+  organic allocator fragmentation/descriptor
   exhaustion and wider PI6 cases. PURE must remain OFF by default. Every named
   DAIMOS and testkit topic tip is now reachable from local main.
   v1809 retired 95 clean unattached local and 94 remote merged

@@ -1,3 +1,46 @@
+## 2026-11-26 v1945-k07: executable backing lifetime CLOSED
+
+Current uninstrumented v1939 production GCC 48K TSFS/PURE guest
+reuses the exact v1942 KCORE/KINIT/PURE images and v1944 physically
+guest-seeded CLEAN DTVOL2 COMP reel. The new source-derived parent
+mounts DTC3 RO, admits four large root plain children and one original
+secondary compressed child, then requires the sixth RUN refusal and
+no-growth BRK. B/A MM18 identical. Slot3 PACKED 113600..120000
+(pin0), actual original FULL PC040756 opcode 200000000004, separate
+PROCESS 122000..130000 and same PACKED source both pin1; stable
+u-area051274, backing037141000000, capacity06000. No test-only kernel
+hooks or monitor deposits. Real DTC3 detach before original FULL
+media proof returns -4 at actual compiled call return034453. Freshly
+formatted different-ID CLEAN foreign DTVOL2 reel also returns -4
+at the same actual FULL call return. Both MM17, original PACKED
+pin0, complete 2176-word suffix unchanged byte-for-byte, destination
+retired, original backing/provider/volume identity retained, escrow0,
+READ_SUSPECT media0300003. Original reel reattachment restores
+successfully: all five mutable data sentinels and exact PID/EXITED/
+status WAITs, final unmount/Z MM8, root0, no child VM/u-area or
+reservation. Healthy retired media0100003; both reels byte-identical
+with their inputs. One normal HALT PC000000, simulator exit0.
+Clock B5659 -> FULL/faults6300 -> Z8548 decimal. Both fault returns
+sampled at same tick, not K08 interruption-during-rollback coverage.
+Independent offline verifier PASS; 12 altered actual transcripts
+rejected, not 12 executed guest faults. Testkit 0026580,13bab63.
+Evidence $TMPDIR/pure-k07-loss-physical-v1945.3AsKpm/physical.clean
+SHA256 c2c9d9d516fca6b0089279b3e50ce2e38df99269b8692292cb5716da9c8b57ac.
+Build $TMPDIR/pure-k07-loss-v1945.OLgxdN/build. No simulator remains.
+No production code, image, ABI, per-owner or resident RAM change.
+
+Final K07 review: all 13 distinct native groups from v1940 passed
+on the same production source (actual archived zero result files;
+no kernel/boot diff from 1c6384c5). v1942 ordinary physical FULL,
+v1944 both live PI6 admission orderings and v1945 original physical
+source loss/foreign/recovery complete the scoped implementation gate.
+K07 CLOSED. D6FS/TSFS identity and MEMFS mutation are native
+component acceptance, not complete-guest media exchange. Trust
+boundary still excludes same-ID clones and undetected mid-I/O
+swap-and-return; no hardware reel lock. Wider scheduler/PI6 cases,
+current-source physical root/controller matrices and KCC acceptance
+remain K08/K09; KA10 K17 remains mandatory. RAW PURE/mode3 default OFF.
+
 ## 2026-11-26 v1944-k07: physical PI6 reservation/retirement PASS
 
 The revised guest completed real writable DTVOL2 setup:
