@@ -1,3 +1,17 @@
+## 2026-11-26 v1952-k09: defer RAM optimization
+
+User decision: defer PURE/KCORE size optimization and the 16K
+resident target until a later optimization stage. The measured
+v1951 budget failure remains a recorded fact, not a K09 closure
+condition. Complete functional acceptance at the supported
+48K/64K configurations: nine-owner pressure, organic fragmentation
+and descriptor exhaustion, transient ownership/PI6 and lifecycle,
+64K active GENERAL/STRICT, controller disappearance and recovery.
+Retain measured RAM accounting. No default RAW/mode3 enablement
+or net-benefit claim follows from this scope change. K09 remains
+OPEN; K17 remains the next mandatory architecture stage.
+No production code change.
+
 ## 2026-11-26 v1951-k09: current KCC 48K mixed FULL and 64K budget PASS
 
 Installed v1950 simulator cb6a255 SHA256

@@ -1450,6 +1450,12 @@ history is now reachable from main (v1809); mode3 remains disabled.
   no longer fits current KCC baseline; recalibrated two-grown
   fixture build/A reached, full run pending. Fresh 64K active
   mixed builds ready, unexecuted. No production growth.
+  v1952 user decision: defer size optimization and 16K resident
+  target; neither blocks K09 functional closure. Preserve actual
+  RAM accounting and the measured budget miss. Nine-owner/64K
+  pressure, descriptor exhaustion, transient ownership and
+  controller loss/recovery remain required. Default flags unchanged.
+
 
 ## Mandatory KCORE: KA10 nonpaged backend
 
