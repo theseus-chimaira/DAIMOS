@@ -1,3 +1,28 @@
+## 2026-11-26 v1967: native KA10 D6FS boot and RC10 transfer correction
+
+K17 acceptance requires four 64K KA10 configurations: TSFS/DECtape and
+D6FS/Type270 roots, each with and without auxiliary RM10. Both no-drum
+profiles now boot from counted paper tape through unchanged DTC/DSK
+Stage1 and native KINIT to INIT. Fresh separate build directories and
+copied media: VFS provider 7 (TSFS), BACKSTORE 0; provider 6 (D6FS),
+BACKSTORE 1024 blocks; used blocks 0 in both. The initial disk run stopped
+at INIT and marked the writable image DIRTY; ordinary CLEAN-only mount
+rejected its subsequent boot as designed. Rebuilt clean image passes.
+No shell/process/swap lifecycle acceptance is implied. No PDP-6 kernel
+or production DSK driver changes in this increment.
+
+Native RC10/DF10 probe reproduced a simulator defect at cec5436:
+128-word RM10 write lost the final word (index 127 became zero), while
+read passed. RC10 write service now consumes each fetched DMA word
+before acting on the terminal control-word result, without the old
+one-word lookahead. Fixed sims abb7ee6, installed pdp10-ka; both read
+and write passed all 128 words at blocks 0,29,30,2699. No emulator
+feature extensions or Type167/236 port. The native driver still needs
+an even low-core DF10 command/completion pair (CIA mask 0776), native
+PI, DMA/error/recovery and removable MRES integration. Both RM10-present
+boot profiles remain OPEN. Fixed KCORE unchanged. Testkit 34beeb8;
+docs 728c175; evidence $TMPDIR/k17-roots-v1967.PDlEy5.
+
 ## 2026-11-26 v1966: select native RC10/RM10 for KA10
 
 User selects RM10 for mandatory K17 auxiliary drum storage and rejects

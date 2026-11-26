@@ -83,7 +83,10 @@ two distinct development states (now historical):
   v1966 K17 requires Type 270/D6FS boot and RC10/RM10 auxiliary storage
   with ordinary swap on KA10. Type 167/236 remains PDP-6-only. The
   RM10 backend belongs in a removable MRES; emulator changes are
-  restricted to verified defect fixes. See kcore-todo.md.
+  restricted to verified defect fixes. v1967 both TSFS and Type 270
+  D6FS root profiles reach INIT without RM10; RC10 final DMA write
+  word loss corrected and native boundary transfers pass. Four
+  root/drum configurations remain the acceptance matrix; see kcore-todo.md.
 
 - KCORE holds mandatory, immediately callable kernel/interrupt, process,
   syscall, VM/MM, device and VFS dispatch. Optional policy and provider

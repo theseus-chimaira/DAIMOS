@@ -79,7 +79,7 @@ TAPE_FS_ENABLED = 0
 endif
 # Tape boot is a filesystem capability, not a full-profile feature.
 KINIT_TAPE_BOOT = $(TAPE_FS_ENABLED)
-BOOT ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),dtc,auto)
+BOOT ?= auto
 BOOT_PROFILE ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),lowmem,full)
 DPY_LOGIN ?= 0
 ifneq ($(filter $(BOOT_PROFILE),full lowmem),$(BOOT_PROFILE))
@@ -747,10 +747,21 @@ $(BUILD)/tsfscheck-v1461: $(PROJECT_ROOT)/tools/host/tsfscheck.c $(TSFS_HOST_SRC
 		$(PROJECT_ROOT)/tools/host/tsfs-format.c \
 		$(PROJECT_ROOT)/tools/host/d6block-codec-v1452.c
 TSFS_ROOT_MEMBERS ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),3,1)
-TSFS_INPLACE_BOOT ?= $(if $(filter ka10,$(DAIMOS_MACHINE)),1,0)
+TSFS_INPLACE_BOOT ?= $(if $(and $(filter ka10,$(DAIMOS_MACHINE)),$(filter tape,$(ROOT))),1,0)
 ifeq ($(DAIMOS_MACHINE),ka10)
-ifneq ($(ROOT):$(STAGE1_DEVICE):$(BOOT_PROFILE):$(SIMH_CPU_KWORDS):$(BOOT_CORE_WORDS):$(TSFS_INPLACE_BOOT):$(TSFS_ROOT_MEMBERS),tape:dtc:lowmem:64:0200000:1:3)
-$(error initial KA10 target requires 64K LOWMEM hybrid TSFS DECtape root)
+ifneq ($(BOOT_PROFILE):$(SIMH_CPU_KWORDS):$(BOOT_CORE_WORDS),lowmem:64:0200000)
+$(error initial KA10 target requires 64K LOWMEM)
+endif
+ifeq ($(ROOT),tape)
+ifneq ($(STAGE1_DEVICE):$(TSFS_INPLACE_BOOT):$(TSFS_ROOT_MEMBERS),dtc:1:3)
+$(error KA10 TSFS requires hybrid DECtape Stage1 and three members)
+endif
+else ifeq ($(ROOT),disk)
+ifneq ($(STAGE1_DEVICE):$(TSFS_INPLACE_BOOT),dsk:0)
+$(error KA10 D6FS requires Type 270 Stage1)
+endif
+else
+$(error KA10 currently supports ROOT=tape or ROOT=disk)
 endif
 ifneq ($(DAIMOS_PURE_MRES_ENABLED)$(DAIMOS_PBM_V1667)$(DAIMOS_SWAPLESS_ONLY_V1668),000)
 $(error optional PURE features not yet qualified on KA10)
@@ -1551,7 +1562,7 @@ $(TSFS_ROOT_IMAGE): $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH
 
 ifeq ($(DAIMOS_MACHINE),ka10)
 SIMH_TEMPLATE = simh/simh-ka10-v1964.ini.in
-SIMH_MEDIA_DEPS =
+SIMH_MEDIA_DEPS = $(if $(filter disk,$(ROOT)),$(DISK_IMAGES))
 else
 SIMH_TEMPLATE = simh/simh.ini.in
 SIMH_MEDIA_DEPS = $(DISK_IMAGES) $(DRUM_IMAGES)
@@ -1668,7 +1679,13 @@ $(SIMH_INI): $(SIMH_TEMPLATE) $(STAGE1_TAPE) $(SIMH_MEDIA_DEPS) \
 	    -e 's|@DPY_MODE@|$(SIMH_DPY_MODE)|g' \
 	    -e "s|@ROOT_SWITCH@|$$root_switch|g" $< > $@.tmp; \
 	while IFS= read -r line || test -n "$$line"; do \
-		if test "$$line" = "@BOOT_COMMANDS@"; then \
+		if test "$$line" = "@KA10_ROOT_ATTACH@"; then \
+			if test '$(ROOT)' = disk; then \
+			    for unit in 0 1 2 3; do printf 'attach -q dsk%s %s/dsk%s.dsk\n' "$$unit" '$(DISK_DIR)' "$$unit"; done; \
+			else \
+			    for unit in 0 1 2 3; do printf 'attach -q dtc%s %s\n' "$$unit" "$$(case $$unit in 0) echo '$(DTC0_IMAGE)' ;; 1) echo '$(DTC1_IMAGE)' ;; 2) echo '$(DTC2_IMAGE)' ;; 3) echo '$(DTC3_IMAGE)' ;; esac)"; done; \
+			fi; \
+		elif test "$$line" = "@BOOT_COMMANDS@"; then \
 			cat '$(BOOT_COMMANDS)'; \
 		else \
 			printf '%s\n' "$$line"; \

@@ -157,8 +157,11 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   user binaries and Type270 controller/driver recovery tests passed.
   Retain paper-tape bootstrap, existing essential drivers, TSFS DECtape
   root and unmodified PDP-6 user binaries. v1965 additionally requires
-  Type 270/D6FS disk-root boot via paper-tape Stage1 and one working
-  drum-backed AUXSTORE/BACKSTORE and ordinary swap configuration.
+  Type 270/D6FS disk-root boot via paper-tape Stage1 and native
+  RM10-backed AUXSTORE/BACKSTORE and ordinary swap. v1967 requires
+  four root/drum profiles: TSFS and D6FS, both with and without RM10.
+  Both no-drum profiles reach INIT; RM10 integration and interactive
+  qualification remain open. RC10 final-word DMA defect corrected.
   Use the existing KA10 RC10/RM10 emulator (FHA) with a new minimal
   removable native driver. Type 167/236 remains PDP-6-only; emulator
   changes are restricted to demonstrated defect fixes. Direct

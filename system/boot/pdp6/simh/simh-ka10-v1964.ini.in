@@ -1,5 +1,5 @@
-; Initial KA10 0.9 target: one segment, existing Type 136/551 storage.
-; DSK is available for later attachment; the initial TSFS root needs no disk.
+; Initial KA10 0.9 target: one segment, Type 136/551 and Type 270 storage.
+; The selected root determines which media are attached.
 ; Unsupported PDP-6 terminal/drum hardware is not enabled or probed.
 set -q -n log @SIMH_LOG@
 set cpu @CPU_KWORDS@k
@@ -30,9 +30,6 @@ set wcnsls disabled
 set ocnsls disabled
 attach -q ptr @STAGE1_TAPE@
 deposit ptr time 1
-attach -q dtc0 @DTC0_IMAGE@
-attach -q dtc1 @DTC1_IMAGE@
-attach -q dtc2 @DTC2_IMAGE@
-attach -q dtc3 @DTC3_IMAGE@
+@KA10_ROOT_ATTACH@
 @BOOT_COMMANDS@
 exit

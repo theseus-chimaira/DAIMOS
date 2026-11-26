@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1966 K17 selects native RC10/RM10).
+Updated: 2026-11-26 (v1967 KA10 roots and RC10 DMA correction).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
@@ -1550,8 +1550,9 @@ history is now reachable from main (v1809); mode3 remains disabled.
     Type 270 root, unchanged PDP-6 INIT/LOGIN/DSH and interactive shell.
     Keep the TSFS DECtape boot path. Reuse the production DSK/DCT
     driver and existing image format; qualify normal disk read/write.
-    Resolve the current tape-only build restriction and verify 64K
-    staging/RAM geometry. Direct hardware DSK read-in stays post-0.9.
+    v1967 lifts the tape-only build restriction; native 64K disk-root
+    boot to INIT and VFS provider 6 pass. Interactive shell and ordinary
+    process operation remain open. Direct DSK read-in stays post-0.9.
     RH10 controllers remain disabled in the Type 270 configuration.
   - [ ] K17 RC10/RM10 drum support (required for 0.9): implement the
     minimal native KA10 RM10 block provider using the existing simulator
@@ -1566,8 +1567,20 @@ history is now reachable from main (v1809); mode3 remains disabled.
     Type 167/236 stays PDP-6-only: do not port its model to KA10.
     No emulator changes except demonstrated defect fixes with regression
     tests; do not extend the emulator to simplify the DAIMOS driver.
+    v1967 RC10 emulator final DMA word loss reproduced and corrected;
+    read/write 128 words at blocks 0,29,30,2699 pass (sims abb7ee6).
+    DF10 CIA requires an even low-core command/completion pair (0776
+    address mask); MRES/PI and error qualification remain open.
     RM10 root boot, RD10 support and other controller families are
     post-0.9.
+  - [ ] K17 four-profile acceptance: TSFS without RM10 (INIT PASS),
+    D6FS without RM10 (INIT PASS), TSFS with RM10 (OPEN), D6FS with
+    RM10 (OPEN). Each must boot from paper tape, mount the requested
+    root and reach a usable shell. RM10-present profiles must use the
+    validated drum AUXSTORE/BACKSTORE and exercise ordinary swap;
+    no-drum profiles must operate correctly without it (D6FS retains
+    its normal disk backstore; TSFS may be swapless). Verify ownership
+    and process behavior, not merely the INIT banner. Testkit 34beeb8.
   - Implement native APR relocation/protection, PI/trap, and executive/
     user context handling; keep common ownership and rollback semantics.
     Avoid additional per-process state unless required for correctness.
