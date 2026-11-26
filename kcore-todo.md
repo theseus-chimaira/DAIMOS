@@ -1462,6 +1462,9 @@ history is now reachable from main (v1809); mode3 remains disabled.
   fail-closed correction PASS on SIMH 12dcd35. Later READ loss
   stalls real KINIT beyond 301 ticks; DFR/busy loss semantics
   and bounded boot recovery remain OPEN. No kernel change.
+  48K GENERAL/STRICT nine-owner physical pressure B PASS;
+  both intentionally stopped after pipe release, final WAIT/C
+  not accepted. Remaining lifecycle and later-loss tests OPEN.
 
 
 ## Mandatory KCORE: KA10 nonpaged backend

@@ -51,6 +51,22 @@ does not change DFR/busy detach semantics. The boot dsk_wait
 polls without timeout; proper controller error/termination and
 bounded boot recovery still require resolution. No fabricated IDS
 reset or timeout workaround. Evidence read-stall/console.clean.
+48K KCC GENERAL/STRICT nine-owner physical pressure B PASS
+in both: A MM9/free24247, B MM26/free2672/largest1519, nine
+PACKED with two 3072 and seven 2048 APRs reduced by128 each,
+high slot11, baseline pin1, actual tenth RUN refusal.
+Both released all pipe tokens; final C/WAIT verification not
+reached before deliberate stop. GENERAL extra read-only
+diagnostic showed MM21, slot0, native tape search state0200;
+not a completed recovery or a proven hang. Evidence same
+k09-physical-v1953.qmouUY/48-{general,strict}. Both test
+processes terminated, rerun remaining lifecycle later.
+
+Installed clean SIMH12dcd35 through versioned evidence local.tar.gz
+under PDP10_PREFIX/bin/pdp6; SHA256
+828d7be016acafcf050425425d2aafa21c2db0e77ee6aa6343b95dd35b2fef30.
+Installed native media-loss target repeats four PASS. Older
+physical noaux tests ran the original v1950 executable inode.
 K09 remains OPEN; optimization and 16K target deferred as v1952.
 No production kernel source change.
 
