@@ -92,3 +92,17 @@ pbmd_decode_v1977(kword_t source, kword_t encoded_words,
                 return PBMD_WRITE_FAULT_V1977;
         return rc;
 }
+
+/* Exact read-only equality, not just canonical shape. The same decode
+ * walker checks masks, nonzero literals and exact consumption. */
+int
+pbmd_verify_v1979(kword_t raw_base, kword_t raw_words,
+    kword_t packed_base, kword_t packed_words)
+{
+        if (!pbmd_span(raw_base, raw_words) ||
+            !pbmd_span(packed_base, packed_words) || packed_words >= raw_words ||
+            packed_words < (raw_words + 35UL) / 36UL)
+                return MM_ERR_INVAL;
+        return PBMD_WALK(raw_base, raw_words, packed_base, packed_words,
+            PBMD_FORWARD_V1977, PBMD_DECODE | 020U);
+}

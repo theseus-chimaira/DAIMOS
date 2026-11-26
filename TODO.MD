@@ -210,11 +210,13 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   selects RAW. Any later alternate bounded pinned scratch or exclusive
   VFS workspace lease requires a separate proof. K13-K16 still own
   live publication, restore, interrupt latency and deferred recovery.
-- [ ] **Atomic mode3 DROP publication:** integrate the staged v1659-
-  v1667 bitmap frontend with the real scheduler/reclaim path. Prove
-  source survival before the first overwrite, exact sole MM ownership,
-  source/target overlap safety, complete encoder completion, and
-  failure-safe RAW-vs-BITMAP commit with no partial publication.
+- [x] **Atomic mode3 DROP publication (staged):** v1979 directory
+  candidate exact comparison; single original descriptor shrinks,
+  changes type and consumes pin atomically under PI exclusion. Reclaim
+  source selects staged path; exact owner witness, RAW cancel or dirty
+  quarantine. Native PDP6/KA10 each47 calls, six unsafe mutants PASS.
+  Combined incremental staged TEXT1135, zero DATA/BSS. No installed
+  mode3 link; live lifecycle, restore and recovery still open.
 - [ ] **Mode3 FULL restoration and terminal path:** integrate bounded
   decode, immutable backing/restore fallback, 02000-octal (1024-word) APR alignment,
   target-pin ordering, raw/bitmap terminal detach and VM destroy.

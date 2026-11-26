@@ -37,6 +37,15 @@
 #include "proc_pure_bitmap_terminal_v1661.h"
 #endif
 
+#ifdef DAIMOS_PBM_COMMIT_V1979
+/* Staged only: no installed build target sets this flag. Old interleaved
+ * restore cannot consume the directory format. */
+#include "proc_pure_bitmap_prefix_v1978.h"
+#if DAIMOS_PBM_V1667 == 1
+#error directory_DROP_requires_new_restore_not_v1667
+#endif
+#endif
+
 #define PPURE_READY_ONCE_V1612 01000UL
 #define PPURE_COOLDOWN_V1612 0100UL
 #define PPURE_RECOVER_REQUEST_V1902 0400000UL
@@ -361,7 +370,11 @@ proc_pure_mres_reclaim_v1612(kword_t words, kword_t alignment,
                     !proc_swap_records[slot].state)
                         continue;
                 PROC_SET_TRANSITION(p);
+#ifdef DAIMOS_PBM_COMMIT_V1979
+                rc = proc_pure_bitmap_drop_v1979(slot);
+#else
                 rc = proc_pure_ram_drop_v1381(slot);
+#endif
                 if (rc != MM_OK) {
                         /* Rebase can commit even when its last unpin
                          * refuses. Unlock only an exact unpinned owner.

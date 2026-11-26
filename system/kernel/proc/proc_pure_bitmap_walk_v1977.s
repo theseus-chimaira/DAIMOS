@@ -1,6 +1,7 @@
 ; K11 mask-directory traversal. Staged, not linked to installed MRES.
 ; AC1 RAW base, AC2 packed base, AC3 RAW count,,encoded count,
 ; AC4 mode: bit0 decode, bit1 write (else read-only), bit2 reverse.
+; v1979 bit4 compare: decode read-only and compare each RAW word.
 ; All lengths and physical spans are validated by the C frontend.
 ; AC1 returns 0, 2 (overlap), or -4 (invalid canonical stream).
 ; No array or permanent scratch; AC10..16 saved. The same schedule
@@ -99,6 +100,12 @@ pbmd_decode_store_v1977:
         movem   7,(1)
         jrst    pbmd_decode_next_v1977
 pbmd_decode_check_v1977:
+        trnn    10,020
+        jrst    pbmd_decode_overlap_v1979
+        came    7,(1)                  ; exact RAW equality, including zero
+        jrst    pbmd_invalid_v1977
+        jrst    pbmd_decode_next_v1977
+pbmd_decode_overlap_v1979:
         ; Unread masks and literals are independent intervals. In reverse
         ; they are [packed base,mask cursor] and [split,literal cursor].
         jumpl   11,pbmd_decode_fwd_v1977

@@ -25,4 +25,7 @@ int pbmd_encode_v1977(kword_t source, kword_t raw_words,
     kword_t *encoded_words);
 int pbmd_decode_v1977(kword_t source, kword_t encoded_words,
     kword_t target, kword_t raw_words, unsigned int direction);
+/* Read-only exact equality with original RAW, including canonical shape. */
+int pbmd_verify_v1979(kword_t raw_base, kword_t raw_words,
+    kword_t packed_base, kword_t packed_words);
 #endif

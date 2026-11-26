@@ -1710,10 +1710,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   never borrow freed memory or introduce a permanent slab. K13-K16
   still own atomic bitmap publication, restore, live scheduling,
   interrupt latency and deferred dirty-owner recovery.
-- [ ] **K13 - Atomic compressed ownership.** Integrate bitmap DROP with
-  real reclaim and MM ownership. Prove source survival, overlap safety,
-  complete encoding and atomic RAW-versus-BITMAP publication, with
-  rollback and no partially published state.
+- [x] **K13 - Atomic compressed ownership.** v1979 staged directory
+  compare and single-descriptor shrink, type and pin commit, exact
+  witness before mode3 publication; corruption/refusal cancels to RAW
+  where safe, otherwise quarantine. Actual reclaim source selects the
+  new path under a test-only flag. PDP6/KA10 each47 calls, six unsafe
+  mutants and previous K11/K12 regression PASS. Combined incremental
+  staged TEXT1135, no DATA/BSS or extra descriptor. K14-K16 must finish
+  restoration, live lifecycle, uncertain recovery, latency and payback;
+  installed mode3 remains disabled.
 - [ ] **K14 - FULL restoration.** Integrate bounded decoding, immutable
   backing/fallback, 02000-octal (1024-word) APR alignment, target pin ordering and safe
   restoration into a complete runnable process image.

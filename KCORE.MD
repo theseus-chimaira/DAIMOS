@@ -26,7 +26,11 @@ negative controls PASS. K12 staged prefix-only lease closed v1978:
 exact once-pinned original APR, four-word caller-stack identity, dirty
 escrow and checked RAW cancellation; +414 staged TEXT, zero DATA/BSS.
 No allocation or new descriptor. Default RAW object byte-identical.
-K13-K16 remain open, including dirty recovery and PI-off latency.
+K13 staged atomic bitmap DROP closed v1979: exact candidate comparison,
+one descriptor shrink/type/pin transaction, exact witness before mode3
+publication. Native reclaim tests and six unsafe controls PASS. Combined
+incremental staged TEXT1135, zero DATA/BSS; no installed mode3 link.
+K14-K16 remain open, including dirty recovery and PI-off latency.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

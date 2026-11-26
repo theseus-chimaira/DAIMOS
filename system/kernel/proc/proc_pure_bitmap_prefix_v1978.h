@@ -41,4 +41,12 @@ int proc_pure_bitmap_prepare_v1978(unsigned int slot,
     struct pure_bitmap_lease_v1978 *lease);
 int proc_pure_bitmap_cancel_v1978(unsigned int slot,
     const struct pure_bitmap_lease_v1978 *lease);
+/* Staged K13 commit: zero = bitmap, positive = exact RAW cancellation.
+ * BUSY leaves uncertain ownership quarantined under TRANSITION. */
+#define PBMP_RAW_V1979 3
+int proc_pure_bitmap_commit_v1979(unsigned int slot,
+    const struct pure_bitmap_lease_v1978 *lease);
+/* Synchronous staged reclaim entry. Success means exact RAW or bitmap
+ * published and TRANSITION cleared; uncertainty must remain held. */
+int proc_pure_bitmap_drop_v1979(unsigned int slot);
 #endif

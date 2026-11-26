@@ -1,3 +1,36 @@
+## 2026-11-26 v1979: K13 atomic bitmap ownership CLOSED (staged)
+
+Directory candidate compared read-only against every original RAW word
+using shared v1977 decode walker, canonical masks/literals and exact
+consumption. New 89-word MM leaf checks full APR geometry, shrinking
+prefix-contained encoded length, whole MM table and exact sole pinned
+PROCESS descriptor. Shrinks same descriptor at original base and sets
+PACKED_PROCESS/zero pins in one PI-excluded transaction. No separate
+unpin, allocation, descriptor or copying of mutable source. Exact
+postcommit owner witness, not reply alone, authorizes backing/VM0/mode3
+publication; clear escrow and TRANSITION only after publication.
+Corrupt candidate or refused commit with original pinned owner cancels
+to ordinary RAW. False success, foreign owner or ambiguous pin retains
+TRANSITION; refused RAW cancellation likewise quarantines. Dirty codec
+fault is not a clean fallback. Real reclaim selection uses staged
+DAIMOS_PBM_COMMIT_V1979 flag with old mode3 restore explicitly forbidden.
+No installed build enables it. Unmarked/no-fit/no-gain clean original
+owners use existing RAW DROP. A live RT lease refuses the staged path.
+Native PDP6/KA10 each47 commit/reclaim calls; 6 executed unsafe mutants
+rejected. Real allocator reuses all848 released words of a synthetic
+1024-word image, retained176 words decode exactly after overwrite.
+K12 regression72 calls/CPU and six mutants, K11 2760 cases/CPU and
+four mutants plus hard-write fault PASS. Incremental staged TEXT1135:
+codec/verifier456, DROP object1281 vs RAW691 (+590), MM commit89.
+Reclaim object901 unchanged in size. Zero DATA/BSS or per-slot growth.
+Disabled RAW DROP DOBJ byte-identical. No installed RAM payback claim.
+Testkit d3759f8. Evidence $TMPDIR/pure-bitmap-commit-v1979.p8dyar,
+pure-bitmap-prefix-v1978.7Mr3Np, daimos-bitmap-directory-v1977.h0Ruw7,
+k13-v1979.SvAhCA. See design/kcore-k13-v1979.md.
+K14-K16 OPEN: new directory FULL restore, mode3 lifecycle, deferred
+uncertain-owner recovery, PI latency/stack high-water and real net RAM.
+RAW PURE/mode3 default OFF. K10 +29 permanent words unchanged.
+
 ## 2026-11-26 v1978: K12 exclusive prefix lease CLOSED (staged prefix-only path)
 
 Reuse original full APR descriptor: prove exact sole PROCESS and stable

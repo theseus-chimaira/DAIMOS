@@ -390,9 +390,9 @@ clean:
         return rc;
 }
 
-int
-proc_pure_bitmap_cancel_v1978(unsigned int slot,
-    const struct pure_bitmap_lease_v1978 *lease)
+static struct proc *
+pbmp_lease_v1979(unsigned int slot,
+    const struct pure_bitmap_lease_v1978 *lease, kword_t *skipp)
 {
         struct proc *p;
         kword_t backing, words, skip, base, suffix, escrow, encoded;
@@ -404,7 +404,7 @@ proc_pure_bitmap_cancel_v1978(unsigned int slot,
             p->vm_state != lease->vm_state ||
             PROC_UAREA_BASE(p) != lease->uarea ||
             proc_swap_records[slot].state != lease->backing)
-                return MM_ERR_BUSY;
+                return 0;
         backing = lease->backing;
         words = VM_SPACE_WORDS(p);
         base = VM_PDP6_BASE(p);
@@ -412,13 +412,30 @@ proc_pure_bitmap_cancel_v1978(unsigned int slot,
         if (u[PROC_SWAP_BACKING_OFFSET] ||
             (u[PROC_CRED_OFFSET] & PROC_SWAP_EXEC_MASK_V1976) != lease->identity ||
             pdp6_pure_skip_v1604(backing, words, &skip) != MM_OK)
-                return MM_ERR_BUSY;
+                return 0;
         suffix = base + skip;
         escrow = u[PROC_FINALIZE_OFFSET];
         encoded = escrow & MM_HALF_MASK;
         if (!encoded || encoded > skip || encoded >= words - skip ||
             escrow != (PROC_PURE_BITMAP_ESCROW_V1978(suffix) | encoded))
+                return 0;
+        *skipp = skip;
+        return p;
+}
+
+int
+proc_pure_bitmap_cancel_v1978(unsigned int slot,
+    const struct pure_bitmap_lease_v1978 *lease)
+{
+        kword_t skip, base, words, suffix, backing, *u;
+        struct proc *p = pbmp_lease_v1979(slot, lease, &skip);
+        if (!p)
                 return MM_ERR_BUSY;
+        base = VM_PDP6_BASE(p);
+        words = VM_SPACE_WORDS(p);
+        suffix = base + skip;
+        backing = lease->backing;
+        u = PRAM_PTR(lease->uarea);
         /* Prefix is dirty. Even on reported failure, the only ordinary
          * cancellation is a proven RAW rebase; NEVER unpin the full
          * resident owner or clear TRANSITION after a refused rebase. */
@@ -437,6 +454,78 @@ proc_pure_bitmap_cancel_v1978(unsigned int slot,
         PROC_CLEAR_TRANSITION(p);
         return MM_OK;
 }
+#ifdef DAIMOS_PBM_COMMIT_V1979
+#include "mm_pure_bitmap_commit_v1979.h"
+#include "proc_pure_bitmap_terminal_v1661.h"
+
+/* The only new live-mode store is guarded by the original synchronous
+ * lease and an exact candidate compare. Never call old mode3 restore
+ * with this directory representation. */
+int
+proc_pure_bitmap_commit_v1979(unsigned int slot,
+    const struct pure_bitmap_lease_v1978 *lease)
+{
+        kword_t skip, base, words, encoded, shift, *modep, *u;
+        struct proc *p = pbmp_lease_v1979(slot, lease, &skip);
+        int rc;
+        if (!p)
+                return MM_ERR_BUSY;
+        base = VM_PDP6_BASE(p);
+        words = VM_SPACE_WORDS(p);
+        u = PRAM_PTR(lease->uarea);
+        encoded = u[PROC_FINALIZE_OFFSET] & MM_HALF_MASK;
+        if (pbmd_verify_v1979(base + skip, words - skip, base, encoded) != MM_OK)
+                goto cancel;
+        shift = (slot % PROC_STMAP_SLOTS_WORD_V28) * 2U;
+        modep = &proc_storage_runtime_v29.words[slot / PROC_STMAP_SLOTS_WORD_V28];
+        /* Original mode was proved by pbmp_lease. No callback/sleep,
+         * no fallible operation between exact MM commit and publication.
+         * A lost reply is reconciled against the exact original base. */
+        rc = mm_pure_bitmap_commit_v1979(base, slot, words,
+            (skip << 18U) | encoded);
+        if (proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS, base, encoded, 0U)) {
+                u[PROC_SWAP_BACKING_OFFSET] = lease->backing;
+                VM_PDP6_SET_BASE(p, 0UL);
+                *modep |= (kword_t)PROC_STORAGE_BITMAP_V1661 << shift;
+                u[PROC_FINALIZE_OFFSET] = 0UL;
+                PROC_CLEAR_TRANSITION(p);
+                return MM_OK;
+        }
+        /* Refused commit may cancel only while the original full pinned
+         * owner is still exact. Success with no witness is uncertain. */
+        if (rc == MM_OK)
+                return MM_ERR_BUSY;
+cancel:
+        if (proc_pure_bitmap_cancel_v1978(slot, lease) == MM_OK)
+                return PBMP_RAW_V1979;
+        return MM_ERR_BUSY;
+}
+
+/* Staged reclaim entry. A clean refusal is distinguishable by the
+ * original unpinned resident owner AND zero escrow, not rc alone.
+ * Hold PI across preparation, comparison and publication. */
+int
+proc_pure_bitmap_drop_v1979(unsigned int slot)
+{
+        struct pure_bitmap_lease_v1978 lease;
+        struct proc *p;
+        kword_t saved = mach_pi_disable();
+        int rc = proc_pure_bitmap_prepare_v1978(slot, &lease);
+        if (rc == MM_OK) {
+                rc = proc_pure_bitmap_commit_v1979(slot, &lease);
+                if (rc == PBMP_RAW_V1979)
+                        rc = MM_OK;
+        } else if (rc == PBM_NO_GAIN_V1975 || rc == MM_ERR_NOMEM ||
+            rc == MM_ERR_INVAL) {
+                p = pbmp_owner_v1978(slot, 0U);
+                if (p && !PRAM_PTR(PROC_UAREA_BASE(p))[PROC_FINALIZE_OFFSET])
+                        rc = proc_pure_ram_drop_v1381(slot);
+        }
+        mach_pi_restore(saved);
+        return rc;
+}
+#endif
+
 #endif
 #endif
 
