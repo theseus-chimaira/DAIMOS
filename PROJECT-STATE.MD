@@ -1,3 +1,42 @@
+## 2026-11-26 v1984: actual directory pressure, restore and RT fallback
+
+Matched original v1983 GCC 64K strict TSFS physical SIMH directory/RAW
+images, identical independently linked INIT/COMP bytes and text boundary.
+Directory admitted8 sleeping children (1 RAW3584,7 bitmap239), RAW9
+(9 RAW3584), full APR4096 and omitted prefix512. Exact stable u-area,
+map and all MM intervals independently verified. Gross equivalent RAW
+saving23415, net21322 after measured resident overhead2093. Directory
+31078 free, largest 02000-aligned free span3584; RAW5908 free, largest
+aligned1536. Admission capacity REGRESSION -1 despite large free total.
+Clean bitmaps retain original APR-aligned base and fixed mm_compact
+skips PACKED_PROCESS. Need exact safe consolidation or alternative
+placement before enabling mode3; investigate 0200-aligned source escrow
+and compact bitmap owners, do not move RAW or dirty/pinned extents.
+Actual directory slot3 restore on slot0 and atomic finish at relocated
+PCs041661/045433. Original bitmap150000/239 and separate full APR
+160000/4096 each pinned once, peak4335 image words. Original RAW child
+exited first, allowing full target. All8 directory and all9 RAW guest
+sparse-data/WAIT checks reached Z. Both original observers rejected
+concatenated ZV1983_Z_STOP, stopped before final MM/HALT. Parser fixed;
+independent verifier and eight trace controls PASS, not full finalizer,
+physical PI6/READY_ONCE or terminal-while-nonresident acceptance.
+Native GCC FULL52, service46, terminal65+VM65 each CPU, 17 mutants PASS.
+RT lease correction moves RT exclusion from shared owner proof to codec
+admission and lease validation; RAW fallback unchanged under live RT.
+KCC/GCC DROP +2 TEXT (1281->1283/1035->1037), disabled KCC byte-identical.
+K13 49/CPU both compilers, eight mutants incl two RT controls PASS;
+K12 72/CPU KCC and six mutants PASS. No persistent state growth.
+Testkit13aae53; evidence relative TMPDIR: pure-directory-physical-v1984.fQfzgb,
+pure-directory-raw-physical-v1984.Oaz4D2, pure-directory-raw-control-v1984.J5WhuQ,
+pure-rt-fallback-v1984.sOhu8X, pure-bitmap-full-v1980.PU4Vid,
+pure-bitmap-service-v1981.1M48YW, pure-bitmap-terminal-v1982.yfQrGy,
+pure-bitmap-commit-v1979.A6ckyl/E0NsnJ, pure-bitmap-prefix-v1978.pXFaGf.
+K15/K16 OPEN. Actual v1983 runtime measurements precede RT fix;
+final acceptance requires source-built current image, exact post-WAIT
+MM/HALT, actual PI6/READY_ONCE and terminal tests, capacity gain,
+uncertain recovery, latency/stack, real DSH/48K/64K. Default OFF.
+See design/kcore-k15-physical-v1984.md.
+
 ## 2026-11-26 v1983: K15 source-built directory PURE package
 
 New explicit experimental DAIMOS_PBM_DIRECTORY_V1983=1 requires

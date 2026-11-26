@@ -47,8 +47,15 @@ KCC3885->6401 resident MRES, fixed KCORE -8, no BSS/per-slot growth.
 Both compiler mode-switch checks PASS. Strict swapless TSFS only,
 default OFF. 64K physical SIMH installed PURE and admitted three
 children before bounded timeout; no mode3 lifecycle acceptance.
-K15-K16 remain open for actual scheduler/PI6, RUN/EXEC/EXIT/WAIT,
-full finalizer integration, uncertain recovery, latency, stack and net RAM.
+v1984 actual matched 64K pressure: directory8 vs RAW9 children;
+7 bitmap239 vs RAW3584 (full4096), equivalent net21322 words saved,
+but largest aligned gap3584 despite31078 free. Capacity regression;
+bitmap consolidation/placement required. Actual slot3 FULL/finish
+and 8/9 checked guest WAITs observed, final MM/HALT not captured due
+observer formatting error. RT fallback correction +2 optional TEXT,
+GCC/KCC native regression PASS. K15-K16 remain open for actual PI6,
+READY_ONCE, EXEC/nonresident terminal/finalizer, uncertain recovery,
+placement, latency, stack and physical net capacity.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

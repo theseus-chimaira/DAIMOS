@@ -294,9 +294,9 @@ pbmp_owner_v1978(unsigned int slot, unsigned int pins)
         kword_t base, words, uarea;
         int i;
 
-        /* Compression holds global PI exclusion; do not extend a live
-         * real-time lease's interrupt latency, even for another slot. */
-        if (!slot || slot == proc_current_slot || proc_rt_owner ||
+        /* This is an ownership proof, shared by ordinary RAW fallback.
+         * The codec's real-time exclusion belongs to lease admission. */
+        if (!slot || slot == proc_current_slot ||
             !proc_table || !proc_swap_records || slot >= proc_slots ||
             slot >= proc_high_slot || slot >= proc_storage_runtime_v29.slots)
                 return 0;
@@ -330,7 +330,9 @@ proc_pure_bitmap_prepare_v1978(unsigned int slot,
         kword_t *u;
         int rc;
 
-        if (!lease || !(p = pbmp_owner_v1978(slot, 0U)))
+        /* A live RT lease precludes the long PI-excluded codec passes,
+         * not the existing zero-copy RAW reclaim transaction. */
+        if (proc_rt_owner || !lease || !(p = pbmp_owner_v1978(slot, 0U)))
                 return MM_ERR_INVAL;
         rc = pram_prepare(slot, PURE_LIFE_DROP_V1610, &p, &backing,
             &words, &skip);
@@ -400,7 +402,7 @@ pbmp_lease_v1979(unsigned int slot,
 
         /* No new pin or discovered owner is accepted for cancellation.
          * The caller must still own the original synchronous lease. */
-        if (!lease || !(p = pbmp_owner_v1978(slot, 1U)) ||
+        if (proc_rt_owner || !lease || !(p = pbmp_owner_v1978(slot, 1U)) ||
             p->vm_state != lease->vm_state ||
             PROC_UAREA_BASE(p) != lease->uarea ||
             proc_swap_records[slot].state != lease->backing)

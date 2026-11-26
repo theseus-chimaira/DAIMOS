@@ -1744,8 +1744,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   TSFS, mutually exclusive with old codec, GCC/KCC mode switching
   byte-identical. Net incremental resident2093/2508 words. 64K SIMH
   installed PURE and admitted three children before bounded timeout.
-  Actual mode3 scheduler/PI6, RUN/EXEC/EXIT/WAIT and complete finalizer
-  remain open. Experimental option only, default OFF.
+  v1984 actual slot3 mode3 restore/finish and checked8 directory/
+  9 RAW guest WAITs. Observer stopped before final MM/HALT; fixed
+  parser, independent trace and eight negative controls PASS.
+  Physical PI6/READY_ONCE, EXEC/nonresident terminal/finalizer remain
+  open. Native GCC FULL/service/terminal and RT fallback PASS.
+  Capacity regression: directory8 vs RAW9, seven239 vs RAW3584,
+  equivalent net21322 saved but largest aligned3584 with31078 free.
+  Safe clean bitmap consolidation/placement required before live
+  activation; preserve exact owner identity and escrow, no RAW move.
+  Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,
   restore cancellation and terminal failure without leaks, double

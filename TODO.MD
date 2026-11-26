@@ -234,11 +234,20 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   GCC/KCC switch/regeneration and native regressions. Physical 64K
   boot and three child admissions observed, timeout before pressure;
   continue actual mode3 scheduler/terminal lifecycle, not activation.
+  v1984 actual mode3 slot3 restore/finish and eight checked guest
+  WAITs observed; matched RAW nine WAITs. Final MM/HALT missing due
+  monitor marker parser, corrected. RT lease RAW fallback corrected.
 - [ ] **PI6, MM and backing failure matrix for mode3:** verify actual
   process scheduler wake, READY_ONCE, source loss, corruption,
   allocation refusal, torn/overlapping data, uncertain MM and
   terminal cancellation under native/physical fault injection.
   Do not lift the permanent mode3 destroy refusal until safe.
+- [ ] **Mode3 placement and aligned capacity:** v1984 measured7 bitmap239
+  vs RAW3584, equivalent net21322 saved, but directory8 vs RAW9 children.
+  31078 free, largest aligned3584 <4096 required. Investigate moving
+  only exact clean unpinned mode3 owners, preserve source escrow
+  alignment and owner identity; do not move RAW or uncertain extents.
+  Prove actual contiguous capacity gain and recovery before activation.
 - [ ] **End-to-end mode3 acceptance:** source-built 48K/64K physical
   marked and unmarked process RUN/EXEC/EXIT/WAIT; repeat sleep/wake,
   real DSH mutable-state samples, kernel/process memory high-water,
