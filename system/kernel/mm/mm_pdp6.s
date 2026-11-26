@@ -199,7 +199,10 @@ mm_uarea_probe_return_v1701:
         sub     17,[1,,1]
         popj    17,
 
-; Find a fitting free gap.
+; Find a fitting free gap. The optional directory commit planner also
+; uses this read-only leaf under global PI exclusion, after validating
+; the entire MM table and positive power-of-two alignment.
+        .globl mm_find_fit
 ; AC1=words, AC2=alignment, AC3=preference, AC4=basep.
 ; Return AC1=1 fit / 0 no fit. On failure *basep=total free words.
 mm_find_fit:

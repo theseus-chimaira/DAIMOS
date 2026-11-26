@@ -937,8 +937,9 @@ endif
 ifeq ($(DAIMOS_PBM_DIRECTORY_V1983),1)
 $(BUILD)/pure-directory-walk-v1983.dobj: $(KERNEL_DIR)/proc/proc_pure_bitmap_walk_v1977.s | $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
-$(BUILD)/pure-directory-commit-v1983.dobj: $(KERNEL_DIR)/mm/mm_pure_bitmap_commit_v1979.s | $(BUILD)
-	$(DAS) $(DASFLAGS) -C -O $@ $<
+$(BUILD)/pure-directory-commit-v1983.dobj: $(KERNEL_DIR)/mm/mm_pure_bitmap_commit_v1979.s Makefile | $(BUILD)
+	{ printf '.equ DAIMOS_PBM_PLACE_V1985,1\n'; cat $<; } > $@.s
+	$(DAS) $(DASFLAGS) -C -O $@ $@.s
 $(BUILD)/pure-directory-finish-v1983.dobj: $(KERNEL_DIR)/mm/mm_pure_bitmap_finish_v1664.s | $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 PURE_BITMAP_PARTS_V1667 = $(BUILD)/proc_pure_bitmap_directory_v1977.dobj \

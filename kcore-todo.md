@@ -1751,8 +1751,11 @@ history is now reachable from main (v1809); mode3 remains disabled.
   open. Native GCC FULL/service/terminal and RT fallback PASS.
   Capacity regression: directory8 vs RAW9, seven239 vs RAW3584,
   equivalent net21322 saved but largest aligned3584 with31078 free.
-  Safe clean bitmap consolidation/placement required before live
-  activation; preserve exact owner identity and escrow, no RAW move.
+  v1985 lower-sector placement during original pinned DROP accepts
+  native/source-build gate. Exact proposed destination escrow, no
+  extra owner/descriptor or published RAW/bitmap relocation. GCC5460/
+  KCC6504 MRES, fixed KCORE and RAW byte-identical. Actual aligned
+  capacity replay required before live activation.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,

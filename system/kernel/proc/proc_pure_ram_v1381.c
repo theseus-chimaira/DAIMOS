@@ -470,6 +470,9 @@ proc_pure_bitmap_commit_v1979(unsigned int slot,
         kword_t skip, base, words, encoded, shift, *modep, *u;
         struct proc *p = pbmp_lease_v1979(slot, lease, &skip);
         int rc;
+#ifdef DAIMOS_PBM_PLACE_V1985
+        kword_t target, gap;
+#endif
         if (!p)
                 return MM_ERR_BUSY;
         base = VM_PDP6_BASE(p);
@@ -482,10 +485,27 @@ proc_pure_bitmap_commit_v1979(unsigned int slot,
         modep = &proc_storage_runtime_v29.words[slot / PROC_STMAP_SLOTS_WORD_V28];
         /* Original mode was proved by pbmp_lease. No callback/sleep,
          * no fallible operation between exact MM commit and publication.
-         * A lost reply is reconciled against the exact original base. */
+         * A lost reply is reconciled against the exact selected base. */
+#ifdef DAIMOS_PBM_PLACE_V1985
+        /* Prefer an already free low sector gap; the original full APR
+         * remains owned during the search, copy and descriptor shift. */
+        target = base;
+        if (mm_find_fit(encoded, PDP6_PURE_SECTOR_V1604, MM_ALLOC_LOW, &gap) &&
+            gap && gap < base)
+                target = gap;
+        if (target != base) {
+                u[PROC_FINALIZE_OFFSET] = PROC_PURE_BITMAP_PLACE_V1985(target, encoded);
+                rc = mm_pure_bitmap_place_v1985(base, slot, words,
+                    (skip << 18U) | encoded, target);
+        } else
+#endif
         rc = mm_pure_bitmap_commit_v1979(base, slot, words,
             (skip << 18U) | encoded);
+#ifdef DAIMOS_PBM_PLACE_V1985
+        if (proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS, target, encoded, 0U)) {
+#else
         if (proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS, base, encoded, 0U)) {
+#endif
                 u[PROC_SWAP_BACKING_OFFSET] = lease->backing;
                 VM_PDP6_SET_BASE(p, 0UL);
                 *modep |= (kword_t)PROC_STORAGE_BITMAP_V1661 << shift;
@@ -497,6 +517,15 @@ proc_pure_bitmap_commit_v1979(unsigned int slot,
          * owner is still exact. Success with no witness is uncertain. */
         if (rc == MM_OK)
                 return MM_ERR_BUSY;
+#ifdef DAIMOS_PBM_PLACE_V1985
+        if (target != base) {
+                /* Only exact original full ownership authorizes
+                 * cancellation; never adopt a new source base. */
+                if (!proc_pure_owner_v1918(slot, MM_TYPE_PROCESS, base, words, 1U))
+                        return MM_ERR_BUSY;
+                u[PROC_FINALIZE_OFFSET] = PROC_PURE_BITMAP_ESCROW_V1978(base + skip) | encoded;
+        }
+#endif
 cancel:
         if (proc_pure_bitmap_cancel_v1978(slot, lease) == MM_OK)
                 return PBMP_RAW_V1979;

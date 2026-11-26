@@ -56,6 +56,11 @@ observer formatting error. RT fallback correction +2 optional TEXT,
 GCC/KCC native regression PASS. K15-K16 remain open for actual PI6,
 READY_ONCE, EXEC/nonresident terminal/finalizer, uncertain recovery,
 placement, latency, stack and physical net capacity.
+v1985 atomic lower-sector placement at original DROP, no extra owner,
+scratch or permanent word; existing exact commit/escrow proof extended.
+GCC/KCC native25+4+2 calls/CPU and six mutants PASS. Source-built
+GCC5460/KCC6504 MRES; fixed KCORE and RAW packages byte-identical.
+Physical aligned-capacity gate remains open until matched replay.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

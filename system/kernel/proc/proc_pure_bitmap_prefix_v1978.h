@@ -1,4 +1,4 @@
-/* K12 staged, synchronous prefix lease; no installed mode3 path. */
+/* K12 synchronous prefix lease; experimental directory profile only. */
 #ifndef PURE_BITMAP_PREFIX_V1978_H
 #define PURE_BITMAP_PREFIX_V1978_H
 #include "proc.h"
@@ -8,6 +8,14 @@
  * old RAW idle-recovery path. RH is zero until encoding succeeds, then
  * holds the exact encoded count. Never interpret this RH as a target.
  */
+/* v1985 placed DROP: bit31 distinguishes the proposed bitmap target
+ * from a dirty prefix's original suffix. Mode0 and original VM base
+ * persist until commit publication; RH remains the encoded count.
+ * Neither legacy RAW recovery nor mode3 terminal may consume it. */
+#define PROC_PURE_BITMAP_PLACE_V1985(target, count) \
+        (PROC_PURE_INPLACE_ESCROW_V1919((target), PROC_PURE_KIND_MASK_V1919) | \
+        PROC_PURE_TERM_TAG_V1920 | (count))
+
 #define PROC_PURE_BITMAP_PREP_V1978 PROC_PURE_KIND_MASK_V1919
 #define PROC_PURE_BITMAP_ESCROW_V1978(suffix) \
         PROC_PURE_INPLACE_ESCROW_V1919((suffix), PROC_PURE_BITMAP_PREP_V1978)

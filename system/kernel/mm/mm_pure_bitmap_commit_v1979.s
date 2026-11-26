@@ -4,16 +4,35 @@
 ; bytes against original RAW. Validate all geometry/owners before stores.
 ; Success consumes the original sole pin in the descriptor mutation.
 ; No new owner, free call, allocation or fallible post-commit operation.
+; v1985 optionally places at a lower sector-aligned free interval;
+; the original descriptor is reordered, not removed and reinserted.
         .text
         .globl mm_pure_bitmap_commit_v1979
         .globl mm_pure_table_v1922
         .globl mm_extents
         .globl mm_extent_count
+        .ifdef DAIMOS_PBM_PLACE_V1985
+        .globl mm_pure_bitmap_place_v1985
+        .globl mm_pure_range_v1922
+mm_pure_bitmap_place_v1985:
+        move    5,-1(17)               ; exact proposed destination
+        jrst    mbc_enter_v1985
+        .endif
 mm_pure_bitmap_commit_v1979:
+        .ifdef DAIMOS_PBM_PLACE_V1985
+        move    5,1                    ; original no-move entry
+mbc_enter_v1985:
+        add     17,[7,,7]
+        movei   0,-6(17)
+        hrli    0,010
+        blt     0,(17)                 ; AC10..16
+        move    15,5
+        .else
         add     17,[5,,5]
         movei   0,-4(17)
         hrli    0,010
         blt     0,(17)                 ; AC10..14
+        .endif
         move    10,1
         move    11,2
         move    12,3
@@ -84,8 +103,62 @@ mbc_next_v1979:
         aoja    1,mbc_scan_v1979
 mbc_done_v1979:
         jumpl   14,mbc_bad_v1979
+        .ifdef DAIMOS_PBM_PLACE_V1985
+        ; Destination must be strictly below the entire original APR
+        ; (or exactly the original base). No additional owner is needed.
+        came    15,10
+        jrst    mbc_place_check_v1985
+        jrst    mbc_place_store_v1985
+mbc_place_check_v1985:
+        jumple  15,mbc_bad_v1979
+        trne    15,0177
+        jrst    mbc_bad_v1979
+        move    1,15
+        move    2,13
+        pushj   17,mm_pure_range_v1922
+        jumpn   1,mbc_bad_v1979
+        move    7,15
+        add     7,13                   ; exclusive destination end
+        camle   7,10
+        jrst    mbc_bad_v1979
+        move    16,14                  ; eventual new descriptor offset
+mbc_place_scan_v1985:
+        jumpe   16,mbc_place_copy_v1985
+        move    3,mm_extents-2(16)
+        hrrz    4,3
+        hlrz    5,3
+        add     5,4
+        camg    5,15                   ; preceding extent ends before target
+        jrst    mbc_place_copy_v1985
+        camge   4,7                    ; every intervening extent above target
+        jrst    mbc_bad_v1979
+        subi    16,2
+        jrst    mbc_place_scan_v1985
+mbc_place_copy_v1985:
+        ; All checks complete. Disjoint BLT and backward table shift
+        ; are nonfallible in this PI-excluded window. Count unchanged.
+        move    4,15
+        hrl     4,10
+        subi    7,1
+        blt     4,(7)
+mbc_place_shift_v1985:
+        came    14,16
+        jrst    mbc_place_shift_one_v1985
+        jrst    mbc_place_store_v1985
+mbc_place_shift_one_v1985:
+        move    2,mm_extents-2(14)
+        move    3,mm_extents-1(14)
+        movem   2,mm_extents(14)
+        movem   3,mm_extents+1(14)
+        subi    14,2
+        jrst    mbc_place_shift_v1985
+mbc_place_store_v1985:
+        hrlz    2,13
+        hrr     2,15
+        .else
         hrlz    2,13
         hrr     2,10
+        .endif
         move    3,11
         hrli    3,4                    ; PACKED_PROCESS, zero pins
         movem   2,mm_extents(14)
@@ -98,9 +171,17 @@ mbc_busy_v1979:
 mbc_bad_v1979:
         movni   1,4
 mbc_return_v1979:
+        .ifdef DAIMOS_PBM_PLACE_V1985
+        movei   0,-6(17)
+        hrli    0,010
+        movs    0,0
+        blt     0,016
+        sub     17,[7,,7]
+        .else
         movei   0,-4(17)
         hrli    0,010
         movs    0,0
         blt     0,014
         sub     17,[5,,5]
+        .endif
         popj    17,

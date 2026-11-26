@@ -244,9 +244,9 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   Do not lift the permanent mode3 destroy refusal until safe.
 - [ ] **Mode3 placement and aligned capacity:** v1984 measured7 bitmap239
   vs RAW3584, equivalent net21322 saved, but directory8 vs RAW9 children.
-  31078 free, largest aligned3584 <4096 required. Investigate moving
-  only exact clean unpinned mode3 owners, preserve source escrow
-  alignment and owner identity; do not move RAW or uncertain extents.
+  31078 free, largest aligned3584 <4096 required. v1985 implements
+  lower 0200-aligned placement inside original atomic DROP; no extra
+  descriptor or published-owner move. Native/source-build PASS.
   Prove actual contiguous capacity gain and recovery before activation.
 - [ ] **End-to-end mode3 acceptance:** source-built 48K/64K physical
   marked and unmarked process RUN/EXEC/EXIT/WAIT; repeat sleep/wake,

@@ -1,3 +1,36 @@
+## 2026-11-26 v1985: atomic bitmap placement during DROP
+
+Replace original-base placement in explicit directory profile with
+lowest existing free sector-aligned gap below the full pinned APR;
+no-fit retains original commit. Use existing read-only mm_find_fit
+(exported symbol, zero fixed TEXT), original verified candidate,
+new MM placement entry validates full owner, destination range and
+all intervening descriptors before BLT and backward table reorder.
+No extra descriptor, temporary allocation, scratch or persistent word.
+Source escrow uses bit31 plus both kind bits/retry tag, LH proposed
+sector, RH encoded count; original mode0 VM base remains until publish.
+Exact placed owner witness accepts lost reply, false success remains
+quarantined. Clean refusal reverts to original dirty-prefix tag only
+with exact original pinned full owner, then normal RAW cancellation.
+FULL/clean unlock/terminal accept 0200-aligned source only in v1985
+placement profile; RAW and original no-placement geometry unchanged.
+No generic movement of published type4 owners. Existing experimental
+DAIMOS_PBM_DIRECTORY_V1983 selects complete placement chain; default OFF.
+Native GCC/KCC each25 DROP/commit/direct MM,4 FULL,2 terminal calls
+per PDP6/KA10, six unsafe mutants per compiler PASS. Original full
+APR actual reuse/overwrite and restore from moved source, exact
+PREVM retry, full table and independent namespace descriptor shift.
+Older placement-OFF K12/K13/K14/service/terminal regressions PASS.
+Both compiler actual package switching PASS; RAW GCC3258/KCC3885 and
+fixed KCORE byte-identical to v1983. Directory GCC5460/KCC6504 words,
++101/+103 vs v1983 (incl v1984 RT +2), zero BSS or per-slot growth.
+Testkit4df3cf2; evidence relative TMPDIR: pure-bitmap-placement-v1985.f5IRAH,
+pure-bitmap-placement-v1985.97yGI3, pure-placement-regression-v1985.uvVqvy,
+pure-directory-package-v1983.zYDnuc, pure-placement-build-v1985.s17eYq.
+Native/source-build placement subgate accepted. Physical 64K replay
+must demonstrate actual aligned admission gain before activation.
+K15/K16 still OPEN; see design/kcore-k15-placement-v1985.md.
+
 ## 2026-11-26 v1984: actual directory pressure, restore and RT fallback
 
 Matched original v1983 GCC 64K strict TSFS physical SIMH directory/RAW

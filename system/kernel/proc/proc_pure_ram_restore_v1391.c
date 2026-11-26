@@ -493,7 +493,13 @@ pbr_source_v1981(unsigned int slot, kword_t words, kword_t skip,
                         continue;
                 source = MM_EXTENT_BASE(e);
                 encoded = MM_EXTENT_WORDS(e);
-                if (!source || (source & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+                if (!source || (source & (
+#ifdef DAIMOS_PBM_PLACE_V1985
+                    PDP6_PURE_SECTOR_V1604 - 1UL
+#else
+                    VM_PDP6_ALIGN_WORDS - 1UL
+#endif
+                    )) ||
                     encoded > skip || encoded >= raw || encoded < (raw + 35UL) / 36UL ||
                     proc_pure_full_owners_v1917(slot, source, encoded, 0UL, words, 0U, 0U) != 1)
                         return 0;
@@ -692,7 +698,13 @@ static int
 pbt_geometry_v1982(kword_t base, kword_t encoded, kword_t words, kword_t skip)
 {
         kword_t raw = words - skip;
-        return base && !(base & (VM_PDP6_ALIGN_WORDS - 1UL)) &&
+        return base && !(base & (
+#ifdef DAIMOS_PBM_PLACE_V1985
+            PDP6_PURE_SECTOR_V1604 - 1UL
+#else
+            VM_PDP6_ALIGN_WORDS - 1UL
+#endif
+            )) &&
             encoded <= skip && encoded < raw && encoded >= (raw + 35UL) / 36UL;
 }
 
