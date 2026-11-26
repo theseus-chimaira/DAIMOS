@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1946 K08 started; K01-K06 closed; K07 integrated replay pending).
+Updated: 2026-11-26 (v1947 K07/K08 integrated physical PASS; K01-K08 closed).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1141,7 +1141,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
   K06 implementation CLOSED; real PI6 and production acceptance
   remain K08/K09. General allocator serialization and valid-table
   contract unchanged; no arbitrary memory corruption claim.
-- [ ] **K07 - Executable backing lifetime (code complete; integrated replay pending v1946).** Guarantee immutable PURE
+- [x] **K07 - Executable backing lifetime (CLOSED v1947).** Guarantee immutable PURE
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe
   owner retention when the source cannot be trusted.
@@ -1401,8 +1401,12 @@ history is now reachable from main (v1809); mode3 remains disabled.
   without execution; same-reel recovery from missing remains valid.
   Actual v1946 foreign PREFIX -4 independently verified 299 ticks
   after missing FULL -4, with exact original suffix and identity.
-  Complete foreign-to-original recovery/WAIT replay still pending.
-- [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
+  **v1947:** genuine later foreign PREFIX refusal 302 ticks after
+  missing FULL -4, followed by original reel recovery/READY_ONCE,
+  five exact WAITs, healthy retired medium, MM8, no child owners,
+  normal HALT and both reels unchanged in one run. K07 CLOSED;
+  v1945 repeated-stop witness remains withdrawn.
+- [x] **K08 - Scheduler integration (CLOSED v1947).** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
   progress without fabricated concurrent user dispatch.
@@ -1412,6 +1416,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   later foreign PREFIX refusal independently verified. Diagnostic
   deadline expired during reattachment recovery; slot3 READY_ONCE
   dispatch and final WAIT/EXIT/conservation pending. No kernel growth.
+  **v1947:** full 1150-second-deadline replay completed in 284.728s.
+  Actual slot0 FULL PI6 saved TAPE PC032060 with both pins; physical
+  timeout, source retention, peer slot4 execution, distinct foreign
+  refusal, original reel return, slot5 then slot3 READY_ONCE, actual
+  first dispatch AC1=3/cursor3, unchanged MM13, five exact EXIT/WAITs
+  and final MM8/high slot2/mode0, healthy unmount, HALT. Independent
+  full and supplementary oracles plus 14 altered traces PASS. No
+  production growth. K08 CLOSED in scoped implementation acceptance;
+  K09 wider physical/root/controller and KCC acceptance separate.
 - [ ] **K09 - Production integration acceptance.** The v1809 Git
   fast-forward has incorporated the PDP-6 RAW PURE source history
   into main with the feature OFF by default. Do not confuse source

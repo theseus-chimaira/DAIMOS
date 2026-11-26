@@ -7,9 +7,9 @@ independent 48K GENERAL/STRICT pressure A/B/C acceptance
 PASS; the v1808 K05 lost-success restore correction and
 combined native matrix also PASS. The v1808 change removes
 one removable MRES instruction; no fixed KCORE growth.
-K05/K06 implementation closed v1916/v1922; K07 code complete,
-integrated physical replay pending v1946. K08 started; K09 production
-acceptance remains separate work.
+K05/K06 implementation closed v1916/v1922; K07/K08 closed v1947
+after complete physical PI6/foreign refusal/recovery/WAIT replay.
+K09 production acceptance remains separate work.
 Clean unattached superseded refs were safely retired in v1809;
 only worktree-attached topic refs remain.
 Preserve existing dirty worktrees and default-OFF feature
@@ -137,10 +137,10 @@ XIP are production-integrated; do not reopen their obsolete proposals.
 - [ ] **PDP-6 production PURE acceptance:**
   v1809 integrated the source history into main and passed the native
   matrix plus default-OFF build; K05 implementation closed v1916.
-  K06 closed v1922; K07 integrated replay pending v1946 after
-  correction of v1945 repeated breakpoint. Actual separate loss,
-  foreign refusal and same-medium recovery verified. K08 implementation
-  and K09 production safety/physical gates remain open, including
+  K06 closed v1922; K07/K08 closed v1947 after genuine physical
+  loss, distinct foreign refusal, same-medium recovery, READY_ONCE
+  and five exact WAITs with complete MM conservation. K09 production
+  safety/physical gates remain open, including
   organic allocator fragmentation/descriptor
   exhaustion and wider PI6 cases. PURE must remain OFF by default. Every named
   DAIMOS and testkit topic tip is now reachable from local main.

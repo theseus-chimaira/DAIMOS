@@ -1,3 +1,59 @@
+## 2026-11-26 v1947-k07-k08: integrated physical recovery PASS; K07/K08 CLOSED
+
+The full-deadline repeat of the unchanged v1946 physical replay
+completed normally in 284.728 seconds. Current v1939 production GCC
+48K PDP-6 KCORE/KINIT/PURE images identical to v1945; actual v1944
+guest-seeded CLEAN DTVOL2 compressed executable. Five children
+admitted, sixth RUN refused; B/A MM18 identical. Actual FULL PC040756,
+slot0/cursor3, PACKED113600..120000 and PROCESS122000..130000 both
+pin1. Real PCLK PI6 entry017712 saved executive TAPE PC032060;
+MM18 unchanged and all 2176 suffix words identical. Original
+u-area051274, backing037141000000, FULL escrow040457122000.
+Physical DTC3 detach during tape search; actual 7200-tick timeout;
+FULL return034453/-4, MM17, original source pin0, target gone,
+escrow0, original identity and suffix retained, READ_SUSPECT.
+Actual postfailure PI6 saved executive PC020277; independent slot4
+executes its data sentinel w with DTC3 absent. Fresh distinct-ID
+CLEAN foreign reel actual PREFIX return034446/-4, MM15, retained
+owner and identity. 302 ticks after missing refusal, exceeding
+0100-tick cooldown; not the invalid v1945 repeated breakpoint.
+
+Original reel reattached; service returns READY_0 cursor3/cooldown64,
+READY_1 cursor01005, READY_2 cursor01003. Slot3 resident sole unpinned
+PROCESS122000..130000, original u-area, backing/escrow0, mode RESIDENT,
+healthy media0100003. Original restore-selected PC020010 AC1=3,
+cursor3, slot0, MM13 unchanged from READY_2. All five genuine
+child mutable-data sentinels and exact PID/EXITED/status WAITs,
+parent data intact, successful final UNMOUNT and Z MM8/root0.
+Final high slot2, storage-mode word0, unchanged parent APR capacity,
+u-area and backing, no child owner or reservation; normal HALT PC0,
+simulator exit0. Original and foreign reels byte-identical to inputs.
+Clock B/A5709, FULL/PI6 6351, missing/postfail13551, peer13850,
+foreign13853, READY_0 13853, READY_1 14282, READY_2/dispatch15996,
+Z16450 decimal. Independent v1946 full verifier and ten altered
+trace controls PASS. v1947 final conservation verifier and four
+additional altered trace controls PASS (14 altered observed traces,
+not live fault injections). Testkit 8a78de4.
+Evidence $TMPDIR/pure-k08-pi6-physical-v1946.csaBIz/physical.clean
+SHA256 5734e7d488a5cf1f2fbd3c033d440184365685947bd8f378bf54a56f1340d9ed.
+Build $TMPDIR/pure-k07-loss-v1945.OLgxdN/build.
+No production source, image, ABI or resident RAM changes.
+No simulator remains. New combined reproduction target
+test-pure-k08-recovery-v1947 invokes the already executed v1946
+replay/trace checks and v1947 supplementary verifier.
+
+K07 integrated acceptance reclosed using the genuine distinct
+foreign refusal and original-medium recovery in one run. The
+v1945 repeated-stop witness remains withdrawn, not reinstated.
+K08 implementation closed on current native v1650/v1808/v1677
+and physical v1947 multi-process pressure/PI6/wake/retry/READY_ONCE/
+EXIT/WAIT acceptance. No concurrent user dispatch fabricated.
+PI6 observed inside FULL and after rollback, not within PI-excluded
+critical sections. Actual alternate-root/controller matrices and
+KCC physical production acceptance remain K09, native KA10 K17
+mandatory. RAW PURE/mode3 default OFF; no enablement claim.
+K01-K08 closed; next K09, then K17, then optional K10-K16 if justified.
+
 ## 2026-11-26 v1946-k08: scheduler integration started, scoped physical PASS
 
 Current production KCORE unchanged from v1945. Native v1650 slot-0

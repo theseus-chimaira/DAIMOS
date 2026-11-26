@@ -11,11 +11,11 @@ TSFS results remain valid within their recorded scope.
 K05 implementation closed in v1916: the optional PURE reclaim
 entry propagates hard MM refusals and stops pressure on ambiguous
 DROP ownership. K06 implementation closed v1922; K07 executable
-backing lifetime code complete; v1946 corrects v1945 repeated
-breakpoint foreign witness. Actual loss rollback, same-medium recovery,
-foreign refusal, and pinned FULL/peer PI6 checkpoints now verified
-across separate runs; complete integrated foreign-to-original recovery
-replay pending. K08 scheduler integration started; K09 production
+backing lifetime and K08 scheduler integration closed v1947. The
+v1945 repeated breakpoint foreign witness remains withdrawn; v1947
+verifies genuine later foreign refusal, pinned FULL PI6, independent
+peer execution, original-medium READY_ONCE dispatch and exact WAITs
+with complete resource conservation in one run. K09 production
 acceptance remains OPEN. K17 native KA10 is mandatory.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
