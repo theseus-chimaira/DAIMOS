@@ -1,3 +1,42 @@
+## 2026-11-26 v1954-k09: Type-270 READ loss and bounded KINIT wait
+
+SIMH cec5436 implements selected-medium loss through command
+states according to DEC H-270 Fig.3-1 and pp.3-11/13, 3-25/26.
+Latch FER, retain internal controller delays, forbid stale host
+file/data access until a new legal DATAO. READ END induces
+normal ESP1/ESP2 termination; no fabricated IDS or write sector
+clocks. Four new DFR/SCS native loss/replacement tests fail on
+v1953 and pass on v1954. Seven prior native probes pass on clean
+commit. Both original and replacement images unchanged. WRITE
+state/immutability is not full DCT write-path or recovery proof.
+Actual unmodified KCC KINIT READ033650 loss on corrected SIMH
+reaches real PI5 CONI001105020003 and fails closed.
+
+DAIMOS b98f64d7 fixes independent unbounded KINIT polling.
+Existing storage_count countdown 300 ticks (60Hz), legal
+IDS/ADT gate before DATAO; timeout atomic against PI completion,
+END/CLR/SCL and DCT disable before clearing ownership. No
+additional BSS, fixed KCORE SHA unchanged, DSK MRES211->234
+words. Native runtime watchdog unchanged; normal boot clock
+required. Fresh KCC FULL image built without warnings.
+Actual silent-controller test with old v1953 simulator:
+READ033650, timeout034146, storage_state -3, countdown -300->0,
+wall_clock_ticks013->0467 (300 ticks). Both silent and corrected
+PI5 paths HALT101320 with namespace root0, storage_state0,
+storage_count0, no INIT; four private disks unchanged.
+Six normal FULL root cases and native DSK elevator PASS.
+Testkit add37b2; docs a03ee93.
+Evidence $TMPDIR/k09-read-loss-v1954.M1T1TL.
+Installed clean simulator via local.tar.gz SHA256
+6cab775ae1f9291853ac26a489d7d18714226be32b47e93911ec6c81a9964e66.
+
+K09 remains OPEN: 48K nine-owner full lifecycle (including
+write-watch), active DISK SWAP/provider loss/recovery, later
+runtime timeout/WRITE recovery limits and controller matrix.
+No rerun of 48K/64K pressure profiles in this batch; new DSK
+MRES adds 23 words to builds that install it. Size optimization
+and 16K budget target remain deferred by v1952; RAW/mode3 OFF.
+
 ## 2026-11-26 v1953-k09: 64K lifecycle, descriptor exhaustion, DSK loss
 
 Native MM error classification v1111 repeated on current source

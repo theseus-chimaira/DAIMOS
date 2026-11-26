@@ -1465,6 +1465,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
   48K GENERAL/STRICT nine-owner physical pressure B PASS;
   both intentionally stopped after pipe release, final WAIT/C
   not accepted. Remaining lifecycle and later-loss tests OPEN.
+  v1954: issued READ loss fixed in SIMH cec5436; real KINIT
+  PI5 error and fail-closed boot PASS. Independent silent
+  controller timeout in DAIMOS b98f64d7 PASS at 300 clock
+  ticks; wait for legal IDS/ADT before new DATAO. Both paths
+  clear storage ownership/countdown. Six FULL root cases
+  and elevator PASS. KCORE unchanged, DSK MRES +23 words,
+  no BSS growth. Runtime/WRITE and active DISK SWAP recovery
+  not accepted; 48K final lifecycle still outstanding.
 
 
 ## Mandatory KCORE: KA10 nonpaged backend
