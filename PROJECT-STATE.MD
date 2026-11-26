@@ -1,3 +1,34 @@
+## 2026-11-26 v1978: K12 exclusive prefix lease CLOSED (staged prefix-only path)
+
+Reuse original full APR descriptor: prove exact sole PROCESS and stable
+separate u-area owner, TRANSITION, SLEEP/STOP, marked PURE, available
+backing, no BACKSTORE, no current victim or live RT lease. Caller holds
+PI off and same synchronous continuation through prepare/commit/cancel.
+Pin zero->one under exact witness; write directory only inside original
+still-owned prefix; RAW suffix remains authoritative. No extra descriptor,
+allocation, VFS scratch, persistent metadata or fixed KCORE code.
+Four-word private lease identity; word067 both legacy kind bits denotes
+new dirty escrow, RH exact count (zero until success). Never let old
+RAW unlock/recovery treat dirty text as runnable. Clean no-fit/no-gain
+refusals preserve resident bytes; normal RAW drop remains available.
+Dirty cancel must rebase to RAW and prove exact unpinned owner before
+clearing TRANSITION; lost success replies reconciled, ambiguous owners
+remain quarantined. Unexpected codec write fault has no valid lease.
+Native PDP6/KA10 each72 prepare/cancel calls plus real RAW fallback,
+forced reuse of released prefix, actual MM pin/free/rebase, original
+legacy gate checks, six executed unsafe mutants PASS. v1926/v1919
+regressions and mutants PASS. Default RAW DROP DOBJ byte-identical;
+optional object691->1105 (+414 TEXT), zero DATA/BSS; with staged codec
+395 words, current optional incremental TEXT809, not an installed size
+or payback claim. Testkit ea0be1b. Evidence $TMPDIR/pure-bitmap-prefix-v1978.1f1RDa,
+k12-prefix-v1978.8urOE4, pure-drop-availability-v1926.mmgYAo,
+pure-mm-recover-v1919.RbfGzU. See design/kcore-k12-v1978.md.
+No alternate scratch route: if prefix cannot contain the complete
+stream, choose RAW; do not allocate another extent. K13-K16 remain
+OPEN. Full PI-off codec latency unmeasured; live integration must
+address it. No deferred dirty-lease recovery or mode3 publication;
+RAW PURE/mode3 defaults OFF. K10 +29 permanent words unchanged.
+
 ## 2026-11-26 v1977: K11 bounded bidirectional directory codec CLOSED (leaf)
 
 Staged mask-directory bitmap [ceil(RAW/36) masks][ordered nonzero

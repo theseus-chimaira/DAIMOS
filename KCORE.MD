@@ -22,7 +22,11 @@ K17 scoped native KA10 functional gate closed in v1974. K10 current
 RUN/EXEC executable admission closed v1976; +29 KCORE words, zero BSS
 or per-process growth, mode3 not enabled. K11 bounded bidirectional mask-directory codec leaf closed v1977:
 395 staged instruction words, zero DATA/BSS; native PDP6/KA10 and
-negative controls PASS. No installed link change. K12-K16 remain open.
+negative controls PASS. K12 staged prefix-only lease closed v1978:
+exact once-pinned original APR, four-word caller-stack identity, dirty
+escrow and checked RAW cancellation; +414 staged TEXT, zero DATA/BSS.
+No allocation or new descriptor. Default RAW object byte-identical.
+K13-K16 remain open, including dirty recovery and PI-off latency.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

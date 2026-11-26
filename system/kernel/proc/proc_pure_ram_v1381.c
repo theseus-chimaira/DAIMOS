@@ -279,6 +279,167 @@ out:
         return rc;
 }
 
+#ifdef DAIMOS_PBM_PREFIX_V1978
+#if DAIMOS_PBM_PREFIX_V1978 == 1
+#include "proc_pure_bitmap_prefix_v1978.h"
+
+/* Validate the process extent AND the stable u-area before dereferencing
+ * either. The common sole-user-owner check proves the entire MM table.
+ * The u-area is a separate exact KERNEL_DYNAMIC owner (01000+slot).
+ * All checks run under the caller's PI exclusion. */
+static struct proc *
+pbmp_owner_v1978(unsigned int slot, unsigned int pins)
+{
+        struct proc *p;
+        kword_t base, words, uarea;
+        int i;
+
+        /* Compression holds global PI exclusion; do not extend a live
+         * real-time lease's interrupt latency, even for another slot. */
+        if (!slot || slot == proc_current_slot || proc_rt_owner ||
+            !proc_table || !proc_swap_records || slot >= proc_slots ||
+            slot >= proc_high_slot || slot >= proc_storage_runtime_v29.slots)
+                return 0;
+        p = &proc_table[slot];
+        base = VM_PDP6_BASE(p);
+        words = VM_SPACE_WORDS(p);
+        uarea = PROC_UAREA_BASE(p);
+        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) || !uarea ||
+            !base || ((base | words) & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
+            (PROC_STATE(p) != PROC_SLEEP && PROC_STATE(p) != PROC_STOP) ||
+            proc_storage_expect_v30(slot, PROC_STORAGE_RESIDENT) != 0 ||
+            !proc_pure_owner_v1918(slot, MM_TYPE_PROCESS, base, words, pins))
+                return 0;
+        for (i = 0; i < mm_extent_count; ++i) {
+                const struct mm_extent *e = &mm_extents[i];
+                if (MM_EXTENT_BASE(e) == uarea)
+                        return MM_EXTENT_TYPE(e) == MM_TYPE_KERNEL_DYNAMIC &&
+                            MM_EXTENT_OWNER(e) == 01000U + slot &&
+                            MM_EXTENT_WORDS(e) == PROC_UAREA_WORDS &&
+                            !MM_EXTENT_PINS(e) ? p : 0;
+        }
+        return 0;
+}
+
+int
+proc_pure_bitmap_prepare_v1978(unsigned int slot,
+    struct pure_bitmap_lease_v1978 *lease)
+{
+        struct proc *p;
+        kword_t backing, words, skip, base, suffix, encoded;
+        kword_t *u;
+        int rc;
+
+        if (!lease || !(p = pbmp_owner_v1978(slot, 0U)))
+                return MM_ERR_INVAL;
+        rc = pram_prepare(slot, PURE_LIFE_DROP_V1610, &p, &backing,
+            &words, &skip);
+        if (rc != MM_OK)
+                return rc;
+        base = VM_PDP6_BASE(p);
+        u = PRAM_PTR(PROC_UAREA_BASE(p));
+        if (u[PROC_FINALIZE_OFFSET] || u[PROC_SWAP_BACKING_OFFSET] ||
+            !(u[PROC_CRED_OFFSET] & PROC_SWAP_MUTABLE_V1976) ||
+            !pram_drop_available_v1926(backing, u))
+                return MM_ERR_INVAL;
+        suffix = base + skip;
+        /* Until a write is possible, the original text is intact. The
+         * old DROP kind is safe for clean pin uncertainty only. */
+        u[PROC_FINALIZE_OFFSET] = PROC_PURE_INPLACE_ESCROW_V1919(suffix,
+            PROC_PURE_DROP_TAG_V1919);
+        rc = mm_pin(base);
+        if (!proc_pure_owner_v1918(slot, MM_TYPE_PROCESS, base, words, 1U)) {
+                if (rc != MM_OK && proc_pure_owner_v1918(slot,
+                    MM_TYPE_PROCESS, base, words, 0U)) {
+                        u[PROC_FINALIZE_OFFSET] = 0UL;
+                        return rc;
+                }
+                return MM_ERR_BUSY;
+        }
+        if (rc != MM_OK)
+                goto clean;
+        /* Both regions are inside one exact pinned descriptor; the
+         * capacity stops at the original mutable boundary. No separate
+         * allocation, VFS scratch or released prefix is used. Mark dirty
+         * BEFORE the codec may perform its first store. */
+        u[PROC_FINALIZE_OFFSET] = PROC_PURE_BITMAP_ESCROW_V1978(suffix);
+        rc = pbmd_encode_v1977(suffix, words - skip, base, skip,
+            PBMD_FORWARD_V1977, &encoded);
+        if (rc == PBMD_WRITE_FAULT_V1977)
+                return rc;             /* no valid candidate; quarantine */
+        if (rc != MM_OK) {
+                /* The codec contract guarantees ordinary refusal made
+                 * no store. Only now may this be a clean DROP again. */
+                u[PROC_FINALIZE_OFFSET] = PROC_PURE_INPLACE_ESCROW_V1919(suffix,
+                    PROC_PURE_DROP_TAG_V1919);
+                goto clean;
+        }
+        u[PROC_FINALIZE_OFFSET] |= encoded;
+        lease->vm_state = p->vm_state;
+        lease->backing = backing;
+        lease->uarea = PROC_UAREA_BASE(p);
+        lease->identity = u[PROC_CRED_OFFSET] & PROC_SWAP_EXEC_MASK_V1976;
+        return MM_OK;
+clean:
+        /* Zero->one was witnessed inside this PI window, so this pin
+         * is ours even if the successful pin reply was lost. */
+        (void)mm_unpin(base);
+        if (!proc_pure_owner_v1918(slot, MM_TYPE_PROCESS, base, words, 0U))
+                return MM_ERR_BUSY;
+        u[PROC_FINALIZE_OFFSET] = 0UL;
+        return rc;
+}
+
+int
+proc_pure_bitmap_cancel_v1978(unsigned int slot,
+    const struct pure_bitmap_lease_v1978 *lease)
+{
+        struct proc *p;
+        kword_t backing, words, skip, base, suffix, escrow, encoded;
+        kword_t *u;
+
+        /* No new pin or discovered owner is accepted for cancellation.
+         * The caller must still own the original synchronous lease. */
+        if (!lease || !(p = pbmp_owner_v1978(slot, 1U)) ||
+            p->vm_state != lease->vm_state ||
+            PROC_UAREA_BASE(p) != lease->uarea ||
+            proc_swap_records[slot].state != lease->backing)
+                return MM_ERR_BUSY;
+        backing = lease->backing;
+        words = VM_SPACE_WORDS(p);
+        base = VM_PDP6_BASE(p);
+        u = PRAM_PTR(lease->uarea);
+        if (u[PROC_SWAP_BACKING_OFFSET] ||
+            (u[PROC_CRED_OFFSET] & PROC_SWAP_EXEC_MASK_V1976) != lease->identity ||
+            pdp6_pure_skip_v1604(backing, words, &skip) != MM_OK)
+                return MM_ERR_BUSY;
+        suffix = base + skip;
+        escrow = u[PROC_FINALIZE_OFFSET];
+        encoded = escrow & MM_HALF_MASK;
+        if (!encoded || encoded > skip || encoded >= words - skip ||
+            escrow != (PROC_PURE_BITMAP_ESCROW_V1978(suffix) | encoded))
+                return MM_ERR_BUSY;
+        /* Prefix is dirty. Even on reported failure, the only ordinary
+         * cancellation is a proven RAW rebase; NEVER unpin the full
+         * resident owner or clear TRANSITION after a refused rebase. */
+        (void)mm_pure_rebase_pinned_v1381(base, slot, skip, words);
+        if (!proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS, suffix,
+            words - skip, 1U))
+                return MM_ERR_BUSY;
+        u[PROC_SWAP_BACKING_OFFSET] = backing;
+        VM_PDP6_SET_BASE(p, 0UL);
+        pram_publish(slot, PROC_STORAGE_RESIDENT, PROC_STORAGE_PACKED);
+        (void)mm_unpin(suffix);
+        if (!proc_pure_owner_v1918(slot, MM_TYPE_PACKED_PROCESS, suffix,
+            words - skip, 0U))
+                return MM_ERR_BUSY;
+        u[PROC_FINALIZE_OFFSET] = 0UL;
+        PROC_CLEAR_TRANSITION(p);
+        return MM_OK;
+}
+#endif
+#endif
+
 /* v1611: the resident swapless MRES only needs the zero-copy DROP.
  * The historical unbounded restore and staged terminal cleanup are
  * retained for native regression, but neither is linked into that MRES.

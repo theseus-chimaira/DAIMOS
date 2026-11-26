@@ -202,11 +202,14 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   PDP6/KA10, four executed unsafe mutants, hard write-fault injection).
   395 staged TEXT words, zero DATA/BSS; no installed mode3 change.
   Ownership/restore integration remains K12-K16, not claimed here.
-- [ ] **Temporary memory ownership:** reuse the still-owned prefix only
-  where its full lifetime is proved; evaluate a VFS workspace solely
-  with an explicit exclusive lease and callback/BCACHE safety.
-  Otherwise acquire bounded pinned no-reclaim MM scratch. Never
-  borrow freed memory or allocate an always-resident compression slab.
+- [x] **Temporary memory ownership:** v1978 staged prefix-only lease
+  accepted, with exact PROCESS/u-area witness, dirty escrow and RAW
+  cancel. Native PDP6/KA10 each72 calls plus allocator reuse and six
+  executed mutants PASS. +414 staged TEXT, 0 DATA/BSS, four temporary
+  caller-stack identity words. No new allocation/descriptor; no fit
+  selects RAW. Any later alternate bounded pinned scratch or exclusive
+  VFS workspace lease requires a separate proof. K13-K16 still own
+  live publication, restore, interrupt latency and deferred recovery.
 - [ ] **Atomic mode3 DROP publication:** integrate the staged v1659-
   v1667 bitmap frontend with the real scheduler/reclaim path. Prove
   source survival before the first overwrite, exact sole MM ownership,

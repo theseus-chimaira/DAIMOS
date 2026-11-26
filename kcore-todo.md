@@ -1700,10 +1700,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   propagation PASS. 395 staged TEXT, zero DATA/BSS. K12-K16 must
   integrate ownership and replace old interleaved producer/verifier/
   decoder together. No installed mode3 code.
-- [ ] **K12 - Temporary memory ownership.** Prove scratch lifetime and
-  exclusive ownership, preferentially using the still-owned prefix.
-  Otherwise use bounded pinned no-reclaim MM scratch. Never borrow
-  freed memory or introduce an always-resident compression slab.
+- [x] **K12 - Temporary memory ownership.** v1978 staged prefix-only
+  path: exact full APR + u-area proof, synchronous PI-excluded lease,
+  once-pinned original owner, dirty escrow, RAW cancellation; native
+  PDP6/KA10 and six unsafe mutants PASS. No new scratch allocation,
+  descriptor, permanent word or per-slot metadata. If the complete
+  stream does not fit the prefix, use RAW. A future alternative may
+  use only independently proved bounded pinned no-reclaim scratch;
+  never borrow freed memory or introduce a permanent slab. K13-K16
+  still own atomic bitmap publication, restore, live scheduling,
+  interrupt latency and deferred dirty-owner recovery.
 - [ ] **K13 - Atomic compressed ownership.** Integrate bitmap DROP with
   real reclaim and MM ownership. Prove source survival, overlap safety,
   complete encoding and atomic RAW-versus-BITMAP publication, with
