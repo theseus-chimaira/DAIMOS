@@ -1,3 +1,30 @@
+## 2026-11-26 v1976: K10 executable admission CLOSED (current RUN/EXEC ABI)
+
+DXR2 TX2 LH0400000 is COMPRESSIBLE_MUTABLE; LH0377777 text count.
+Root-owned, non-group/other-writable executable under existing load
+reservation; ordinary caller allowed, marked RT_REQUIRED rejected.
+DXR1/unmarked DXR2 unchanged, PURE/COMPRESSED independent, raw XIP
+unchanged. U-area credential bit31, SIDL RH040; no additional process
+or file-header word. RUN copies the new image's bit, not parent's;
+EXEC commit/rollback transports five identity bits; terminal detach
+clears only after success. Late KINIT now copies staged provider/mount
+and eligibility before SRUN publication. No existing FORK syscall;
+a future implementation must inherit only eligibility, not mode3.
+Native 26 loader, 64 RUN and 9 EXEC transaction cases PASS, including
+executed privilege, marker-transfer and prior ownership mutants.
+Host dlink/D6BLOCK/INITFS/D6FS/DAS check/convert PASS; native DLINK
+real linked program verifies its own TX2 and executes. 64K disk
+PDP6/KA10 marked INIT lifecycle PASS; real non-root EXEC with 28
+malformed EXEC/RUN checks passes 64K disk and 256K AUTO replay.
+First 15s AUTO observation timed out before INIT; same image passed
+longer replay without code change. Matched PDP6 lowmem KCC KCORE
+10840+269 -> 10869+269 initialized+BSS (+29 words, 0 BSS).
+DAS d5b7696, testkit b67ca49; six updated host tools installed via
+$TMPDIR/k10-v1976.FMwAWZ/install-v1976/local.tar.gz.
+See design/kcore-k10-v1976.md for evidence and remaining boundaries.
+No mode3 or PURE MRES activation; defaults OFF. K11 reverse and K12-K16
+remain open; +29 words is an admission cost, not compression payback.
+
 ## 2026-11-26 v1975: K11 bounded forward bitmap component
 
 K01-K09 and scoped K17 accepted; K10-K16 optional.

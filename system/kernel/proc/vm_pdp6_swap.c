@@ -67,12 +67,12 @@ proc_swap_detach(int slot)
         proc_swap_records[slot].state = 0UL;
         if (PROC_HAS_UAREA(p)) {
                 PROC_SWAP_BACKING_WORD(p) = 0UL;
-                PROC_CRED_WORD(p) &= ~PROC_SWAP_ID_MASK_V1924;
+                PROC_CRED_WORD(p) &= ~PROC_SWAP_EXEC_MASK_V1976;
         }
         /* A staged EXEC may already have its u-area: either way clear
          * the temporary SIDL-only mount bit when backing is detached. */
         if (PROC_STATE(p) == PROC_SIDL)
-                p->sched &= ~PROC_SWAP_STAGE_ID_MASK_V1924;
+                p->sched &= ~PROC_SWAP_STAGE_EXEC_MASK_V1976;
         return 0;
 }
 

@@ -1682,10 +1682,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
 
 ## Optional KCORE: compressed mutable memory (mode3)
 
-- [ ] **K10 - Compression admission.** Define a backwards-compatible
+- [x] **K10 - Compression admission.** Define a backwards-compatible
   DXR COMPRESSIBLE_MUTABLE opt-in, distinct from COMPRESSED executable
   payload and BSS flags. Handle legacy/invalid headers, fork, EXEC
   replacement and privileged admission correctly.
+  v1976 CLOSED for the current ABI (no FORK syscall). Native/host
+  acceptance and exact marker lifetime PASS; future FORK inherits
+  eligibility only. +29 fixed KCORE words, 0 extra process words.
+  Mode3 disabled; no compression RAM payoff claimed.
 - [ ] **K11 - Bounded compression.** Complete source-linked, bounded
   overlapping encoding and decoding with read-only preflight, exact
   encoded size, RAW fallback and nonshrinking-output rejection.
@@ -1702,7 +1706,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
   complete encoding and atomic RAW-versus-BITMAP publication, with
   rollback and no partially published state.
 - [ ] **K14 - FULL restoration.** Integrate bounded decoding, immutable
-  backing/fallback, 2048-word APR limits, target pin ordering and safe
+  backing/fallback, 02000-octal (1024-word) APR alignment, target pin ordering and safe
   restoration into a complete runnable process image.
 - [ ] **K15 - Compressed process lifecycle.** Complete RUN, EXEC,
   SLEEP, wake, WAIT, EXIT, PI6 retry, terminal detach and VM destroy

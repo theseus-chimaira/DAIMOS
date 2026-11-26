@@ -33,7 +33,14 @@
 #define PROC_SWAP_PROVIDER_SHIFT_V1924 28U
 #define PROC_SWAP_PROVIDER_MASK_V1924 ((kword_t)7UL << 28U)
 #define PROC_SWAP_ID_MASK_V1924 (PROC_SWAP_MOUNT_EXT_BIT | PROC_SWAP_PROVIDER_MASK_V1924)
+/* Current executable eligibility, independent of stored representation. */
+#define PROC_SWAP_MUTABLE_V1976 ((kword_t)1UL << 31U)
+#define PROC_SWAP_EXEC_MASK_V1976 (PROC_SWAP_ID_MASK_V1924 | PROC_SWAP_MUTABLE_V1976)
+#define PROC_SWAP_STAGE_MUTABLE_V1976 040UL
 #define PROC_SWAP_STAGE_ID_MASK_V1924 035UL
+#define PROC_SWAP_STAGE_EXEC_MASK_V1976 075UL
+#define PROC_SWAP_ATTACH_PURE_V1976 1U
+#define PROC_SWAP_ATTACH_MUTABLE_V1976 2U
 #define PROC_SWAP_STAGE_PSHIFT_V1924 2U
 
 /* Only while SIDL lacks its u-area, the otherwise unused scheduler RH bit 0
@@ -69,7 +76,7 @@ int proc_swap_boot_init(unsigned int slots);
 
 /** Attach validated executable backing metadata to a resident process. */
 int proc_swap_attach(int slot, vnode_t backing,
-    kword_t text_words, unsigned int pure);
+    kword_t text_words, unsigned int flags);
 /** Detach swap backing only after validating the complete live disk run. */
 /* A PACKED RAW process uses the existing mode map and a separate exact
  * PDP-6 MM-owner release, never the disk-run free path (v1609). */

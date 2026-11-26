@@ -164,6 +164,13 @@ exec_load_lookup_v1936:
         movei   2,1                     ; execute access
         pushj   17,file_check_access
         jumpn   1,exec_load_fail
+        ; Preserve administrator approval before STAT fields are reused.
+        ; UID 0 and no group/other write: ordinary users may RUN a marked
+        ; trusted executable, but cannot authorize their own image.
+        move    0,-010(17)              ; mode
+        andi    0,022
+        ior     0,-005(17)              ; UID
+        movem   0,-003(17)              ; dead mtime, zero means approved
         move    0,-006(17)              ; size_words
         caige   0,2
         jrst    exec_load_fail
@@ -248,6 +255,15 @@ exec_load_dxr2_header:
         caie    0,EXEC_DXR_TEXT_TAG
         jrst    exec_load_fail
         hlrz    0,(17)
+        trnn    0,0400000              ; TX2 COMPRESSIBLE_MUTABLE
+        jrst    exec_load_text_v1976
+        skipe   -003(17)               ; only administrator-approved file
+        jrst    exec_load_fail
+        trne    15,0400000              ; never opt RT_REQUIRED into compression
+        jrst    exec_load_fail
+        iori    15,1                   ; parsed internal eligibility bit
+        trz     0,0400000
+exec_load_text_v1976:
         camle   0,13                    ; text_words <= image_words
         jrst    exec_load_fail
 exec_load_dxr2_header_ok:
@@ -331,6 +347,8 @@ exec_load_image_ok:
         subi    4,2                     ; DXR2 => 1, DXR1 => 0
         trnn    15,0200000              ; non-pure images never keep backing
         setz    4,
+        trne    15,1                    ; independent of PURE and file codec
+        iori    4,2                     ; PROC_SWAP_ATTACH_MUTABLE_V1976
         jrst    exec_load_attach
 
 ; RUN and staged EXEC need entry/SIDL metadata in their detached

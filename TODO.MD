@@ -185,10 +185,14 @@ XIP are production-integrated; do not reopen their obsolete proposals.
 
 ## P2. KCORE P1-E: optional compressed mutable RAM (mode3)
 
-- [ ] **Executable opt-in policy:** finalize unused, backwards-compatible
+- [x] **Executable opt-in policy:** finalize unused, backwards-compatible
   DXR admission/header representation for COMPRESSIBLE_MUTABLE, keeping
   COMPRESSED executable payload and BSS bits distinct; prove fork/EXEC
   replacement, legacy/invalid headers and privileged admission.
+  v1976 current ABI accepted: TX2 high bit, root-approved file,
+  RUN/EXEC/detach/boot transfer; no existing FORK. +29 KCORE words,
+  zero BSS/slot growth. No mode3 activation. Future FORK inherits only
+  eligibility. See PROJECT-STATE.MD and design/kcore-k10-v1976.md.
 - [ ] **Source-linked bounded overlap codec:** complete read-only
   preflight, 35/36/37-word and sparse/dense tests, exact encoded size,
   RAW fallback, partial overlap and forward/backward encoding/decoding.
@@ -207,7 +211,7 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   source/target overlap safety, complete encoder completion, and
   failure-safe RAW-vs-BITMAP commit with no partial publication.
 - [ ] **Mode3 FULL restoration and terminal path:** integrate bounded
-  decode, immutable backing/restore fallback, 2048-word APR limits,
+  decode, immutable backing/restore fallback, 02000-octal (1024-word) APR alignment,
   target-pin ordering, raw/bitmap terminal detach and VM destroy.
   Add exact wake/retry/EXIT/WAIT/finalizer accounting and preserve
   pin/owner identity on every error path.

@@ -386,6 +386,11 @@ static uint64_t *load_dxr(const char *path, unsigned *wordsp)
                 tx2 = ((uint64_t)('T' - 040) << 12) |
                     ((uint64_t)('X' - 040) << 6) | (uint64_t)('2' - 040);
                 text = (unsigned)((words[2] >> 18) & HALF_MASK);
+                if (image <= 0300000U && (text & 0400000U)) {
+                        if (flags & 0400000U)
+                                die("RT_REQUIRED cannot be mutable-compressible");
+                        text &= 0377777U;
+                }
                 if ((words[2] & HALF_MASK) != tx2 || text > image)
                         die("compressed DXR executable requires valid DXR2 metadata");
         } else if (n == 3U + image + reloc) {
@@ -395,6 +400,11 @@ static uint64_t *load_dxr(const char *path, unsigned *wordsp)
                 tx2 = ((uint64_t)('T' - 040) << 12) |
                     ((uint64_t)('X' - 040) << 6) | (uint64_t)('2' - 040);
                 text = (unsigned)((words[2] >> 18) & HALF_MASK);
+                if (image <= 0300000U && (text & 0400000U)) {
+                        if (flags & 0400000U)
+                                die("RT_REQUIRED cannot be mutable-compressible");
+                        text &= 0377777U;
+                }
                 if ((words[2] & HALF_MASK) != tx2 || text > image)
                         die("DXR2 executable has invalid text metadata");
         } else if (n != 2U + image + reloc) {

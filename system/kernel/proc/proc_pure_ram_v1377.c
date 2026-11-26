@@ -350,7 +350,7 @@ proc_pure_ram_discard_v1377(unsigned int slot)
                 return rc;
         proc_swap_records[slot].state = 0UL;
         uarea[PROC_SWAP_BACKING_OFFSET] = 0UL;
-        uarea[PROC_CRED_OFFSET] &= ~PROC_SWAP_ID_MASK_V1924;
+        uarea[PROC_CRED_OFFSET] &= ~PROC_SWAP_EXEC_MASK_V1976;
         /* Caller still holds TRANSITION for the rest of process teardown. */
         return MM_OK;
 }

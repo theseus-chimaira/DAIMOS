@@ -20,6 +20,7 @@
 #include "vm.h"
 #include "mm.h"
 #include "proc.h"
+#include "proc_swap.h"
 #include "vfs.h"
 #include "file.h"
 #include "monitorfs.h"
@@ -107,7 +108,6 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                 p = &proc_table[slot];
                 if (exec_load_process(p, slot, init_path) < 0)
                         return;
-                PROC_SET_STATE(p, PROC_SRUN);
                 entry = PROC_ENTRY(p);
                 if (vm_space_startup(p, init_path,
                     (kword_t)1U << 18U, startup) != 0)
@@ -123,9 +123,15 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                 if (proc_user_context_init(slot, entry, stack,
                     startup[0], startup[1], startup[2]) != 0)
                         return;
+                uarea = (kword_t *)(unsigned long)PROC_UAREA_BASE(p);
+                /* Same staged identity as RUN, with root credentials. */
+                uarea[PROC_CRED_OFFSET] =
+                    ((p->sched & (PROC_SWAP_STAGE_EXEC_MASK_V1976 & ~1UL)) << 26U) |
+                    ((p->sched & 1UL) << 27U);
+                p->sched &= ~PROC_SCHED_RH_MASK;
+                PROC_SET_STATE(p, PROC_SRUN);
                 proc_runq_add(slot);
                 PROC_SET_PGRP(p, 1U);
-                uarea = (kword_t *)(unsigned long)PROC_UAREA_BASE(p);
                 uarea[PROC_FDCTL_OFFSET] =
                     ((kword_t)1U << PROC_SESSION_SHIFT) |
                     ((kword_t)1U << PROC_DOMAIN_SHIFT);

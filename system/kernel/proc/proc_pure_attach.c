@@ -20,7 +20,7 @@ extern vnode_t *vfs_mount_root_base;
 /** Pack resident executable backing and PURE-text metadata into one record word. */
 int
 proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
-    unsigned int pure)
+    unsigned int flags)
 {
         kword_t packed, identity;
         unsigned int provider;
@@ -42,7 +42,10 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
             VFS_PROVIDER(vfs_mount_root_base[mount - 1U]) != provider ||
             VFS_MOUNT_ID(vfs_mount_root_base[mount - 1U]) != mount)
                 return -1;
-        if (pure == 0U)
+        if (flags & ~(PROC_SWAP_ATTACH_PURE_V1976 |
+            PROC_SWAP_ATTACH_MUTABLE_V1976))
+                return -1;
+        if (!(flags & PROC_SWAP_ATTACH_PURE_V1976))
                 text_words = 0UL;
         if (text_words > PROC_SWAP_TEXT_MASK)
                 return -1;
@@ -63,16 +66,19 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
          * accompanies the record even when PURE text length is zero. */
         identity = ((kword_t)provider << PROC_SWAP_PROVIDER_SHIFT_V1924) |
             (((mount - 1U) & 020U) ? PROC_SWAP_MOUNT_EXT_BIT : 0UL);
+        identity |= (kword_t)(flags & PROC_SWAP_ATTACH_MUTABLE_V1976)
+            << 30U;
         if (PROC_HAS_UAREA(&proc_table[slot]))
                 PROC_CRED_WORD(&proc_table[slot]) =
                     (PROC_CRED_WORD(&proc_table[slot]) &
-                     ~PROC_SWAP_ID_MASK_V1924) | identity;
+                     ~PROC_SWAP_EXEC_MASK_V1976) | identity;
         else if (PROC_STATE(&proc_table[slot]) != PROC_SIDL)
                 return -1;
         if (PROC_STATE(&proc_table[slot]) == PROC_SIDL)
                 proc_table[slot].sched = (proc_table[slot].sched &
-                    ~PROC_SWAP_STAGE_ID_MASK_V1924) |
+                    ~PROC_SWAP_STAGE_EXEC_MASK_V1976) |
                     ((kword_t)provider << PROC_SWAP_STAGE_PSHIFT_V1924) |
+                    ((kword_t)(flags & PROC_SWAP_ATTACH_MUTABLE_V1976) << 4U) |
                     (((mount - 1U) & 020U) ? PROC_SWAP_STAGE_MOUNT_EXT_BIT : 0UL);
         proc_swap_records[slot].state = packed;
         return 0;

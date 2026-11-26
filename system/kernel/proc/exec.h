@@ -29,6 +29,9 @@
 #define EXEC_USER_ORIGIN            000020U
 #define EXEC_DXR_MAX_IMAGE_WORDS    0300000U
 #define EXEC_DXR_MAX_BSS_WORDS      EXEC_DXR_BSS_MASK
+/* TX2 LH: bit 17 opts into mutable RAM compression, not file codec. */
+#define EXEC_DXR_TX2_MUTABLE_V1976  0400000U
+#define EXEC_DXR_TX2_TEXT_MASK_V1976 0377777U
 #define EXEC_DXR_TEXT_TAG            0647022U /* SIXBIT /TX2/ */
 
 #define EXEC_LOAD_OK                 0

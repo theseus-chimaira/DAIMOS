@@ -5,7 +5,7 @@
 ;
 ; Shared compact four-word parsed image descriptor:
 ;   0: entry (LH18), initialized words (RH18)
-;   1: DXR flags (LH18), BSS words (RH18)
+;   1: DXR flags + internal mutable bit 0 (LH18), BSS words (RH18)
 ;   2: PURE text words (LH18), header words (RH18, 2 or 3)
 ;   3: relocation map words (LH18), compressed payload words (RH18)
 ; No permanent storage is allocated. Caller owns descriptor lifetime.
@@ -119,7 +119,14 @@ ei_dxr2_v1386:
         hrrz    1,(17)
         caie    1,EI_DXR_TEXT_TAG_V1386
         jrst    ei_bad_v1386
-        hlrz    6,(17)                 ; uncompressed text words
+        hlrz    6,(17)                 ; TX2 text count + mutable flag
+        trnn    6,0400000
+        jrst    ei_text_v1976
+        trne    015,0400000             ; RT_REQUIRED cannot be marked
+        jrst    ei_bad_v1386
+        iori    015,1                  ; internal parsed flag, not BSS
+        trz     6,0400000
+ei_text_v1976:
         camle   6,013
         jrst    ei_bad_v1386
         move    7,-1(17)

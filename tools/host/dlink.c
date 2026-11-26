@@ -10,6 +10,8 @@
 #define DXR_F_COMPRESSED 0100000UL
 #define DXR_F_PURE   0200000UL
 #define DXR_F_RT_REQUIRED 0400000UL
+#define DXR_TX2_MUTABLE 0400000UL
+#define DXR_MUTABLE_MAX_IMAGE 0300000UL
 #define XIP_MAGIC_LH 054506UL
 #define XIP_HEADER_WORDS 020UL
 #define XIP_FILE_WORDS 04000UL
@@ -1063,7 +1065,7 @@ static int xip_instructions_safe(const struct dobj_word *image,
 }
 
 static int write_dxr(const char *name, struct linker *l, int purity_request,
-                     int rt_required, int xip_mode)
+                     int rt_required, int xip_mode, int mutable)
 {
     unsigned long tw, dw, bw, iw, rw;
     struct dobj_word *image;
@@ -1079,6 +1081,10 @@ static int write_dxr(const char *name, struct linker *l, int purity_request,
     if (layout(l, &tw, &dw, &bw) != 0)
         return -1;
     iw = tw + dw;
+    if (mutable && iw > DXR_MUTABLE_MAX_IMAGE) {
+        fprintf(stderr, "dlink: mutable-compressible image exceeds DAIMOS limit\n");
+        return -1;
+    }
     rw = (iw + 35UL) / 36UL;
     image = (struct dobj_word *)calloc((size_t)iw, sizeof(*image));
     relmap = (struct dobj_word *)calloc((size_t)rw, sizeof(*relmap));
@@ -1167,7 +1173,7 @@ static int write_dxr(const char *name, struct linker *l, int purity_request,
     h.rh = entry;
     if (dobj_write_word(f, h) != 0 ||
         dobj_write_word(f, dobj_word_halves(iw, (bw & DXR_BSS_MASK) | flags)) != 0 ||
-        dobj_write_word(f, dobj_word_halves(tw, sixbit_word("TX2   ").lh)) != 0) goto bad;
+        dobj_write_word(f, dobj_word_halves(tw | (mutable ? DXR_TX2_MUTABLE : 0UL), sixbit_word("TX2   ").lh)) != 0) goto bad;
     for (pos = 0UL; pos < iw; pos++) if (dobj_write_word(f, image[pos]) != 0) goto bad;
     for (pos = 0UL; pos < rw; pos++) if (dobj_write_word(f, relmap[pos]) != 0) goto bad;
     if (fclose(f) != 0) { remove(name); free(image); free(relmap); return -1; }
@@ -1367,7 +1373,7 @@ static void cleanup(struct linker *l)
 
 static void usage(void)
 {
-    fprintf(stderr, "usage: dlink -o out.dxr [--pure] [--xip] [--rt-required] [--daimos-uuo-relax] [--fold-plan file] [-M out.map] [-b octal] [-A map] [-R out.dobj -N symbol [-X export] ...] input.dobj|library.darc ...\n");
+    fprintf(stderr, "usage: dlink -o out.dxr [--pure] [--xip] [--rt-required] [--compressible-mutable] [--daimos-uuo-relax] [--fold-plan file] [-M out.map] [-b octal] [-A map] [-R out.dobj -N symbol [-X export] ...] input.dobj|library.darc ...\n");
 }
 
 int main(int argc, char **argv)
@@ -1388,6 +1394,7 @@ int main(int argc, char **argv)
     int purity_request;
     int rt_required;
     int xip_mode;
+    int mutable;
 
     memset(&l, 0, sizeof(l));
     out = NULL;
@@ -1402,6 +1409,7 @@ int main(int argc, char **argv)
     purity_request = PURITY_UNKNOWN;
     rt_required = 0;
     xip_mode = 0;
+    mutable = 0;
     first = 1;
     while (first < argc && argv[first][0] == '-') {
         if (strcmp(argv[first], "-o") == 0 && first + 1 < argc) {
@@ -1415,6 +1423,9 @@ int main(int argc, char **argv)
             first++;
         } else if (strcmp(argv[first], "--rt-required") == 0) {
             rt_required = 1;
+            first++;
+        } else if (strcmp(argv[first], "--compressible-mutable") == 0) {
+            mutable = 1;
             first++;
         } else if (strcmp(argv[first], "--daimos-uuo-relax") == 0) {
             l.daimos_uuo_relax = 1;
@@ -1453,6 +1464,7 @@ int main(int argc, char **argv)
     }
     if (out == NULL || first >= argc ||
         ((mres_out == NULL) != (mres_symbol == NULL)) ||
+        (mutable && (xip_mode || mres_out != NULL || rt_required)) ||
         (xip_mode && (purity_request != PURITY_PURE || rt_required ||
                       mres_out != NULL || mres_symbol != NULL ||
                       mres_export_count != 0))) { usage(); return 1; }
@@ -1494,7 +1506,7 @@ int main(int argc, char **argv)
         (load_fold_plan(&l, fold_plan) != 0 ||
          prepare_text_maps(&l) != 0))
         goto done;
-    if (write_dxr(out, &l, purity_request, rt_required, xip_mode) != 0) {
+    if (write_dxr(out, &l, purity_request, rt_required, xip_mode, mutable) != 0) {
         fprintf(stderr, "dlink: link failed\n");
         goto done;
     }

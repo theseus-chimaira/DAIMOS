@@ -750,7 +750,7 @@ entry_offset(kword_t *entryp)
 }
 
 static int
-write_dxr(const kword_t *path, int pure_request, int rt_required)
+write_dxr(const kword_t *path, int pure_request, int rt_required, int mutable)
 {
         kword_t h[3];
         kword_t entry;
@@ -775,7 +775,8 @@ write_dxr(const kword_t *path, int pure_request, int rt_required)
         h[0] = nd_magic("DXR2  ");
         h[0] = nd_halves(nd_lh(h[0]), entry);
         h[1] = nd_halves(iw, (nl_bss_words & NL_DXR_BSS_MASK) | flags);
-        h[2] = nd_halves(nl_text_words, nd_lh(nd_magic("TX2   ")));
+        h[2] = nd_halves(nl_text_words | (mutable ? 0400000UL : 0UL),
+            nd_lh(nd_magic("TX2   ")));
         if (nd_write_exact(fd, h, 3U) != 0)
                 goto bad;
         text_write = 0;
@@ -840,7 +841,7 @@ write_map(const kword_t *path)
 static int
 usage(void)
 {
-        (void)u_puts(2, "USAGE: DLINK -O OUT.DXR [-M MAP] [-B OCTAL] [--PURE] [--RT-REQUIRED] [--DAIMOS-UUO-RELAX] INPUT.DOBJ|LIBRARY.DARC ...");
+        (void)u_puts(2, "USAGE: DLINK -O OUT.DXR [-M MAP] [-B OCTAL] [--PURE] [--RT-REQUIRED] [--COMPRESSIBLE-MUTABLE] [--DAIMOS-UUO-RELAX] INPUT.DOBJ|LIBRARY.DARC ...");
         (void)u_crlf(2);
         return 1;
 }
@@ -856,6 +857,7 @@ main(int argc, kword_t **argv)
         unsigned int i;
         int pure_request;
         int rt_required;
+        int mutable;
         int fd;
         int rc;
 
@@ -865,6 +867,7 @@ main(int argc, kword_t **argv)
         nl_relax = 0;
         pure_request = 0;
         rt_required = 0;
+        mutable = 0;
         first = 1U;
         while (first < (unsigned int)argc) {
                 if (u_s6_eq(argv[first], "-O") && first + 1U < (unsigned int)argc) {
@@ -879,13 +882,16 @@ main(int argc, kword_t **argv)
                         pure_request = 1; first++;
                 } else if (u_s6_eq(argv[first], "--RT-REQUIRED")) {
                         rt_required = 1; first++;
+                } else if (u_s6_eq(argv[first], "--COMPRESSIBLE-MUTABLE")) {
+                        mutable = 1; first++;
                 } else if (u_s6_eq(argv[first], "--DAIMOS-UUO-RELAX")) {
                         nl_relax = 1; first++;
                 } else {
                         break;
                 }
         }
-        if (out == 0 || first >= (unsigned int)argc)
+        if (out == 0 || first >= (unsigned int)argc ||
+            (mutable && rt_required))
                 return usage();
         for (i = first; i < (unsigned int)argc; ++i) {
                 fd = dsys_open(argv[i], SYS_O_RDONLY);
@@ -909,7 +915,7 @@ main(int argc, kword_t **argv)
                 }
         }
         if (resolve_archives() != 0 || layout() != 0 ||
-            write_dxr(out, pure_request, rt_required) != 0) {
+            write_dxr(out, pure_request, rt_required, mutable) != 0) {
                 (void)diag_path("LINK FAILED", 0);
                 return 1;
         }

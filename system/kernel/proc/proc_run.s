@@ -313,12 +313,12 @@ proc_run_watermark_loop:
         ; file_table points at parent u-area 026. Credentials including
         ; Packed UMASK9 lives in credential word 066.
         move    4,040(7)
-        tlz     4,017000               ; no inherited executable identity
+        tlz     4,037000               ; no inherited executable identity
         movem   4,PROC_CRED_OFFSET(014)
-        ; Copy staged provider bits 2..4 and mount bit 0, not the
+        ; Copy staged eligibility/provider bits 2..5 and mount bit 0, not the
         ; SIDL rollback flag at bit 1, before publishing SRUN.
-        ldb     4,[POINT 3,2(013),33]
-        dpb     4,[POINT 3,PROC_CRED_OFFSET(014),7]
+        ldb     4,[POINT 4,2(013),33]
+        dpb     4,[POINT 4,PROC_CRED_OFFSET(014),7]
         ldb     4,[POINT 1,2(013),35]
         dpb     4,[POINT 1,PROC_CRED_OFFSET(014),8]
 proc_run_pure_ext_ready:

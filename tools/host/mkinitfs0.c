@@ -450,7 +450,7 @@ static unsigned int *load_dxr_nonets(const char *path, int *nout)
 	free(buf);
 
 	/* DXR has a two-word base header.  The current extension adds one
-	 * word containing text_words,,SIXBIT/TX2/.  Length distinguishes the
+	 * word containing text_words (and optional v1976 marker),,SIXBIT/TX2/.  Length distinguishes the
 	 * legacy and extended forms without stealing another BSS flag bit. */
 	dxr_lh = ((word_t)('D' - 040) << 12)
 	        | ((word_t)('X' - 040) <<  6)
@@ -468,6 +468,11 @@ static unsigned int *load_dxr_nonets(const char *path, int *nout)
 		if (nwords <= 3 + reloc_words)
 			die("%s: compressed DXR payload is empty", path);
 		text_words = (words[2] >> 18) & 0777777ULL;
+		if (image_words <= 0300000 && (text_words & 0400000ULL)) {
+			if (dxr_flags & 0400000)
+				die("%s: RT_REQUIRED cannot be mutable-compressible", path);
+			text_words &= 0377777ULL;
+		}
 		if ((words[2] & 0777777ULL) != tx2 ||
 		    text_words > (word_t)image_words)
 			die("%s: compressed DXR requires valid DXR2 metadata", path);
@@ -478,6 +483,11 @@ static unsigned int *load_dxr_nonets(const char *path, int *nout)
 		           | ((word_t)('X' - 040) << 6)
 		           |  (word_t)('2' - 040);
 		word_t text_words = (words[2] >> 18) & 0777777ULL;
+		if (image_words <= 0300000 && (text_words & 0400000ULL)) {
+			if (dxr_flags & 0400000)
+				die("%s: RT_REQUIRED cannot be mutable-compressible", path);
+			text_words &= 0377777ULL;
+		}
 		if ((words[2] & 0777777ULL) != tx2 ||
 		    text_words > (word_t)image_words)
 			die("%s: invalid DXR2 text metadata", path);

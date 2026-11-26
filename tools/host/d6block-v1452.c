@@ -218,8 +218,14 @@ static void compress_exec(const char *inpath, const char *outpath)
     if (n == 2U + image + reloc) {
         header = 2U;
     } else if (n == 3U + image + reloc) {
+        uint64_t text = (in[2] >> 18) & HALF_MASK;
         header = 3U;
-        if ((in[2] & HALF_MASK) != tx2 || ((in[2] >> 18) & HALF_MASK) > image)
+        if (image <= 0300000U && (text & 0400000U)) {
+            if (in[1] & 0400000U)
+                die("RT_REQUIRED cannot be mutable-compressible");
+            text &= 0377777U;
+        }
+        if ((in[2] & HALF_MASK) != tx2 || text > image)
             die("DXR2 executable has invalid text metadata");
     } else {
         die("DXR executable has inconsistent length");
