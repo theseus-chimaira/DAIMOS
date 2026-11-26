@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1945 K07 physical source recovery PASS; K01-K07 closed).
+Updated: 2026-11-26 (v1946 K08 started; K01-K06 closed; K07 integrated replay pending).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory KA10 backend (K17).
@@ -1141,7 +1141,7 @@ history is now reachable from main (v1809); mode3 remains disabled.
   K06 implementation CLOSED; real PI6 and production acceptance
   remain K08/K09. General allocator serialization and valid-table
   contract unchanged; no arbitrary memory corruption claim.
-- [x] **K07 - Executable backing lifetime (CLOSED v1945).** Guarantee immutable PURE
+- [ ] **K07 - Executable backing lifetime (code complete; integrated replay pending v1946).** Guarantee immutable PURE
   source lifetime across reclaim, source loss/replacement, RO/provider
   failure and unmount attempts. Provide bounded FULL fallback and safe
   owner retention when the source cannot be trusted.
@@ -1397,10 +1397,21 @@ history is now reachable from main (v1809); mode3 remains disabled.
   implementation scope. Actual D6FS/TSFS exchange, wider PI6/production
   matrices and KCC remain K08/K09; no same-ID clone or hidden exchange
   claim. RAW PURE/mode3 remain default OFF.
+  **v1946 correction:** v1945 foreign stop repeated the stopped PC
+  without execution; same-reel recovery from missing remains valid.
+  Actual v1946 foreign PREFIX -4 independently verified 299 ticks
+  after missing FULL -4, with exact original suffix and identity.
+  Complete foreign-to-original recovery/WAIT replay still pending.
 - [ ] **K08 - Scheduler integration.** Complete real PI6 interruption,
   wake/retry, READY_ONCE, WAIT and EXIT behavior during multi-process
   memory pressure. Respect slot-0 FULL serialization and guarantee
   progress without fabricated concurrent user dispatch.
+  **v1946:** current-source native v1650/v1808/v1677 PASS. Actual
+  pinned FULL PI6 in TAPE, unchanged MM18/2176 words, real loss
+  rollback, postfailure PI6, slot4 execution with DTC3 absent and
+  later foreign PREFIX refusal independently verified. Diagnostic
+  deadline expired during reattachment recovery; slot3 READY_ONCE
+  dispatch and final WAIT/EXIT/conservation pending. No kernel growth.
 - [ ] **K09 - Production integration acceptance.** The v1809 Git
   fast-forward has incorporated the PDP-6 RAW PURE source history
   into main with the feature OFF by default. Do not confuse source

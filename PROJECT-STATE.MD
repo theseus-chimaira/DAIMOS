@@ -1,3 +1,50 @@
+## 2026-11-26 v1946-k08: scheduler integration started, scoped physical PASS
+
+Current production KCORE unchanged from v1945. Native v1650 slot-0
+serialization and three unsafe assembly variants, v1808 lost-success
+PREFIX/FULL READY_ONCE and unsafe reply-only gate, v1677 two-owner
+failure/independent READY_ONCE and unsafe quarantine release PASS.
+Corrected obsolete test fixtures for v1902 service ABI, v1916 typed
+hard refusal, v1922 physical arena and v1924 provider identity; no
+production code or RAM changes. Testkit eb3c0a4,4002be9,0063564,bf11c54.
+
+Independent physical partial verifier PASS, original 48K production
+images: five children admitted, sixth refused, no-growth B/A.
+Actual FULL PC040756, slot0/cursor3, source113600..120000 and
+target122000..130000 both pin1. Actual PCLK PI6 entry017712 saved
+executive TAPE PC032067, original linked service targets confirmed,
+MM18 identical and all 2176 retained words identical. Real DTC3
+detach during search; original 7200-tick hardware timeout; FULL
+return034453/-4, MM17, source pin0, target gone, escrow0,
+READ_SUSPECT. Postfailure actual PI6 and independent slot4 user
+sentinel w with DTC3 absent. Fresh distinct-ID foreign reel actual
+PREFIX return034446/-4, source and backing identity intact, MM15.
+Ticks FULL/PI6 6329, missing/postfail13529, peer13825, foreign13828:
+299 ticks between distinct refusals, exceeding 64-tick cooldown.
+Original reel reattached; READY_0 cursor3, READY_1 cursor01005
+(other process). Diagnostic 260-second deadline expired before
+READY_2; slot3 recovery/dispatch, final WAIT/Z/HALT not witnessed.
+Full oracle correctly rejects incomplete trace. No simulator remains.
+Evidence $TMPDIR/pure-k08-pi6-physical-v1946.WzALO9/physical.clean
+SHA256 a551449cd2e570c1d24bb18e16804de7fb14466002b4cfdb5fd906da2abd375f.
+Earlier replay stopped on admission/sleep witness !r; cause unproved.
+Two other replays confirmed pinned PI6 but over-restrictive monitor
+PC range rejected tape driver. One short replay cancelled to correct
+monitor PUSHJ/JRST binding. These are not completed physical passes.
+
+Correction to v1945 below: clearing and rearming the stopped SIMH
+breakpoint can repeat the current PC without executing. Tiny actual
+SIMH probe demonstrates AC1=1, rearm=1, normal CONT=2. Therefore
+the v1945 same-PC/same-tick foreign checkpoint is withdrawn; its
+missing-medium rollback and same-medium recovery/WAIT remain valid.
+Corrected oracle rejects that old trace and requires actual elapsed
+cooldown. The new v1946 foreign refusal is independently established.
+K07 code complete, but final integrated acceptance reopened narrowly
+for complete foreign-refusal-to-original-recovery/WAIT replay.
+K08 open: repeat with normal 1150-second deadline; witness actual
+slot3 READY_ONCE consumption, EXIT/WAIT and final conservation.
+RAW PURE/mode3 default OFF. K01-K06 closed; K09 and K17 open.
+
 ## 2026-11-26 v1945-k07: executable backing lifetime CLOSED
 
 Current uninstrumented v1939 production GCC 48K TSFS/PURE guest
