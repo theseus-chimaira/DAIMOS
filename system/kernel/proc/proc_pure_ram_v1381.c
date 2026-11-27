@@ -725,11 +725,14 @@ proc_pure_bitmap_commit_v1979(unsigned int slot,
          * no fallible operation between exact MM commit and publication.
          * A lost reply is reconciled against the exact selected base. */
 #ifdef DAIMOS_PBM_PLACE_V1985
-        /* Prefer an already free low sector gap; the original full APR
-         * remains owned during the search, copy and descriptor shift. */
+        /* Preserve the low placement policy. A higher gap is useful
+         * only if the bitmap fits in its leading, non-APR-usable
+         * fragment; do not consume a whole free APR to move upwards.
+         * The original full APR stays owned throughout. */
         target = base;
         if (mm_find_fit(encoded, PDP6_PURE_SECTOR_V1604, MM_ALLOC_LOW, &gap) &&
-            gap && gap < base)
+            gap && (gap < base || ((gap & 01777UL) &&
+            encoded <= 02000UL - (gap & 01777UL))))
                 target = gap;
         if (target != base) {
                 u[PROC_FINALIZE_OFFSET] = PROC_PURE_BITMAP_PLACE_V1985(target, encoded);

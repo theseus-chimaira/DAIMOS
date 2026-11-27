@@ -5,7 +5,7 @@
  * candidate. Fourth argument packs prefix length,,encoded length. */
 int mm_pure_bitmap_commit_v1979(kword_t base, unsigned int slot,
     kword_t words, kword_t lengths);
-/* Optional placement leaf: exact lower disjoint 0200-aligned target,
+/* Optional placement leaf: exact disjoint 0200-aligned target,
  * or original base. The caller retains PI/lifecycle exclusion and the
  * original verified candidate; no descriptor or scratch allocation. */
 int mm_pure_bitmap_place_v1985(kword_t base, unsigned int slot,
