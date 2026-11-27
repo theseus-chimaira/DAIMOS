@@ -82,7 +82,15 @@ Actual 64K known-pin PREVM fault slot4 063000/251, real idle retries
 retirement. All12 WAITs, restored EXEC, final MM/HALT, eleven trace
 controls PASS. Known-pin physical PREVM gate accepted. K16 uncertain
 recovery, physical FULL faults, 48K/real DSH and latency/stack remain
-open. No production growth.
+open. No production growth. v1989 staged exact FULL escrow uses
+word067 count/phase and aligned BRK floor bits for target index;
+original current break preserved. Known-pin rollback phases revoke
+authority before MM operation and rearm only exact unchanged witness.
+Host16,777,216 round trips, native82 FULL/80 explicit recovery
+calls per CPU/compiler, nine unsafe variants reject. GCC+377/KCC+458
+optional FULL TEXT, zero DATA/BSS/per-slot; OFF byte-identical.
+Not yet linked into installed package or idle service. Physical FULL
+faults, dirty DROP/source loss and K16 broader acceptance open.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

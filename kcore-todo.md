@@ -1783,6 +1783,13 @@ history is now reachable from main (v1809); mode3 remains disabled.
   allocator refusal, torn or overlapping data, uncertain MM ownership,
   restore cancellation and terminal failure without leaks, double
   release or unsafe process resumption.
+  v1989 staged exact FULL count/phase and BRK target escrow accepted
+  natively, zero persistent words. Explicit slot0 rollback only on
+  known pins and exact geometry; HOLD remains quarantined. Host
+  16,777,216 round trips, native82 FULL/80 recovery per CPU/compiler,
+  nine mutants reject. Optional TEXT +377 GCC/+458 KCC, stage OFF
+  byte-identical. Actual idle arm/backoff and source-built physical
+  FULL failure integration, dirty DROP and source-loss policy open.
 
 ## Execution boundary
 

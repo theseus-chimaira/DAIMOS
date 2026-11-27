@@ -265,6 +265,15 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   all12 EXIT waits, final MM/HALT. Eleven negative traces reject.
   Full original native finalizer21 calls/CPU/compiler, eight mutants.
   K16 uncertain FULL/DROP ownership recovery remains open.
+- [x] **Staged exact directory FULL escrow/rollback:** v1989 exact
+  encoded length and original target/BRK retained without new process
+  words; explicit slot0 known-pin rollback, no HOLD recovery.
+  Host16,777,216 round trips; native82 FULL/80 recovery per CPU/compiler,
+  nine mutants reject. Optional TEXT +377/+458, OFF byte-identical.
+- [ ] **Directory idle recovery and physical FULL faults:** connect
+  authorized v1989 phases only, original shared retry/backoff,
+  actual scheduler and source-built package/failure replay. Separate
+  dirty DROP and irrecoverable source-loss/corruption policy.
 - [ ] **End-to-end mode3 acceptance:** source-built 48K/64K physical
   marked and unmarked process RUN/EXEC/EXIT/WAIT; repeat sleep/wake,
   real DSH mutable-state samples, kernel/process memory high-water,

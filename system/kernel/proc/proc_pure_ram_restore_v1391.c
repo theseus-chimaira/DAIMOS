@@ -413,6 +413,9 @@ uncertain:
 #include "proc_pure_bitmap_directory_v1977.h"
 #include "proc_pure_bitmap_terminal_v1661.h"
 #include "proc_pure_bitmap_restore_v1980.h"
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+#include "proc_pure_full_escrow_v1989.h"
+#endif
 
 extern int mm_pure_bitmap_finish_v1664(unsigned int, kword_t, kword_t,
     kword_t, kword_t);
@@ -422,6 +425,9 @@ extern int mm_pure_bitmap_finish_v1664(unsigned int, kword_t, kword_t,
 struct pbr_identity_v1980 {
         kword_t backing, words, uarea, cred, escrow;
         kword_t *modep;
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+        kword_t brk;                   /* exact current escrow/heap witness */
+#endif
 };
 
 /* PI excluded. Validate u-area ownership before reading any of its
@@ -476,8 +482,183 @@ pbr_identity_ok_v1980(unsigned int slot, const struct pbr_identity_v1980 *id)
         return u[PROC_SWAP_BACKING_OFFSET] == id->backing &&
             (u[PROC_CRED_OFFSET] & PROC_SWAP_EXEC_MASK_V1976) == id->cred &&
             u[PROC_FINALIZE_OFFSET] == id->escrow &&
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+            u[PROC_BRK_OFFSET] == id->brk &&
+#endif
             !(u[PROC_FDCTL_OFFSET] & (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT));
 }
+
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+/* RUN/EXEC/boot initialize floor to allocated VM words. BRK retains
+ * that floor and rounds only the allocation, not the current break.
+ * Check the complete invariant before borrowing any alignment bits. */
+static int
+pbr_heap_ok_v1989(kword_t brk, kword_t words)
+{
+        kword_t floor = brk >> 18U, current = brk & MM_HALF_MASK;
+        return floor && !(floor & 01777UL) && floor <= current &&
+            current <= words && words <= MM_HALF_MASK &&
+            !(words & 01777UL) && current > words - 02000UL;
+}
+
+/* PI excluded; caller has checked original identity and source length.
+ * An invalid allocation address cannot be encoded as an absent target:
+ * mark its field permanently invalid, with no deferred authority. */
+static void
+pbr_save_v1989(struct pbr_identity_v1980 *id, kword_t source,
+    kword_t encoded, kword_t target, unsigned int phase)
+{
+        kword_t *u = PRAM_PTR(id->uarea);
+        kword_t field = PBR_BRK_TAG_V1989;
+        if (target > MM_HALF_MASK || (target & 01777UL))
+                field |= PBR_BRK_BAD_V1989;
+        else
+                field |= target >> 10U;
+        id->brk = PBR_HEAP_V1989(id->brk) | (field << 18U);
+        id->escrow = PBR_TAG_V1989(source, encoded, phase);
+        u[PROC_BRK_OFFSET] = id->brk;
+        u[PROC_FINALIZE_OFFSET] = id->escrow;
+}
+
+static void
+pbr_clear_v1989(const struct pbr_identity_v1980 *id)
+{
+        kword_t *u = PRAM_PTR(id->uarea);
+        u[PROC_BRK_OFFSET] = PBR_HEAP_V1989(id->brk);
+        u[PROC_FINALIZE_OFFSET] = 0UL;
+}
+
+/* Update only the phase while retaining both exact physical spans. */
+static void
+pbr_phase_v1989(struct pbr_identity_v1980 *id, unsigned int phase)
+{
+        id->escrow = (id->escrow & ~0700000UL) |
+            ((kword_t)phase << PBR_PHASE_SHIFT_V1989);
+        PRAM_PTR(id->uarea)[PROC_FINALIZE_OFFSET] = id->escrow;
+}
+
+/* Shared synchronous/deferred rollback. A phase authorizes only the
+ * next operation on the exact previously witnessed owner and pin.
+ * Revoke authority BEFORE attempting any mutation; rearm only upon
+ * an exact unchanged refusal. Unknown replies or identity changes
+ * must not leave a retry phase that could adopt a later replacement.
+ * No I/O, allocation, decode or deferred FULL publication. */
+static int
+pbr_rollback_v1989(unsigned int slot, struct pbr_identity_v1980 *id,
+    kword_t source, kword_t encoded, kword_t target, unsigned int phase)
+{
+        int owners;
+        if (!pbr_identity_ok_v1980(slot, id))
+                return MM_ERR_BUSY;
+        pbr_phase_v1989(id, PBR_HOLD_V1989);
+        if (phase == PBR_PAIR_V1989) {
+                if (proc_pure_full_owners_v1917(slot, source, encoded,
+                    target, id->words, 1U, 1U) != 3)
+                        return MM_ERR_BUSY;
+                (void)mm_unpin(target);
+                if (!pbr_identity_ok_v1980(slot, id))
+                        return MM_ERR_BUSY;
+                if (proc_pure_full_owners_v1917(slot, source, encoded,
+                    target, id->words, 1U, 0U) != 3) {
+                        if (proc_pure_full_owners_v1917(slot, source, encoded,
+                            target, id->words, 1U, 1U) == 3)
+                                goto retry;
+                        return MM_ERR_BUSY;
+                }
+                phase = PBR_FREE_V1989;
+        }
+        if (phase == PBR_FREE_V1989) {
+                if (proc_pure_full_owners_v1917(slot, source, encoded,
+                    target, id->words, 1U, 0U) != 3)
+                        return MM_ERR_BUSY;
+                (void)mm_free(target, MM_TYPE_PROCESS, slot);
+                if (!pbr_identity_ok_v1980(slot, id))
+                        return MM_ERR_BUSY;
+                owners = proc_pure_full_owners_v1917(slot, source, encoded,
+                    target, id->words, 1U, 0U);
+                if (owners == 3)
+                        goto retry;
+                if (owners != 1)
+                        return MM_ERR_BUSY;
+                /* Exact old target interval absent; forget it only now. */
+                target = 0UL;
+                phase = PBR_SOURCE_V1989;
+                pbr_save_v1989(id, source, encoded, target, PBR_HOLD_V1989);
+        }
+        if (phase != PBR_SOURCE_V1989 || target ||
+            proc_pure_full_owners_v1917(slot, source, encoded,
+                0UL, id->words, 1U, 0U) != 1)
+                return MM_ERR_BUSY;
+        (void)mm_unpin(source);
+        if (!pbr_identity_ok_v1980(slot, id))
+                return MM_ERR_BUSY;
+        if (proc_pure_full_owners_v1917(slot, source, encoded,
+            0UL, id->words, 0U, 0U) != 1) {
+                if (proc_pure_full_owners_v1917(slot, source, encoded,
+                    0UL, id->words, 1U, 0U) == 1)
+                        goto retry;
+                return MM_ERR_BUSY;
+        }
+        pbr_clear_v1989(id);
+        return MM_OK;
+retry:
+        pbr_phase_v1989(id, phase);
+        return MM_ERR_BUSY;
+}
+
+/* Reconstruct only the saved transaction, not geometry from a current
+ * descriptor. The stable process/u-area and agreeing backing records
+ * remain the metadata trust boundary; not an allocation generation or
+ * authentication mechanism. No backing mount is required for rollback. */
+int
+proc_pure_bitmap_recover_v1989(unsigned int slot)
+{
+        kword_t saved = mach_pi_disable(), *u, source, encoded, target, skip;
+        struct pbr_identity_v1980 id;
+        struct proc *p = pbr_process_v1980(slot, 0U);
+        unsigned int phase;
+        int rc = MM_ERR_BUSY;
+        if (!p)
+                goto out;
+        id.uarea = PROC_UAREA_BASE(p);
+        u = PRAM_PTR(id.uarea);
+        id.backing = proc_swap_records[slot].state;
+        id.words = VM_SPACE_WORDS(p);
+        id.cred = u[PROC_CRED_OFFSET] & PROC_SWAP_EXEC_MASK_V1976;
+        id.escrow = u[PROC_FINALIZE_OFFSET];
+        id.brk = u[PROC_BRK_OFFSET];
+        id.modep = &proc_storage_runtime_v29.words[slot / PROC_STMAP_SLOTS_WORD_V28];
+        phase = (unsigned int)((id.escrow & MM_HALF_MASK) >> PBR_PHASE_SHIFT_V1989);
+        source = PROC_PURE_FULL_SOURCE_V1917(id.escrow);
+        encoded = id.escrow & PBR_LEN_V1989;
+        target = PBR_TARGET_BASE_V1989(id.brk);
+        if (!id.backing || !(id.cred & PROC_SWAP_MUTABLE_V1976) ||
+            !pbr_identity_ok_v1980(slot, &id) ||
+            phase < PBR_PAIR_V1989 || phase > PBR_SOURCE_V1989 ||
+            (phase == PBR_SOURCE_V1989 ? target != 0UL : !target) ||
+            (PBR_HEAP_FIELD_V1989(id.brk) & (PBR_BRK_TAG_V1989 | PBR_BRK_BAD_V1989))
+                != PBR_BRK_TAG_V1989 ||
+            !pbr_heap_ok_v1989(PBR_HEAP_V1989(id.brk), id.words) ||
+            !source || (source & (
+#ifdef DAIMOS_PBM_PLACE_V1985
+                PDP6_PURE_SECTOR_V1604 - 1UL
+#else
+                VM_PDP6_ALIGN_WORDS - 1UL
+#endif
+                )) ||
+            id.escrow != PBR_TAG_V1989(source, encoded, phase) ||
+            pdp6_pure_skip_v1604(id.backing, id.words, &skip) != MM_OK ||
+            encoded > skip || encoded >= id.words - skip ||
+            encoded < (id.words - skip + 35UL) / 36UL)
+                goto out;
+        rc = pbr_rollback_v1989(slot, &id, source, encoded, target, phase);
+        if (rc == MM_OK)
+                PROC_CLEAR_TRANSITION(p);
+out:
+        mach_pi_restore(saved);
+        return rc;
+}
+#endif
 
 /* PI excluded. Discover only an inactive, exact unpinned owner.
  * Restore and clean retry share the K13 geometry contract. */
@@ -530,6 +711,9 @@ proc_pure_bitmap_unlock_v1981(unsigned int slot)
         if (mode != PROC_STORAGE_BITMAP_V1661 || !backing ||
             (words & (VM_PDP6_ALIGN_WORDS - 1UL)) ||
             u[PROC_SWAP_BACKING_OFFSET] != backing || u[PROC_FINALIZE_OFFSET] ||
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+            !pbr_heap_ok_v1989(u[PROC_BRK_OFFSET], words) ||
+#endif
             !(u[PROC_CRED_OFFSET] & PROC_SWAP_MUTABLE_V1976) ||
             (u[PROC_FDCTL_OFFSET] & (PROC_USER_MAP_BIT | PROC_FATAL_CLOSE_BIT)) ||
             pdp6_pure_skip_v1604(backing, words, &skip) != MM_OK ||
@@ -565,6 +749,11 @@ proc_pure_bitmap_restore_v1980(unsigned int slot,
         u = PRAM_PTR(id.uarea);
         id.cred = u[PROC_CRED_OFFSET] & PROC_SWAP_EXEC_MASK_V1976;
         id.escrow = 0UL;
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+        id.brk = u[PROC_BRK_OFFSET];
+        if (!pbr_heap_ok_v1989(id.brk, id.words))
+                goto out;
+#endif
         id.modep = &proc_storage_runtime_v29.words[slot / PROC_STMAP_SLOTS_WORD_V28];
         mask = 3UL << ((slot % PROC_STMAP_SLOTS_WORD_V28) * 2U);
         if (!(id.cred & PROC_SWAP_MUTABLE_V1976) || !pbr_identity_ok_v1980(slot, &id))
@@ -573,28 +762,47 @@ proc_pure_bitmap_restore_v1980(unsigned int slot,
         if (!pbr_source_v1981(slot, id.words, skip, &source, &encoded))
                 goto out;
         /* Combined old kind bits deliberately refuse old RAW recovery.
-         * RH holds the original target address here (not DROP count).
-         * Mode3 distinguishes this escrow from v1978 dirty preparation. */
+         * Mode3 distinguishes FULL from v1978 dirty preparation.
+         * v1989 preserves the exact count and aligned target separately;
+         * the old staged format records only the target in word067 RH. */
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+        pbr_save_v1989(&id, source, encoded, 0UL, PBR_HOLD_V1989);
+#else
         id.escrow = PROC_PURE_BITMAP_FULL_V1980(source, 0UL);
         u[PROC_FINALIZE_OFFSET] = id.escrow;
+#endif
         rc = mm_pin(source);
         if (proc_pure_full_owners_v1917(slot, source, encoded, 0UL, id.words, 1U, 0U) != 1) {
                 if (rc != MM_OK && pbr_identity_ok_v1980(slot, &id) &&
                     proc_pure_full_owners_v1917(slot, source, encoded, 0UL, id.words, 0U, 0U) == 1) {
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+                        pbr_clear_v1989(&id);
+#else
                         u[PROC_FINALIZE_OFFSET] = 0UL;
+#endif
                         goto out;
                 }
                 goto uncertain;
         }
         /* A zero->one witness in this uninterrupted window establishes
          * the pin even if its success reply was lost. No reclaim/I/O. */
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+        if (!pbr_identity_ok_v1980(slot, &id))
+                goto uncertain;
+#endif
         rc = mm_alloc_aligned_noreclaim(id.words, VM_PDP6_ALIGN_WORDS,
             MM_TYPE_PROCESS, slot, MM_ALLOC_HIGH, &target);
         if (rc != MM_OK && !target)
                 goto rollback;
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+        if (!pbr_identity_ok_v1980(slot, &id))
+                goto uncertain;
+        pbr_save_v1989(&id, source, encoded, target ? target : 1UL, PBR_HOLD_V1989);
+#else
         id.escrow = PROC_PURE_BITMAP_FULL_V1980(source,
             target && target <= MM_HALF_MASK ? target : 1UL);
         u[PROC_FINALIZE_OFFSET] = id.escrow;
+#endif
         if (!target || proc_pure_full_owners_v1917(slot, source, encoded,
             target, id.words, 1U, 0U) != 3)
                 goto uncertain;
@@ -649,7 +857,11 @@ proc_pure_bitmap_restore_v1980(unsigned int slot,
                 VM_PDP6_SET_BASE(&proc_table[slot], target);
                 u[PROC_SWAP_BACKING_OFFSET] = 0UL;
                 *id.modep &= ~mask;
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+                pbr_clear_v1989(&id);
+#else
                 u[PROC_FINALIZE_OFFSET] = 0UL;
+#endif
                 PROC_CLEAR_TRANSITION(&proc_table[slot]);
                 rc = MM_OK;
                 goto out;
@@ -662,6 +874,14 @@ rollback:
         if (!pbr_identity_ok_v1980(slot, &id) ||
             proc_pure_full_owners_v1917(slot, source, encoded, target, id.words, 1U, target_pins) != (target ? 3 : 1))
                 goto uncertain;
+#ifdef DAIMOS_PBM_FULL_ESCROW_V1989
+        {
+                unsigned int phase = target ? (target_pins ? PBR_PAIR_V1989 :
+                    PBR_FREE_V1989) : PBR_SOURCE_V1989;
+                if (pbr_rollback_v1989(slot, &id, source, encoded, target, phase) != MM_OK)
+                        goto uncertain;
+        }
+#else
         if (target) {
                 if (target_pins)
                         (void)mm_unpin(target);
@@ -677,6 +897,7 @@ rollback:
         if (proc_pure_full_owners_v1917(slot, source, encoded, 0UL, id.words, 0U, 0U) != 1)
                 goto uncertain;
         u[PROC_FINALIZE_OFFSET] = 0UL;
+#endif
         goto out;
 uncertain:
         rc = MM_ERR_BUSY;

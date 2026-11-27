@@ -1,3 +1,33 @@
+## 2026-11-27 v1989: exact directory FULL escrow, staged rollback
+
+Stage-only DAIMOS_PBM_FULL_ESCROW_V1989; not selected in package.
+Word067 LH original sector/kind/retry, RH exact15-bit encoded
+length and3-bit phase; BRK0407 LH low10 version/poison/target
+APR index, original aligned floor and all current break bits retained.
+Check full heap invariant before borrowing bits. HOLD no authority;
+PAIR target pin1, FREE target pin0, SOURCE exact target absent.
+Shared synchronous/explicit slot0 rollback revokes authority before
+MM mutation, rearms only exact unchanged witness. Exact length,
+source/target and pin proof; identity recheck after each mutation.
+Clear borrowed BRK bits before publication/unlock. No deferred FULL
+commit, unknown pin consumption or source-loss recovery. Native
+GCC/KCC PDP6/KA10 each82 FULL/80 recovery calls, nine unsafe source
+mutants per compiler reject; host actual helper16,777,216 round trips.
+Real moved bitmap and independently encoded grown VM with unaligned
+BRK; actual BRK syscall not exercised. Testkit96addb4.
+Evidence relative TMPDIR pure-bitmap-placement-v1985.EUrnBZ,
+pure-bitmap-placement-v1985.UVLe58, pure-full-escrow-size-v1989.5i7fcn,
+pure-full-escrow-regression-v1989.BGuVtC, pure-bitmap-placement-v1985.40pXAR.
+Old v1985/v1988 regressions PASS. GCC directory FULL1801->2178,
+KCC2240->2698 TEXT (+377/+458), zero DATA/BSS/fixed/per-slot growth.
+OFF directory and RAW-only DOBJ byte-identical to b5a5552d.
+Initial fixture anchor and post-unpin identity oracle gap corrected;
+all final negative controls reject. No new toolchain defect observed.
+K16 remains OPEN: actual idle-service arming/backoff/dispatch,
+source-built profile, physical FULL fault, dirty DROP, source loss,
+RT latency/stack, real DSH/48K. Default and package unchanged.
+See design/kcore-k16-full-escrow-v1989.md.
+
 ## 2026-11-27 v1988: actual directory known-pin PREVM retry
 
 Validation only, unchanged v1985/v1987 kernel/MRES/KINIT. Testkit
