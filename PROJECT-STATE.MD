@@ -1,3 +1,35 @@
+## 2026-11-27 v1996: K15 bidirectional bitmap placement accepted
+
+Source 1f973524, testkit a3bf12a, isolated K15 topic branch. Preserve
+lower placement; accept higher free gap only if the entire bitmap fits
+before the next 02000 boundary. Exact disjoint span in either direction,
+full original pin/lease, validated sorted table, directional descriptor
+shift, unchanged descriptor count and existing escrow. No extra owner,
+allocation, persistent words or new recovery state.
+GCC/KCC native PDP6/KA10 each33 placement, 5 FULL and 4 terminal calls,
+9 placement mutants per compiler reject; v1993 dirty DROP each25 calls,
+6 mutants per compiler reject. Source-built package directory GCC5493
+(+33), KCC6540 (+36), BSS0, RAW3258/3885. Reproducible directory/RAW
+switches; GCC RAW and both per-mode KCORE images unchanged from v1995.
+Fresh 48K identical INIT/COMP/POST: RAW/lower/bidirectional children
+5/5/8; free4950/16088/6691, descriptors18/18/25, aligned2560/3584/3584.
+Five251-word bitmap owners at 070000/070400/071600/110000/110400,
+one RAW3584, two resident4096. Four direct compressed TERM, six
+stopped WAITs, actual FULL/EXEC4096->2048, all8 child waits, final
+MM/HALT and unchanged tapes; 11 corrupted traces reject. 64K retains
+12-child fixture ceiling, four bitmap/one RAW/seven resident, MM33,
+free1758, aligned512; exact lifecycle and 11 mutants PASS. Independent
+comparison verifies identical guest hashes and physical consolidation.
+48K matched capacity subgate accepted (+60% admitted), not maximum
+capacity or continuous high-water proof. Real DSH mode3, RT latency/
+stack and K16 remaining failures still open. Default OFF. No new
+compiler/assembler defect demonstrated. Initial native fixture reused
+an exact three-descriptor oracle for six descriptors; corrected to
+candidate/owner proof before acceptance.
+Evidence: TMPDIR/pure-k15-bidirectional-v1996.FmgoHG/compare-v1996.json,
+pure-directory-lifecycle-v1995-48-directory.c4OcX1 and
+pure-directory-lifecycle-v1995-64-directory.OeRbC3; testkit README.
+
 ## 2026-11-27 v1995: K15 healthy 48K directory lifecycle
 
 Validation only, parent af048d25; testkit036d92c on isolated topic

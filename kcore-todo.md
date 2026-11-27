@@ -1785,7 +1785,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   2048->3072, no sixth child. Lower-only placement leaves four small
   bitmap owners in separate APR regions. Real DSH test-only marked
   relink/login/SET pass; ECHO times out, no physical DSH mode3 proof.
-  48K capacity, DSH and RT latency/stack still open.
+  v1996 bidirectional exact placement accepts higher leading fragment
+  without sacrificing a full APR. GCC/KCC optional TEXT +33/+36,
+  zero permanent data, fixed KCORE unchanged. Native placement/FULL/
+  terminal and v1993 dirty DROP regressions pass both CPUs/compilers.
+  Matched 48K RAW/lower/bidirectional 5/5/8 children; all8 exact waits,
+  four nonresident TERMs, FULL/EXEC and final MM/HALT. 64K retains12
+  with exact lifecycle. Eleven trace mutants reject per profile.
+  Matched 48K capacity subgate accepted; not maximum capacity.
+  Real DSH mode3, continuous peak RAM and RT latency/stack still open.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,
