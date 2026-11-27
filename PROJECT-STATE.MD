@@ -1,3 +1,42 @@
+## 2026-11-27 v1999: correct stack diagnostics and measure DROP PI boundary
+
+Source c31405a4, testkit 5ef56a3. Native PDP6/KA10 reproduce old
+first-sentinel sparse stack defect, then pass corrected reverse
+scan (deepest written offset, empty0, monotonic maximum, exact
+205 private/255 idle usable bounds). Historical v1239 two native
+overread mutants and v1243 backing/BRK canary guard PASS.
+Test-only private EXIT and idle FULL scan boundaries added.
+Same-tree PROC_STACK_WATERMARK0->1 previously stale; both build
+layers now use versioned mode stamps. Actual inner assembly and
+C canary generators0/1/0 PASS, OFF C output identical, invalid
+mode rejected. Fresh outer image; complete outer toggle not run.
+Default OFF native process object byte-identical to v1996.
+
+Fresh GCC strict directory 48K diagnostic image +39 image words,
++2 BSS, MRES length unchanged5493. Actual v1997 DSH lifecycle
+with physical canary cross-check: private113/205, idle110/255,
+initial idle10, held10, FULL110, HALT110. Actual mode3 bitmap242,
+FULL16384, stable shell state and identity, two typed WAIT57s,
+HALT, independent replay and media/image hashes PASS. Written
+watermark is not exhaustive AC17 reservation or universal bound.
+No stack reduction, no production RAM growth.
+
+Separate uninstrumented v1996 physical DSH run, no MM watches:
+source-bound outer DROP actual PI gate enabled1/0/0/1, saved
+CONI0276 unchanged, RT owner0 at all four boundaries. SIMH
+cf52e6c6 SHOW TIME inner369029, outer369318 simulation units.
+Independent replay rejects four corruptions; lifecycle and hashes
+PASS. Not wall/hardware timing, not a proven deadline violation,
+not a complete RT-active or FULL latency test. Inspect shortening
+the global exclusion without weakening transaction ownership.
+Stock foreground workload, worst-case stack and RT latency,
+K16 remain open; default OFF. Evidence relative TMPDIR:
+pure-k15-stack-v1999.0Aqson/48,
+pure-directory-dsh-v1997-directory-marked.03d9x6 and .YmcKqa;
+native pure-stack-watermark-v1999.Revirl (old), .XQmOf1 (fixed);
+proc-stack-mode-v1999.8hXxDC. Existing compiler include-order
+and native DAS notes; no new compiler/assembler defect.
+
 ## 2026-11-27 v1998: continuous physical DSH MM high-water
 
 Validation only, parent d683816c; testkit f822d57. Repeat real 48K

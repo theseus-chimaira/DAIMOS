@@ -1806,7 +1806,15 @@ history is now reachable from main (v1809); mode3 remains disabled.
   (bitmap242 + workspace256); DROP copy bound42031. Source-linked
   exact writer objects, snapshots, eight negative controls, typed
   WAIT/HALT and source hashes PASS. Not a general maximum or RT
-  measurement. RT latency/stack still open.
+  measurement. v1999 corrected sparse written-stack watermark,
+  same-tree diagnostic mode invalidation and private EXIT/idle FULL
+  scan boundaries. Native both CPUs, old bounds/canary regressions,
+  same-tree inner0/1/0 and actual 48K DSH lifecycle PASS. Private
+  written113/205, idle110/255, no default object growth. Separate
+  uninstrumented actual DROP PI boundary inner369029/outer369318
+  SIMH time units, no active RT owner; four negative controls reject.
+  Controlled written-stack subgate measured, not exhaustive AC17
+  bound. RT-active/FULL latency and worst-case stack still open.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,
