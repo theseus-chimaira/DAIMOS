@@ -1,3 +1,30 @@
+## 2026-11-27 v1991: physical directory FULL rollback and retry
+
+Validation only, parent ff8bd0c0; testkit4748e68. Actual source-built
+64K PDP6 GCC strict directory+idle profile, identical v1987 INIT/
+COMP/POST and fixed KCORE, v1990 GCC MRES5917 identical. TSFS3
+members/55 files/316 extents. Matched pressure12 children both
+(fixture ceiling), four bitmap251/one RAW3584/seven resident4096,
+33 descriptors, free1789->1332 (-457 MRES), largest aligned gap512.
+Actual slot3 source062400/251 target160000/4096, both pin1 after
+bounded load/verify. Scoped MM leaf instruction refusals at actual
+finish, initial target unpin and first retry unpin, each restored
+at live stack return PC with AC1=-1. No artificial ownership or
+clock state. Actual fixed armer, idle ticks21375/21407, delay
+16->32->64; exact source/payload/heap/pins and MM table held.
+Second rollback retires target and source pin, restores original
+BRK, clears escrow/TRANSITION, no READY; clock clears before
+actual ordinary FULL retry. Marked-to-unmarked EXEC, same slot/
+u-area; all12 typed EXIT waits, final MM, normal HALT PC0,
+unchanged root tapes. Independent audit and11 negative traces
+PASS; old v1987/v1988 audits and v1987 controls re-PASS.
+Evidence relative TMPDIR pure-directory-recovery-build-v1991.WDZiGC,
+pure-directory-recovery-physical-v1991.OxbcV9 (audit-v1991.log).
+No production growth or new toolchain defect observed.
+Physical known-pin PAIR rollback accepted; FREE/SOURCE native-only,
+dirty DROP, source loss/corruption, real DSH/48K, RT latency/stack
+remain open. Default OFF. See design/kcore-k16-physical-full-v1991.md.
+
 ## 2026-11-27 v1990: directory FULL idle rollback and linked package
 
 Opt-in DAIMOS_PBM_IDLE_RECOVER_V1990 requires directory profile,

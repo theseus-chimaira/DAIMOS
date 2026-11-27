@@ -275,9 +275,13 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   native actual deadline/armer/reaper and service. Eight mutants
   reject per compiler, mixed RAW/directory; linked package both
   compilers reproducible, no fixed KCORE/per-slot growth.
-- [ ] **Physical FULL faults:** source-built bootable v1990,
-  actual rollback/backoff/retry, matched capacity and final MM.
-  Separate dirty DROP and irrecoverable source-loss/corruption policy.
+- [x] **Physical FULL known-pin PAIR fault:** v1991 actual 64K
+  bootable v1990 package, three scoped leaf refusals, original
+  retry clock/backoff, exact rollback/normal FULL/EXEC, matched12
+  children and final MM/HALT. Eleven trace controls reject.
+- [ ] **Remaining directory recovery:** FREE/SOURCE physical
+  fault coverage, dirty DROP and irrecoverable source-loss/
+  corruption policy. Native known-pin rollback already accepted.
 - [ ] **End-to-end mode3 acceptance:** source-built 48K/64K physical
   marked and unmarked process RUN/EXEC/EXIT/WAIT; repeat sleep/wake,
   real DSH mutable-state samples, kernel/process memory high-water,

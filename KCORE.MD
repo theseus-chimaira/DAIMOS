@@ -95,8 +95,13 @@ original clock, tagged mode3 rollback and RAW coexist, no READY
 or cursor change. Native82 FULL/80 explicit recoveries/127 service
 and deadline calls per CPU/compiler, eight unsafe variants reject.
 Linked GCC5460->5917/KCC6504->7055, BSS0; OFF/ON fixed KCORE
-byte-identical. New flag defaults OFF. Physical FULL fault,
-matched capacity, dirty DROP/source loss and broader K16 open.
+byte-identical. New flag defaults OFF. v1991 actual 64K GCC
+known-pin PAIR rollback accepted, original idle ticks21375/21407,
+three scoped MM leaf refusals, exact MM/heap/payload, normal
+restore/EXEC/all12 WAIT/final HALT. Matched12 children, free
+1789->1332, largest aligned512 unchanged. No production growth.
+FREE/SOURCE physical faults, dirty DROP/source loss and broader
+K16 remain open.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

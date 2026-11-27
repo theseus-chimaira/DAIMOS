@@ -1792,8 +1792,11 @@ history is now reachable from main (v1809); mode3 remains disabled.
   and tagged service accepted, HOLD skipped, mixed RAW/directory.
   Linked package GCC5917/KCC7055 (+457/+551 vs v1988), zero fixed
   or per-slot growth, reproducible switch, experimental flag OFF.
-  Bootable physical FULL failure, matched capacity, dirty DROP
-  and source-loss policy open.
+  v1991 bootable physical FULL known-pin PAIR failure/rollback
+  accepted; actual idle retry16->32->64, restored EXEC and all12
+  waits/final MM/HALT. Matched12, free1789->1332 (-457), aligned
+  gap512 unchanged. No production changes. FREE/SOURCE physical
+  faults, dirty DROP and source-loss policy remain open.
 
 ## Execution boundary
 
