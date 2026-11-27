@@ -1793,7 +1793,13 @@ history is now reachable from main (v1809); mode3 remains disabled.
   four nonresident TERMs, FULL/EXEC and final MM/HALT. 64K retains12
   with exact lifecycle. Eleven trace mutants reject per profile.
   Matched 48K capacity subgate accepted; not maximum capacity.
-  Real DSH mode3, continuous peak RAM and RT latency/stack still open.
+  v1997 real 48K DSH controlled terminal wake accepted: unchanged
+  program payload, test-only PURE/mutable flags, independent CTY
+  pressure parent; actual mode3 242 words vs3200 RAW suffix, FULL
+  APR16384, stable identity/variable, two typed WAIT57s and HALT.
+  Replay/MM checkpoint/hash verification and six mutants PASS.
+  Stock ordinary/marked ECHO both time out before child publication;
+  foreground pressure, continuous peak RAM and RT latency/stack open.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,

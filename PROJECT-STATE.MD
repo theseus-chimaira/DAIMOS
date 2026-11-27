@@ -1,3 +1,34 @@
+## 2026-11-27 v1997: actual 48K DSH compressed terminal wake
+
+Validation only, parent f1e3ba6c; testkit d5c88a6. Actual GCC PDP6
+strict swapless directory v1996 package unchanged. Real DSH test
+relink differs only PURE and mutable DXR header flags. Stock
+ordinary/marked INIT/ROOT LOGIN/DSH SET/list and opcode signatures
+pass; both ECHO time out at180s, slot2 mode0, unpublished SIDL child
+APR2048, adjacent PCs. Not evidence of mode3 failure or definitive
+I/O fault. Exploratory stock foreground pressure not reached.
+Compact direct test INIT sets real LOGIN CTY session/foreground
+contract; test-only split member layout checked against stock
+formatter for identical boot/file payloads, normal tape timing.
+Initial missing-CTY fixture rejected and corrected.
+
+Actual DSH slot2/uarea055250 APR15360 grows to16384 after SET.
+Parent independently admits pressure child APR10240; DSH sleeping
+mode3 exact unpinned owner056000/242, raw3200, prefix13184.
+Independent canonical bitmap decode includes SIXBIT variable.
+Child typed WAIT57 then actual CTY wake FULL restores APR16384
+at074000, same slot/uarea/backing/credential and opcode signatures,
+cleared escrow/saved backing, SET value intact. Shell typed WAIT57,
+normal HALT and unchanged root/source hashes. MM10/13/10 checkpoint
+extents; replay rejects six corrupted evidence cases. Suffix saves
+2958 words (92.4%), complete inactive APR saves16142 (98.5%), not
+net whole-system peak saving. Real DSH controlled mode3/wake subgate
+accepted; stock ECHO/foreground workload, continuous high-water,
+RT latency/stack, K16 remain open. No production changes or new
+compiler/assembler defect demonstrated. Default OFF.
+Evidence TMPDIR/pure-directory-dsh-v1997-directory-marked.Nt1Z4X;
+stock normal.yTW8Q5, marked.tBTXqX, exploratory marked.h2Otwu.
+
 ## 2026-11-27 v1996: K15 bidirectional bitmap placement accepted
 
 Source 1f973524, testkit a3bf12a, isolated K15 topic branch. Preserve
