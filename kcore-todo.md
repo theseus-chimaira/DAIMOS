@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-26 (v1969 two generic KA10 DMA channel pairs).
+Updated: 2026-11-27 (v1992 physical FULL FREE/SOURCE rollback).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
@@ -1797,6 +1797,16 @@ history is now reachable from main (v1809); mode3 remains disabled.
   waits/final MM/HALT. Matched12, free1789->1332 (-457), aligned
   gap512 unchanged. No production changes. FREE/SOURCE physical
   faults, dirty DROP and source-loss policy remain open.
+  v1992 actual 64K source-built FREE/SOURCE physical rollback
+  accepted; target free refused twice after unpin, source unpin
+  refused twice after target retirement. Five scoped refusals,
+  four original idle retries16->32->64->128->256; exact full
+  MM/bitmap/BRK, subsequent FULL/EXEC, all12 waits and final
+  MM/HALT PASS. Fifteen negative traces reject. MRES5917/BSS0,
+  no production change. Dirty DROP, ambiguous ownership physical
+  tests and irrecoverable source-loss/corruption remain open.
+  Controller loss/return discussion deferred until K16 complete.
+  See design/kcore-k16-physical-full-v1992.md.
 
 ## Execution boundary
 

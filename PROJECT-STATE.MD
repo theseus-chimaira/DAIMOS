@@ -1,3 +1,38 @@
+## 2026-11-27 v1992: physical directory FULL FREE/SOURCE rollback
+
+Validation only, parent 18a44866; testkit8e320f4. Fresh source-built
+64K PDP6 GCC strict directory+idle profile, MRES5917 words/BSS0.
+Original v1987 guest sources rebuilt (historical temporary artifacts
+absent), TSFS3 members/55 files/316 extents. Installed SIMH cf52e6c6.
+12 admitted children (fixture ceiling), four bitmap251/one RAW3584/
+seven resident4096, 33 descriptors, free1334, aligned gap512.
+Actual slot3 source062400/251 target160000/4096. Refuse actual FULL
+finish, initial target FREE after successful target unpin, first idle
+target FREE, then source unpin after actual target FREE on second idle
+retry, and source unpin on third. Five scoped original leaf entry
+replacements restored at live return PCs, AC1=-1; no injected owner,
+clock or process state. Actual idle ticks6362/6394/6458/6586,
+delay16->32->64->128->256. Exact whole MM table, original bitmap
+bytes, backing/cred/PC and BRK; SOURCE target field zero only after
+actual free. Fourth retry retires original pin, restores heap/clears
+escrow and TRANSITION, no READY; clock clears before ordinary FULL.
+Actual restored EXEC4096->2048, same slot/u-area; all12 typed waits,
+final MM/HALT, unchanged tapes. Independent audit and15 corrupt
+trace controls PASS. Known-pin FREE/SOURCE physical gates accepted.
+No production change or new compiler/assembler defect demonstrated.
+
+Fresh build initially failed at installed mkauxstore CLI, then missing
+mkdtfs; source-built DAIMOS-specific media producers resolved both
+without replacing shared installed utilities. Existing GCC include
+order/libc built-in warnings. No historical binary identity claim;
+free differs from v1991 by two words, not a measured saving.
+Evidence relative TMPDIR pure-directory-physical-build-v1992.1zNwBW,
+pure-directory-physical-replay-v1992.8OKkKf/physical.clean.
+Dirty DROP, ambiguous ownership physical tests, source loss/corruption,
+RT latency/stack, real DSH/48K and optional KA10 boot remain open.
+Controller loss/return design discussion deferred until K16 completion.
+Default OFF. See design/kcore-k16-physical-full-v1992.md.
+
 ## 2026-11-27 v1991: physical directory FULL rollback and retry
 
 Validation only, parent ff8bd0c0; testkit4748e68. Actual source-built
