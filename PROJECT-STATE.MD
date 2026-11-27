@@ -1,3 +1,25 @@
+## 2026-11-27 v1998: continuous physical DSH MM high-water
+
+Validation only, parent d683816c; testkit f822d57. Repeat real 48K
+v1997 direct DSH fixture, unchanged GCC v1996 KCORE/MRES, all copied
+tapes and images unchanged. Arm 71 physical MM word watches before
+SET; all 103 writes through normal HALT replayed, 21 stable states.
+Four source-linked writer objects reassembled byte-identically;
+no unclassified PC, intermediate shift writes not counted as
+allocations. Exact independent held/restored tables agree; final
+MM8 replayed, not independently sampled after HALT. Eight corrupt
+trace controls reject. Initial free8272, post-BRK7248, DROP23505,
+pressure12872, FULL6750, restored7248, final23896. Peak occupied or
+reserved42402/49152, max descriptors13/32. FULL coexistence pinned
+bitmap242 + pinned APR16384 + loader workspace256 (498 extra words
+versus restored). DROP conservative disjoint copy bound41789+242
+=42031, below FULL peak; exact old pin, destination previously free.
+No additional production RAM, code or default activation. Scope is
+this controlled DSH allocator trace, not all workloads, all physical
+stores, RT wall-clock timing or stack high-water. Stock foreground
+workload, RT latency/stack, K16 remain open. No new compiler or
+assembler defect. Evidence TMPDIR/pure-directory-highwater-v1998.8hfPRl.
+
 ## 2026-11-27 v1997: actual 48K DSH compressed terminal wake
 
 Validation only, parent f1e3ba6c; testkit d5c88a6. Actual GCC PDP6

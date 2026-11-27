@@ -1799,7 +1799,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
   APR16384, stable identity/variable, two typed WAIT57s and HALT.
   Replay/MM checkpoint/hash verification and six mutants PASS.
   Stock ordinary/marked ECHO both time out before child publication;
-  foreground pressure, continuous peak RAM and RT latency/stack open.
+  foreground pressure remains open.
+  v1998 continuous physical DSH MM high-water accepted for the
+  controlled workload: 71 watches, 103 writes, 21 stable states,
+  peak42402/49152 (free6750), max MM13/32. FULL extra498 words
+  (bitmap242 + workspace256); DROP copy bound42031. Source-linked
+  exact writer objects, snapshots, eight negative controls, typed
+  WAIT/HALT and source hashes PASS. Not a general maximum or RT
+  measurement. RT latency/stack still open.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,
