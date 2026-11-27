@@ -1586,6 +1586,12 @@ proc_exit_current:
         hlrz    1,(1)
         pushj   17,proc_exec_stack_busy_v1937
         jumpn   1,proc_swap_storage_invariant_v30
+.if PROC_STACK_WATERMARK
+        ; Capture the final private continuation before abandoning it.
+        move    1,proc_current_ptr
+        hlrz    1,(1)
+        pushj   17,proc_stack_watermark_scan
+.endif
         pop     17,1
         move    3,1                    ; preserve low 18-bit exit status
         pushj   17,mach_pi_disable
@@ -3895,43 +3901,44 @@ proc_wakeup_done:
         pop     17,0
         popj    17,
 
-;. Test-only process-private kernel stack watermarking.  The untouched
-; canary in each stack word is that word's own physical address.  Because the
-; PDP-6 pushdown stack grows upward, the first untouched word terminates the
-; scan.  This code and state disappear completely from production builds.
+; Test-only written-stack high-water. Scan from the highest legal
+; word down: a compiler may reserve a frame with untouched holes.
+; AC3 is the deepest overwritten offset (zero for a clean stack),
+; not the first untouched sentinel. Address canaries measure writes,
+; not an entirely unwritten reservation made by changing AC17.
 .if PROC_STACK_WATERMARK
         .globl  proc_stack_highwater
         .globl  kernel_idle_stack_highwater
 proc_stack_watermark_scan:
         move    2,1
-        addi    2,PROC_USTACK_BASE+1
-        movei   3,1
+        addi    2,PROC_USTACK_BASE+PROC_KSTACK_WORDS
+        movei   3,PROC_KSTACK_WORDS
 proc_stack_watermark_loop:
         camn    2,(2)
+        jrst    proc_stack_watermark_next
         jrst    proc_stack_watermark_done
-        addi    2,1
-        addi    3,1
-        caige  3,PROC_KSTACK_WORDS
-        jrst    proc_stack_watermark_loop
+proc_stack_watermark_next:
+        subi    2,1
+        sojg    3,proc_stack_watermark_loop
 proc_stack_watermark_done:
         camle   3,proc_stack_highwater
         movem   3,proc_stack_highwater
         popj    17,
 
-; Test-only watermark for the permanent idle/exit stack.  Late KINIT no
-; longer executes on this stack, so this measures runtime scheduler/exit use.
+; The idle reservation includes its empty-stack base word, which
+; is not a legal pushed word. The maximum usable depth is 0377.
 kernel_idle_stack_watermark_scan:
         move    1,mach_kernel_stack_base
         move    2,1
-        addi    2,1
-        movei   3,1
+        addi    2,KERNEL_IDLE_STACK_WORDS-1
+        movei   3,KERNEL_IDLE_STACK_WORDS-1
 kernel_idle_stack_watermark_loop:
         camn    2,(2)
+        jrst    kernel_idle_stack_watermark_next
         jrst    kernel_idle_stack_watermark_done
-        addi    2,1
-        addi    3,1
-        caige  3,KERNEL_IDLE_STACK_WORDS
-        jrst    kernel_idle_stack_watermark_loop
+kernel_idle_stack_watermark_next:
+        subi    2,1
+        sojg    3,kernel_idle_stack_watermark_loop
 kernel_idle_stack_watermark_done:
         camle   3,kernel_idle_stack_highwater
         movem   3,kernel_idle_stack_highwater
@@ -4491,6 +4498,10 @@ proc_idle_swap_v881:
         trnn    1,0400
         jrst    proc_idle_wait
         pushj   17,proc_swap_service_one
+.if PROC_STACK_WATERMARK
+        ; FULL executes on slot zero, outside the ordinary PI6 idle scan.
+        pushj   17,kernel_idle_stack_watermark_scan
+.endif
         setom   proc_sched_kick
         cono    0004,004002
 proc_idle_wait:

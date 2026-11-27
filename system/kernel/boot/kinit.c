@@ -589,7 +589,7 @@ kinit_enter(void)
 
                 /*
                  * Fill unused idle-stack words with their own addresses.
-                 * The process-stack watermark code later detects the first
+                 * The process-stack watermark code later detects the deepest
                  * overwritten sentinel without needing a separate bitmap.
                  */
                 idle_stack = (kword_t *)(unsigned long)kernel_stack_base;
