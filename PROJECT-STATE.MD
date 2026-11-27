@@ -1,3 +1,26 @@
+## 2026-11-27 v1995: K15 healthy 48K directory lifecycle
+
+Validation only, parent af048d25; testkit036d92c on isolated topic
+branch (parallel K16 v1994). Fresh GCC PDP6 strict swapless TSFS
+48K RAW/directory, idle/dirty recovery OFF. Actual v1987 workload
+both five children, all typed WAITs, exact final MM/HALT and root
+integrity PASS. Directory four251-word bitmap owners at
+060000/070000/100000/110000, one RAW3584, three stopped bitmap TERM
+without restore, actual slot3 FULL/EXEC4096->2048, same u-area and
+new executable record. Eleven corrupted directory traces reject.
+RAW five3584-word owners. Both18 extents; free4950->16088 (+11138),
+aligned spans2560->3584, rounded APR2048->3072. No sixth child:
+lower-only bitmap placement leaves fragmented APR space. MRES
+3258->5460, fixed KCORE -8, no new production change.
+Evidence relative TMPDIR: pure-k15-48k-v1995.IAVUeR;
+pure-directory-lifecycle48-v1995.qjW0Fh/replay;
+pure-directory-lifecycle48-v1995-raw.dpxPFD/replay-raw-v1995.
+Actual DSH marked test-only relink preserves payload/relocation;
+ROOT login and SET pass, first ECHO times out at original45s.
+RAW initial run interrupted before login. DSH/mode3 witness,
+48K aligned capacity, RT latency/stack and K16 remain open.
+Default activation unchanged.
+
 ## 2026-11-27 v1993: exact directory dirty DROP recovery
 
 Parent ca107f7e; testkit90ee89c. New optional

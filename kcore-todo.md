@@ -1778,6 +1778,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
   release only test pin; all12 waits, restored EXEC, final MM/HALT.
   Eleven corrupted trace controls reject. Known-pin physical PREVM
   accepted; K16 dirty FULL/DROP and broader physical faults follow.
+  v1995 healthy 48K physical directory and matched RAW lifecycle
+  both five children, exact WAIT/final MM/HALT/root integrity PASS;
+  directory three nonresident TERMs, FULL/EXEC4096->2048, eleven
+  negative traces reject. Free4950->16088 (+11138) but rounded APR
+  2048->3072, no sixth child. Lower-only placement leaves four small
+  bitmap owners in separate APR regions. Real DSH test-only marked
+  relink/login/SET pass; ECHO times out, no physical DSH mode3 proof.
+  48K capacity, DSH and RT latency/stack still open.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,
