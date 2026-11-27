@@ -270,10 +270,14 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   words; explicit slot0 known-pin rollback, no HOLD recovery.
   Host16,777,216 round trips; native82 FULL/80 recovery per CPU/compiler,
   nine mutants reject. Optional TEXT +377/+458, OFF byte-identical.
-- [ ] **Directory idle recovery and physical FULL faults:** connect
-  authorized v1989 phases only, original shared retry/backoff,
-  actual scheduler and source-built package/failure replay. Separate
-  dirty DROP and irrecoverable source-loss/corruption policy.
+- [x] **Directory idle recovery and linked package:** v1990
+  authorized phases only, HOLD excluded, original shared backoff,
+  native actual deadline/armer/reaper and service. Eight mutants
+  reject per compiler, mixed RAW/directory; linked package both
+  compilers reproducible, no fixed KCORE/per-slot growth.
+- [ ] **Physical FULL faults:** source-built bootable v1990,
+  actual rollback/backoff/retry, matched capacity and final MM.
+  Separate dirty DROP and irrecoverable source-loss/corruption policy.
 - [ ] **End-to-end mode3 acceptance:** source-built 48K/64K physical
   marked and unmarked process RUN/EXEC/EXIT/WAIT; repeat sleep/wake,
   real DSH mutable-state samples, kernel/process memory high-water,

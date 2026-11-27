@@ -25,9 +25,21 @@
 #define PBR_BRK_BAD_V1989   0400UL
 #define PBR_TARGET_V1989    0377UL
 
+/* v1990: the existing idle scan recognizes bit32, not the phase.
+ * HOLD must not participate in a retry scan for another process.
+ * Keep the v1989 standalone format when integration is disabled. */
+#ifdef DAIMOS_PBM_IDLE_RECOVER_V1990
+#define PBR_RETRY_V1990(phase) \
+        ((phase) == PBR_HOLD_V1989 ? 0UL : PROC_SWAP_RETRY_TAG_V1507)
+#define PBR_TAG_V1989(source, encoded, phase) \
+        ((PROC_PURE_BITMAP_FULL_V1980((source), \
+            ((kword_t)(phase) << PBR_PHASE_SHIFT_V1989) | (encoded)) & \
+            ~PROC_SWAP_RETRY_TAG_V1507) | PBR_RETRY_V1990(phase))
+#else
 #define PBR_TAG_V1989(source, encoded, phase) \
         PROC_PURE_BITMAP_FULL_V1980((source), \
             ((kword_t)(phase) << PBR_PHASE_SHIFT_V1989) | (encoded))
+#endif
 #define PBR_HEAP_V1989(brk) ((brk) & ~PBR_BRK_MASK_V1989)
 #define PBR_HEAP_FIELD_V1989(brk) (((brk) >> 18U) & 01777UL)
 #define PBR_TARGET_BASE_V1989(brk) \
@@ -35,8 +47,12 @@
 
 /* Explicit slot-zero rollback only. Never publish a deferred FULL
  * destination, consume unknown pins or recover a HOLD transaction.
- * Not yet connected to the idle service or production package.
+ * v1990 optionally connects this entry to the original idle service.
  */
 int proc_pure_bitmap_recover_v1989(unsigned int slot);
+#ifdef DAIMOS_PBM_IDLE_RECOVER_V1990
+/* Arm the original shared retry clock only for a valid saved phase. */
+int proc_pure_bitmap_arm_v1990(unsigned int slot);
+#endif
 
 #endif

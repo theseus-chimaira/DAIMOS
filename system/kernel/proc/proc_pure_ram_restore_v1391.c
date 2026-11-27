@@ -409,6 +409,10 @@ uncertain:
         return MM_ERR_BUSY;
 }
 
+#if defined(DAIMOS_PBM_IDLE_RECOVER_V1990) && \
+    (!defined(DAIMOS_PBM_FULL_ESCROW_V1989) || !defined(DAIMOS_PBM_RESTORE_V1980))
+#error idle_directory_recovery_requires_full_escrow
+#endif
 #ifdef DAIMOS_PBM_RESTORE_V1980
 #include "proc_pure_bitmap_directory_v1977.h"
 #include "proc_pure_bitmap_terminal_v1661.h"
@@ -534,6 +538,10 @@ pbr_phase_v1989(struct pbr_identity_v1980 *id, unsigned int phase)
 {
         id->escrow = (id->escrow & ~0700000UL) |
             ((kword_t)phase << PBR_PHASE_SHIFT_V1989);
+#ifdef DAIMOS_PBM_IDLE_RECOVER_V1990
+        id->escrow = (id->escrow & ~PROC_SWAP_RETRY_TAG_V1507) |
+            PBR_RETRY_V1990(phase);
+#endif
         PRAM_PTR(id->uarea)[PROC_FINALIZE_OFFSET] = id->escrow;
 }
 
@@ -610,8 +618,14 @@ retry:
  * descriptor. The stable process/u-area and agreeing backing records
  * remain the metadata trust boundary; not an allocation generation or
  * authentication mechanism. No backing mount is required for rollback. */
+#ifdef DAIMOS_PBM_IDLE_RECOVER_V1990
+extern int proc_pure_recover_arm_v1902(kword_t);
+static int
+pbr_recover_v1990(unsigned int slot, unsigned int arm)
+#else
 int
 proc_pure_bitmap_recover_v1989(unsigned int slot)
+#endif
 {
         kword_t saved = mach_pi_disable(), *u, source, encoded, target, skip;
         struct pbr_identity_v1980 id;
@@ -651,6 +665,22 @@ proc_pure_bitmap_recover_v1989(unsigned int slot)
             encoded > skip || encoded >= id.words - skip ||
             encoded < (id.words - skip + 35UL) / 36UL)
                 goto out;
+#ifdef DAIMOS_PBM_IDLE_RECOVER_V1990
+        if (arm) {
+                /* A new synchronous refusal is the only arming caller.
+                 * Do not reset the shared backoff on a deferred retry.
+                 * The fixed armer temporarily replaces word067 under PI. */
+                if (proc_pure_full_owners_v1917(slot, source, encoded,
+                    target, id.words, 1U, phase == PBR_PAIR_V1989) !=
+                    (target ? 3 : 1)) {
+                        pbr_phase_v1989(&id, PBR_HOLD_V1989);
+                        goto out;
+                }
+                rc = proc_pure_recover_arm_v1902(id.uarea);
+                u[PROC_FINALIZE_OFFSET] = id.escrow;
+                goto out;
+        }
+#endif
         rc = pbr_rollback_v1989(slot, &id, source, encoded, target, phase);
         if (rc == MM_OK)
                 PROC_CLEAR_TRANSITION(p);
@@ -658,6 +688,19 @@ out:
         mach_pi_restore(saved);
         return rc;
 }
+#ifdef DAIMOS_PBM_IDLE_RECOVER_V1990
+int
+proc_pure_bitmap_recover_v1989(unsigned int slot)
+{
+        return pbr_recover_v1990(slot, 0U);
+}
+
+int
+proc_pure_bitmap_arm_v1990(unsigned int slot)
+{
+        return pbr_recover_v1990(slot, 1U);
+}
+#endif
 #endif
 
 /* PI excluded. Discover only an inactive, exact unpinned owner.

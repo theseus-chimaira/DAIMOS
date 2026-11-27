@@ -89,8 +89,14 @@ authority before MM operation and rearm only exact unchanged witness.
 Host16,777,216 round trips, native82 FULL/80 explicit recovery
 calls per CPU/compiler, nine unsafe variants reject. GCC+377/KCC+458
 optional FULL TEXT, zero DATA/BSS/per-slot; OFF byte-identical.
-Not yet linked into installed package or idle service. Physical FULL
-faults, dirty DROP/source loss and K16 broader acceptance open.
+v1990 opt-in linked package and original idle service accepted
+natively. HOLD clears retry bit; only exact PAIR/FREE/SOURCE arm
+original clock, tagged mode3 rollback and RAW coexist, no READY
+or cursor change. Native82 FULL/80 explicit recoveries/127 service
+and deadline calls per CPU/compiler, eight unsafe variants reject.
+Linked GCC5460->5917/KCC6504->7055, BSS0; OFF/ON fixed KCORE
+byte-identical. New flag defaults OFF. Physical FULL fault,
+matched capacity, dirty DROP/source loss and broader K16 open.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

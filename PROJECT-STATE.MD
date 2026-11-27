@@ -1,3 +1,33 @@
+## 2026-11-27 v1990: directory FULL idle rollback and linked package
+
+Opt-in DAIMOS_PBM_IDLE_RECOVER_V1990 requires directory profile,
+default0. v1990 clears bit32 on HOLD, sets only authorized phases
+PAIR/FREE/SOURCE; original reaper can skip HOLD on unrelated scan.
+Shared exact v1989 preflight arms original retry clock only after
+new synchronous refusal; restore escrow under PI, no rearm during
+retry. Tagged mode3 service -> exact rollback, RAW route unchanged,
+no READY or cursor change. Known-owner rollback unlocks mode3;
+normal FULL may retry. Ambiguous MM revokes to HOLD; next scan skips.
+Malformed preflight untouched, may retain polling, no MM authority.
+Native GCC/KCC PDP6/KA10 each82 FULL/80 explicit recovery/127
+service/deadline calls; actual idle deadline/armer/scan/backoff,
+16..512 cap and wrap, mixed exact RAW and directory owner, HOLD
+skip, later normal restore. Eight unsafe variants per compiler
+reject. Host16,777,216 round trips, v1989 standalone OFF regression
+both CPUs/all9 mutants PASS. Outer interrupt handoff controlled.
+Source-built linked package OFF/ON/OFF/ON byte-identical per mode;
+GCC5460->5917 (+457), KCC6504->7055 (+551) resident words, BSS0.
+Fixed KCORE DXR identical across modes. Zero extra persistent
+process words. Both Makefiles reject invalid flags. Testkit09d4935.
+Evidence relative TMPDIR pure-bitmap-placement-v1985.SfnNWa,
+pure-bitmap-placement-v1985.WVtXrs, pure-bitmap-placement-v1985.lrRh7s,
+pure-directory-idle-package-v1990.6BCnib.
+Initial test prototype mismatch and fixture/arena overlap corrected,
+no new production toolchain defect observed. K16 OPEN: bootable
+v1990 physical FULL fault/clock/rollback/retry, matched capacity,
+dirty DROP, source loss, RT latency/stack, real DSH/48K.
+See design/kcore-k16-idle-recovery-v1990.md.
+
 ## 2026-11-27 v1989: exact directory FULL escrow, staged rollback
 
 Stage-only DAIMOS_PBM_FULL_ESCROW_V1989; not selected in package.

@@ -46,8 +46,15 @@
 #endif
 #endif
 
+#if defined(DAIMOS_PBM_IDLE_RECOVER_V1990) && \
+    (!defined(DAIMOS_PBM_FULL_ESCROW_V1989) || !defined(DAIMOS_PBM_RESTORE_V1980))
+#error idle_directory_recovery_requires_full_escrow
+#endif
 #ifdef DAIMOS_PBM_RESTORE_V1980
 #include "proc_pure_bitmap_restore_v1980.h"
+#ifdef DAIMOS_PBM_IDLE_RECOVER_V1990
+#include "proc_pure_full_escrow_v1989.h"
+#endif
 #include "proc_pure_bitmap_terminal_v1661.h"
 #if DAIMOS_PBM_V1667 == 1
 #error directory_restore_incompatible_with_v1667
@@ -428,6 +435,11 @@ proc_pure_mres_service_v1612(kword_t command_v1902)
                 if (command_v1902 &
                     ~(PPURE_RECOVER_REQUEST_V1902 | 0377UL))
                         return -1;
+#ifdef DAIMOS_PBM_IDLE_RECOVER_V1990
+                slot = (unsigned int)(command_v1902 & 0377UL);
+                if (ppure_mode3_v1667(slot))
+                        return proc_pure_bitmap_recover_v1989(slot);
+#endif
                 return ppure_recover_one_v1902(
                     (unsigned int)(command_v1902 & 0377UL));
         }
@@ -494,8 +506,15 @@ proc_pure_mres_service_v1612(kword_t command_v1902)
         if (bitmap) {
 #ifdef PPURE_BITMAP_SERVICE_V1981
                 (void)proc_pure_bitmap_unlock_v1981(slot);
+#ifdef DAIMOS_PBM_IDLE_RECOVER_V1990
+                /* Only an exact authorized rollback may arm the
+                 * existing retry clock. Never arm HOLD or old RAW. */
+                if (PROC_TRANSITION(p))
+                        (void)proc_pure_bitmap_arm_v1990(slot);
+#else
                 /* A dirty directory transaction is not an old RAW
                  * recovery request. K16 owns its deferred recovery. */
+#endif
                 proc_swap_pressure_ticks = PPURE_COOLDOWN_V1612;
                 return 0;
 #else

@@ -1788,8 +1788,12 @@ history is now reachable from main (v1809); mode3 remains disabled.
   known pins and exact geometry; HOLD remains quarantined. Host
   16,777,216 round trips, native82 FULL/80 recovery per CPU/compiler,
   nine mutants reject. Optional TEXT +377 GCC/+458 KCC, stage OFF
-  byte-identical. Actual idle arm/backoff and source-built physical
-  FULL failure integration, dirty DROP and source-loss policy open.
+  byte-identical. v1990 native original idle deadline/armer/backoff
+  and tagged service accepted, HOLD skipped, mixed RAW/directory.
+  Linked package GCC5917/KCC7055 (+457/+551 vs v1988), zero fixed
+  or per-slot growth, reproducible switch, experimental flag OFF.
+  Bootable physical FULL failure, matched capacity, dirty DROP
+  and source-loss policy open.
 
 ## Execution boundary
 

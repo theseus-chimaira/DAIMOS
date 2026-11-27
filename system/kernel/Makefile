@@ -69,6 +69,16 @@ endif
 # Experimental directory-bitmap package; never select the historical
 # interleaved codec or the disk-swap backend in this profile.
 DAIMOS_PBM_DIRECTORY_V1983 ?= 0
+# Separately staged directory FULL idle rollback; RAW/default unchanged.
+DAIMOS_PBM_IDLE_RECOVER_V1990 ?= 0
+ifneq ($(filter $(DAIMOS_PBM_IDLE_RECOVER_V1990),0 1),$(DAIMOS_PBM_IDLE_RECOVER_V1990))
+$(error DAIMOS_PBM_IDLE_RECOVER_V1990 must be 0 or 1)
+endif
+ifeq ($(DAIMOS_PBM_IDLE_RECOVER_V1990),1)
+ifneq ($(DAIMOS_PBM_DIRECTORY_V1983),1)
+$(error idle directory recovery requires DAIMOS_PBM_DIRECTORY_V1983=1)
+endif
+endif
 ifneq ($(filter $(DAIMOS_PBM_DIRECTORY_V1983),0 1),$(DAIMOS_PBM_DIRECTORY_V1983))
 $(error DAIMOS_PBM_DIRECTORY_V1983 must be 0 or 1)
 endif
@@ -78,7 +88,7 @@ $(error directory bitmap requires strict swapless TSFS PURE and no v1667)
 endif
 endif
 
-KINIT_PURE_MODE_STAMP = ${BUILD}/.pure-mres-mode-v1611-${DAIMOS_PURE_MRES_ENABLED}-${DAIMOS_PBM_V1667}-${DAIMOS_SWAPLESS_ONLY_V1668}-${DAIMOS_PBM_DIRECTORY_V1983}
+KINIT_PURE_MODE_STAMP = ${BUILD}/.pure-mres-mode-v1611-${DAIMOS_PURE_MRES_ENABLED}-${DAIMOS_PBM_V1667}-${DAIMOS_SWAPLESS_ONLY_V1668}-${DAIMOS_PBM_DIRECTORY_V1983}-${DAIMOS_PBM_IDLE_RECOVER_V1990}
 ${KINIT_PURE_MODE_STAMP}:
 	@mkdir -p ${BUILD}
 	@rm -f ${BUILD}/.pure-mres-mode-v1611-*
@@ -457,7 +467,7 @@ kcore: $(BUILD)/proc_pure_service_v1612.s \
     $(BUILD)/proc_pure_full_v1611.s
 endif
 
-$(BUILD)/proc_pure_service_v1612.s: $(DAIMOS_VM_PURE_SERVICE_SOURCE) $(KERNEL_HEADERS) $(KINIT_PURE_MODE_STAMP)
+$(BUILD)/proc_pure_service_v1612.s: $(DAIMOS_VM_PURE_SERVICE_SOURCE) $(KERNEL_HEADERS) $(KINIT_PURE_MODE_STAMP) proc/proc_pure_full_escrow_v1989.h
 	@mkdir -p $(BUILD)
 	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PBM_V1667=$(DAIMOS_PBM_V1667) $(PBM_SERVICE_FLAGS_V1983) $(INCLUDES) -S $< -o $@
 
@@ -466,6 +476,10 @@ PBM_SERVICE_FLAGS_V1983 = -DDAIMOS_PBM_COMMIT_V1979=1 -DDAIMOS_PBM_RESTORE_V1980
 PBM_DROP_FLAGS_V1983 = -DDAIMOS_PBM_PREFIX_V1978=1 -DDAIMOS_PBM_COMMIT_V1979=1 -DDAIMOS_PBM_PLACE_V1985=1
 PBM_FULL_FLAGS_V1983 = -DDAIMOS_PBM_RESTORE_V1980=1 -DDAIMOS_PBM_TERM_V1982=1 -DDAIMOS_PBM_PLACE_V1985=1
 PBM_VM_PREFIX_V1983 = .equ DAIMOS_PBM_VM_TERM_V1982,1
+ifeq ($(DAIMOS_PBM_IDLE_RECOVER_V1990),1)
+PBM_SERVICE_FLAGS_V1983 += -DDAIMOS_PBM_FULL_ESCROW_V1989=1 -DDAIMOS_PBM_IDLE_RECOVER_V1990=1
+PBM_FULL_FLAGS_V1983 += -DDAIMOS_PBM_FULL_ESCROW_V1989=1 -DDAIMOS_PBM_IDLE_RECOVER_V1990=1
+endif
 kcore: $(BUILD)/proc_pure_bitmap_directory_v1977.s
 $(BUILD)/proc_pure_bitmap_directory_v1977.s: proc/proc_pure_bitmap_directory_v1977.c $(KERNEL_HEADERS)
 	@mkdir -p $(BUILD)
@@ -511,7 +525,7 @@ $(BUILD)/proc_pure_prefix_v1611.s: proc/proc_pure_restore_v1384.c $(KERNEL_HEADE
 	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_SWAPLESS_PREFIX_V1384=1 \
 	    $(INCLUDES) -S $< -o $@
 
-$(BUILD)/proc_pure_full_v1611.s: proc/proc_pure_ram_restore_v1391.c $(KERNEL_HEADERS) $(KINIT_PURE_MODE_STAMP)
+$(BUILD)/proc_pure_full_v1611.s: proc/proc_pure_ram_restore_v1391.c $(KERNEL_HEADERS) $(KINIT_PURE_MODE_STAMP) proc/proc_pure_full_escrow_v1989.h
 	@mkdir -p $(BUILD)
 	$(PDP10_CC) $(PDP10_CFLAGS) -DDAIMOS_PURE_FULL_V1391=1 $(PBM_FULL_FLAGS_V1983) \
 	    $(INCLUDES) -S $< -o $@
