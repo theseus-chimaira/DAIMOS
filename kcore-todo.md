@@ -1765,7 +1765,14 @@ history is now reachable from main (v1809); mode3 remains disabled.
   PI6 in TAPE during relocated mode3 restore, READY_ONCE and first
   dispatch, all12 WAITs and exact final MM/HALT PASS. Ten corrupted
   trace controls reject. Healthy PI6 gate closed, no production growth.
-  Actual EXEC/nonresident terminal and physical fault matrix remain open.
+  v1987 actual healthy 64K stopped mode3 foreign TERM: slots4/5/6
+  each251 words, no restore, all10 exact TERM/WAITs; actual restored
+  slot3 marked-to-unmarked EXEC4096->2048, same slot/u-area and new
+  record, reservation retired. All12 waits, final MM/HALT, unchanged
+  root tapes, eleven corrupted traces reject. Native regression
+  v1934/v1681/v1982/v1985 PASS, v1681 real stack guard linked.
+  Healthy EXEC/nonresident terminal accepted. Physical PREVM retry
+  and fault-boundary integration still open; K16 recovery follows.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,

@@ -243,8 +243,10 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   terminal cancellation under native/physical fault injection.
   v1986 healthy physical PI6/READY_ONCE/first dispatch accepted,
   all12 WAITs and final MM/HALT PASS; native actual selector and
-  six mutants per compiler PASS. Physical fault matrix and genuine
-  nonresident terminal still open. Keep permanent refusal until safe.
+  six mutants per compiler PASS. v1987 healthy physical nonresident
+  terminal of three stopped mode3 owners and restored EXEC accepted;
+  physical PREVM retry/fault matrix remains open. Keep permanent
+  default refusal until safe.
 - [x] **Mode3 placement and matched 64K aligned capacity:** v1984
   directory8 vs RAW9 despite31078 free. v1985 lower 0200-aligned
   placement inside original atomic DROP, no extra descriptor or
@@ -252,6 +254,11 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   directory12 (fixture ceiling) vs9 RAW and8 old placement; relocated
   FULL/finish, all12 checked WAITs, final MM/HALT PASS. Net11186.
   Broader physical/dirty recovery acceptance remains in K15/K16.
+- [x] **Healthy 64K mode3 EXEC and nonresident terminal:** v1987
+  twelve children, three251-word stopped bitmaps destroyed without
+  restore, all10 TERM waits. Restored slot3 actual marked-to-unmarked
+  EXEC4096->2048, same slot/u-area, no reservation; exact all12 waits,
+  final MM/HALT, unchanged root tapes. Eleven negative traces reject.
 - [ ] **End-to-end mode3 acceptance:** source-built 48K/64K physical
   marked and unmarked process RUN/EXEC/EXIT/WAIT; repeat sleep/wake,
   real DSH mutable-state samples, kernel/process memory high-water,

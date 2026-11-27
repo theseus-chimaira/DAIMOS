@@ -69,8 +69,15 @@ selections/16 services, six unsafe mutants per compiler reject.
 Unchanged 64K physical image actual PI6 during pinned mode3 restore,
 READY_ONCE, first dispatch, guest data, all12 WAITs, final MM/HALT
 PASS. Ten corrupted trace controls reject. Healthy PI6/READY_ONCE
-gate closed, zero production growth. Actual EXEC/nonresident terminal,
-physical fault injection and K16 remain open.
+gate closed, zero production growth. v1987 unchanged 64K actual
+stopped user-mode foreign TERM of three251-word mode3 owners without
+restore; all10 stopped TERM/WAITs. Slot3 restored251->4096, then
+actual marked-to-unmarked EXEC2048 with same slot/u-area, changed
+backing record, no reservation; all12 WAITs, final MM/HALT PASS.
+Eleven corrupted trace controls reject, native regressions PASS.
+Healthy EXEC/nonresident terminal accepted; physical PREVM failure
+and retry, uncertain recovery, 48K/real DSH and latency/stack remain
+open. No production growth.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main
 are historical, not current ancestry. See

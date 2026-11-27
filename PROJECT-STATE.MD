@@ -1,3 +1,34 @@
+## 2026-11-27 v1987: actual mode3 foreign terminal and restored EXEC
+
+Validation only, original v1985 source-built 64K GCC PDP6 KCORE,
+PURE MRES and KINIT unchanged. Testkit1b0942c new unmarked INIT,
+marked compressed PURE COMP, distinct unmarked PURE POST; real
+spinner readiness/authorized TSTP, exact STOPPED waits, saved
+user-mode PCs and no private wait class. Pressure12: RAW slot2
+3584, mode3 slots3..6 each251, resident slots7..13 each4096.
+Actual foreign terminal slots4/5/6 at octal063000/064200/065400,
+251 each, no restore; all10 stopped children exact TERM/WAIT.
+Original owners and u-areas retired, mode0. Slot3 actual FULL
+061600/251 ->160000/4096, checked sparse data, EXEC000147,
+proc_exec_enter024311 publishes distinct unmarked POST2048 with
+new record and same slot/u-area, no EXEC reservation or escrow.
+All12 exact exit WAITs, exact final MM/modes, HALT PC0, unchanged
+three root tapes. Independent verifier and11 corrupted traces
+PASS; Makefile audit re-PASS. Evidence relative TMPDIR:
+pure-directory-lifecycle-build-v1987.Qwey5T,
+pure-directory-lifecycle-physical-v1987.JkKVum (physical.clean,
+verified-final-v1987.txt, trace-controls-v1987.log).
+Native v1934/v1982/v1985 PASS. Historical v1681 stale fixture
+missing v1937 stack guard, linked original guard and added
+overlapping reservation refusal; all5 executed mutants reject,
+including guard bypass040. Evidence daimos-pure-terminal-finalizer-v1681.3zLbCj
+and pure-directory-lifecycle-regression-v1987.1rHs4R.
+No production growth or new compiler/assembler defect observed.
+Healthy actual 64K EXEC and nonresident terminal gates accepted.
+K15 physical PREVM retry/failure integration, K16 dirty recovery,
+source loss, RT latency/stack, real DSH/48K still open. Default OFF.
+See design/kcore-k15-lifecycle-v1987.md.
+
 ## 2026-11-26 v1986: native selector and complete physical mode3 PI6/READY_ONCE
 
 Validation only, original v1985 kernel/MRES unchanged. Actual production
