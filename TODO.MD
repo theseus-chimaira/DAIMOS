@@ -295,6 +295,11 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   KINIT/boot-to-process-entry and error-path checks, without falsely
   requiring a full 32K ROOT/DSH workload. Repeat at 40K/48K/64K and
   supported high-core configurations when changing KINIT/MM.
+- [ ] **Post-feature kernel stack sizing:** retain overflow/bounds
+  diagnostics and repeat representative private/idle watermarks after
+  substantial changes. Investigate near-capacity results immediately.
+  Establish exhaustive worst-case AC17 bounds and consider shrinking
+  reservations only after feature stabilization; not a K15 gate.
 - [ ] **KINIT remaining stack/error paths:** bound physical controller
   loss, abnormal MM/IO/root-selection and INIT-launch stack maxima
   with the existing 0400-octal (256-word) reserve; do not shrink the

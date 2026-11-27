@@ -1813,8 +1813,12 @@ history is now reachable from main (v1809); mode3 remains disabled.
   written113/205, idle110/255, no default object growth. Separate
   uninstrumented actual DROP PI boundary inner369029/outer369318
   SIMH time units, no active RT owner; four negative controls reject.
-  Controlled written-stack subgate measured, not exhaustive AC17
-  bound. RT-active/FULL latency and worst-case stack still open.
+  Controlled written-stack subgate accepted. Keep diagnostic
+  overflow/bounds regressions and representative workload watermarks;
+  investigate near-capacity results or substantial increases.
+  Exhaustive worst-case AC17 analysis and stack sizing are deferred
+  until feature stabilization, not K15 acceptance gates.
+  RT-active/FULL latency remains open.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,
