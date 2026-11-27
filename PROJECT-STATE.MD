@@ -1,3 +1,46 @@
+## 2026-11-27 v1993: exact directory dirty DROP recovery
+
+Parent ca107f7e; testkit90ee89c. New optional
+DAIMOS_PBM_DIRTY_DROP_V1993 requires directory idle recovery;
+default OFF. Original four-word synchronous lease captured before
+bounded prefix-only encode. Disjoint original RAW suffix remains
+authoritative on bounded write failure or refused candidate commit.
+Existing u-area backing and word067 preserve exact original suffix,
+APR length/02000 and executable credential. REBASE/UNPIN authorize
+only the original pin; revoke to HOLD before mutation and recheck
+process/owner/backing/mode after each MM call. Only exact unchanged
+refusal reauthorizes; no new pin/allocation/I/O, no READY, no
+per-slot/BSS growth. Mode2/base0 only after exact RAW rebase; exact
+unpinned RAW clears TRANSITION. Shared original armer/idle clock;
+deferred retries do not reset backoff. HOLD cannot enter legacy
+RAW unlock. RH marker0600000 excludes valid FULL phases/candidate
+lengths; initial one-bit discriminator collision reproduced with
+inconsistent mode2, fixed and native regression PASS.
+
+Final native GCC/KCC PDP6/KA10 each25 counted DROP plus actual
+pressure/reclaim, original idle scan/deadline/armer, controlled
+outer handoff. Six unsafe mutants per compiler reject. Original
+RAW/healthy bitmap, repeated refusal, lost replies, wake SRUN,
+absent backing mount, changed pin/owner/geometry/credential and
+post-call identity loss; repair cannot reauthorize HOLD. v1990
+KCC OFF regression82 FULL/80 recovery/127 idle and8 mutants PASS.
+Existing compiler fixture/include-order notes; no new toolchain
+defect. Evidence relative TMPDIR
+pure-bitmap-placement-v1985.kXbsn1 (GCC), .KOjzbR (KCC),
+.2qseo5 (v1990 OFF KCC), .AqGoY4 (provisional collision).
+Actual linked package GCC5917->6377 (+460), KCC7055->7620
+(+565), BSS0; OFF/ON/OFF/ON reproducible both, invalid modes
+refuse, fixed KCORE unchanged. GCC OFF MRES and KCORE identical
+to v1992 physical build. Initial matrix invalidated by marker
+correction; fresh final matrix PASS, TMPDIR
+pure-directory-dirty-package-v1993.kfIv8O.
+
+Physical dirty DROP replay, ambiguous physical ownership faults,
+irrecoverable source-loss/corruption policy, RT latency/stack, real
+DSH/48K and optional KA10 boot remain open. No default activation.
+Controller loss/return discussion after K16; TODO.MD dedup after
+K15/K16. See design/kcore-k16-dirty-drop-v1993.md.
+
 ## 2026-11-27 v1992: physical directory FULL FREE/SOURCE rollback
 
 Validation only, parent 18a44866; testkit8e320f4. Fresh source-built

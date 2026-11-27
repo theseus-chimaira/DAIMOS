@@ -1,6 +1,6 @@
 # KCORE feature TODO (K01-K17)
 
-Updated: 2026-11-27 (v1992 physical FULL FREE/SOURCE rollback).
+Updated: 2026-11-27 (v1993 staged dirty DROP recovery).
 
 This is the **implementation-only** KCORE backlog. Work on these seventeen
 items is the current scope, including the mandatory basic KA10 compatibility milestone (K17).
@@ -1807,6 +1807,21 @@ history is now reachable from main (v1809); mode3 remains disabled.
   tests and irrecoverable source-loss/corruption remain open.
   Controller loss/return discussion deferred until K16 complete.
   See design/kcore-k16-physical-full-v1992.md.
+  v1993 staged dirty DROP exact original-pin REBASE/UNPIN/HOLD
+  accepted natively. Bounded disjoint prefix write failure or refused
+  candidate commit may convert exact original PROCESS to RAW; never
+  run damaged text. Existing backing/067 preserve suffix, full length,
+  credential; revoke authority before each MM operation, reauthorize
+  exact unchanged refusal only. Original slot-zero idle clock, no
+  new pin/allocation/I/O or permanent process words. GCC/KCC PDP6/KA10
+  each25 counted DROP plus actual reclaim, six mutants reject.
+  Provisional FULL SOURCE tag collision fixed by two-bit marker.
+  Linked GCC6377 (+460)/KCC7620 (+565), BSS0, fixed KCORE
+  unchanged; both OFF/ON/OFF/ON repeatable, GCC OFF identical to
+  v1992 physical package. New explicit flag requires directory idle.
+  Physical dirty DROP, ambiguous owner physical qualification and
+  irrecoverable source-loss/corruption remain open. Default OFF.
+  See design/kcore-k16-dirty-drop-v1993.md.
 
 ## Execution boundary
 

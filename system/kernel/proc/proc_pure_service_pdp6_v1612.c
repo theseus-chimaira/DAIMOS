@@ -37,6 +37,10 @@
 #include "proc_pure_bitmap_terminal_v1661.h"
 #endif
 
+#if defined(DAIMOS_PBM_DIRTY_DROP_V1993) && \
+    (!defined(DAIMOS_PBM_COMMIT_V1979) || !defined(DAIMOS_PBM_IDLE_RECOVER_V1990))
+#error dirty_DROP_requires_directory_idle_service
+#endif
 #ifdef DAIMOS_PBM_COMMIT_V1979
 /* Staged only: no installed build target sets this flag. Old interleaved
  * restore cannot consume the directory format. */
@@ -115,6 +119,12 @@ ppure_retryable_v1612(unsigned int slot, struct proc *p,
         if (!backing || !words || (words & (VM_PDP6_ALIGN_WORDS - 1UL)))
                 return 0;
         u = (kword_t *)(unsigned long)PROC_UAREA_BASE(p);
+#ifdef DAIMOS_PBM_DIRTY_DROP_V1993
+        /* HOLD has no retry bit, but dirty text is never runnable. */
+        if ((u[PROC_FINALIZE_OFFSET] & PROC_PURE_KIND_MASK_V1919) ==
+            PROC_PURE_KIND_MASK_V1919)
+                return 0;
+#endif
         if (u[PROC_FINALIZE_OFFSET] &
             (PROC_FINALIZE_MARK | PROC_SWAP_RETRY_TAG_V1507))
                 return 0;
@@ -439,6 +449,12 @@ proc_pure_mres_service_v1612(kword_t command_v1902)
                 slot = (unsigned int)(command_v1902 & 0377UL);
                 if (ppure_mode3_v1667(slot))
                         return proc_pure_bitmap_recover_v1989(slot);
+#endif
+#ifdef DAIMOS_PBM_DIRTY_DROP_V1993
+                rc = proc_pure_dirty_recover_v1993(
+                    (unsigned int)(command_v1902 & 0377UL));
+                if (rc != PBD_NOT_MINE_V1993)
+                        return rc;
 #endif
                 return ppure_recover_one_v1902(
                     (unsigned int)(command_v1902 & 0377UL));
