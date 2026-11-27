@@ -259,6 +259,12 @@ XIP are production-integrated; do not reopen their obsolete proposals.
   restore, all10 TERM waits. Restored slot3 actual marked-to-unmarked
   EXEC4096->2048, same slot/u-area, no reservation; exact all12 waits,
   final MM/HALT, unchanged root tapes. Eleven negative traces reject.
+- [x] **64K mode3 known-pin terminal PREVM retry:** v1988 real
+  external pin on stopped bitmap slot4, original idle retry/backoff
+  16->32->64, exact original span/status and bytes, release pin,
+  all12 EXIT waits, final MM/HALT. Eleven negative traces reject.
+  Full original native finalizer21 calls/CPU/compiler, eight mutants.
+  K16 uncertain FULL/DROP ownership recovery remains open.
 - [ ] **End-to-end mode3 acceptance:** source-built 48K/64K physical
   marked and unmarked process RUN/EXEC/EXIT/WAIT; repeat sleep/wake,
   real DSH mutable-state samples, kernel/process memory high-water,

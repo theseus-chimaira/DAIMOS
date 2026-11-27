@@ -1,3 +1,39 @@
+## 2026-11-27 v1988: actual directory known-pin PREVM retry
+
+Validation only, unchanged v1985/v1987 kernel/MRES/KINIT. Testkit
+b93f4f6 complete native original finalizer/reaper, actual relocated
+mode3 DROP/VM destroy/detach, MM pin/unpin/free, real parent/u-area
+and stack guard. GCC/KCC PDP6/KA10 each21 calls; eight executed
+unsafe finalizer mutants per compiler reject. Outer session/TTY/
+notification controlled. Exact ZOMB, no second HUP, retry word
+cleared. Original v1681/v1982/v1985 and default runner PASS.
+Evidence relative TMPDIR pure-bitmap-placement-v1985.4k1mr9,
+pure-bitmap-placement-v1985.NJA2fK,
+pure-directory-prevm-regression-v1988.QZ1jYp,
+pure-bitmap-placement-v1985.AtkBOG.
+Actual unchanged v1987 64K workload12 children; foreign TERM slot4
+063000/251, introduce precisely one external test-owned pin, no
+other injected state. Resolve private retry word from actual MOVE.
+Actual slot0 backoff/retry ticks8042/8074, delay16->32->64, entire
+MM table except pin and all251 original bitmap words, exact span,
+status0400001, original backing/credential/u-area/PC retained.
+Release only external pin at second idle terminal entry; original
+retirement and typed WAIT. All10 stopped TERM waits, restored slot3
+EXEC, all12 EXIT waits, exact final MM/HALT PC0, unchanged root
+tapes. Independent full oracle +11 corrupted trace controls PASS.
+Physical private retry word not sampled after success; native does.
+Evidence pure-directory-prevm-physical-v1988.IuWoyT/physical.clean
+and audit-v1988.log. Two preliminary observer cancellations before
+fault (private symbol and redundant same-PC guard), fixed; no
+new production defect. No simulator remains. Known-pin physical
+PREVM subgate accepted. No growth. K16 dirty FULL/DROP recovery,
+source loss, physical FULL faults, latency/stack and real DSH/48K
+still open; default OFF. See design/kcore-k15-prevm-v1988.md.
+Exact deferred bitmap length is not derivable from original VM
+geometry. Candidate reuse of BRK floor/target alignment bits
+requires proof before implementation; do not adopt changed source
+geometry or consume unknown pins.
+
 ## 2026-11-27 v1987: actual mode3 foreign terminal and restored EXEC
 
 Validation only, original v1985 source-built 64K GCC PDP6 KCORE,

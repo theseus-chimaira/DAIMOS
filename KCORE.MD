@@ -75,8 +75,13 @@ restore; all10 stopped TERM/WAITs. Slot3 restored251->4096, then
 actual marked-to-unmarked EXEC2048 with same slot/u-area, changed
 backing record, no reservation; all12 WAITs, final MM/HALT PASS.
 Eleven corrupted trace controls reject, native regressions PASS.
-Healthy EXEC/nonresident terminal accepted; physical PREVM failure
-and retry, uncertain recovery, 48K/real DSH and latency/stack remain
+Healthy EXEC/nonresident terminal accepted. v1988 complete original
+finalizer native GCC/KCC PDP6/KA10 each21 calls, eight mutants reject.
+Actual 64K known-pin PREVM fault slot4 063000/251, real idle retries
+16->32->64, exact span/payload/status, release test pin and original
+retirement. All12 WAITs, restored EXEC, final MM/HALT, eleven trace
+controls PASS. Known-pin physical PREVM gate accepted. K16 uncertain
+recovery, physical FULL faults, 48K/real DSH and latency/stack remain
 open. No production growth.
 RAW PURE/mode3 remain OFF by default. Dated statements
 below distinguishing an unmerged PURE branch from main

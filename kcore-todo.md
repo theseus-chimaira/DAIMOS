@@ -1771,8 +1771,13 @@ history is now reachable from main (v1809); mode3 remains disabled.
   record, reservation retired. All12 waits, final MM/HALT, unchanged
   root tapes, eleven corrupted traces reject. Native regression
   v1934/v1681/v1982/v1985 PASS, v1681 real stack guard linked.
-  Healthy EXEC/nonresident terminal accepted. Physical PREVM retry
-  and fault-boundary integration still open; K16 recovery follows.
+  Healthy EXEC/nonresident terminal accepted. v1988 full original
+  native finalizer21 calls/CPU/compiler, eight mutants reject.
+  Actual 64K known external pin PREVM retry slot4 063000/251,
+  real idle delay16->32->64, exact original span/status/payload,
+  release only test pin; all12 waits, restored EXEC, final MM/HALT.
+  Eleven corrupted trace controls reject. Known-pin physical PREVM
+  accepted; K16 dirty FULL/DROP and broader physical faults follow.
   Experimental option only, default OFF.
 - [ ] **K16 - Failure recovery.** Handle corruption, source loss,
   allocator refusal, torn or overlapping data, uncertain MM ownership,
